@@ -20,14 +20,17 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 from pd_ocr_synth import __version__
-from pd_ocr_synth.recipe import Recipe
 from pd_ocr_synth.recipe.models import LocalCorpus
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from pd_ocr_synth.recipe import Recipe
 
 # Filename written into the output directory. Centralized here so the
 # writer + the resume check + the test suite all agree.
@@ -187,12 +190,12 @@ def _hash_inputs(recipe: Recipe) -> dict[str, str]:
     different optional font set still surfaces as different.
     """
 
-    inputs: list[_InputFile] = []
-    for font in recipe.fonts:
-        inputs.append(_InputFile(role="font", path=font.path))
-    for entry in recipe.corpus:
-        if isinstance(entry, LocalCorpus):
-            inputs.append(_InputFile(role="corpus_local", path=entry.path))
+    inputs: list[_InputFile] = [_InputFile(role="font", path=font.path) for font in recipe.fonts]
+    inputs.extend(
+        _InputFile(role="corpus_local", path=entry.path)
+        for entry in recipe.corpus
+        if isinstance(entry, LocalCorpus)
+    )
 
     out: dict[str, str] = {}
     for item in inputs:
