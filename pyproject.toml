@@ -321,10 +321,11 @@ exclude = ["**/__pycache__", "**/.venv", "**/node_modules"]
 # Catches unannotated functions, inferred-Any propagation, untyped decorators,
 # and missing return types that "standard" mode skips.
 typeCheckingMode = "recommended"
-# NOTE: failOnWarnings deferred — recommended mode surfaces warnings from
-# uharfbuzz / freetype-py / pillow stubs that lag runtime. Enable
-# incrementally as stub coverage improves.
-# failOnWarnings = true
+# Warnings are gated via a baseline file (.basedpyright/baseline.json) that
+# grandfathers existing warnings from uharfbuzz/freetype-py/pillow stubs.
+# New warnings beyond the baseline will fail CI.
+# Regenerate: uv run basedpyright src/pd_ocr_synth --writebaseline
+failOnWarnings = true
 
 # Import cycles are structural and resolved via TYPE_CHECKING guards.
 # Suppress the per-file error here; actual import order issues would surface
