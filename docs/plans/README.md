@@ -8,21 +8,23 @@ milestone benefits from them.
 
 ## Milestones
 
-| # | Milestone | Goal | Outcome |
-|---|-----------|------|---------|
-| [00](00-bootstrap.md) | Bootstrap | Repo exists with workspace conventions | `git clone` works; matches peer-project layout |
-| [01](01-dev-tooling.md) | Dev tooling parity | Make / lint / test / pre-commit / CI | `make setup && make test && make lint` all green on a stub |
-| [02](02-recipe-schema.md) | Recipe schema + validator | Recipes load, validate, list, init | `pd-ocr-synth validate gaelic` passes |
-| [03](03-corpus.md) | Corpus providers + cache | Pull text from local + web + Wikisource | `pd-ocr-synth fetch gaelic` warms a cache |
-| [04](04-text-transforms.md) | Text transforms | Lenition, long-s, Tironian et, base ops | Round-trip transform tests pass |
-| [05](05-rendering.md) | Rendering | HarfBuzz, fonts, word-crop layout | Single sample renders deterministically |
-| [06](06-degradation.md) | Degradation pipeline | Geometric + optical + paper + jpeg stages | Sample with degradation looks plausible |
-| [07](07-output-recognition.md) | Output: recognition mode | Writer for `pd-ocr-trainer/v1` recognition | Trainer can read 50k Gaelic crops |
-| [08](08-publishing-hf.md) | HF publish | Push rendered output to HF dataset repo | A dataset on HF that the trainer can consume |
-| [09](09-detection-mode.md) | Output: detection mode | Layouts: paragraphs, pages; bbox-aware degradations | Trainer detection profile fed |
-| [10](10-stretch.md) | Stretch | Extra recipes, cloud render, polish | Opt-in follow-ups |
-| [11](11-preview-ui.md) | Preview UI | NiceGUI for visual recipe tuning | `pd-ocr-synth-preview --recipe gaelic` works |
-| [12](12-glyph-annotations.md) | Glyph-level annotations | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
+Archived (fully shipped) plans live in [`../archive/plans/`](../archive/plans/).
+
+| # | Milestone | Status | Goal | Outcome |
+|---|-----------|--------|------|---------|
+| [00](00-bootstrap.md) | Bootstrap | mostly done (LICENSE + DEVELOPMENT.md pending) | Repo exists with workspace conventions | `git clone` works; matches peer-project layout |
+| 01 | Dev tooling parity | ✅ archived | Make / lint / test / pre-commit / CI | `make setup && make test && make lint` all green on a stub |
+| 02 | Recipe schema + validator | ✅ archived | Recipes load, validate, list, init | `pd-ocr-synth validate gaelic` passes |
+| [03](03-corpus.md) | Corpus providers + cache | mostly done (deferred providers noted) | Pull text from local + web + Wikisource | `pd-ocr-synth fetch gaelic` warms a cache |
+| 04 | Text transforms | ✅ archived | Lenition, long-s, Tironian et, base ops | Round-trip transform tests pass |
+| [05](05-rendering.md) | Rendering | mostly done (deferred UX features noted) | HarfBuzz, fonts, word-crop layout | Single sample renders deterministically |
+| [06](06-degradation.md) | Degradation pipeline | mostly done (deferred stages noted) | Geometric + optical + paper + jpeg stages | Sample with degradation looks plausible |
+| 07 | Output: recognition mode | ✅ archived | Writer for `pd-ocr-trainer/v1` recognition | Trainer can read 50k Gaelic crops |
+| 08 | HF publish | ✅ archived | Push rendered output to HF dataset repo | A dataset on HF that the trainer can consume |
+| [09](09-detection-mode.md) | Output: detection mode | mostly done (future HF parquet work noted) | Layouts: paragraphs, pages; bbox-aware degradations | Trainer detection profile fed |
+| [10](10-stretch.md) | Stretch | partially done (extra recipes + cloud render remain) | Extra recipes, cloud render, polish | Opt-in follow-ups |
+| [11](11-preview-ui.md) | Preview UI | not started | NiceGUI for visual recipe tuning | `pd-ocr-synth-preview --recipe gaelic` works |
+| [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
 
 ## NiceGUI surface — preview only, not edit
 

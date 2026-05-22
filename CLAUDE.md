@@ -2,8 +2,8 @@
 
 Recipe-driven synthetic OCR training-data generator; produces labeled
 image+text pairs for historical and specialty typography (first target:
-Cló Gaelach / early Irish). Status: spec-only — `src/` is nearly empty;
-implement milestone-by-milestone against `docs/specs/`.
+Cló Gaelach / early Irish). Status: M00–M10 substantially shipped;
+M11 (preview UI) and M12 (glyph annotations) are the remaining milestones.
 Architecture: `docs/specs/00-overview.md`.
 
 ## Commands
@@ -30,9 +30,9 @@ output for debugging.
 - Make targets first; fall back to `uv run …` only when no target exists.
 - Never `python -m pytest`. Always `uv run pytest -n auto` or `make test`.
   Bare `python`/`python3`/`.venv/bin/python` miss the venv.
-- Milestone-driven spec-first repo: implement against `docs/specs/` milestones
-  in order; do not add scope beyond the current milestone.
-- Before writing any code, read the relevant milestone spec end-to-end and propose a plan.
+- Milestone-driven spec-first repo: next open milestones are M11 (preview UI) and M12 (glyph annotations).
+  Do not add scope beyond the current milestone.
+- Before writing any code, read the relevant milestone spec and plan end-to-end and propose a plan.
 - If pydantic recipe models change, run `make schema` to regenerate `docs/specs/recipe.schema.json`.
 - Never commit fonts — they are user-provided and license-sensitive; `make fetch-fonts` is interactive by design.
 - Recipes live in `recipes/` as YAML; schema is in `docs/specs/recipe.schema.json`.

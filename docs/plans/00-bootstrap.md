@@ -9,53 +9,55 @@ producing a project that *looks* like its peers.
 
 ### Repo & remote
 
-- [ ] `git init` inside `pd-ocr-synth/` (currently a plain directory in
+- [x] `git init` inside `pd-ocr-synth/` (currently a plain directory in
       the workspace).
-- [ ] Create empty GitHub repo at `ConcaveTrillion/pd-ocr-synth`
+- [x] Create empty GitHub repo at `ConcaveTrillion/pd-ocr-synth`
       (matching the pd-book-tools owner used by the other projects).
-- [ ] Add remote and push the initial commit:
+- [x] Add remote and push the initial commit:
       ```bash
       git remote add origin git@github.com:ConcaveTrillion/pd-ocr-synth.git
       git push -u origin main
       ```
-- [ ] Set the default branch to `main` on GitHub.
+- [x] Set the default branch to `main` on GitHub.
 - [ ] Add a license file matching peer projects (check what
       `pd-ocr-trainer` ships; mirror it).
+      NOTE: no LICENSE file present yet; pyproject.toml declares `license = "Unlicense"` but no file shipped.
 
 ### Git config files (mirror the peer pattern)
 Copy the *shape* of these from `pd-ocr-trainer/`, adjusting only paths.
 
-- [ ] `.gitignore` — Python defaults plus workspace-specific: `.venv/`,
+- [x] `.gitignore` — Python defaults plus workspace-specific: `.venv/`,
       `dist/`, `htmlcov/`, `.pytest_cache/`, `.ruff_cache/`,
       `recipes/*/cache/`, `recipes/*/preview/`,
       `recipes/**/fonts/`, `recipes/**/textures/`,
       `Makefile.local`. (Most of this already exists in the stub
       `.gitignore`; just add `Makefile.local`.)
-- [ ] `.gitattributes` — at minimum `* text=auto eol=lf`.
-- [ ] `.editorconfig` if peers have one (check).
+- [x] `.gitattributes` — at minimum `* text=auto eol=lf`.
+- [x] `.editorconfig` if peers have one (check).
 
 ### CLAUDE / DEVELOPMENT / AGENTS
 The other projects ship contributor-facing guidance files:
 
 - [ ] `DEVELOPMENT.md` — local setup, common commands, layout map.
       Mirror `pd-ocr-labeler/DEVELOPMENT.md` structure.
-- [ ] `CLAUDE.md` — short, points at `docs/specs/` and `docs/roadmap/`
+      NOTE: not yet created; CLAUDE.md covers most of the same ground.
+- [x] `CLAUDE.md` — short, points at `docs/specs/` and `docs/roadmap/`
       so an agent picking up the project knows where to start.
-- [ ] `AGENTS.md` if peers have one (check `pd-ocr-labeler/AGENTS.md`).
+- [x] `AGENTS.md` if peers have one (check `pd-ocr-labeler/AGENTS.md`).
 
 ### README pass
 
-- [ ] Update the existing `README.md` to mention the GitHub repo URL,
+- [x] Update the existing `README.md` to mention the GitHub repo URL,
       the install command, and a "see DEVELOPMENT.md for contributors"
       pointer. Keep the spec ToC.
 
 ### `pyproject.toml` finalize
 The current stub is fine for spec; before pushing add:
 
-- [ ] `[project] urls` block with `Homepage`, `Repository`, `Issues`.
-- [ ] `[project] keywords` for discoverability.
-- [ ] Owner / maintainers updated to match peer projects.
-- [ ] Python version aligned (>=3.13 — already set).
+- [x] `[project] urls` block with `Homepage`, `Repository`, `Issues`.
+- [x] `[project] keywords` for discoverability.
+- [x] Owner / maintainers updated to match peer projects.
+- [x] Python version aligned (>=3.13 — already set).
 
 ## Validation criteria
 

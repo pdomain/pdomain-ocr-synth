@@ -14,14 +14,14 @@ benefits from skipping ahead until tooling is solid.
 
 Adopt the same target catalog, with the same emoji + help-text style:
 
-- [ ] `help` — auto-generated from `##` comments
-- [ ] `setup` — `uv sync --group all-dev` then
+- [x] `help` — auto-generated from `##` comments
+- [x] `setup` — `uv sync --group all-dev` then
       `uv run pre-commit install` (the dev-env target)
-- [ ] `install` / `uninstall` — `uv tool install --reinstall .` /
+- [x] `install` / `uninstall` — `uv tool install --reinstall .` /
       `uv tool uninstall pd-ocr-synth` (puts the CLI on PATH for
       end-users, separate from dev setup)
-- [ ] `remove-venv`, `reset`, `reset-full`, `upgrade-deps`
-- [ ] `upgrade-deps` MUST honor the dev-local detection contract in
+- [x] `remove-venv`, `reset`, `reset-full`, `upgrade-deps`
+- [x] `upgrade-deps` MUST honor the dev-local detection contract in
       [13 — Dev-local mode and dependency upgrades](../specs/13-dev-local-mode-and-deps.md):
       probe `uv pip show pd-book-tools` for `Editable project location`,
       fall back to a `.venv/pd-dev-local` marker, last-resort
@@ -29,12 +29,12 @@ Adopt the same target catalog, with the same emoji + help-text style:
       detected, leave canonical-mode behavior unchanged, and ship a
       sibling `upgrade-deps-local` target. Deferred until the
       Makefile / `dev-local` recipe lands; this milestone owns it.
-- [ ] `test`, `test-verbose`, `test-single` (parameterized)
-- [ ] `lint`, `lint-fix`, `format`, `pre-commit-check`
-- [ ] `ci` — what GitHub Actions runs (lint + test)
-- [ ] `build`, `clean`, `clean-cache`
-- [ ] `release-patch`, `release-minor`, `release-major`, `_do-release`
-- [ ] **Project-specific:** `gaelic-preview` (already in stub),
+- [x] `test`, `test-verbose`, `test-single` (parameterized)
+- [x] `lint`, `lint-fix`, `format`, `pre-commit-check`
+- [x] `ci` — what GitHub Actions runs (lint + test)
+- [x] `build`, `clean`, `clean-cache`
+- [x] `release-patch`, `release-minor`, `release-major`, `_do-release`
+- [x] **Project-specific:** `gaelic-preview` (already in stub),
       `fetch-fonts` (wraps `scripts/fetch-fonts-gaelic.sh`)
 
 Reference: `pd-ocr-trainer/Makefile`. Keep the help-text formatting
@@ -44,51 +44,51 @@ identical so the look is consistent across the workspace.
 
 Match the peer pattern of multiple optional groups:
 
-- [ ] `[dependency-groups]` (uv-style) or
+- [x] `[dependency-groups]` (uv-style) or
       `[project.optional-dependencies]`:
   - `testing` — pytest, pytest-cov, pytest-xdist
   - `linting` — ruff, pre-commit
   - `all-dev` — superset; what `make setup` uses
-- [ ] Pinned `python-doctr`-equivalent: pin `huggingface_hub`,
+- [x] Pinned `python-doctr`-equivalent: pin `huggingface_hub`,
       `datasets`, `pillow`, `uharfbuzz`, `freetype-py`, `httpx`,
       `pyyaml`, `pydantic`, `beautifulsoup4`, `lxml`, `numpy`,
       `opencv-python`, `tqdm` in `dependencies`.
-- [ ] Add `[tool.coverage]` config (mirror peer).
+- [x] Add `[tool.coverage]` config (mirror peer).
 
 ### `.pre-commit-config.yaml`
 
-- [ ] Hooks matching peer projects:
+- [x] Hooks matching peer projects:
   - `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`,
     `check-added-large-files`
   - `ruff` (lint + format)
-- [ ] `make pre-commit-check` wires it to CI.
+- [x] `make pre-commit-check` wires it to CI.
 
 ### `src/pd_ocr_synth/` skeleton
 
-- [ ] `__init__.py` with `__version__`
-- [ ] `__main__.py` for `python -m pd_ocr_synth`
-- [ ] `cli.py` — argparse / typer stub with `--version`, `--help`,
+- [x] `__init__.py` with `__version__`
+- [x] `__main__.py` for `python -m pd_ocr_synth`
+- [x] `cli.py` — argparse / typer stub with `--version`, `--help`,
       and unimplemented subcommands that print "not implemented yet"
       and exit 2.
-- [ ] Console script registered in `pyproject.toml`:
+- [x] Console script registered in `pyproject.toml`:
       `pd-ocr-synth = "pd_ocr_synth.cli:main"`.
 
 ### `tests/`
 
-- [ ] `tests/conftest.py` with shared fixtures (`tmp_path`-style helpers)
-- [ ] `tests/test_smoke.py` — `pd-ocr-synth --version` returns 0
-- [ ] `tests/test_cli.py` — every subcommand prints help with `--help`
-- [ ] Markers config in `pyproject.toml`: `unit`, `integration`, `slow`,
+- [x] `tests/conftest.py` with shared fixtures (`tmp_path`-style helpers)
+- [x] `tests/test_smoke.py` — `pd-ocr-synth --version` returns 0
+- [x] `tests/test_cli.py` — every subcommand prints help with `--help`
+- [x] Markers config in `pyproject.toml`: `unit`, `integration`, `slow`,
       `gpu`
 
 ### CI: `.github/workflows/ci.yml`
 
-- [ ] Mirror `pd-ocr-trainer`'s workflow exactly:
+- [x] Mirror `pd-ocr-trainer`'s workflow exactly:
   - Trigger: PRs and pushes to `main`
   - Setup uv, sync deps
   - Run `make ci`
-- [ ] Cache uv downloads.
-- [ ] Single Linux runner (no GPU, no Mac/Windows for now).
+- [x] Cache uv downloads.
+- [x] Single Linux runner (no GPU, no Mac/Windows for now).
 
 ### Setup is `make setup`
 
@@ -106,7 +106,7 @@ Makefile) keeps developer expectations from drifting.
 
 - [ ] If the workspace devcontainer auto-discovers projects, ensure
       `pd-ocr-synth` is included in any post-create steps. Otherwise
-      defer to a workspace-level change.
+      defer to a workspace-level change. **Deferred — low priority.**
 
 ## Validation criteria
 
