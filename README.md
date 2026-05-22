@@ -4,8 +4,8 @@ Synthetic OCR training-data generator. Produces labeled image+text pairs for
 historical and specialty typography (first target: Cló Gaelach / early Irish
 typography), in the format consumed by `pd-ocr-trainer` profiles.
 
-**Status:** spec-only. No implementation yet. The `docs/specs/` set defines the
-target system; nothing in `src/` exists.
+**Status:** M00–M10 substantially shipped. M11 (preview UI) and M12 (glyph annotations) remain.
+The `docs/specs/` set is the authoritative design reference; `docs/plans/` tracks milestone progress.
 
 ## Why
 
@@ -60,5 +60,5 @@ A full worked recipe lives at [`recipes/gaelic.yaml`](recipes/gaelic.yaml).
 
 ## Implementation roadmap
 
-Specs describe the destination; [`docs/roadmap/`](docs/roadmap/) is the
-path. Start at [00 — Bootstrap](docs/roadmap/00-bootstrap.md).
+Specs describe the destination; [`docs/plans/`](docs/plans/) tracks the path.
+See [`docs/plans/README.md`](docs/plans/README.md) for milestone status.

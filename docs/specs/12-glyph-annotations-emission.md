@@ -9,7 +9,7 @@ the gold-standard source for any classifier learning to detect
 ligatures, long-s, or swash forms from word crops.
 
 Status: spec only. Implementation lands in M12 (see
-[`../roadmap/12-glyph-annotations.md`](../roadmap/12-glyph-annotations.md)).
+[`../plans/12-glyph-annotations.md`](../plans/12-glyph-annotations.md)).
 
 ## Hard invariant: GT text stays semantic
 

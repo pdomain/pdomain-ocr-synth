@@ -7,7 +7,7 @@ contributor's local development setup.
 
 Status: **spec only**. Implementation is **deferred until the Makefile
 `dev-local` recipe lands**; the requirement is hooked into M01 (see
-[`../roadmap/01-dev-tooling.md`](../roadmap/01-dev-tooling.md)) so that
+[`../archive/plans/01-dev-tooling.md`](../archive/plans/01-dev-tooling.md)) so that
 whichever milestone introduces the dev-local recipe across the
 workspace also lands the detection logic here.
 
