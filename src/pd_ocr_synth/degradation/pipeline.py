@@ -29,10 +29,11 @@ dispatch trivial.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from random import Random
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 if TYPE_CHECKING:
+    from random import Random
+
     from PIL.Image import Image
 
     from pd_ocr_synth.recipe import DegradationStage
@@ -143,7 +144,7 @@ def _ensure_builtins_registered() -> None:
     flag prevents re-running the import dance on every sample.
     """
 
-    global _BUILTINS_REGISTERED
+    global _BUILTINS_REGISTERED  # noqa: PLW0603 — module-level one-time registration guard
     if _BUILTINS_REGISTERED:
         return
 

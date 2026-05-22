@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
-from random import Random
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -29,6 +28,8 @@ from pd_ocr_synth.degradation.pipeline import (
 )
 
 if TYPE_CHECKING:
+    from random import Random
+
     from pd_ocr_synth.render.sample import RenderedSample
 
 

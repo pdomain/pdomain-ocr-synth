@@ -102,7 +102,8 @@ config could land without a 90-minute annotation marathon. Every
 docstrings), `G` (logging-format), `BLE` (blind except), `TRY`
 (tryceratops), `TC` (type-only imports not yet moved to `TYPE_CHECKING`;
 ~37 files affected). Each is an implicit TODO; removal is tracked
-subpackage-by-subpackage in **issue #3**.
+subpackage-by-subpackage in **issue #3**. The `degradation/` subpackage
+has been fully cleared and no longer carries any per-file ignore.
 
 Modules carrying **extra** codes beyond the `ANN D G BLE TRY TC` base set,
 with the per-module reason:
@@ -121,8 +122,7 @@ with the per-module reason:
 | `corpus/http.py` | `S` | HTTP-client security rules relaxed for the fetch path. |
 | `corpus/providers/web.py` | `TRY300` | `else`-after-`try` not warranted for this control flow. |
 | `corpus/registry.py` | `S PLW0603 PLW2901` | Provider-dispatch security; registry module globals; loop-var reassignment. |
-| `degradation/pipeline.py` | `PLW0603` | Builtins-registered once-per-process flag. |
-| `degradation/builtins.py`, `text_transforms/pipeline.py` | `S311` | `random` is for visual sampling, not crypto. |
+| `text_transforms/pipeline.py` | `S311` | `random` is for visual sampling, not crypto. |
 | `text_transforms/registry.py` | `PLW0603 S112` | Registry module globals; `continue` in `except`. |
 | `render/sampling.py`, `render/sample.py`, `corpus/context.py`, `tokenization.py`, `recipe/models.py` | (subset only) | Carry just `TC` and/or `ANN`/`D` — narrower than the base set. |
 
@@ -230,3 +230,4 @@ blanket-covered by §2.1):
 |------|------|---------------|
 | `cli.py` (×3) | `SIM105` | `try/except: pass` blocks kept explicit for readability; `contextlib.suppress` would obscure intent at these call sites. |
 | `degradation/pipeline.py` | `F401` | Deferred `import builtins` inside `_ensure_builtins_registered()` — the import is for its registration side effect, not a name. |
+| `degradation/pipeline.py` | `PLW0603` | `global _BUILTINS_REGISTERED` — module-level one-time registration guard; the `global` is intrinsic to the idempotency pattern. |
