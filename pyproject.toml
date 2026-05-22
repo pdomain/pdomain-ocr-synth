@@ -284,10 +284,6 @@ convention = "google"
 "src/pd_ocr_synth/publish/content_sha.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
 "src/pd_ocr_synth/publish/redaction.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
 "src/pd_ocr_synth/publish/sdk_transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-# output/: PLW2901/PERF401/RET504 patterns
-"src/pd_ocr_synth/output/detection.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PERF401", "PLW2901"]
-"src/pd_ocr_synth/output/recognition.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901", "RET504"]
-"src/pd_ocr_synth/output/snapshot.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PERF401"]
 "src/pd_ocr_synth/corpus/context.py" = ["ANN", "D", "TC"]
 "src/pd_ocr_synth/corpus/parsers.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
 "src/pd_ocr_synth/corpus/filters.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]

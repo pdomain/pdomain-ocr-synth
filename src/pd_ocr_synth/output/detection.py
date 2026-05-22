@@ -61,10 +61,9 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
-from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, TYPE_CHECKING, Any
 
 from pd_ocr_synth.output.snapshot import (
     SNAPSHOT_FILENAME,
@@ -74,7 +73,11 @@ from pd_ocr_synth.output.snapshot import (
     snapshot_matches,
     write_snapshot,
 )
-from pd_ocr_synth.recipe import Recipe
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from pd_ocr_synth.recipe import Recipe
 
 LABELS_FILENAME = "labels.json"
 MANIFEST_FILENAME = "manifest.jsonl"
@@ -134,7 +137,8 @@ def bbox_to_polygon(
 
 def _hash_image_bytes(image_bytes: bytes) -> str:
     """SHA-256 of an encoded PNG. Surfaced in ``labels.json`` so a
-    downstream consumer can detect bit-rot / accidental re-encoding."""
+    downstream consumer can detect bit-rot / accidental re-encoding.
+    """
 
     return hashlib.sha256(image_bytes).hexdigest()
 
@@ -343,12 +347,12 @@ class DetectionWriter:
                             existing_labels[str(key)] = val
             manifest_path = output_dir / MANIFEST_FILENAME
             if manifest_path.exists():
-                for line in manifest_path.read_text(encoding="utf-8").splitlines():
-                    line = line.strip()
-                    if not line:
+                for raw_line in manifest_path.read_text(encoding="utf-8").splitlines():
+                    stripped = raw_line.strip()
+                    if not stripped:
                         continue
                     try:
-                        rec = json.loads(line)
+                        rec = json.loads(stripped)
                     except json.JSONDecodeError:
                         continue
                     if isinstance(rec, dict) and "index" in rec:
@@ -584,7 +588,12 @@ class DetectionWriter:
     def __enter__(self) -> DetectionWriter:
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: object,
+    ) -> None:
         # Always finalize on-disk state, even on render failure — the
         # user should be able to inspect a partial run rather than
         # losing the manifest of "what was attempted before the crash."

@@ -102,8 +102,9 @@ config could land without a 90-minute annotation marathon. Every
 docstrings), `G` (logging-format), `BLE` (blind except), `TRY`
 (tryceratops), `TC` (type-only imports not yet moved to `TYPE_CHECKING`;
 ~37 files affected). Each is an implicit TODO; removal is tracked
-subpackage-by-subpackage in **issue #3**. The `degradation/` subpackage
-has been fully cleared and no longer carries any per-file ignore.
+subpackage-by-subpackage in **issue #3**. The `degradation/` and
+`output/` subpackages have been fully cleared and no longer carry any
+per-file ignore.
 
 Modules carrying **extra** codes beyond the `ANN D G BLE TRY TC` base set,
 with the per-module reason:
@@ -114,9 +115,7 @@ with the per-module reason:
 | `render/run.py` | `T201 PERF401 PLW0603 S108 S101 S311` | CLI output; worker-init module globals; `assert` in worker; `random` is for visual sampling, not crypto. |
 | `render/preview.py` | `PLW0603 S101 S311` | Worker-init globals; `assert`/`random` worker patterns. |
 | `render/context.py` | `S311` | `random` is intentional for visual sampling, not crypto. |
-| `publish/cli_runner.py`, `publish/dataset_card.py`, `output/snapshot.py` | `PERF401` | List-building loop is intentional. |
-| `output/detection.py` | `PERF401 PLW2901` | List-building loop; loop-var reassignment. |
-| `output/recognition.py` | `PLW2901 RET504` | Loop-var reassignment; intentional assign-before-return. |
+| `publish/cli_runner.py`, `publish/dataset_card.py` | `PERF401` | List-building loop is intentional. |
 | `publish/summary.py`, `publish/recognition.py` | `PLW2901` | Loop-var reassignment is intentional. |
 | `publish/auth.py` | `S105` | Env-var **name** strings are not passwords. |
 | `corpus/http.py` | `S` | HTTP-client security rules relaxed for the fetch path. |

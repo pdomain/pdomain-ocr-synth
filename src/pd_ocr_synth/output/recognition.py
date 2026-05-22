@@ -34,10 +34,9 @@ from __future__ import annotations
 
 import json
 import shutil
-from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, TYPE_CHECKING, Any
 
 from pd_ocr_synth.output.snapshot import (
     SNAPSHOT_FILENAME,
@@ -47,7 +46,11 @@ from pd_ocr_synth.output.snapshot import (
     snapshot_matches,
     write_snapshot,
 )
-from pd_ocr_synth.recipe import Recipe
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from pd_ocr_synth.recipe import Recipe
 
 LABELS_FILENAME = "labels.json"
 MANIFEST_FILENAME = "manifest.jsonl"
@@ -71,8 +74,7 @@ def width_for_count(count: int) -> int:
 
     if count <= 0:
         return _MIN_PAD_WIDTH
-    width = max(_MIN_PAD_WIDTH, len(str(max(count - 1, 0))))
-    return width
+    return max(_MIN_PAD_WIDTH, len(str(max(count - 1, 0))))
 
 
 def image_filename(index: int, *, width: int) -> str:
@@ -260,12 +262,12 @@ class RecognitionWriter:
                     existing_labels = {str(k): str(v) for k, v in raw.items()}
             manifest_path = output_dir / MANIFEST_FILENAME
             if manifest_path.exists():
-                for line in manifest_path.read_text(encoding="utf-8").splitlines():
-                    line = line.strip()
-                    if not line:
+                for raw_line in manifest_path.read_text(encoding="utf-8").splitlines():
+                    stripped = raw_line.strip()
+                    if not stripped:
                         continue
                     try:
-                        rec = json.loads(line)
+                        rec = json.loads(stripped)
                     except json.JSONDecodeError:
                         # Skip malformed manifest lines defensively;
                         # surfacing every parse error would block
@@ -421,7 +423,12 @@ class RecognitionWriter:
     def __enter__(self) -> RecognitionWriter:
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: object,
+    ) -> None:
         # Always finalize the on-disk state, even on render failure —
         # the user should be able to inspect a partial run rather than
         # losing the manifest of "what was attempted before the crash."
