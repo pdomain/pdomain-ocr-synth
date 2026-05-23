@@ -1,4 +1,4 @@
-"""Guard tests for ``docs/conventions/lint-deviations.md``.
+"""Guard tests for ``docs/process/lint-deviations.md``.
 
 The lint-deviations doc catalogues every standing lint-rule suppression in
 the repo (ruff ``ignore`` / ``per-file-ignores`` and inline
@@ -14,7 +14,7 @@ import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEVIATIONS_DOC = REPO_ROOT / "docs" / "conventions" / "lint-deviations.md"
+DEVIATIONS_DOC = REPO_ROOT / "docs" / "process" / "lint-deviations.md"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 
 # Inline-suppression marker comments.
