@@ -14,7 +14,7 @@ else
 
 .PHONY: setup install uninstall remove-venv reset reset-full upgrade-deps \
 	test test-verbose test-single test-k coverage \
-	lint py-lint md-lint lint-fix py-lint-fix md-lint-fix format \
+	lint py-lint md-lint lint-fix py-lint-fix md-lint-fix format format-check \
 	pre-commit-check typecheck ci build clean clean-cache \
 	fetch-fonts gaelic-preview \
 	release-patch release-minor release-major _do-release help
@@ -130,6 +130,11 @@ format: ## Format code
 	@echo "✨ Formatting code..."
 	uv run ruff format
 	@$(MAKE) --no-print-directory lint
+
+format-check: ## Check code formatting without modifying files
+	@echo "🔍 Checking code formatting (no changes)..."
+	uv run ruff format --check
+	uv run ruff check
 
 pre-commit-check: ## Run pre-commit on all files
 	@echo "🪝 Running pre-commit on all files..."
