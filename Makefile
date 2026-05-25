@@ -143,10 +143,11 @@ pre-commit-check: ## Run pre-commit on all files
 typecheck: ## Run basedpyright at recommended mode (workspace canonical)
 	uv run basedpyright src/pd_ocr_synth --level error
 
-ci: ## Run complete CI pipeline (setup, pre-commit, typecheck, test, build)
+ci: ## Run complete CI pipeline (setup, pre-commit, format-check, typecheck, test, build)
 	@echo "🚀 Running complete CI pipeline..."
 	@$(MAKE) --no-print-directory setup
 	@$(MAKE) --no-print-directory pre-commit-check
+	@$(MAKE) --no-print-directory format-check
 	@$(MAKE) --no-print-directory typecheck
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory build
