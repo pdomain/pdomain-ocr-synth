@@ -14,7 +14,7 @@ Architecture: `docs/specs/00-overview.md`.
 | `make test AI=1` | `uv run pytest -n auto` |
 | `make lint AI=1` / `make lint-fix AI=1` | ruff + markdownlint via pre-commit (with auto-fix) |
 | `make format AI=1` | ruff format then lint |
-| `make ci AI=1` | setup → pre-commit → test → build |
+| `make ci AI=1` | setup → pre-commit → format-check → typecheck → test → build |
 | `make schema AI=1` | regenerate `docs/specs/recipe.schema.json` from pydantic models |
 | `make fetch-fonts` | download Gaelic fonts (interactive — do not run non-interactively) |
 | `make gaelic-preview AI=1` | render 50 preview samples for the Gaelic recipe (requires M07) |
