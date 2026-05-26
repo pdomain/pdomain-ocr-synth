@@ -798,7 +798,6 @@ wheels = [
 
 [[package]]
 name = "pdomain-ocr-synth"
-version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -864,7 +863,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "uharfbuzz", specifier = ">=0.39" },
 ]
-provides-extras = ["ui", "publish"]
+provides-extras = ["publish", "ui"]
 
 [package.metadata.requires-dev]
 all-dev = [
