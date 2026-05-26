@@ -18,12 +18,12 @@ Adopt the same target catalog, with the same emoji + help-text style:
 - [x] `setup` — `uv sync --group all-dev` then
       `uv run pre-commit install` (the dev-env target)
 - [x] `install` / `uninstall` — `uv tool install --reinstall .` /
-      `uv tool uninstall pd-ocr-synth` (puts the CLI on PATH for
+      `uv tool uninstall pdomain-ocr-synth` (puts the CLI on PATH for
       end-users, separate from dev setup)
 - [x] `remove-venv`, `reset`, `reset-full`, `upgrade-deps`
 - [x] `upgrade-deps` MUST honor the dev-local detection contract in
       [13 — Dev-local mode and dependency upgrades](../specs/13-dev-local-mode-and-deps.md):
-      probe `uv pip show pd-book-tools` for `Editable project location`,
+      probe `uv pip show pdomain-book-tools` for `Editable project location`,
       fall back to a `.venv/pd-dev-local` marker, last-resort
       `PD_DEV_LOCAL=1` env var; refuse-with-message when dev-local is
       detected, leave canonical-mode behavior unchanged, and ship a
@@ -71,12 +71,12 @@ Match the peer pattern of multiple optional groups:
       and unimplemented subcommands that print "not implemented yet"
       and exit 2.
 - [x] Console script registered in `pyproject.toml`:
-      `pd-ocr-synth = "pd_ocr_synth.cli:main"`.
+      `pdomain-ocr-synth = "pd_ocr_synth.cli:main"`.
 
 ### `tests/`
 
 - [x] `tests/conftest.py` with shared fixtures (`tmp_path`-style helpers)
-- [x] `tests/test_smoke.py` — `pd-ocr-synth --version` returns 0
+- [x] `tests/test_smoke.py` — `pdomain-ocr-synth --version` returns 0
 - [x] `tests/test_cli.py` — every subcommand prints help with `--help`
 - [x] Markers config in `pyproject.toml`: `unit`, `integration`, `slow`,
       `gpu`
@@ -95,7 +95,7 @@ Match the peer pattern of multiple optional groups:
 We deliberately do **not** ship a `dev-env-setup.sh`. The peer
 `pd-ocr-trainer/dev-env-setup.sh` is a legacy artifact from before
 the uv-based Makefile (it uses `python3 -m venv` + `pip install
--r requirements.txt`). For pd-ocr-synth, `make setup` is the
+-r requirements.txt`). For pdomain-ocr-synth, `make setup` is the
 complete dev environment setup, and `make fetch-fonts` is the
 optional follow-up. `make install` is reserved for actually
 installing the CLI as a uv tool — semantic separation that matches
@@ -105,20 +105,20 @@ Makefile) keeps developer expectations from drifting.
 ### Devcontainer integration (optional but matches workspace)
 
 - [ ] If the workspace devcontainer auto-discovers projects, ensure
-      `pd-ocr-synth` is included in any post-create steps. Otherwise
+      `pdomain-ocr-synth` is included in any post-create steps. Otherwise
       defer to a workspace-level change. **Deferred — low priority.**
 
 ## Validation criteria
 
 ```bash
-git clone .../pd-ocr-synth
-cd pd-ocr-synth
+git clone .../pdomain-ocr-synth
+cd pdomain-ocr-synth
 make setup        # green; venv built; pre-commit installed
 make test         # green; smoke + cli help tests pass
 make lint         # green
 make build        # green; produces dist/
-pd-ocr-synth --version   # prints "pd-ocr-synth 0.0.1"
-pd-ocr-synth render gaelic
+pdomain-ocr-synth --version   # prints "pdomain-ocr-synth 0.0.1"
+pdomain-ocr-synth render gaelic
 # → "render: not implemented yet" (exit 2)
 ```
 

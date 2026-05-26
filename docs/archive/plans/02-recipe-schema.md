@@ -14,10 +14,10 @@ Spec: [`02-recipe-format.md`](../specs/02-recipe-format.md).
   built-in error locations are good enough for now.
 - `--offline` flag exists on `validate` but is a no-op until M03 wires
   network checks.
-- `pd-ocr-synth validate gaelic` exits 3 in a fresh checkout (missing
+- `pdomain-ocr-synth validate gaelic` exits 3 in a fresh checkout (missing
   ``$PD_ML_MODELS``, missing seed-words.txt, missing aged-paper
   textures). Setting up those inputs is part of using the recipe, not
-  a M02 deficiency. Run `pd-ocr-synth describe ./recipes/gaelic.yaml`
+  a M02 deficiency. Run `pdomain-ocr-synth describe ./recipes/gaelic.yaml`
   for a full resolved-config dump.
 
 ## Deliverables
@@ -50,17 +50,17 @@ Spec: [`02-recipe-format.md`](../specs/02-recipe-format.md).
 
 Implement these subcommands (already stubbed in M01):
 
-- [x] `pd-ocr-synth list` — walk recipe search path, print `name → path`.
-- [x] `pd-ocr-synth validate <recipe>` — run validation, exit 0/3.
-- [x] `pd-ocr-synth describe <recipe>` — dump resolved config + corpus
+- [x] `pdomain-ocr-synth list` — walk recipe search path, print `name → path`.
+- [x] `pdomain-ocr-synth validate <recipe>` — run validation, exit 0/3.
+- [x] `pdomain-ocr-synth describe <recipe>` — dump resolved config + corpus
       stats placeholder ("corpora: 3 (not fetched)" until M03).
-- [x] `pd-ocr-synth init <name>` — scaffold `recipes/<name>/recipe.yaml`
+- [x] `pdomain-ocr-synth init <name>` — scaffold `recipes/<name>/recipe.yaml`
       from a template using questions from the spec's "Decide what
       you're targeting" tutorial.
 
 ### JSON Schema export
 
-- [x] `pd-ocr-synth schema` (or a Make target) emits
+- [x] `pdomain-ocr-synth schema` (or a Make target) emits
       `docs/specs/recipe.schema.json` from the pydantic models. This
       enables the YAML language server to give recipe authors live
       validation in editors.
@@ -77,11 +77,11 @@ Implement these subcommands (already stubbed in M01):
 ## Validation criteria
 
 ```bash
-pd-ocr-synth validate gaelic        # exit 0, prints "OK"
-pd-ocr-synth validate broken-yaml   # exit 3, line-accurate error
-pd-ocr-synth list                   # shows: gaelic → recipes/gaelic.yaml
-pd-ocr-synth describe gaelic        # prints resolved config block
-pd-ocr-synth init fraktur           # creates recipes/fraktur/recipe.yaml
+pdomain-ocr-synth validate gaelic        # exit 0, prints "OK"
+pdomain-ocr-synth validate broken-yaml   # exit 3, line-accurate error
+pdomain-ocr-synth list                   # shows: gaelic → recipes/gaelic.yaml
+pdomain-ocr-synth describe gaelic        # prints resolved config block
+pdomain-ocr-synth init fraktur           # creates recipes/fraktur/recipe.yaml
 ```
 
 The exported `recipe.schema.json` opens cleanly in VS Code with the

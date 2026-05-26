@@ -1,10 +1,10 @@
 # M07 — Output: recognition mode (complete)
 
-**Status:** ✅ landed on `main`. End-to-end `pd-ocr-synth render` writes
+**Status:** ✅ landed on `main`. End-to-end `pdomain-ocr-synth render` writes
 the `pd-ocr-trainer/v1` recognition profile that the trainer consumes
 unchanged.
 
-**Goal:** end-to-end render: `pd-ocr-synth render gaelic` produces the
+**Goal:** end-to-end render: `pdomain-ocr-synth render gaelic` produces the
 configured `output.count` samples in the trainer's recognition layout.
 
 Spec: [`08-output-format.md`](../specs/08-output-format.md).
@@ -74,10 +74,10 @@ Spec: [`08-output-format.md`](../specs/08-output-format.md).
 
 ### CLI surface
 
-- [x] `pd-ocr-synth render <recipe>` — full run.
-- [x] `pd-ocr-synth render <recipe> -c 500 -o /tmp/X` — overrides for
+- [x] `pdomain-ocr-synth render <recipe>` — full run.
+- [x] `pdomain-ocr-synth render <recipe> -c 500 -o /tmp/X` — overrides for
       smoke tests.
-- [x] `pd-ocr-synth render <recipe> --dry-run` — print plan (sample
+- [x] `pdomain-ocr-synth render <recipe> --dry-run` — print plan (sample
       count, output dir, fonts, transforms, corpus chars) without
       writing.
 
@@ -92,18 +92,18 @@ Spec: [`08-output-format.md`](../specs/08-output-format.md).
 ## Validation criteria
 
 ```bash
-pd-ocr-synth render gaelic
+pdomain-ocr-synth render gaelic
 # → N PNG files + labels.json + manifest.jsonl + recipe.snapshot.yaml + stats.json
 # → wall time + rate printed
 # → exit 0
 
-pd-ocr-synth render gaelic   # re-run
+pdomain-ocr-synth render gaelic   # re-run
 # → "destination not empty; pass --force or --resume" (exit 6)
 
-pd-ocr-synth render gaelic --resume
+pdomain-ocr-synth render gaelic --resume
 # → skips through existing samples; renders any remaining
 
-pd-ocr-synth render gaelic --dry-run
+pdomain-ocr-synth render gaelic --dry-run
 # → prints planned config without writing
 ```
 

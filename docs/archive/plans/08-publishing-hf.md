@@ -1,6 +1,6 @@
 # M08 — Publishing to Hugging Face
 
-**Goal:** `pd-ocr-synth publish gaelic` ships rendered output to a HF
+**Goal:** `pdomain-ocr-synth publish gaelic` ships rendered output to a HF
 dataset repo, idempotent and provenance-stamped, consumable by the
 trainer's HF source path (per the workspace
 [`DATASETS.md`](../../../DATASETS.md)).
@@ -60,7 +60,7 @@ Spec: [`10-publishing.md`](../specs/10-publishing.md).
       `HfHubTransport.create_tag` uses `exist_ok=True`.)
 - [x] `--message` overrides the auto-generated commit message.
       (`pd_ocr_synth.publish.commit_message.resolve_commit_message`;
-      default falls back to `pd-ocr-synth render @<recipe-sha>` derived
+      default falls back to `pdomain-ocr-synth render @<recipe-sha>` derived
       from the staging README's `pd-ocr-recipe-sha`. The
       `upload_large_folder` SDK call cannot stamp `commit_message`
       on the remote commit — flag accepted with a stderr warning;
@@ -69,7 +69,7 @@ Spec: [`10-publishing.md`](../specs/10-publishing.md).
 
 ### CLI surface
 
-- [x] `pd-ocr-synth publish <recipe>` (defaults from recipe
+- [x] `pdomain-ocr-synth publish <recipe>` (defaults from recipe
       `publish:` block). (`cli.py` + `publish.cli_runner.cmd_publish`;
       missing `--repo` falls back to `recipe.publish.hf_dataset.repo`.)
 - [x] `--repo`, `--private`, `--public`, `--token`, `--tag`,
@@ -193,7 +193,7 @@ following gaps remain — pick any of them as a future small chunk.
       `HfApi.delete_repo(missing_ok=True)` in a `finally`-shaped
       fixture; cleanup errors are swallowed so a transient HF outage
       at teardown doesn't mask a real test failure. The default repo
-      is `ConcaveTrillion/pd-ocr-synth-livetest-recognition`,
+      is `ConcaveTrillion/pdomain-ocr-synth-livetest-recognition`,
       overrideable via `PD_OCR_SYNTH_HF_E2E_REPO=OWNER/NAME`. Three
       always-on collection-sanity tests in the same file lock the
       gating helper (`_live_enabled`) and the default-repo invariant
@@ -216,19 +216,19 @@ following gaps remain — pick any of them as a future small chunk.
 
 ```bash
 # Local prerequisites
-pd-ocr-synth render gaelic
+pdomain-ocr-synth render gaelic
 export HF_TOKEN=hf_...
 
 # Dry-run preview
-pd-ocr-synth publish gaelic --dry-run
+pdomain-ocr-synth publish gaelic --dry-run
 # → prints plan; no commit
 
 # Real publish to a personal namespace
-pd-ocr-synth publish gaelic --repo me/pd-ocr-synth-gaelic
+pdomain-ocr-synth publish gaelic --repo me/pdomain-ocr-synth-gaelic
 # → auto-creates repo, uploads, reports commit SHA
 
 # Re-run with no changes
-pd-ocr-synth publish gaelic --repo me/pd-ocr-synth-gaelic
+pdomain-ocr-synth publish gaelic --repo me/pdomain-ocr-synth-gaelic
 # → "no changes" exit 0; no new commit
 ```
 
