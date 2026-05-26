@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.audit`` (M10 stretch).
+"""Unit tests for ``pdomain_ocr_synth.audit`` (M10 stretch).
 
 Per-render audit JSONL log: one line per ``run_recipe`` invocation,
 recording timestamp, recipe identity (name + source SHA), seed, and
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.audit import (
+from pdomain_ocr_synth.audit import (
     AUDIT_DISABLE_ENV,
     AUDIT_FILENAME,
     AUDIT_SCHEMA_VERSION,

@@ -27,7 +27,7 @@ degradation_presets:         # optional; named groups expanded into `degradation
   ...
 degradation:                 # optional; ordered pipeline
   - ...
-publish:                     # optional; defaults for `pd-ocr-synth publish`
+publish:                     # optional; defaults for `pdomain-ocr-synth publish`
   ...
 ```
 
@@ -206,13 +206,13 @@ See [07 — Degradation](07-degradation.md).
 
 ## `publish`
 
-Optional defaults consumed by `pd-ocr-synth publish` (see
+Optional defaults consumed by `pdomain-ocr-synth publish` (see
 [10 — Publishing](10-publishing.md)).
 
 ```yaml
 publish:
   hf_dataset:
-    repo: ntw8532/pd-ocr-synth-gaelic   # required when block present
+    repo: ntw8532/pdomain-ocr-synth-gaelic   # required when block present
     private: false
     license: cc-by-4.0
     tags: [ocr, gaelic, irish, pd-ocr, synthetic]
@@ -220,12 +220,12 @@ publish:
     description_file: ./gaelic/README.md.template   # optional
 ```
 
-If absent, `pd-ocr-synth publish <recipe>` requires `--repo` on the
+If absent, `pdomain-ocr-synth publish <recipe>` requires `--repo` on the
 command line. CLI flags always override recipe values.
 
 ## Validation rules (summary)
 
-`pd-ocr-synth validate <recipe>` enforces:
+`pdomain-ocr-synth validate <recipe>` enforces:
 
 1. Required top-level keys are present.
 2. `schema_version` matches a supported version.
@@ -247,7 +247,7 @@ Network reachability is **not** checked at validate time. Validate
 accepts `--offline` for symmetry with `lint`, but the flag is a
 pass-through today: per-corpus-entry cache-presence checks are
 deferred. The `--offline` contract is enforced at fetch time —
-`pd-ocr-synth fetch` (and the corpus stage of `render`) raise
+`pdomain-ocr-synth fetch` (and the corpus stage of `render`) raise
 `OfflineCacheMissError` on a cache miss when offline. See
 `docs/roadmap/03-corpus.md` "Cache layer" for the runtime semantics.
 

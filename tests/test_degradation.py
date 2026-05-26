@@ -24,9 +24,9 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.degradation import REGISTRY, DegradationError, apply_degradation
-from pd_ocr_synth.recipe.models import DegradationStage
-from pd_ocr_synth.render.sample import GlyphRun, LineBox, ParagraphBox, RenderedSample, WordBox
+from pdomain_ocr_synth.degradation import REGISTRY, DegradationError, apply_degradation
+from pdomain_ocr_synth.recipe.models import DegradationStage
+from pdomain_ocr_synth.render.sample import GlyphRun, LineBox, ParagraphBox, RenderedSample, WordBox
 
 # ---------------------------------------------------------------------------
 # fixtures

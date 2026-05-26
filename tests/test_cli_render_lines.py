@@ -1,4 +1,4 @@
-"""End-to-end tests for ``pd-ocr-synth render`` with ``layout.mode = lines``.
+"""End-to-end tests for ``pdomain-ocr-synth render`` with ``layout.mode = lines``.
 
 Exercises the M09 dispatch chunk: a recipe with ``output.mode =
 recognition`` + ``layout.mode = lines`` should walk the same writer
@@ -17,13 +17,13 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
-from pd_ocr_synth.output.recognition import (
+from pdomain_ocr_synth.cli import main
+from pdomain_ocr_synth.output.recognition import (
     LABELS_FILENAME,
     MANIFEST_FILENAME,
     STATS_FILENAME,
 )
-from pd_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
+from pdomain_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"

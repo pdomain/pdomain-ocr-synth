@@ -1,7 +1,7 @@
 """Drift guard: ``docs/specs/recipe.schema.json`` ↔ pydantic ``Recipe`` model.
 
 The JSON schema artifact at ``docs/specs/recipe.schema.json`` is generated
-by ``make schema`` (which invokes ``pd-ocr-synth schema -o ...``) from
+by ``make schema`` (which invokes ``pdomain-ocr-synth schema -o ...``) from
 ``Recipe.model_json_schema()``. There is no automatic hook that runs the
 regen, so a contributor can land a Recipe-model field change without
 remembering to refresh the artifact — leaving the published JSON-Schema
@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pd_ocr_synth.recipe.models import Recipe
+from pdomain_ocr_synth.recipe.models import Recipe
 
 # ---------------------------------------------------------------------------
 # Locate the artifact relative to the repo root (this file lives in tests/).
@@ -33,7 +33,7 @@ SCHEMA_ARTIFACT = REPO_ROOT / "docs" / "specs" / "recipe.schema.json"
 def _generate_schema_text() -> str:
     """Reproduce ``_cmd_schema``'s file-write content exactly.
 
-    Mirrors ``src/pd_ocr_synth/cli.py::_cmd_schema``:
+    Mirrors ``src/pdomain_ocr_synth/cli.py::_cmd_schema``:
       - ``Recipe.model_json_schema()``
       - ``json.dumps(..., indent=2, sort_keys=False)``
       - trailing ``"\n"`` on file write
@@ -77,7 +77,7 @@ def test_schema_artifact_matches_recipe_model() -> None:
         defs_removed = sorted(actual_defs - expected_defs)
 
         diag_lines = [
-            "docs/specs/recipe.schema.json is out of sync with pd_ocr_synth.recipe.models.Recipe.",
+            "docs/specs/recipe.schema.json is out of sync with pdomain_ocr_synth.recipe.models.Recipe.",
             "Run `make schema` to regenerate, then commit the result.",
         ]
         if added or removed:

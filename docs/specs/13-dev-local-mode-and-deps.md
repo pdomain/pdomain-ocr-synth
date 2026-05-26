@@ -1,7 +1,7 @@
 # 13 — Dev-local mode and dependency upgrades
 
 This spec captures a workspace-wide hazard around `uv sync` and how
-`pd-ocr-synth` must behave once the Makefile gains an `upgrade-deps`
+`pdomain-ocr-synth` must behave once the Makefile gains an `upgrade-deps`
 target (already stubbed in M01) so it does not silently undo a
 contributor's local development setup.
 
@@ -18,7 +18,7 @@ Across the workspace, several `pd-*` repos can be put into a
 projects as **editable installs from the local checkout** (instead of
 the canonical published wheels), pins to **GPU extras**, or pulls
 `python-doctr` from a git ref. This is how cross-repo work happens —
-e.g. exercising an unreleased `pd-book-tools` change from
+e.g. exercising an unreleased `pdomain-book-tools` change from
 `pd-ocr-trainer`, or running a synth recipe against a local
 `pd-ocr-trainer` profile writer.
 
@@ -30,12 +30,12 @@ disappear, GPU extras drop out, doctr-from-git collapses to the pinned
 release. The contributor only finds out when their next test run
 unexpectedly fails to pick up changes in a sibling repo.
 
-`pd-ocr-synth` does not (today) install editable sibling pd-* repos —
+`pdomain-ocr-synth` does not (today) install editable sibling pd-* repos —
 its only direct workspace coupling is the **output contract** with
 `pd-ocr-trainer`'s `dataset_store.py`, not a runtime dependency.
 However:
 
-1. Future milestones may add an editable `pd-book-tools` or
+1. Future milestones may add an editable `pdomain-book-tools` or
    `pd-ocr-trainer` install for integration tests (e.g. round-tripping
    a synth recipe through the trainer's dataset reader).
 2. The standardized fix should be uniform across all `pd-*` Makefiles
@@ -50,9 +50,9 @@ editable siblings.
 
 The behavior below applies to **whatever `upgrade-deps`-style target
 runs `uv sync`** in this repo's Makefile. It is written so the same
-text drops cleanly into peer repos (`pd-book-tools`, `pd-ocr-cli`,
-`pd-ocr-trainer`, `pd-ocr-labeler`, `pd-ocr-labeler-spa`,
-`pd-prep-for-pgdp`, `pd-png-optimizer`).
+text drops cleanly into peer repos (`pdomain-book-tools`, `pdomain-ocr-cli`,
+`pd-ocr-trainer`, `pd-ocr-labeler`, `pdomain-ocr-labeler-spa`,
+`pdomain-prep-for-pgdp`, `pd-png-optimizer`).
 
 ### 1. Detect dev-local vs canonical before `uv sync`
 
@@ -67,18 +67,18 @@ against an existing `.venv` from `upgrade-deps`.
 Detection probes in this order, taking the first signal found:
 
 1. **Primary — sibling editable probe.** Run
-   `uv pip show pd-book-tools` and look for an
+   `uv pip show pdomain-book-tools` and look for an
    `Editable project location:` line whose value is a path under the
-   workspace root (i.e. a sibling `pd-book-tools/` checkout).
-   `pd-book-tools` is the cross-repo contract anchor: every other pd-*
+   workspace root (i.e. a sibling `pdomain-book-tools/` checkout).
+   `pdomain-book-tools` is the cross-repo contract anchor: every other pd-*
    that participates in dev-local mode pins it editable, so its
    editable status is a reliable proxy for the whole environment.
-   If `uv pip show pd-book-tools` fails or returns no
+   If `uv pip show pdomain-book-tools` fails or returns no
    `Editable project location:` line, fall through to (2).
 2. **Fallback — venv marker file.** If `.venv/pd-dev-local` exists
    (a zero-byte sentinel written by `make upgrade-deps-local` /
    the dev-local setup recipe), treat as dev-local. This covers
-   environments where `pd-book-tools` legitimately is not installed
+   environments where `pdomain-book-tools` legitimately is not installed
    (e.g. a synth-only contributor) but the developer has explicitly
    opted into dev-local extras (GPU, doctr-from-git).
 3. **Last resort — env var.** If `PD_DEV_LOCAL=1` is set in the
@@ -94,7 +94,7 @@ If none of (1)/(2)/(3) signal dev-local, the venv is **canonical**.
   target MUST refuse with a clear message and exit non-zero **before**
   running `uv sync`. Recommended message:
 
-  > Detected dev-local venv (editable pd-book-tools / marker /
+  > Detected dev-local venv (editable pdomain-book-tools / marker /
   > PD_DEV_LOCAL). `make upgrade-deps` would revert this environment
   > to canonical published deps. Use `make upgrade-deps-local`
   > instead, or remove the marker / unset PD_DEV_LOCAL to opt into a
@@ -106,7 +106,7 @@ If none of (1)/(2)/(3) signal dev-local, the venv is **canonical**.
 - **Sibling target `make upgrade-deps-local`:** runs `uv lock
   --upgrade` then re-applies the dev-local installation recipe
   (editable siblings, GPU extras, doctr-from-git as applicable to
-  this repo). For pd-ocr-synth specifically the dev-local recipe is
+  this repo). For pdomain-ocr-synth specifically the dev-local recipe is
   TBD until a milestone needs it; until then `upgrade-deps-local`
   may simply alias the canonical sync with a banner noting that
   no dev-local extras apply yet.
@@ -124,29 +124,29 @@ beyond `grep` / `test`). The marker file path uses POSIX-style
 `.venv/pd-dev-local`; on Windows uv venvs the equivalent path under
 `.venv\` is acceptable.
 
-## Why pd-book-tools as the anchor
+## Why pdomain-book-tools as the anchor
 
-The probe deliberately targets `pd-book-tools` rather than this
+The probe deliberately targets `pdomain-book-tools` rather than this
 repo's own metadata because:
 
-- `pd-book-tools` is the foundation library every other `pd-*` depends
+- `pdomain-book-tools` is the foundation library every other `pd-*` depends
   on, so its editable install is the single most reliable signal that
   the venv is wired for cross-repo work.
 - Anchoring on a sibling means the same Makefile snippet works
   identically across the workspace — no per-repo customization of the
   primary probe, which is the whole point of standardizing.
-- Probing `pd-ocr-synth` itself is uninformative: a contributor doing
-  pure synth work may still install `pd-ocr-synth` editable inside
+- Probing `pdomain-ocr-synth` itself is uninformative: a contributor doing
+  pure synth work may still install `pdomain-ocr-synth` editable inside
   its own venv without that implying any dev-local intent.
 
 The marker file and env var exist to cover legitimate cases where
-`pd-book-tools` is absent but dev-local intent is real.
+`pdomain-book-tools` is absent but dev-local intent is real.
 
 ## Out of scope for this spec
 
 - The exact shell snippet for the detection (left to the Makefile
   PR that lands the implementation; the contract above is the spec).
-- The `dev-local` recipe contents for pd-ocr-synth (no editable
+- The `dev-local` recipe contents for pdomain-ocr-synth (no editable
   siblings yet — added when a future milestone introduces them).
-- Migrating other workspace repos; this spec describes pd-ocr-synth's
+- Migrating other workspace repos; this spec describes pdomain-ocr-synth's
   share of the standardized fix.

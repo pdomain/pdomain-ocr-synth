@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.validation``."""
+"""Tests for ``pdomain_ocr_synth.validation``."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.validation import (
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.validation import (
     KNOWN_DEGRADATION_KINDS,
     VALIDATION_CODES,
     ValidationReport,
@@ -120,7 +120,7 @@ def test_unimplemented_corpus_provider_is_error(tmp_path: Path) -> None:
     not register it yet — see ``docs/roadmap/03-corpus.md``
     "Built-in providers". Calling render on a recipe that uses it would
     raise ``ProviderError(f"unknown corpus provider 'hf_dataset' …")``
-    deep in :func:`pd_ocr_synth.corpus.runner.run_providers`, well
+    deep in :func:`pdomain_ocr_synth.corpus.runner.run_providers`, well
     after corpus-fetch + setup costs for any preceding entries.
 
     Mirrors the iter-65 ``degradation_kind_not_implemented`` precedent:
@@ -323,8 +323,8 @@ def test_unimplemented_text_transform_is_error(tmp_path: Path) -> None:
     not register it yet — see ``docs/roadmap/04-text-transforms.md``
     "Antique-conventions built-ins". Calling render on a recipe that
     uses it would raise
-    :class:`pd_ocr_synth.text_transforms.UnknownTransformError` deep in
-    :func:`pd_ocr_synth.text_transforms.apply_pipeline`, well after
+    :class:`pdomain_ocr_synth.text_transforms.UnknownTransformError` deep in
+    :func:`pdomain_ocr_synth.text_transforms.apply_pipeline`, well after
     corpus-fetch + setup costs.
 
     Mirrors the iter-65 ``degradation_kind_not_implemented`` / iter-73
@@ -391,7 +391,7 @@ def test_unimplemented_shaping_engine_is_error(tmp_path: Path) -> None:
 
     Spec 06 ("Shaping engine") and the recipe model
     (``Rendering.shaping_engine``) accept ``pillow`` alongside
-    ``harfbuzz``, but the M05 renderer in ``pd_ocr_synth.render.*``
+    ``harfbuzz``, but the M05 renderer in ``pdomain_ocr_synth.render.*``
     calls ``uharfbuzz`` unconditionally — there is no engine dispatch
     yet. ``docs/roadmap/05-rendering.md`` deliverable "Pillow-only
     fallback engine" is explicitly deferred. Without this validator
@@ -483,8 +483,8 @@ def test_implemented_shaping_engines_subset_of_model_literal() -> None:
 
     from typing import get_args
 
-    from pd_ocr_synth.recipe.models import Rendering
-    from pd_ocr_synth.validation import _IMPLEMENTED_SHAPING_ENGINES
+    from pdomain_ocr_synth.recipe.models import Rendering
+    from pdomain_ocr_synth.validation import _IMPLEMENTED_SHAPING_ENGINES
 
     model_literal = frozenset(get_args(Rendering.model_fields["shaping_engine"].annotation))
     assert model_literal >= _IMPLEMENTED_SHAPING_ENGINES, (
@@ -500,7 +500,7 @@ def test_unimplemented_antialiasing_false_is_error(
 
     Spec 06 "Size, color, DPI" advertises the flag and the recipe
     model defaults it to ``True``, but no renderer in
-    ``pd_ocr_synth.render.*`` reads ``recipe.rendering.antialiasing``
+    ``pdomain_ocr_synth.render.*`` reads ``recipe.rendering.antialiasing``
     — freetype-py / Pillow produce anti-aliased glyphs
     unconditionally. A recipe asking for aliased output (paleography
     sets that want hard-edge bitmap-style glyphs) would be silently
@@ -823,7 +823,7 @@ def test_unknown_option_table_covers_every_implemented_kind() -> None:
     """Meta-test: ``_DEGRADATION_OPTION_KEYS_BY_KIND`` must cover every
     runtime-registered kind whose options the user can tune.
 
-    If a new stage lands in ``pd_ocr_synth.degradation.builtins`` but
+    If a new stage lands in ``pdomain_ocr_synth.degradation.builtins`` but
     nobody adds it to the validate-time table, that stage's option keys
     silently fall back to the wide-open ``extra="allow"`` behavior —
     every typo gets ignored. Pin the invariant here so future stage
@@ -833,8 +833,8 @@ def test_unknown_option_table_covers_every_implemented_kind() -> None:
     validation runs); excluded from the requirement.
     """
 
-    from pd_ocr_synth.degradation.pipeline import REGISTRY, _ensure_builtins_registered
-    from pd_ocr_synth.validation import _DEGRADATION_OPTION_KEYS_BY_KIND
+    from pdomain_ocr_synth.degradation.pipeline import REGISTRY, _ensure_builtins_registered
+    from pdomain_ocr_synth.validation import _DEGRADATION_OPTION_KEYS_BY_KIND
 
     _ensure_builtins_registered()
     registered = frozenset(REGISTRY) - {"preset"}
@@ -855,7 +855,7 @@ def test_unknown_option_table_does_not_reference_nonexistent_kinds() -> None:
     means the typo breaks this test rather than being undiscoverable.
     """
 
-    from pd_ocr_synth.validation import _DEGRADATION_OPTION_KEYS_BY_KIND
+    from pdomain_ocr_synth.validation import _DEGRADATION_OPTION_KEYS_BY_KIND
 
     table_kinds = frozenset(_DEGRADATION_OPTION_KEYS_BY_KIND)
     unknown = table_kinds - KNOWN_DEGRADATION_KINDS
@@ -1111,7 +1111,7 @@ def test_known_degradation_kinds_matches_spec_doc() -> None:
     assert not missing_from_catalog, (
         f"docs/specs/07-degradation.md lists kinds not in "
         f"KNOWN_DEGRADATION_KINDS: {sorted(missing_from_catalog)}. "
-        "Update src/pd_ocr_synth/validation.py:KNOWN_DEGRADATION_KINDS."
+        "Update src/pdomain_ocr_synth/validation.py:KNOWN_DEGRADATION_KINDS."
     )
     assert not extra_in_catalog, (
         f"KNOWN_DEGRADATION_KINDS lists kinds not in "
@@ -1134,7 +1134,7 @@ def test_registered_degradation_kinds_subset_of_spec() -> None:
     validate time, so it's not asserted here.
     """
 
-    from pd_ocr_synth.degradation.pipeline import (
+    from pdomain_ocr_synth.degradation.pipeline import (
         REGISTRY,
         _ensure_builtins_registered,
     )
@@ -1280,7 +1280,7 @@ def test_spec_07_yaml_examples_match_option_whitelist() -> None:
         in lockstep with the whitelist.
     """
 
-    from pd_ocr_synth.validation import (
+    from pdomain_ocr_synth.validation import (
         _COMMON_DEGRADATION_OPTION_KEYS,
         _DEGRADATION_OPTION_KEYS_BY_KIND,
     )
@@ -1325,7 +1325,7 @@ def test_option_whitelist_keys_appear_in_spec_examples() -> None:
     is real, it should be discoverable there.
     """
 
-    from pd_ocr_synth.validation import _DEGRADATION_OPTION_KEYS_BY_KIND
+    from pdomain_ocr_synth.validation import _DEGRADATION_OPTION_KEYS_BY_KIND
 
     spec = _spec_per_stage_option_keys()
     drift: list[str] = []
@@ -1674,7 +1674,7 @@ def test_output_layout_mode_mismatch_message_cites_spec(
 def _layout_field_names() -> frozenset[str]:
     """Pydantic model fields on ``Layout``, including ``mode``."""
 
-    from pd_ocr_synth.recipe.models import Layout
+    from pdomain_ocr_synth.recipe.models import Layout
 
     return frozenset(Layout.model_fields.keys())
 
@@ -1682,7 +1682,7 @@ def _layout_field_names() -> frozenset[str]:
 def _permitted_layout_keys() -> frozenset[str]:
     """Union of keys permitted by any layout mode."""
 
-    from pd_ocr_synth.validation import _LAYOUT_KEYS_BY_MODE
+    from pdomain_ocr_synth.validation import _LAYOUT_KEYS_BY_MODE
 
     out: set[str] = set()
     for keys in _LAYOUT_KEYS_BY_MODE.values():
@@ -1704,8 +1704,8 @@ def test_permitted_layout_keys_are_all_layout_fields() -> None:
     assert not extra, (
         f"_LAYOUT_KEYS_BY_MODE lists keys not on the Layout model: "
         f"{sorted(extra)}. Either add the field to "
-        "src/pd_ocr_synth/recipe/models.py:Layout or drop the key from "
-        "_LAYOUT_KEYS_BY_MODE in src/pd_ocr_synth/validation.py."
+        "src/pdomain_ocr_synth/recipe/models.py:Layout or drop the key from "
+        "_LAYOUT_KEYS_BY_MODE in src/pdomain_ocr_synth/validation.py."
     )
 
 
@@ -1727,8 +1727,8 @@ def test_every_layout_field_appears_in_some_mode() -> None:
     assert not missing, (
         f"Layout fields not permitted in any mode by _LAYOUT_KEYS_BY_MODE: "
         f"{sorted(missing)}. Add each field to the appropriate mode(s) in "
-        "src/pd_ocr_synth/validation.py:_LAYOUT_KEYS_BY_MODE, or drop it "
-        "from src/pd_ocr_synth/recipe/models.py:Layout if it's truly unused."
+        "src/pdomain_ocr_synth/validation.py:_LAYOUT_KEYS_BY_MODE, or drop it "
+        "from src/pdomain_ocr_synth/recipe/models.py:Layout if it's truly unused."
     )
 
 
@@ -1744,8 +1744,8 @@ def test_permitted_layout_keys_table_modes_match_layout_mode_literal() -> None:
 
     import typing
 
-    from pd_ocr_synth.recipe.models import Layout
-    from pd_ocr_synth.validation import _LAYOUT_KEYS_BY_MODE
+    from pdomain_ocr_synth.recipe.models import Layout
+    from pdomain_ocr_synth.validation import _LAYOUT_KEYS_BY_MODE
 
     mode_field = Layout.model_fields["mode"]
     literal_modes = frozenset(typing.get_args(mode_field.annotation))
@@ -1759,7 +1759,7 @@ def test_permitted_layout_keys_table_modes_match_layout_mode_literal() -> None:
     assert not extra, (
         f"_LAYOUT_KEYS_BY_MODE lists modes not in Layout.mode: "
         f"{sorted(extra)}. Drop them from "
-        "src/pd_ocr_synth/validation.py:_LAYOUT_KEYS_BY_MODE."
+        "src/pdomain_ocr_synth/validation.py:_LAYOUT_KEYS_BY_MODE."
     )
 
 
@@ -1835,7 +1835,7 @@ def test_font_empty_is_error(
     the inspection step.
     """
 
-    from pd_ocr_synth import fonts as _fonts
+    from pdomain_ocr_synth import fonts as _fonts
 
     real_font = tmp_path / "real.otf"
     real_font.write_bytes(writable_font_bytes)
@@ -1849,7 +1849,7 @@ def test_font_empty_is_error(
             codepoints=frozenset(),
         )
 
-    # ``_check_fonts`` does a local ``from pd_ocr_synth.fonts import
+    # ``_check_fonts`` does a local ``from pdomain_ocr_synth.fonts import
     # ... open_font`` inside the loop, so patching the module attr
     # is what the import sees.
     monkeypatch.setattr(_fonts, "open_font", _fake_open_font)
@@ -1914,7 +1914,7 @@ def test_publish_description_file_missing_is_warning(
     yaml_text += (
         "publish:\n"
         "  hf_dataset:\n"
-        "    repo: example/pd-ocr-synth-test\n"
+        "    repo: example/pdomain-ocr-synth-test\n"
         f"    description_file: {ghost}\n"
     )
     recipe = load_recipe(_write(tmp_path, yaml_text))
@@ -1929,7 +1929,7 @@ def test_publish_repo_placeholder_is_warning(tmp_path: Path, writable_font_bytes
     """``publish.hf_dataset.repo`` left as ``CHANGE-ME/...`` must warn.
 
     The bundled ``recipes/gaelic.yaml`` ships with
-    ``repo: CHANGE-ME/pd-ocr-synth-gaelic`` so users can't push to a
+    ``repo: CHANGE-ME/pdomain-ocr-synth-gaelic`` so users can't push to a
     real namespace by accident. Validate surfaces the placeholder as a
     warning so they fix it before publish (which would 401 anyway).
     """
@@ -1941,7 +1941,7 @@ def test_publish_repo_placeholder_is_warning(tmp_path: Path, writable_font_bytes
         dest=str(tmp_path / "out"),
         corpus=str(_make_file(tmp_path / "seed.txt")),
     )
-    yaml_text += "publish:\n  hf_dataset:\n    repo: CHANGE-ME/pd-ocr-synth-test\n"
+    yaml_text += "publish:\n  hf_dataset:\n    repo: CHANGE-ME/pdomain-ocr-synth-test\n"
     recipe = load_recipe(_write(tmp_path, yaml_text))
     report = validate_recipe(recipe)
     assert report.errors == (), [i.format() for i in report.errors]
@@ -1992,7 +1992,7 @@ def test_schema_version_unsupported_emission_is_defensive(
     We exercise that path here so the catalog entry isn't dead code.
     """
 
-    from pd_ocr_synth.validation import _check_schema_version
+    from pdomain_ocr_synth.validation import _check_schema_version
 
     font = tmp_path / "fake.otf"
     font.write_bytes(writable_font_bytes)
@@ -2024,7 +2024,7 @@ def test_schema_version_unsupported_emission_is_defensive(
 # by ``validate_recipe`` must appear in ``VALIDATION_CODES``, so a new
 # ``ValidationIssue(code=...)`` site can't ship undocumented.
 #
-# Strategy: static scan over ``src/pd_ocr_synth/validation.py``. The
+# Strategy: static scan over ``src/pdomain_ocr_synth/validation.py``. The
 # fixtures above directly assert each previously-uncovered code emits
 # at the right severity, so the runtime ⊆ catalog *and* the
 # every-code-has-a-fixture halves of the contract are both covered.
@@ -2035,7 +2035,7 @@ def test_VALIDATION_CODES_covers_every_emission_site() -> None:  # noqa: N802
     """Every ``code="..."`` in validation.py must appear in VALIDATION_CODES.
 
     Static scan of the source: walks every ``code="..."`` assignment
-    site in ``src/pd_ocr_synth/validation.py`` and asserts the literal
+    site in ``src/pdomain_ocr_synth/validation.py`` and asserts the literal
     is in ``VALIDATION_CODES``. Any new emission site that lands
     without registering its code surfaces here, before users discover
     it via ``validate --json`` and grep'd CI logs.
@@ -2048,13 +2048,13 @@ def test_VALIDATION_CODES_covers_every_emission_site() -> None:  # noqa: N802
     import re as _re
 
     src = (
-        Path(__file__).resolve().parent.parent / "src" / "pd_ocr_synth" / "validation.py"
+        Path(__file__).resolve().parent.parent / "src" / "pdomain_ocr_synth" / "validation.py"
     ).read_text(encoding="utf-8")
     emitted = set(_re.findall(r'code="([a-z_]+)"', src))
     leaked = emitted - VALIDATION_CODES
     assert not leaked, (
         f"validation.py emits code(s) not in VALIDATION_CODES: {sorted(leaked)}. "
-        "Add them to src/pd_ocr_synth/validation.py:VALIDATION_CODES and "
+        "Add them to src/pdomain_ocr_synth/validation.py:VALIDATION_CODES and "
         "document them in docs/specs/01-cli.md's 'Validation codes' table."
     )
 
@@ -2062,7 +2062,7 @@ def test_VALIDATION_CODES_covers_every_emission_site() -> None:  # noqa: N802
 def test_VALIDATION_CODES_no_stale_entries() -> None:  # noqa: N802
     """Every code in ``VALIDATION_CODES`` must have an emission site.
 
-    Inverse of the previous test: walks ``src/pd_ocr_synth/validation.py``
+    Inverse of the previous test: walks ``src/pdomain_ocr_synth/validation.py``
     for every ``code="..."`` literal and confirms ``VALIDATION_CODES``
     contains no extras. A stale catalog entry left behind after a
     helper was removed (or after a code was renamed) surfaces here,
@@ -2078,13 +2078,13 @@ def test_VALIDATION_CODES_no_stale_entries() -> None:  # noqa: N802
     import re as _re
 
     src = (
-        Path(__file__).resolve().parent.parent / "src" / "pd_ocr_synth" / "validation.py"
+        Path(__file__).resolve().parent.parent / "src" / "pdomain_ocr_synth" / "validation.py"
     ).read_text(encoding="utf-8")
     emitted = set(_re.findall(r'code="([a-z_]+)"', src))
     stale = sorted(VALIDATION_CODES - emitted)
     assert not stale, (
         f"VALIDATION_CODES contains code(s) not emitted by validation.py: {stale}. "
-        "Drop them from src/pd_ocr_synth/validation.py:VALIDATION_CODES and "
+        "Drop them from src/pdomain_ocr_synth/validation.py:VALIDATION_CODES and "
         "from the 'Validation codes' table in docs/specs/01-cli.md."
     )
 

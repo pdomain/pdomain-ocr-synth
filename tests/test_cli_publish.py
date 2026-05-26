@@ -1,4 +1,4 @@
-"""End-to-end tests for ``pd-ocr-synth publish --dry-run`` (M08).
+"""End-to-end tests for ``pdomain-ocr-synth publish --dry-run`` (M08).
 
 Per ``docs/specs/10-publishing.md`` § Dry run + the matching M08
 deliverable in ``docs/roadmap/08-publishing-hf.md``, the dry-run
@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.cli import main
 
 # Bundled Bunchló GC font, same one the M07 render tests use. Skipping
 # when missing keeps CI green on minimal checkouts.
@@ -65,7 +65,7 @@ _RECIPE_WITH_PUBLISH = (
     + """\
 publish:
   hf_dataset:
-    repo: ntw8532/pd-ocr-synth-publish-smoke
+    repo: ntw8532/pdomain-ocr-synth-publish-smoke
     license: cc-by-4.0
 """
 )
@@ -127,7 +127,7 @@ def test_publish_dry_run_prints_plan_and_exits_zero(
             "publish",
             str(rp),
             "--repo",
-            "alice/pd-ocr-synth-test",
+            "alice/pdomain-ocr-synth-test",
             "--dry-run",
         ]
     )
@@ -135,7 +135,7 @@ def test_publish_dry_run_prints_plan_and_exits_zero(
     assert rc == 0, captured.err
 
     text = captured.out
-    assert "Would upload to: alice/pd-ocr-synth-test (public)" in text
+    assert "Would upload to: alice/pdomain-ocr-synth-test (public)" in text
     assert "Files:" in text
     # Spec 10 § Dry run shows a Dataset card preview + Content SHA line.
     assert "Dataset card preview:" in text
@@ -163,7 +163,7 @@ def test_publish_dry_run_uses_recipe_default_repo(
     rc = main(["publish", str(rp), "--dry-run"])
     captured = capsys.readouterr()
     assert rc == 0, captured.err
-    assert "ntw8532/pd-ocr-synth-publish-smoke" in captured.out
+    assert "ntw8532/pdomain-ocr-synth-publish-smoke" in captured.out
 
 
 def test_publish_dry_run_private_flag_overrides_visibility(
@@ -357,13 +357,13 @@ def test_publish_real_upload_with_sdk_unavailable_exits_seven(
     when ``huggingface_hub`` is importable. To exercise the
     ``[publish]`` extra-not-installed path without uninstalling the
     SDK from the test env (which would break sibling tests sharing the
-    worker), we patch ``pd_ocr_synth.publish.cli_runner.make_default_transport``
+    worker), we patch ``pdomain_ocr_synth.publish.cli_runner.make_default_transport``
     to raise :class:`SdkUnavailableError` directly. The CLI runner
     must catch it via the existing :class:`TransportError` branch and
     exit 7 with the install-hint message.
     """
 
-    from pd_ocr_synth.publish import SdkUnavailableError
+    from pdomain_ocr_synth.publish import SdkUnavailableError
 
     monkeypatch.setenv("HF_TOKEN", "hf_test_token_value_aaaaaaaaaaaaaaaaaaaa")
     monkeypatch.setenv("HF_HOME", str(tmp_path / "hf-home"))
@@ -371,11 +371,11 @@ def test_publish_real_upload_with_sdk_unavailable_exits_seven(
     def _raise(_token: str) -> None:
         raise SdkUnavailableError(
             "the Hugging Face SDK is not installed; "
-            "install with `pip install pd-ocr-synth[publish]`, or use "
+            "install with `pip install pdomain-ocr-synth[publish]`, or use "
             "--dry-run to preview the upload plan without an SDK"
         )
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner.make_default_transport", _raise)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner.make_default_transport", _raise)
 
     out = tmp_path / "trainer-out"
     rp = _setup_recipe(tmp_path, with_publish=False, dest=out)
@@ -387,7 +387,7 @@ def test_publish_real_upload_with_sdk_unavailable_exits_seven(
     assert rc == 7
     # The remediation hint should mention either the publish extra or
     # --dry-run so the user knows how to proceed.
-    assert "pd-ocr-synth[publish]" in err or "--dry-run" in err
+    assert "pdomain-ocr-synth[publish]" in err or "--dry-run" in err
 
 
 def test_publish_private_and_public_mutually_exclusive(
@@ -658,7 +658,7 @@ def test_publish_dry_run_dispatches_detection_mode(
             "publish",
             str(rp),
             "--repo",
-            "alice/pd-ocr-synth-detection-smoke",
+            "alice/pdomain-ocr-synth-detection-smoke",
             "--dry-run",
         ]
     )

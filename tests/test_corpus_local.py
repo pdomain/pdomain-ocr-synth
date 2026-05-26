@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.corpus.providers.local``."""
+"""Tests for ``pdomain_ocr_synth.corpus.providers.local``."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.corpus import (
+from pdomain_ocr_synth.corpus import (
     CacheStore,
     LocalProvider,
     ProviderContext,

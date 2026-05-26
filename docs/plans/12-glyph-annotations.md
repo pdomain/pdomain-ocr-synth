@@ -9,7 +9,7 @@ Spec: [`../specs/12-glyph-annotations-emission.md`](../specs/12-glyph-annotation
 
 Depends on: M07 (recognition writer), M09 (detection writer). The
 shared data model `GlyphAnnotations` / `LigatureMark` lives in
-`pd-book-tools` — coordinate that change first; synth imports the
+`pdomain-book-tools` — coordinate that change first; synth imports the
 enums.
 
 ## Deliverables
@@ -17,14 +17,14 @@ enums.
 ### Data-model dependency
 
 - [ ] Confirm `GlyphAnnotations` / `LigatureMark` / ligature-kind
-      enum landed in `pd-book-tools` and pin its version in
+      enum landed in `pdomain-book-tools` and pin its version in
       `pyproject.toml`.
 
 ### Recipe schema
 
 - [ ] Add `annotations:` block (M02 schema). Fields: `enabled`,
       `features.long_s`, `features.ligatures` (list of kind strings,
-      validated against the pd-book-tools enum), `features.swash`.
+      validated against the pdomain-book-tools enum), `features.swash`.
 - [ ] Default `annotations.enabled: true` so existing recipes opt in
       automatically; document the back-compat in the M02 changelog.
 - [ ] Update `recipe.schema.json` via `make schema`.
@@ -82,7 +82,7 @@ enums.
       pd-ocr-trainer import — same approach as M07's
       `test_render_labels_json_matches_trainer_recognition_contract`)
       asserts the `glyph_annotations.json` shape against the
-      pd-book-tools `GlyphAnnotations` model.
+      pdomain-book-tools `GlyphAnnotations` model.
 
 ### Spec cleanup
 

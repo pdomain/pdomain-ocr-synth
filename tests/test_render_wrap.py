@@ -22,9 +22,9 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.render import fit_lines
-from pd_ocr_synth.render.context import RenderContext
-from pd_ocr_synth.render.wrap import _measure_width_px
+from pdomain_ocr_synth.render import fit_lines
+from pdomain_ocr_synth.render.context import RenderContext
+from pdomain_ocr_synth.render.wrap import _measure_width_px
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"

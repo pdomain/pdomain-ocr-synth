@@ -1,6 +1,6 @@
 """Integration tests for the render audit log (M10 stretch).
 
-Drives ``pd-ocr-synth render`` end-to-end and asserts the audit JSONL
+Drives ``pdomain-ocr-synth render`` end-to-end and asserts the audit JSONL
 sidecar lands at ``<output>/_audit.jsonl`` with the right shape, that
 ``--no-audit`` suppresses emission, and that the
 ``PD_OCR_SYNTH_NO_AUDIT`` env var overrides even an enabled call.
@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.audit import AUDIT_DISABLE_ENV, AUDIT_FILENAME, AUDIT_SCHEMA_VERSION
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.audit import AUDIT_DISABLE_ENV, AUDIT_FILENAME, AUDIT_SCHEMA_VERSION
+from pdomain_ocr_synth.cli import main
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"
@@ -188,7 +188,7 @@ def test_render_audit_does_not_count_toward_labels_or_manifest(
     accidentally folds the audit row into stats.json fails loudly.
     """
 
-    from pd_ocr_synth.output.recognition import LABELS_FILENAME, STATS_FILENAME
+    from pdomain_ocr_synth.output.recognition import LABELS_FILENAME, STATS_FILENAME
 
     rp = _setup(tmp_path)
     out = tmp_path / "trainer-out"

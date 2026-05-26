@@ -1,7 +1,7 @@
-"""CLI tests for ``pd-ocr-synth audit`` (M10 stretch).
+"""CLI tests for ``pdomain-ocr-synth audit`` (M10 stretch).
 
 Exercises the read-side of the per-render audit log written by
-``render`` (see iter 45 / ``src/pd_ocr_synth/audit.py``). The write
+``render`` (see iter 45 / ``src/pdomain_ocr_synth/audit.py``). The write
 path is already covered by ``tests/test_cli_render_audit.py`` and
 ``tests/test_audit.py``; this file only asserts on the read-back
 subcommand:
@@ -26,13 +26,13 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.audit import (
+from pdomain_ocr_synth.audit import (
     AUDIT_FILENAME,
     AUDIT_SCHEMA_VERSION,
     AuditEntry,
     append_audit_entry,
 )
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.cli import main
 
 
 def _make_entry(
@@ -1235,7 +1235,7 @@ def test_audit_global_flag_reads_aggregate_path(
     that the flag short-circuits the positional.
     """
 
-    from pd_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
+    from pdomain_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
 
     cache_root = tmp_path / "cache"
     cache_root.mkdir()
@@ -1267,7 +1267,7 @@ def test_audit_global_flag_does_not_require_output_dir(
     handler accepts the missing positional in ``--global`` mode.
     """
 
-    from pd_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
+    from pdomain_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
 
     cache_root = tmp_path / "cache"
     cache_root.mkdir()
@@ -1366,7 +1366,7 @@ def test_audit_global_composes_with_filters(
     end-to-end is enough since the filter pipeline is shared.
     """
 
-    from pd_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
+    from pdomain_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
 
     cache_root = tmp_path / "cache"
     cache_root.mkdir()
@@ -1415,7 +1415,7 @@ def test_audit_global_with_summary_aggregates_aggregate_only(
     per-output-dir audit files — the aggregate stands alone.
     """
 
-    from pd_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
+    from pdomain_ocr_synth.audit import GLOBAL_AUDIT_FILENAME
 
     cache_root = tmp_path / "cache"
     cache_root.mkdir()

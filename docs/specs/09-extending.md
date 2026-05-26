@@ -40,13 +40,13 @@ and only apply within the recipe that names them.
 For reusable extensions, register via `pyproject.toml`:
 
 ```toml
-[project.entry-points."pd_ocr_synth.corpus_providers"]
+[project.entry-points."pdomain_ocr_synth.corpus_providers"]
 my_corpus = "my_pkg.providers:MyCorpus"
 
-[project.entry-points."pd_ocr_synth.text_transforms"]
+[project.entry-points."pdomain_ocr_synth.text_transforms"]
 my_transform = "my_pkg.transforms:my_transform"
 
-[project.entry-points."pd_ocr_synth.degradation_stages"]
+[project.entry-points."pdomain_ocr_synth.degradation_stages"]
 my_stage = "my_pkg.degradation:my_stage"
 ```
 
@@ -56,7 +56,7 @@ The CLI auto-discovers anything installed in the active Python env.
 
 ```python
 from typing import Iterable
-from pd_ocr_synth.corpus import ProviderContext
+from pdomain_ocr_synth.corpus import ProviderContext
 
 class MyCorpus:
     type_name = "my_corpus"
@@ -112,7 +112,7 @@ Stages may also accept and return ground-truth metadata when geometry
 changes. The richer signature:
 
 ```python
-from pd_ocr_synth.types import RenderedSample
+from pdomain_ocr_synth.types import RenderedSample
 
 def my_stage(sample: RenderedSample, options: dict, rng: Random) -> RenderedSample:
     """For stages that affect geometry (skew, perspective, scale)."""
@@ -132,7 +132,7 @@ def validate(options: dict, ctx: ValidationContext) -> list[ValidationIssue]:
     """Return zero or more issues. Empty list = OK."""
 ```
 
-This runs during `pd-ocr-synth validate` so the CLI surfaces problems
+This runs during `pdomain-ocr-synth validate` so the CLI surfaces problems
 before render time.
 
 ## Versioning the registry
@@ -150,7 +150,7 @@ If a recipe targets `schema_version: 1` but the loaded extension declares
 
 ## Testing your extension
 
-The repo ships a `pd_ocr_synth.testing` module with helpers:
+The repo ships a `pdomain_ocr_synth.testing` module with helpers:
 
 - `make_recipe(...)` — minimal recipe builder
 - `dummy_rng()` — deterministic RNG

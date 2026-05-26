@@ -2,20 +2,20 @@
 
 **Goal:** the repo exists, has a remote, and matches the workspace
 conventions established by `pd-ocr-trainer` / `pd-ocr-labeler` /
-`pd-book-tools`. No code yet; this milestone ends with `git clone`
+`pdomain-book-tools`. No code yet; this milestone ends with `git clone`
 producing a project that *looks* like its peers.
 
 ## Deliverables
 
 ### Repo & remote
 
-- [x] `git init` inside `pd-ocr-synth/` (currently a plain directory in
+- [x] `git init` inside `pdomain-ocr-synth/` (currently a plain directory in
       the workspace).
-- [x] Create empty GitHub repo at `ConcaveTrillion/pd-ocr-synth`
-      (matching the pd-book-tools owner used by the other projects).
+- [x] Create empty GitHub repo at `pdomain/pdomain-ocr-synth`
+      (matching the pdomain-book-tools owner used by the other projects).
 - [x] Add remote and push the initial commit:
       ```bash
-      git remote add origin git@github.com:ConcaveTrillion/pd-ocr-synth.git
+      git remote add origin git@github.com:pdomain/pdomain-ocr-synth.git
       git push -u origin main
       ```
 - [x] Set the default branch to `main` on GitHub.
@@ -64,8 +64,8 @@ The current stub is fine for spec; before pushing add:
 A new contributor running this works end-to-end:
 
 ```bash
-git clone git@github.com:ConcaveTrillion/pd-ocr-synth.git
-cd pd-ocr-synth
+git clone git@github.com:pdomain/pdomain-ocr-synth.git
+cd pdomain-ocr-synth
 ls
 ```
 

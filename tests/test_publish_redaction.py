@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.publish.redaction`` (M08).
+"""Unit tests for ``pdomain_ocr_synth.publish.redaction`` (M08).
 
 The helper is a pure-string regex utility: every test exercises one
 input/output mapping, no fixtures needed. The audit invariant the
@@ -12,7 +12,7 @@ opaquely on a string mismatch.
 
 from __future__ import annotations
 
-from pd_ocr_synth.publish.redaction import REDACTED_SENTINEL, redact_token
+from pdomain_ocr_synth.publish.redaction import REDACTED_SENTINEL, redact_token
 
 # ---------------------------------------------------------------------------
 # Happy paths: tokens are replaced

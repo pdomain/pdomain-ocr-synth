@@ -1,4 +1,4 @@
-"""Tests for the HTTP infra in ``pd_ocr_synth.corpus.http``."""
+"""Tests for the HTTP infra in ``pdomain_ocr_synth.corpus.http``."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from pd_ocr_synth.corpus.http import (
+from pdomain_ocr_synth.corpus.http import (
     DEFAULT_USER_AGENT,
     HostRateLimiter,
     build_client,

@@ -1,7 +1,7 @@
 """Tests for ``pages``-mode rendering primitive (M09).
 
 Mirrors the structure of ``test_render_paragraph.py`` but exercises
-:func:`pd_ocr_synth.render.render_page` — multiple stacked paragraphs,
+:func:`pdomain_ocr_synth.render.render_page` — multiple stacked paragraphs,
 with per-paragraph + per-line + per-word ground truth on a single
 page-shaped canvas.
 
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.render import (
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.render import (
     LineBox,
     MissingGlyphError,
     ParagraphBox,
@@ -712,9 +712,9 @@ def test_split_page_into_paragraph_lines_passes_indent_to_wrap_fitter(
     could change line 0's word count).
     """
 
-    from pd_ocr_synth.render.context import RenderContext as _RenderCtx
-    from pd_ocr_synth.render.page import sample_page_style
-    from pd_ocr_synth.render.run import _split_page_into_paragraph_lines
+    from pdomain_ocr_synth.render.context import RenderContext as _RenderCtx
+    from pdomain_ocr_synth.render.page import sample_page_style
+    from pdomain_ocr_synth.render.run import _split_page_into_paragraph_lines
 
     font = _require_font()
 

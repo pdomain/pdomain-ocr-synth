@@ -24,7 +24,7 @@ output:
 # ----------------------------------------------------------------------------
 # Corpus: text sources, each with on-disk caching. First fetch is online;
 # subsequent runs are offline-friendly.
-# Run `pd-ocr-synth fetch gaelic` once to warm the cache.
+# Run `pdomain-ocr-synth fetch gaelic` once to warm the cache.
 # ----------------------------------------------------------------------------
 corpus:
   # Public-domain Irish-language texts from CELT (UCC).
@@ -91,7 +91,7 @@ text_transforms:
 
 # ----------------------------------------------------------------------------
 # Fonts: weighted sample. Paths are relative to this recipe file.
-# Run `pd-ocr-synth validate gaelic` to confirm each font covers the
+# Run `pdomain-ocr-synth validate gaelic` to confirm each font covers the
 # transformed corpus's codepoints.
 #
 # All four families below are FREE for this project (non-commercial,
@@ -254,13 +254,13 @@ degradation:
   - preset: heavy_19c_print
 
 # ----------------------------------------------------------------------------
-# Publish: optional defaults for `pd-ocr-synth publish gaelic`. Edit the
+# Publish: optional defaults for `pdomain-ocr-synth publish gaelic`. Edit the
 # repo to your namespace before publishing. See docs/specs/10-publishing.md
 # and the workspace-level DATASETS.md for the dataset contract.
 # ----------------------------------------------------------------------------
 publish:
   hf_dataset:
-    repo: CHANGE-ME/pd-ocr-synth-gaelic
+    repo: CHANGE-ME/pdomain-ocr-synth-gaelic
     private: false
     license: cc-by-4.0
     tags: [ocr, gaelic, irish, pd-ocr, synthetic]

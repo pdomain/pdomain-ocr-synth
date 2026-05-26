@@ -1,6 +1,6 @@
 """Cross-project contract tests against ``pd-ocr-trainer`` readers.
 
-This is the M09 residual: locks the contract that ``pd-ocr-synth``'s
+This is the M09 residual: locks the contract that ``pdomain-ocr-synth``'s
 recognition + detection writer outputs are loadable by the readers
 ``pd-ocr-trainer`` actually drives — `doctr.datasets.RecognitionDataset`
 and `doctr.datasets.DetectionDataset` (the trainer wires both directly,
@@ -10,7 +10,7 @@ Two layers
 ----------
 
 1. **Always-on shape contract tests.** ``doctr`` isn't a runtime dep
-   of pd-ocr-synth (and shouldn't be — synth produces, doesn't read).
+   of pdomain-ocr-synth (and shouldn't be — synth produces, doesn't read).
    So we re-implement the *exact* shape checks the doctr readers do,
    as plain ``json.load + assertions``, against tiny synthetic
    outputs we build in-process. These run under ``make ci`` on every
@@ -57,9 +57,9 @@ from typing import Any
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.output import DetectionWriter, page_filename
-from pd_ocr_synth.output.detection import LABELS_FILENAME
-from pd_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.output import DetectionWriter, page_filename
+from pdomain_ocr_synth.output.detection import LABELS_FILENAME
+from pdomain_ocr_synth.recipe import load_recipe
 
 # ---------------------------------------------------------------------------
 # Gating helpers (mirrors test_publish_live_hf.py)
@@ -459,7 +459,7 @@ def test_e2e_disabled_without_env() -> None:
         )
 
         # Switch on but require doctr to actually be importable. If
-        # doctr happens to be installed in the dev's pd-ocr-synth env
+        # doctr happens to be installed in the dev's pdomain-ocr-synth env
         # (rare; not a runtime dep), the helper returns True. We don't
         # assert a specific value here because both branches are valid;
         # we only assert the truthy-set codepath is reached.

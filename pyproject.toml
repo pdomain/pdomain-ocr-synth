@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pd-ocr-synth"
+name = "pdomain-ocr-synth"
 version = "0.0.1"
 description = "Synthetic OCR training-data generator (recipe-driven)."
 readme = "README.md"
@@ -43,11 +43,11 @@ ui = [
     "nicegui>=2.0",
 ]
 # Hugging Face publishing path. Kept optional so users who only run
-# ``pd-ocr-synth render`` (the local-only path) don't pull the SDK and
-# its transitive deps. Install with ``pip install pd-ocr-synth[publish]``
+# ``pdomain-ocr-synth render`` (the local-only path) don't pull the SDK and
+# its transitive deps. Install with ``pip install pdomain-ocr-synth[publish]``
 # or ``uv sync --extra publish``. The CLI runner imports
 # ``huggingface_hub`` lazily through
-# ``pd_ocr_synth.publish.sdk_transport.make_default_transport``; ``--dry-run``
+# ``pdomain_ocr_synth.publish.sdk_transport.make_default_transport``; ``--dry-run``
 # never imports the SDK.
 publish = [
     "huggingface_hub>=0.26",
@@ -74,37 +74,37 @@ all-dev = [
     # Tests for the publish SDK adapter import (and mock) ``huggingface_hub``;
     # include the publish extras in the all-dev group so ``make ci`` /
     # ``uv sync --group all-dev`` brings the SDK in. End users who only
-    # need ``pd-ocr-synth render`` still don't pay the cost — they install
+    # need ``pdomain-ocr-synth render`` still don't pay the cost — they install
     # without ``[publish]``.
     "huggingface_hub>=0.26",
 ]
 
 [project.scripts]
-pd-ocr-synth = "pd_ocr_synth.cli:main"
+pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 
 # Extension entry-point groups — see docs/specs/09-extending.md
-[project.entry-points."pd_ocr_synth.corpus_providers"]
+[project.entry-points."pdomain_ocr_synth.corpus_providers"]
 # my_provider = "my_pkg.providers:MyProvider"
 
-[project.entry-points."pd_ocr_synth.text_transforms"]
+[project.entry-points."pdomain_ocr_synth.text_transforms"]
 # my_transform = "my_pkg.transforms:my_transform"
 
-[project.entry-points."pd_ocr_synth.degradation_stages"]
+[project.entry-points."pdomain_ocr_synth.degradation_stages"]
 # my_stage = "my_pkg.degradation:my_stage"
 
 [project.urls]
-Repository = "https://github.com/ConcaveTrillion/pd-ocr-synth"
-Issues = "https://github.com/ConcaveTrillion/pd-ocr-synth/issues"
+Repository = "https://github.com/pdomain/pdomain-ocr-synth"
+Issues = "https://github.com/pdomain/pdomain-ocr-synth/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pd_ocr_synth"]
+packages = ["src/pdomain_ocr_synth"]
 
 [tool.pytest.ini_options]
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=pd_ocr_synth",
+    "--cov=pdomain_ocr_synth",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
 ]
@@ -121,7 +121,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["pd_ocr_synth"]
+source = ["pdomain_ocr_synth"]
 branch = true
 omit = ["*/tests/*", "*/.venv/*", "*/site-packages/*"]
 
@@ -246,7 +246,7 @@ convention = "google"
 "**/_*.py" = ["D"]
 # Typography docs use × (MULTIPLICATION SIGN) as the standard unit notation for
 # line-height multipliers; replacing with 'x' would be less precise.
-"src/pd_ocr_synth/render/paragraph.py" = ["RUF002", "RUF003", "ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/render/paragraph.py" = ["RUF002", "RUF003", "ANN", "D", "G", "BLE", "TRY", "TC"]
 "tests/integration/test_trainer_dataset_contract.py" = ["RUF002"]
 # --- ANN/D/BLE/TRY/G/TC deferred backlog (2026-05-17 rollout) ---
 # Large existing codebase with annotation, docstring, and type-import debt.
@@ -256,61 +256,61 @@ convention = "google"
 # a future cleanup commit.
 # CLI/runner files: print() is the primary output mechanism (T201 preserved).
 # render/run.py: S101 (assert in worker), S311 (rng not crypto)
-"src/pd_ocr_synth/render/run.py" = ["T201", "ANN", "D", "G", "BLE", "TRY", "TC", "PERF401", "PLW0603", "S108", "S101", "S311"]
-"src/pd_ocr_synth/publish/cli_runner.py" = ["T201", "ANN", "D", "G", "BLE", "TRY", "TC", "PERF401"]
-"src/pd_ocr_synth/cli.py" = ["T201", "ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/render/word_crop.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/render/line.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/render/page.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/render/run.py" = ["T201", "ANN", "D", "G", "BLE", "TRY", "TC", "PERF401", "PLW0603", "S108", "S101", "S311"]
+"src/pdomain_ocr_synth/publish/cli_runner.py" = ["T201", "ANN", "D", "G", "BLE", "TRY", "TC", "PERF401"]
+"src/pdomain_ocr_synth/cli.py" = ["T201", "ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/render/word_crop.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/render/line.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/render/page.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
 # render/context.py: S311 (random is intentional for visual sampling, not crypto)
-"src/pd_ocr_synth/render/context.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S311"]
-"src/pd_ocr_synth/render/sampling.py" = ["ANN", "D", "TC"]
-"src/pd_ocr_synth/render/sample.py" = ["D", "TC"]
+"src/pdomain_ocr_synth/render/context.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S311"]
+"src/pdomain_ocr_synth/render/sampling.py" = ["ANN", "D", "TC"]
+"src/pdomain_ocr_synth/render/sample.py" = ["D", "TC"]
 # render/preview.py: PLW0603 (worker-init globals), S101/S311 patterns
-"src/pd_ocr_synth/render/preview.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW0603", "S101", "S311"]
-"src/pd_ocr_synth/publish/dataset_card.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PERF401"]
+"src/pdomain_ocr_synth/render/preview.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW0603", "S101", "S311"]
+"src/pdomain_ocr_synth/publish/dataset_card.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PERF401"]
 # publish/summary.py|recognition.py: PLW2901 (loop var reassignment is intentional)
-"src/pd_ocr_synth/publish/summary.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901"]
-"src/pd_ocr_synth/publish/recognition.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901"]
-"src/pd_ocr_synth/publish/detection.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/hf_hub_transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/summary.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901"]
+"src/pdomain_ocr_synth/publish/recognition.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901"]
+"src/pdomain_ocr_synth/publish/detection.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/hf_hub_transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
 # publish/auth.py: S105 (env var name strings are not passwords)
-"src/pd_ocr_synth/publish/auth.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S105"]
-"src/pd_ocr_synth/publish/idempotency.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/orchestrator.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/preflight.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/commit_message.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/content_sha.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/redaction.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/publish/sdk_transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/context.py" = ["ANN", "D", "TC"]
-"src/pd_ocr_synth/corpus/parsers.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/filters.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/http.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S"]
-"src/pd_ocr_synth/corpus/wikisource.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/hf_dataset.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/web.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/providers/local.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/providers/web.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "TRY300"]
-"src/pd_ocr_synth/corpus/providers/wikisource.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/corpus/registry.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S", "PLW0603", "PLW2901"]
-"src/pd_ocr_synth/corpus/runner.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/validation.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/lint.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/fonts.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/tokenization.py" = ["ANN", "D", "TC"]
-"src/pd_ocr_synth/recipe/models.py" = ["TC"]
-"src/pd_ocr_synth/recipe_search.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901"]
-"src/pd_ocr_synth/recipe_init.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/audit.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/text_transforms/builtins.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
-"src/pd_ocr_synth/text_transforms/pipeline.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S311"]
-"src/pd_ocr_synth/text_transforms/registry.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW0603", "S112"]
-"src/pd_ocr_synth/publish/__init__.py" = ["D104", "F401", "TC", "ANN"]
+"src/pdomain_ocr_synth/publish/auth.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S105"]
+"src/pdomain_ocr_synth/publish/idempotency.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/orchestrator.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/preflight.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/commit_message.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/content_sha.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/redaction.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/publish/sdk_transport.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/context.py" = ["ANN", "D", "TC"]
+"src/pdomain_ocr_synth/corpus/parsers.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/filters.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/http.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S"]
+"src/pdomain_ocr_synth/corpus/wikisource.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/hf_dataset.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/web.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/providers/local.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/providers/web.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "TRY300"]
+"src/pdomain_ocr_synth/corpus/providers/wikisource.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/corpus/registry.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S", "PLW0603", "PLW2901"]
+"src/pdomain_ocr_synth/corpus/runner.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/validation.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/lint.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/fonts.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/tokenization.py" = ["ANN", "D", "TC"]
+"src/pdomain_ocr_synth/recipe/models.py" = ["TC"]
+"src/pdomain_ocr_synth/recipe_search.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW2901"]
+"src/pdomain_ocr_synth/recipe_init.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/audit.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/text_transforms/builtins.py" = ["ANN", "D", "G", "BLE", "TRY", "TC"]
+"src/pdomain_ocr_synth/text_transforms/pipeline.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "S311"]
+"src/pdomain_ocr_synth/text_transforms/registry.py" = ["ANN", "D", "G", "BLE", "TRY", "TC", "PLW0603", "S112"]
+"src/pdomain_ocr_synth/publish/__init__.py" = ["D104", "F401", "TC", "ANN"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pd_ocr_synth"]
+known-first-party = ["pdomain_ocr_synth"]
 
 [tool.basedpyright]
 # Include source, tests, and scripts. Match the layout this repo uses.
@@ -324,7 +324,7 @@ typeCheckingMode = "recommended"
 # Warnings are gated via a baseline file (.basedpyright/baseline.json) that
 # grandfathers existing warnings from uharfbuzz/freetype-py/pillow stubs.
 # New warnings beyond the baseline will fail CI.
-# Regenerate: uv run basedpyright src/pd_ocr_synth --writebaseline
+# Regenerate: uv run basedpyright src/pdomain_ocr_synth --writebaseline
 failOnWarnings = true
 
 # Import cycles are structural and resolved via TYPE_CHECKING guards.

@@ -1,4 +1,4 @@
-# Conventions — pd-ocr-synth
+# Conventions — pdomain-ocr-synth
 
 <!-- workspace-conventions:start -->
 

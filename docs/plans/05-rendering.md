@@ -10,7 +10,7 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
 
 ### Shaping & rasterization
 
-- [x] `pd_ocr_synth.render.word_crop` (HarfBuzz path):
+- [x] `pdomain_ocr_synth.render.word_crop` (HarfBuzz path):
   - Uses `uharfbuzz` for shaping.
   - Uses `freetype-py` for glyph rasterization.
   - Per-font feature toggles (`liga`, `calt` enabled by default).
@@ -23,7 +23,7 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
 ### Tokenization (the M03 placeholder gets real here)
 
 - [x] Word tokenizer for `word_crops` mode: whitespace + edge-
-      punctuation split, drop empties (`pd_ocr_synth.tokenization`).
+      punctuation split, drop empties (`pdomain_ocr_synth.tokenization`).
 - [ ] Per-recipe `corpus_sampling`: `uniform`, `unique_weighted`,
       `frequency`. Preview currently uses uniform-with-replacement;
       the weighting modes ship with the M07 dataset loop.
@@ -43,7 +43,7 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
 
 - [x] On recipe load, open each font and surface `font_missing` /
       `font_unreadable` / `font_empty` (plus `optional_font_missing`
-      warning) at `pd-ocr-synth validate`. `pd_ocr_synth.fonts.open_font`
+      warning) at `pdomain-ocr-synth validate`. `pdomain_ocr_synth.fonts.open_font`
       computes codepoint coverage; `_check_fonts` consumes only the
       open/empty signals.
 - [x] At render time, samples requiring a missing glyph raise
@@ -73,7 +73,7 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
 
 ### CLI surface
 
-- [x] `pd-ocr-synth preview <recipe>` — renders N samples (default 50)
+- [x] `pdomain-ocr-synth preview <recipe>` — renders N samples (default 50)
       to a configurable output dir. Honors `--count` / `--output` /
       `--seed`. Writes `images/`, `manifest.jsonl`, `stats.json`. No
       degradation yet (M06); no `pd-ocr-trainer/v1` adapter (M07).
@@ -94,8 +94,8 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
 ## Validation criteria
 
 ```bash
-pd-ocr-synth fetch gaelic                                     # M03
-pd-ocr-synth preview gaelic --count 50 --output /tmp/preview  # M05
+pdomain-ocr-synth fetch gaelic                                     # M03
+pdomain-ocr-synth preview gaelic --count 50 --output /tmp/preview  # M05
 ls /tmp/preview/images/   # 50 .png files
 cat /tmp/preview/manifest.jsonl | head -1   # first record has font, size, glyph_runs
 ```

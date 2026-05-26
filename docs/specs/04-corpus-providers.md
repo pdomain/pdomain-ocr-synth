@@ -16,7 +16,7 @@ These apply across all providers:
 | `min_word_length` | `1` | Drop tokens shorter than this after tokenization |
 | `language` | unset | Informational; may guide tokenization |
 
-The cache lives at `${PD_OCR_SYNTH_CACHE:-~/.cache/pd-ocr-synth/}`.
+The cache lives at `${PD_OCR_SYNTH_CACHE:-~/.cache/pdomain-ocr-synth/}`.
 
 ## `local`
 
@@ -42,7 +42,7 @@ HTTP GET a single URL.
   url: https://celt.ucc.ie/published/G100001A.html
   parser: html-text          # plain | html-text | tei-text | json
   cache: true
-  user_agent: "pd-ocr-synth/0.1 (+contact@example.com)"
+  user_agent: "pdomain-ocr-synth/0.1 (+contact@example.com)"
   retries: 3
   timeout_seconds: 30
 ```
@@ -152,11 +152,11 @@ The first time a recipe runs, every provider with `cache: true` writes its
 parsed output to `${PD_OCR_SYNTH_CACHE}/<provider>/<key>.txt` plus a
 sidecar `<key>.meta.json` (URL, fetched-at, byte size, sha256).
 
-Subsequent runs read from cache without network access. `pd-ocr-synth fetch
-<recipe>` warms the cache up front; `pd-ocr-synth render` and `preview`
+Subsequent runs read from cache without network access. `pdomain-ocr-synth fetch
+<recipe>` warms the cache up front; `pdomain-ocr-synth render` and `preview`
 will refuse to hit the network if `--offline` is set.
 
-`pd-ocr-synth clean <recipe>` removes only the cache entries owned by that
+`pdomain-ocr-synth clean <recipe>` removes only the cache entries owned by that
 recipe (matched by `cache_key`).
 
 ## Tokenization

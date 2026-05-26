@@ -1,4 +1,4 @@
-"""Opt-in integration tests for pd-ocr-synth.
+"""Opt-in integration tests for pdomain-ocr-synth.
 
 Tests under this package touch real external services (currently only
 the Hugging Face Hub) and are gated behind environment variables so

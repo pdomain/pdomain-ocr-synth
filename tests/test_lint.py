@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.lint`` (M10 stretch — recipe linter)."""
+"""Tests for ``pdomain_ocr_synth.lint`` (M10 stretch — recipe linter)."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.lint import (
+from pdomain_ocr_synth.lint import (
     LINT_CODES,
     SMALL_SAMPLE_THRESHOLD,
     lint_recipe,
 )
-from pd_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.recipe import load_recipe
 
 
 # A "production-shaped" recipe: two fonts, real seed, large count, a
@@ -542,7 +542,7 @@ degradation:
     leaked = emitted - LINT_CODES
     assert not leaked, (
         f"lint_recipe emitted code(s) not in LINT_CODES: {sorted(leaked)}. "
-        "Add them to src/pd_ocr_synth/lint.py:LINT_CODES."
+        "Add them to src/pdomain_ocr_synth/lint.py:LINT_CODES."
     )
 
 
@@ -721,6 +721,6 @@ layout:
     assert not unreachable, (
         f"LINT_CODES has entries not produced by any test fixture: "
         f"{sorted(unreachable)}. Either remove the stale entry from "
-        "src/pd_ocr_synth/lint.py:LINT_CODES, or add a fixture that "
+        "src/pdomain_ocr_synth/lint.py:LINT_CODES, or add a fixture that "
         "exercises the corresponding helper."
     )

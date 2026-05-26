@@ -21,7 +21,7 @@ Before opening an editor, answer:
 ## 1. Scaffold
 
 ```bash
-pd-ocr-synth init gaelic
+pdomain-ocr-synth init gaelic
 ```
 
 This creates:
@@ -117,7 +117,7 @@ fonts:
     weight: 0.2
 ```
 
-Run `pd-ocr-synth validate gaelic` — the validator opens each font and
+Run `pdomain-ocr-synth validate gaelic` — the validator opens each font and
 reports which codepoints from your transformed corpus are missing. If a
 font lacks `ḃ ċ ḋ`, it can't render Gaelic — drop it or accept the
 fallback (rendering will skip samples that need missing glyphs).
@@ -186,9 +186,9 @@ last (it should reflect the final compression).
 ## 9. Validate and preview
 
 ```bash
-pd-ocr-synth validate gaelic
-pd-ocr-synth fetch gaelic           # one-time corpus download
-pd-ocr-synth preview gaelic -c 200  # eyeball the output
+pdomain-ocr-synth validate gaelic
+pdomain-ocr-synth fetch gaelic           # one-time corpus download
+pdomain-ocr-synth preview gaelic -c 200  # eyeball the output
 ```
 
 Open the preview directory. Look for:
@@ -204,7 +204,7 @@ to OCR.
 ## 10. Render the full dataset
 
 ```bash
-pd-ocr-synth render gaelic
+pdomain-ocr-synth render gaelic
 ```
 
 Output lands in the configured `destination`, in

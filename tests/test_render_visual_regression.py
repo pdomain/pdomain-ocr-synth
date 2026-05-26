@@ -75,9 +75,9 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.degradation import apply_degradation
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.render import (
+from pdomain_ocr_synth.degradation import apply_degradation
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.render import (
     RenderContext,
     render_line,
     render_page,

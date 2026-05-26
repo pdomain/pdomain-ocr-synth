@@ -6,13 +6,13 @@ surface.
 ## Invocation
 
 ```
-pd-ocr-synth <subcommand> [options]
+pdomain-ocr-synth <subcommand> [options]
 ```
 
 Installed as a console script via `pyproject.toml`:
 ```
 [project.scripts]
-pd-ocr-synth = "pd_ocr_synth.cli:main"
+pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 ```
 
 ## Subcommands
@@ -43,7 +43,7 @@ Apply to `preview` and `render` (and to `publish` via
 | `-o, --output PATH` | Override output destination |
 | `-s, --seed N` | Override random seed (default from recipe, then 0) |
 | `-w, --workers N` | Parallel render workers (default: CPU count) |
-| `--cache-dir PATH` | Corpus cache root (default: `~/.cache/pd-ocr-synth/`) |
+| `--cache-dir PATH` | Corpus cache root (default: `~/.cache/pdomain-ocr-synth/`) |
 | `--no-cache` | Bypass corpus cache (force re-fetch) |
 | `--dry-run` | Validate + plan only; no fetch, no render |
 
@@ -127,7 +127,7 @@ directions).
 
 | Flag | Meaning |
 |------|---------|
-| `--cache-dir PATH` | Cache root (default: `$PD_OCR_SYNTH_CACHE` or `~/.cache/pd-ocr-synth`) |
+| `--cache-dir PATH` | Cache root (default: `$PD_OCR_SYNTH_CACHE` or `~/.cache/pdomain-ocr-synth`) |
 
 ### `audit [output-dir]`
 
@@ -137,7 +137,7 @@ The positional `output_dir` is required *unless* `--global` or
 | Flag | Meaning |
 |------|---------|
 | `--audit-file PATH` | Read audit entries from this JSONL path instead of `<output_dir>/_audit.jsonl`; useful for archived or aggregated audit logs |
-| `--global` | Read entries from the global aggregate at `<cache_root>/audit.jsonl` (default `~/.cache/pd-ocr-synth/`); mutually exclusive with `--audit-file` |
+| `--global` | Read entries from the global aggregate at `<cache_root>/audit.jsonl` (default `~/.cache/pdomain-ocr-synth/`); mutually exclusive with `--audit-file` |
 | `--json` | Emit a JSON array of entries (machine-readable) instead of the table |
 | `--limit N` | Only show the most recent N entries (tail behaviour) |
 | `--since ISO` | Only show entries with timestamp >= this ISO-8601 value (e.g. `2026-05-06` or `2026-05-06T10:30:00Z`); applied before `--limit` |
@@ -159,7 +159,7 @@ provenance second, run outcome last, schema-version anchor at the
 end.
 
 A meta-test in `tests/test_spec_docs.py` enforces that this table and
-the `AuditEntry` dataclass in `src/pd_ocr_synth/audit.py` stay in
+the `AuditEntry` dataclass in `src/pdomain_ocr_synth/audit.py` stay in
 sync: adding a field to the dataclass without listing it here (or
 vice-versa) is a hard test failure.
 
@@ -198,7 +198,7 @@ output, the `--json` payload, and structured logs, so they're safe to
 grep / filter on.
 
 A meta-test in `tests/test_spec_docs.py` enforces that this table and
-the `LINT_CODES` constant in `src/pd_ocr_synth/lint.py` stay in sync:
+the `LINT_CODES` constant in `src/pdomain_ocr_synth/lint.py` stay in sync:
 adding a new lint helper without listing it here (or vice-versa) is a
 hard test failure.
 
@@ -226,7 +226,7 @@ stable `code` field in addition to `severity` and a free-form
 and structured logs, so they're safe to grep / filter on.
 
 A meta-test in `tests/test_spec_docs.py` enforces that this table and
-the `VALIDATION_CODES` constant in `src/pd_ocr_synth/validation.py`
+the `VALIDATION_CODES` constant in `src/pdomain_ocr_synth/validation.py`
 stay in sync: adding a new emission site without listing it here (or
 vice-versa) is a hard test failure. A second test in
 `tests/test_validation.py` asserts every code emitted by
@@ -247,7 +247,7 @@ ship undocumented.
 | `corpus_provider_not_implemented` | error | A `corpus[].type` is structurally valid but no runtime provider is registered for it (typically a future provider type listed in spec 04 that hasn't shipped yet). |
 | `corpus_max_chars_not_implemented` | error | A corpus entry sets `max_chars` to a value other than the schema default; the option is reserved by spec 04 but not yet honored. |
 | `corpus_min_word_length_not_implemented` | error | A corpus entry sets `min_word_length` to a value > 1; reserved by spec 04, not yet honored. |
-| `text_transform_not_implemented` | error | A `text_transforms[].kind` is structurally valid but isn't yet implemented by `pd_ocr_synth.text_transforms` (e.g., a future kind from spec 05). |
+| `text_transform_not_implemented` | error | A `text_transforms[].kind` is structurally valid but isn't yet implemented by `pdomain_ocr_synth.text_transforms` (e.g., a future kind from spec 05). |
 | `shaping_engine_not_implemented` | error | `rendering.shaping_engine` is set to a value other than the implemented engine; reserved for future engines per spec 06. |
 | `antialiasing_disable_not_implemented` | error | `rendering.antialiasing` is `false`; the renderer doesn't yet support disabling AA per spec 06. |
 | `layout_key_unused` | warning | A layout key is set but doesn't apply to the active `layout.mode` (e.g., `paragraph_spacing` under `paragraphs`). It will be ignored. |
@@ -279,29 +279,29 @@ The search path is, in order:
 
 ```bash
 # Scaffold a new recipe
-pd-ocr-synth init fraktur
+pdomain-ocr-synth init fraktur
 # → creates ./recipes/fraktur/recipe.yaml + README
 
 # Validate the Gaelic recipe ships
-pd-ocr-synth validate gaelic
+pdomain-ocr-synth validate gaelic
 
-# Pre-fetch corpora once (writes to ~/.cache/pd-ocr-synth/)
-pd-ocr-synth fetch gaelic
+# Pre-fetch corpora once (writes to ~/.cache/pdomain-ocr-synth/)
+pdomain-ocr-synth fetch gaelic
 
 # Render 200 samples to a temp dir for visual inspection
-pd-ocr-synth preview gaelic --count 200 --output /tmp/gaelic-preview
+pdomain-ocr-synth preview gaelic --count 200 --output /tmp/gaelic-preview
 
 # Full render (50k samples per the recipe) into the trainer profile dir
-pd-ocr-synth render gaelic
+pdomain-ocr-synth render gaelic
 
 # Override count and output for a quick sanity run
-pd-ocr-synth render gaelic -c 500 -o /tmp/gaelic-500
+pdomain-ocr-synth render gaelic -c 500 -o /tmp/gaelic-500
 
 # Publish the rendered output to a Hugging Face dataset repo
-pd-ocr-synth publish gaelic                            # uses recipe defaults
-pd-ocr-synth publish gaelic --repo me/pd-ocr-synth-ga  # explicit repo
-pd-ocr-synth publish gaelic --tag v2026.05.05          # pin a release
-pd-ocr-synth publish gaelic --dry-run                  # preview only
+pdomain-ocr-synth publish gaelic                            # uses recipe defaults
+pdomain-ocr-synth publish gaelic --repo me/pdomain-ocr-synth-ga  # explicit repo
+pdomain-ocr-synth publish gaelic --tag v2026.05.05          # pin a release
+pdomain-ocr-synth publish gaelic --dry-run                  # preview only
 ```
 
 ## Exit codes

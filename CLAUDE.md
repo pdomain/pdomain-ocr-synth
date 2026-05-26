@@ -1,4 +1,4 @@
-# CLAUDE — pd-ocr-synth
+# CLAUDE — pdomain-ocr-synth
 
 Recipe-driven synthetic OCR training-data generator; produces labeled
 image+text pairs for historical and specialty typography (first target:
@@ -46,7 +46,7 @@ Full spec set in `docs/specs/00-N.md` (read in order). Roadmap milestones in `do
 ## Sibling repos
 
 - `../pd-ocr-trainer/` — consumes synth output; defines the profile directory layout this repo must match.
-- `../pd-book-tools/` — shared OCR/image primitives (potential future dependency).
+- `../pdomain-book-tools/` — shared OCR/image primitives (potential future dependency).
 
 ## GH issues
 

@@ -1,4 +1,4 @@
-"""Tests for ``pd-ocr-synth preview`` (M05 deliverable).
+"""Tests for ``pdomain-ocr-synth preview`` (M05 deliverable).
 
 Exercises the CLI happy-path against a hermetic tmp recipe that
 points at the bundled Bunchló GC font + a tiny local seed-words
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.cli import main
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"
@@ -156,7 +156,7 @@ def test_preview_rejects_zero_count(
 def test_preview_default_count_is_50_helper() -> None:
     """The preview module's default count is the spec's ``50``."""
 
-    from pd_ocr_synth.render.preview import DEFAULT_PREVIEW_COUNT
+    from pdomain_ocr_synth.render.preview import DEFAULT_PREVIEW_COUNT
 
     assert DEFAULT_PREVIEW_COUNT == 50
 
@@ -177,7 +177,7 @@ def test_resolve_workers_default_is_sane() -> None:
 
     import os
 
-    from pd_ocr_synth.render.preview import resolve_workers
+    from pdomain_ocr_synth.render.preview import resolve_workers
 
     auto = resolve_workers(None)
     cpu = os.cpu_count() or 1
@@ -189,7 +189,7 @@ def test_resolve_workers_default_is_sane() -> None:
 
 
 def test_resolve_workers_explicit_override_is_clamped_positive() -> None:
-    from pd_ocr_synth.render.preview import resolve_workers
+    from pdomain_ocr_synth.render.preview import resolve_workers
 
     assert resolve_workers(1) == 1
     assert resolve_workers(2) == 2
@@ -547,8 +547,8 @@ def test_preview_dry_run_no_cache_threads_to_plan_recipe(
 
     rp = _setup(tmp_path)
 
-    from pd_ocr_synth import cli as cli_mod
-    from pd_ocr_synth.render import run as run_mod
+    from pdomain_ocr_synth import cli as cli_mod
+    from pdomain_ocr_synth.render import run as run_mod
 
     seen: dict[str, object] = {}
     real = run_mod.plan_recipe
@@ -558,12 +558,12 @@ def test_preview_dry_run_no_cache_threads_to_plan_recipe(
         return real(*args, **kwargs)
 
     # Patch in both modules: ``cli._cmd_preview`` does
-    # ``from pd_ocr_synth.render import plan_recipe`` so the import is
+    # ``from pdomain_ocr_synth.render import plan_recipe`` so the import is
     # bound to the package, which re-exports from ``render.run``.
     monkeypatch.setattr(run_mod, "plan_recipe", spy)
     monkeypatch.setattr(cli_mod, "_cmd_preview", cli_mod._cmd_preview)
     # Patch the package-level re-export the CLI imports.
-    import pd_ocr_synth.render as render_pkg
+    import pdomain_ocr_synth.render as render_pkg
 
     monkeypatch.setattr(render_pkg, "plan_recipe", spy)
 
@@ -615,7 +615,7 @@ def test_preview_no_cache_flag_threads_to_corpus_runner(
 
     rp = _setup(tmp_path)
 
-    from pd_ocr_synth.render import preview as preview_mod
+    from pdomain_ocr_synth.render import preview as preview_mod
 
     seen: dict[str, object] = {}
     real = preview_mod.collect_corpus_text

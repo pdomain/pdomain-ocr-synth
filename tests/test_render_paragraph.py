@@ -1,7 +1,7 @@
 """Tests for ``paragraphs``-mode rendering primitive (M09).
 
 Mirrors the structure of ``test_render_line.py`` but exercises
-:func:`pd_ocr_synth.render.render_paragraph` — multiple stacked
+:func:`pdomain_ocr_synth.render.render_paragraph` — multiple stacked
 baselines, with per-line + per-word ground truth.
 
 These tests skip cleanly when the bundled Bunchló GC font isn't
@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.render import (
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.render import (
     LineBox,
     MissingGlyphError,
     RenderContext,

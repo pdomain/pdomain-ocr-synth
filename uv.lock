@@ -797,7 +797,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pd-ocr-synth"
+name = "pdomain-ocr-synth"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [

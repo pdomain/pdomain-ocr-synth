@@ -1,4 +1,4 @@
-"""Tests for ``pd-ocr-synth clean``."""
+"""Tests for ``pdomain-ocr-synth clean``."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
-from pd_ocr_synth.corpus import CacheStore
+from pdomain_ocr_synth.cli import main
+from pdomain_ocr_synth.corpus import CacheStore
 
 _RECIPE = """\
 schema_version: 1
@@ -50,7 +50,7 @@ def test_clean_removes_known_cache_entries(
 
     # Pre-populate the cache slot the local provider would write to,
     # by computing the same key the provider does.
-    from pd_ocr_synth.corpus.providers.local import LocalProvider
+    from pdomain_ocr_synth.corpus.providers.local import LocalProvider
 
     cache = CacheStore(root=cache_dir)
     options = {"path": str(tmp_path / "a.txt")}

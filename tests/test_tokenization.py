@@ -1,10 +1,10 @@
-"""Tests for ``pd_ocr_synth.tokenization``."""
+"""Tests for ``pdomain_ocr_synth.tokenization``."""
 
 from __future__ import annotations
 
 import pytest
 
-from pd_ocr_synth.tokenization import tokenize
+from pdomain_ocr_synth.tokenization import tokenize
 
 # ---------------------------------------------------------------------------
 # word_crops

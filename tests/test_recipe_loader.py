@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from pd_ocr_synth.recipe import (
+from pdomain_ocr_synth.recipe import (
     LocalCorpus,
     Recipe,
     RecipeLoadError,
@@ -15,8 +15,8 @@ from pd_ocr_synth.recipe import (
     WikisourceCorpus,
     load_recipe,
 )
-from pd_ocr_synth.recipe.models import Range, WeightedChoice
-from pd_ocr_synth.recipe.paths import expand_path
+from pdomain_ocr_synth.recipe.models import Range, WeightedChoice
+from pdomain_ocr_synth.recipe.paths import expand_path
 
 MINIMAL_RECIPE = """
 schema_version: 1
@@ -334,7 +334,7 @@ def test_web_corpus_transport_options_load_from_yaml(write_recipe) -> None:
             "  - type: web\n"
             "    url: https://example.com/page.html\n"
             "    parser: html-text\n"
-            '    user_agent: "pd-ocr-synth/0.1 (+contact@example.com)"\n'
+            '    user_agent: "pdomain-ocr-synth/0.1 (+contact@example.com)"\n'
             "    retries: 5\n"
             "    timeout_seconds: 45\n"
             "    respect_robots: true\n"
@@ -344,7 +344,7 @@ def test_web_corpus_transport_options_load_from_yaml(write_recipe) -> None:
     web_entries = [c for c in recipe.corpus if isinstance(c, WebCorpus)]
     assert len(web_entries) == 1
     web = web_entries[0]
-    assert web.user_agent == "pd-ocr-synth/0.1 (+contact@example.com)"
+    assert web.user_agent == "pdomain-ocr-synth/0.1 (+contact@example.com)"
     assert web.retries == 5
     assert web.timeout_seconds == 45.0
     assert web.respect_robots is True
@@ -353,7 +353,7 @@ def test_web_corpus_transport_options_load_from_yaml(write_recipe) -> None:
     # transport options must be on the dumped dict so the (current
     # and future) HTTP layer can read them.
     assert dumped["retries"] == 5
-    assert dumped["user_agent"] == "pd-ocr-synth/0.1 (+contact@example.com)"
+    assert dumped["user_agent"] == "pdomain-ocr-synth/0.1 (+contact@example.com)"
     assert dumped["timeout_seconds"] == 45.0
     assert dumped["respect_robots"] is True
 
@@ -436,7 +436,7 @@ def test_hf_dataset_max_rows_loads_from_yaml(write_recipe) -> None:
         ),
     )
     recipe = load_recipe(write_recipe(yaml_text))
-    from pd_ocr_synth.recipe.models import HFDatasetCorpus
+    from pdomain_ocr_synth.recipe.models import HFDatasetCorpus
 
     hf_entries = [c for c in recipe.corpus if isinstance(c, HFDatasetCorpus)]
     assert len(hf_entries) == 1

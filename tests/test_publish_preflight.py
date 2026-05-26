@@ -1,6 +1,6 @@
 """Unit tests for the staging-dir pre-flight check (M08).
 
-Covers ``pd_ocr_synth.publish.preflight``: the read-only validator
+Covers ``pdomain_ocr_synth.publish.preflight``: the read-only validator
 that asserts a built staging dir's README front matter carries every
 required ``pd-ocr-*`` key. Pure file-IO; no network, no HF SDK.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     REQUIRED_FRONT_MATTER_KEYS,
     PreflightError,
     PreflightReport,
@@ -26,7 +26,7 @@ from pd_ocr_synth.publish import (
     build_recognition_staging,
     check_required_front_matter,
 )
-from pd_ocr_synth.publish.dataset_card import README_FILENAME
+from pdomain_ocr_synth.publish.dataset_card import README_FILENAME
 
 # ---------------------------------------------------------------------------
 # Fixture helpers
@@ -65,7 +65,7 @@ def _build_staging(tmp_path: Path) -> Path:
         "  corpus: []\n"
         "  publish:\n"
         "    hf_dataset:\n"
-        "      repo: ntw8532/pd-ocr-synth-gaelic\n"
+        "      repo: ntw8532/pdomain-ocr-synth-gaelic\n"
         "      license: cc-by-4.0\n"
         "      language: [ga]\n"
         "      tags: [ocr, gaelic]\n"
@@ -162,11 +162,11 @@ def test_missing_required_key_surfaces_in_report(tmp_path: Path) -> None:
         "---\n"
         "license: cc-by-4.0\n"
         "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pd-ocr-synth\n"
+        "pd-ocr-source: pdomain-ocr-synth\n"
         "pd-ocr-recipe-sha: " + ("a" * 64) + "\n"
         "pd-ocr-content-sha: " + ("b" * 64) + "\n"
         "---\n\n"
-        "# pd-ocr-synth — gaelic\n",
+        "# pdomain-ocr-synth — gaelic\n",
     )
 
     report = check_required_front_matter(staging)
@@ -183,7 +183,7 @@ def test_empty_required_value_treated_as_failure(tmp_path: Path) -> None:
         staging,
         "---\n"
         "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pd-ocr-synth\n"
+        "pd-ocr-source: pdomain-ocr-synth\n"
         'pd-ocr-recipe-sha: ""\n'
         "pd-ocr-render-tool-version: 0.1.2\n"
         "pd-ocr-content-sha: " + ("c" * 64) + "\n"
@@ -205,7 +205,7 @@ def test_multiple_failures_listed_in_stable_order(tmp_path: Path) -> None:
         staging,
         "---\n"
         "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pd-ocr-synth\n"
+        "pd-ocr-source: pdomain-ocr-synth\n"
         'pd-ocr-render-tool-version: "   "\n'
         "---\n\n"
         "body\n",
@@ -229,7 +229,7 @@ def test_assert_publish_ready_raises_on_missing_key(tmp_path: Path) -> None:
     staging = _build_staging(tmp_path)
     _rewrite_readme(
         staging,
-        "---\npd-ocr-shape: recognition/v1\npd-ocr-source: pd-ocr-synth\n---\n\nbody\n",
+        "---\npd-ocr-shape: recognition/v1\npd-ocr-source: pdomain-ocr-synth\n---\n\nbody\n",
     )
 
     with pytest.raises(PreflightError) as excinfo:
@@ -253,7 +253,7 @@ def test_assert_publish_ready_lists_empty_separately(tmp_path: Path) -> None:
         staging,
         "---\n"
         "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pd-ocr-synth\n"
+        "pd-ocr-source: pdomain-ocr-synth\n"
         "pd-ocr-recipe-sha: " + ("a" * 64) + "\n"
         'pd-ocr-render-tool-version: ""\n'
         "pd-ocr-content-sha: " + ("b" * 64) + "\n"

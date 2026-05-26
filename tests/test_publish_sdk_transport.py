@@ -1,7 +1,7 @@
-"""Unit tests for ``pd_ocr_synth.publish.sdk_transport`` (M08).
+"""Unit tests for ``pdomain_ocr_synth.publish.sdk_transport`` (M08).
 
 The factory's job is to return a real :class:`HfTransport` when the
-SDK-backed adapter (:class:`pd_ocr_synth.publish.HfHubTransport`) is
+SDK-backed adapter (:class:`pdomain_ocr_synth.publish.HfHubTransport`) is
 importable, and to raise :class:`SdkUnavailableError` otherwise. These
 tests pin both branches and the typing contract that
 :class:`SdkUnavailableError` is a :class:`TransportError` so the CLI
@@ -15,12 +15,12 @@ import sys
 
 import pytest
 
-from pd_ocr_synth.publish.hf_hub_transport import HfHubTransport
-from pd_ocr_synth.publish.sdk_transport import (
+from pdomain_ocr_synth.publish.hf_hub_transport import HfHubTransport
+from pdomain_ocr_synth.publish.sdk_transport import (
     SdkUnavailableError,
     make_default_transport,
 )
-from pd_ocr_synth.publish.transport import TransportError
+from pdomain_ocr_synth.publish.transport import TransportError
 
 
 def test_sdk_unavailable_error_is_transport_error() -> None:
@@ -56,7 +56,7 @@ def test_make_default_transport_raises_sdk_unavailable_when_import_fails(
     saved = {
         name: sys.modules.pop(name)
         for name in list(sys.modules)
-        if name == "pd_ocr_synth.publish.hf_hub_transport"
+        if name == "pdomain_ocr_synth.publish.hf_hub_transport"
         or name == "huggingface_hub"
         or name.startswith("huggingface_hub.")
     }
@@ -69,7 +69,7 @@ def test_make_default_transport_raises_sdk_unavailable_when_import_fails(
             make_default_transport("hf_fake_token")
 
         msg = str(exc_info.value)
-        assert "pd-ocr-synth[publish]" in msg
+        assert "pdomain-ocr-synth[publish]" in msg
         assert "--dry-run" in msg
     finally:
         # Restore: never leave ``huggingface_hub`` poisoned for
@@ -90,9 +90,9 @@ def test_make_default_transport_accepts_token_string() -> None:
 
 def test_sdk_transport_names_reexported_from_publish_package() -> None:
     """The CLI runner and any future programmatic caller imports from
-    ``pd_ocr_synth.publish``; lock the names at the package surface."""
+    ``pdomain_ocr_synth.publish``; lock the names at the package surface."""
 
-    from pd_ocr_synth import publish
+    from pdomain_ocr_synth import publish
 
     assert publish.make_default_transport is make_default_transport
     assert publish.SdkUnavailableError is SdkUnavailableError

@@ -20,7 +20,7 @@ each chunk is small enough that `make ci` can stay green throughout.
    `tests/conftest.py` is the working pattern to copy: `pytest_plugins =
    ["nicegui.testing.user_plugin"]` plus an XDG isolation fixture. Our suite
    would take the same shape under a guarded marker.
-3. **`pd_ocr_synth.render.preview` already exists** (`src/pd_ocr_synth/
+3. **`pdomain_ocr_synth.render.preview` already exists** (`src/pdomain_ocr_synth/
    render/preview.py`) and exposes `run_preview(...)` — exactly the kind of
    re-render entry point the UI needs. It writes to a directory and returns
    a `PreviewStats` dataclass. M11 should call this function (or a thin
@@ -34,9 +34,9 @@ each chunk is small enough that `make ci` can stay green throughout.
    round-trip "diff & save" path. Resolution: the diff/save chunk is the
    one that introduces `ruamel.yaml` (under the `ui` extras, not the core
    dep set). All chunks before it stay on `pyyaml`.
-6. **Open question on package layout.** Spec says `pd_ocr_synth.preview`,
-   but the existing `pd_ocr_synth.render.preview` module would shadow it.
-   The new package can live at `pd_ocr_synth.ui` (cleaner: `ui` matches the
+6. **Open question on package layout.** Spec says `pdomain_ocr_synth.preview`,
+   but the existing `pdomain_ocr_synth.render.preview` module would shadow it.
+   The new package can live at `pdomain_ocr_synth.ui` (cleaner: `ui` matches the
    extras group name) — this is a **decision flagged for the user** before
    the first implementation chunk lands.
 
@@ -64,14 +64,14 @@ Every M11 surface can be built on something that already exists:
 
 | M11 surface                       | Reuses (path)                                                      |
 |-----------------------------------|--------------------------------------------------------------------|
-| `/` recipe picker                 | `pd_ocr_synth.recipe_search.iter_recipes`                          |
-| Recipe load + validate            | `pd_ocr_synth.recipe.load_recipe`, `pd_ocr_synth.validation`       |
-| Recipe lint banner                | `pd_ocr_synth.lint.lint_recipe`                                    |
-| Sample grid render                | `pd_ocr_synth.render.preview.run_preview` (already deterministic)  |
+| `/` recipe picker                 | `pdomain_ocr_synth.recipe_search.iter_recipes`                          |
+| Recipe load + validate            | `pdomain_ocr_synth.recipe.load_recipe`, `pdomain_ocr_synth.validation`       |
+| Recipe lint banner                | `pdomain_ocr_synth.lint.lint_recipe`                                    |
+| Sample grid render                | `pdomain_ocr_synth.render.preview.run_preview` (already deterministic)  |
 | Manifest read for sample-detail   | The `manifest.jsonl` produced by `run_preview`                     |
-| Resolve recipe by name            | `pd_ocr_synth.recipe_search.resolve_recipe`                        |
+| Resolve recipe by name            | `pdomain_ocr_synth.recipe_search.resolve_recipe`                        |
 | Stats display ("last rendered")   | `<destination>/stats.json` (existing format)                       |
-| CLI arg parsing pattern           | `pd_ocr_synth.cli.build_parser` (mirror its `argparse` shape)      |
+| CLI arg parsing pattern           | `pdomain_ocr_synth.cli.build_parser` (mirror its `argparse` shape)      |
 
 **No duplicated logic** is needed for the first chunk — the UI is purely
 a presentation layer on top of `run_preview`.
@@ -85,7 +85,7 @@ Following the project's pattern (no network, deterministic, fast):
 - **integration tests** — `nicegui.testing.User` programmatic clicks;
   guarded by an `@pytest.mark.ui` marker so the default `make test` can
   skip them when the `ui` extras aren't installed.
-- **CLI smoke** — `pd-ocr-synth-preview --help` exits 0 and prints flags.
+- **CLI smoke** — `pdomain-ocr-synth-preview --help` exits 0 and prints flags.
   Doesn't need the NiceGUI server actually running.
 
 A new pytest marker `ui` lands with the first chunk; `make ci` stays green
@@ -99,7 +99,7 @@ marker, while a new `make preview-ui-smoke` target runs only `-m ui`.
   `aiofiles`, `pscript`. ~40 MB installed, no native extensions.
 - **`ruamel.yaml`**: pure Python, ~1 MB. Lands only with the diff/save
   chunk (chunk M11.4 below), keeping the cheaper chunks dep-free.
-- All cost is paywalled behind `pip install pd-ocr-synth[ui]`. Default
+- All cost is paywalled behind `pip install pdomain-ocr-synth[ui]`. Default
   installs and `make test` are unaffected.
 
 ## First chunk: M11.1 — picker page + CLI scaffold
@@ -107,7 +107,7 @@ marker, while a new `make preview-ui-smoke` target runs only `-m ui`.
 Smallest unit that demonstrates "NiceGUI app starts, lists recipes" without
 introducing render plumbing or override mechanics. Definition of done:
 
-1. New package `pd_ocr_synth.ui/` with:
+1. New package `pdomain_ocr_synth.ui/` with:
    - `__init__.py` (empty)
    - `state.py` — frozen `PreviewSession` with `recipe: Recipe | None` only;
      no `RecipeOverride` yet. Just enough to type-check the picker.
@@ -118,7 +118,7 @@ introducing render plumbing or override mechanics. Definition of done:
      name + path + click → "(coming soon)" notify. No real recipe view yet.
    - `app.py` — `main()` entry point with argparse: `--port`, `--host`,
      `--recipe` (no-op flag in this chunk; reserved for chunk M11.2).
-2. Console script `pd-ocr-synth-preview = "pd_ocr_synth.ui.app:main"`
+2. Console script `pdomain-ocr-synth-preview = "pdomain_ocr_synth.ui.app:main"`
    registered in `pyproject.toml`.
 3. New `Makefile` targets:
    - `setup-ui` — `uv sync --extra ui`.
@@ -128,7 +128,7 @@ introducing render plumbing or override mechanics. Definition of done:
 5. Tests:
    - Unit: `tests/ui/test_operations.py` exercises `list_recipes()` against
      a tmp recipes dir (mirrors existing `recipe_search` tests).
-   - Smoke: `tests/ui/test_app_cli.py` runs `pd-ocr-synth-preview --help`
+   - Smoke: `tests/ui/test_app_cli.py` runs `pdomain-ocr-synth-preview --help`
      via `subprocess.run` and asserts exit 0 + `--port` substring.
    - Integration: `tests/ui/test_picker_page.py` (marker `ui`) — uses
      `nicegui.testing.User` to navigate to `/` and assert a recipe name
@@ -143,7 +143,7 @@ What's **not** in M11.1:
 
 Why this chunk: it pays the dep + boilerplate cost once, gets routing
 wired, gets the test plumbing in place, and is something the maintainer
-can `make setup-ui && pd-ocr-synth-preview` and click around in to confirm
+can `make setup-ui && pdomain-ocr-synth-preview` and click around in to confirm
 the foundation is right before we invest in render integration.
 
 ## Chunk menu (in order, for future iterations)
@@ -163,9 +163,9 @@ land separately from the feature). After M11.7 the milestone closes.
 
 ## Decisions to confirm with the user before M11.1 lands
 
-1. **Package name** — `pd_ocr_synth.ui` (recommended; mirrors `[ui]`
-   extras and avoids shadowing `pd_ocr_synth.render.preview`) vs. the
-   spec's `pd_ocr_synth.preview`.
+1. **Package name** — `pdomain_ocr_synth.ui` (recommended; mirrors `[ui]`
+   extras and avoids shadowing `pdomain_ocr_synth.render.preview`) vs. the
+   spec's `pdomain_ocr_synth.preview`.
 2. **NiceGUI version pin** — `nicegui>=2.0` (current pyproject) vs. match
    `pd-ocr-labeler`'s pin (it floats `>=1.4`). Recommend pinning a
    minimum 2.x to avoid the 1.x→2.x storage API split.

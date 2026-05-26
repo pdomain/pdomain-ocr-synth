@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.output.snapshot``.
+"""Unit tests for ``pdomain_ocr_synth.output.snapshot``.
 
 Covers the snapshot build/write/load lifecycle and the
 ``snapshot_matches`` resume-eligibility comparator.
@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from pd_ocr_synth.output.snapshot import (
+from pdomain_ocr_synth.output.snapshot import (
     SNAPSHOT_FILENAME,
     SnapshotMismatchError,
     build_snapshot,
@@ -19,7 +19,7 @@ from pd_ocr_synth.output.snapshot import (
     snapshot_matches,
     write_snapshot,
 )
-from pd_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.recipe import load_recipe
 
 _RECIPE_TEMPLATE = """\
 schema_version: 1

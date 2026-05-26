@@ -1,6 +1,6 @@
 """Unit tests for the dataset-card README generator (M08).
 
-Covers ``pd_ocr_synth.publish.dataset_card``: front-matter assembly,
+Covers ``pdomain_ocr_synth.publish.dataset_card``: front-matter assembly,
 body sections, override paths, and the wiring through
 ``build_recognition_staging``. Pure file-IO; no network.
 """
@@ -15,7 +15,7 @@ import pytest
 import yaml
 from PIL import Image
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     README_FILENAME,
     DatasetCardInputs,
     build_recognition_staging,
@@ -140,7 +140,7 @@ def test_front_matter_has_pd_ocr_conventional_keys() -> None:
     card = render_dataset_card(_inputs())
     fm, _ = _split_card(card)
     assert fm["pd-ocr-shape"] == "recognition/v1"
-    assert fm["pd-ocr-source"] == "pd-ocr-synth"
+    assert fm["pd-ocr-source"] == "pdomain-ocr-synth"
     assert fm["pd-ocr-render-tool-version"] == "0.1.2"
     # SHA-256 hex is 64 lowercase hex chars; we don't pin the value
     # because it's a hash of yaml.safe_dump output (Python-version
@@ -154,7 +154,7 @@ def test_front_matter_has_pd_ocr_conventional_keys() -> None:
 def test_front_matter_carries_publish_block_values() -> None:
     snapshot = _snapshot(
         publish={
-            "repo": "ntw8532/pd-ocr-synth-gaelic",
+            "repo": "ntw8532/pdomain-ocr-synth-gaelic",
             "license": "cc-by-4.0",
             "tags": ["ocr", "gaelic", "irish", "pd-ocr", "synthetic"],
             "language": ["ga"],
@@ -190,7 +190,7 @@ def test_license_override_wins_over_recipe_publish_block() -> None:
 
     snapshot = _snapshot(
         publish={
-            "repo": "ntw8532/pd-ocr-synth-gaelic",
+            "repo": "ntw8532/pdomain-ocr-synth-gaelic",
             "license": "cc-by-4.0",
         },
     )
@@ -217,7 +217,7 @@ def test_license_override_blank_falls_through_to_recipe_value() -> None:
 
     snapshot = _snapshot(
         publish={
-            "repo": "ntw8532/pd-ocr-synth-gaelic",
+            "repo": "ntw8532/pdomain-ocr-synth-gaelic",
             "license": "cc-by-4.0",
         },
     )
@@ -276,12 +276,12 @@ def test_body_uses_recipe_name_in_title_and_reproduce_block() -> None:
     snapshot = _snapshot(name="gaelic", description="Synthetic Gaelic OCR dataset.")
     card = render_dataset_card(_inputs(snapshot))
     _, body = _split_card(card)
-    assert body.startswith("# pd-ocr-synth — gaelic")
+    assert body.startswith("# pdomain-ocr-synth — gaelic")
     assert "Synthetic Gaelic OCR dataset." in body
     # Reproduce block uses the recipe name in every command.
-    assert "pd-ocr-synth fetch gaelic" in body
-    assert "pd-ocr-synth render gaelic" in body
-    assert "pd-ocr-synth publish gaelic --repo <this-repo>" in body
+    assert "pdomain-ocr-synth fetch gaelic" in body
+    assert "pdomain-ocr-synth render gaelic" in body
+    assert "pdomain-ocr-synth publish gaelic --repo <this-repo>" in body
 
 
 def test_body_renders_stats_section() -> None:
@@ -426,7 +426,7 @@ def test_body_renders_provenance_section_with_corpus_and_recipe_sha() -> None:
     fm, body = _split_card(card)
     assert "## Provenance" in body
     assert f"- Recipe SHA: {fm['pd-ocr-recipe-sha']}" in body
-    assert "- Tool version: pd-ocr-synth 0.1.2" in body
+    assert "- Tool version: pdomain-ocr-synth 0.1.2" in body
     assert "wikisource:ga:Séadna" in body
     assert "celt:G100001A" in body
     assert "local:seed.txt" in body
@@ -451,8 +451,8 @@ def test_body_handles_recipe_without_name() -> None:
     snapshot = _snapshot(name="")
     card = render_dataset_card(_inputs(snapshot))
     _, body = _split_card(card)
-    assert body.startswith("# pd-ocr-synth dataset")
-    assert "pd-ocr-synth fetch" not in body
+    assert body.startswith("# pdomain-ocr-synth dataset")
+    assert "pdomain-ocr-synth fetch" not in body
 
 
 # ---------------------------------------------------------------------------
@@ -621,7 +621,7 @@ def test_build_recognition_staging_writes_readme(tmp_path: Path) -> None:
     fm, body = _split_card(text)
     assert fm["license"] == "cc-by-4.0"
     assert fm["pd-ocr-shape"] == "recognition/v1"
-    assert "# pd-ocr-synth — integration" in body
+    assert "# pdomain-ocr-synth — integration" in body
 
 
 def test_build_recognition_staging_threads_license_override(tmp_path: Path) -> None:
@@ -670,8 +670,8 @@ def test_round_trip_with_real_recognition_writer(tmp_path: Path) -> None:
 
     from types import SimpleNamespace
 
-    from pd_ocr_synth.output import RecognitionWriter
-    from pd_ocr_synth.recipe import load_recipe
+    from pdomain_ocr_synth.output import RecognitionWriter
+    from pdomain_ocr_synth.recipe import load_recipe
 
     font = tmp_path / "fake.otf"
     font.write_bytes(b"\x00fake")
@@ -741,7 +741,7 @@ publish:
     # The tool_version key gets written by output.snapshot — its
     # presence proves the round-trip wired through.
     assert "pd-ocr-render-tool-version" in fm
-    assert "# pd-ocr-synth — round-trip" in body
+    assert "# pdomain-ocr-synth — round-trip" in body
     assert "Round-trip integration recipe." in body
 
 

@@ -1,4 +1,4 @@
-"""End-to-end tests for ``pd-ocr-synth fetch``.
+"""End-to-end tests for ``pdomain-ocr-synth fetch``.
 
 Local-only — the web/wikisource paths get covered in their unit
 tests via httpx.MockTransport.
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.cli import main
 
 _RECIPE = """\
 schema_version: 1
@@ -143,7 +143,7 @@ def test_fetch_parser_flag_surface_is_minimal() -> None:
     fetch accepts so additions force an explicit decision.
     """
 
-    from pd_ocr_synth.cli import build_parser
+    from pdomain_ocr_synth.cli import build_parser
 
     parser = build_parser()
     fetch_subparser = None

@@ -1,0 +1,131 @@
+"""Drive corpus providers from a loaded ``Recipe``.
+
+Walks ``recipe.corpus`` in order, dispatches each entry to the right
+provider via ``default_registry()``, applies any provider-level
+filter, and yields one ``ProviderRunResult`` per entry. Used by:
+
+- ``pdomain-ocr-synth fetch`` to warm the cache up front.
+- ``pdomain-ocr-synth describe`` (in M03+) to compute corpus statistics.
+- The render pipeline (M05+) to gather text before tokenization.
+
+``collect_corpus_text`` is the higher-level convenience: it runs the
+providers, joins per-entry text, and pipes the result through
+``recipe.text_transforms`` (M04) using the recipe's seed.
+"""
+
+from __future__ import annotations
+
+import time
+from collections.abc import Iterator
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
+
+from pdomain_ocr_synth.corpus.context import ProviderContext
+from pdomain_ocr_synth.corpus.filters import apply_filter
+from pdomain_ocr_synth.corpus.registry import default_registry
+
+if TYPE_CHECKING:
+    from pdomain_ocr_synth.recipe import Recipe
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderRunResult:
+    """One corpus entry's outcome."""
+
+    index: int
+    type_name: str
+    cache_key: str
+    text: str
+    was_cached: bool
+    elapsed_s: float
+
+
+def run_providers(
+    recipe: Recipe,
+    *,
+    ctx: ProviderContext,
+    apply_filters: bool = True,
+    no_cache: bool = False,
+) -> Iterator[ProviderRunResult]:
+    """Iterate ``recipe.corpus`` and run each entry's provider.
+
+    ``apply_filters=True`` runs the per-entry filter after fetch; pass
+    ``False`` for tests or callers that want raw provider output.
+
+    ``no_cache=True`` forces every provider to bypass the on-disk
+    corpus cache (mirrors the CLI ``--no-cache`` flag for the
+    ``preview`` and ``render`` subcommands; ``fetch`` already handles
+    this directly in its own loop). Providers that respect the
+    ``options["cache"]`` flag (web, wikisource, ...) will re-fetch
+    from upstream. ``ProviderRunResult.was_cached`` still reports the
+    on-disk cache state at scan time so callers can see what *would*
+    have been served from cache.
+    """
+
+    registry = default_registry()
+    for index, entry in enumerate(recipe.corpus):
+        options = _options_for(entry)
+        if no_cache:
+            options["cache"] = False
+        provider = registry.get(entry.type)  # type: ignore[arg-type]
+        cache_key = provider.cache_key(options)
+        was_cached = ctx.cache.has(provider.type_name, cache_key)
+        started = time.monotonic()
+        chunks = list(provider.fetch(ctx, options))
+        elapsed = time.monotonic() - started
+        text = "\n".join(chunks)
+        if apply_filters:
+            text = apply_filter(text, options.get("filter"))
+        yield ProviderRunResult(
+            index=index,
+            type_name=provider.type_name,
+            cache_key=cache_key,
+            text=text,
+            was_cached=was_cached,
+            elapsed_s=elapsed,
+        )
+
+
+def _options_for(entry: object) -> dict[str, Any]:
+    """Convert a typed corpus entry to a plain dict for the provider.
+
+    Pydantic v2's ``model_dump(mode='python')`` keeps Path objects as
+    Path (which providers expect) and unwraps any nested submodels.
+    """
+
+    return entry.model_dump(mode="python")  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def collect_corpus_text(
+    recipe: Recipe,
+    *,
+    ctx: ProviderContext,
+    no_cache: bool = False,
+) -> str:
+    """Run providers, join their text, then apply ``recipe.text_transforms``.
+
+    Per-provider filters run inside ``run_providers``. Entries are
+    joined with a blank-line separator so paragraph-aware transforms
+    see distinct provider boundaries. The recipe's ``seed`` drives
+    the text-transform RNG.
+
+    ``no_cache=True`` is forwarded to ``run_providers`` so the
+    ``--no-cache`` CLI flag bypasses the on-disk corpus cache for
+    every provider that honors ``options["cache"]``.
+
+    This is the entry point M05 (render) will call to materialize the
+    full pre-tokenization corpus.
+    """
+
+    # Imported here so the corpus package stays usable in environments
+    # that haven't installed the text_transforms layer (e.g. tests of
+    # individual providers).
+    from pdomain_ocr_synth.text_transforms import PipelineStep, apply_pipeline
+
+    chunks = [r.text for r in run_providers(recipe, ctx=ctx, no_cache=no_cache)]
+    text = "\n\n".join(c for c in chunks if c)
+
+    steps = [PipelineStep(name=t.name, options=dict(t.options)) for t in recipe.text_transforms]
+    if not steps:
+        return text
+    return apply_pipeline(text, steps, seed=recipe.seed)

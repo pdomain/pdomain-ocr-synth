@@ -17,19 +17,19 @@ from types import SimpleNamespace
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.output import (
+from pdomain_ocr_synth.output import (
     RecognitionWriter,
     image_filename,
     width_for_count,
 )
-from pd_ocr_synth.output.recognition import (
+from pdomain_ocr_synth.output.recognition import (
     LABELS_FILENAME,
     MANIFEST_FILENAME,
     STATS_FILENAME,
     DestinationNotEmptyError,
 )
-from pd_ocr_synth.output.snapshot import SNAPSHOT_FILENAME, SnapshotMismatchError
-from pd_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.output.snapshot import SNAPSHOT_FILENAME, SnapshotMismatchError
+from pdomain_ocr_synth.recipe import load_recipe
 
 _RECIPE_TEMPLATE = """\
 schema_version: 1

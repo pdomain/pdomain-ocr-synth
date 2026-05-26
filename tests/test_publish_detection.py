@@ -2,9 +2,9 @@
 
 Covers the format conversion from the local detection layout (per
 ``docs/specs/08-output-format.md`` § Detection mode layout +
-``pd_ocr_synth.output.detection``) to an HF imagefolder-shaped staging
+``pdomain_ocr_synth.output.detection``) to an HF imagefolder-shaped staging
 dir suitable for upload via :func:`publish_recognition` (which is
-shape-agnostic — see :mod:`pd_ocr_synth.publish.detection` module
+shape-agnostic — see :mod:`pdomain_ocr_synth.publish.detection` module
 docstring on why we keep ``labels.json`` rather than collapse it into
 ``metadata.jsonl``).
 
@@ -21,14 +21,14 @@ from typing import Any
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     CONTENT_SHA_KEY,
     DATA_DIRNAME,
     README_FILENAME,
     StagingError,
     build_detection_staging,
 )
-from pd_ocr_synth.publish.dataset_card import write_dataset_card  # noqa: F401 — stable import
+from pdomain_ocr_synth.publish.dataset_card import write_dataset_card  # noqa: F401 — stable import
 
 # ---------------------------------------------------------------------------
 # Fixture helpers
