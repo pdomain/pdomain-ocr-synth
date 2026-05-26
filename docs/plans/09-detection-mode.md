@@ -24,8 +24,8 @@ publish path are all landed and locked in tests; a cross-project
 `pd-ocr-trainer` integration test (always-on shape contract +
 opt-in live-doctr) locks the `labels.json` schema against schema
 drift. The first half of "Validation criteria" below
-(`pd-ocr-synth render gaelic -c 200`) works on `pages`-mode
-recipes today; the second half (`pd-ocr-synth publish gaelic` for
+(`pdomain-ocr-synth render gaelic -c 200`) works on `pages`-mode
+recipes today; the second half (`pdomain-ocr-synth publish gaelic` for
 detection) works through the imagefolder transport.
 
 Three items are deliberately deferred to **Future work** below
@@ -156,7 +156,7 @@ contract test), `08a4809` (page_size_px), `ee54805` (indent),
 ### HF detection publish
 
 - [~] Imagefolder-shaped detection staging through `upload_folder`
-      lands in `pd_ocr_synth.publish.detection.build_detection_staging`
+      lands in `pdomain_ocr_synth.publish.detection.build_detection_staging`
       and dispatches off `recipe.output.mode` from `cmd_publish`
       (`e090040`); a Gaelic detection recipe can be published end-to-end
       via the existing M08 transport. Parquet sharding via
@@ -356,7 +356,7 @@ spine-only modes. All commits are on `main`.
 ### HF detection publish path
 
 - [~] Imagefolder-shaped detection staging lands in
-      `pd_ocr_synth.publish.detection`. `build_detection_staging` reads
+      `pdomain_ocr_synth.publish.detection`. `build_detection_staging` reads
       the local detection layout (`images/page_*.png` + `labels.json`
       + `recipe.snapshot.yaml`) and emits an HF-shaped staging dir
       (`data/page_*.png` + `labels.json` + `recipe.snapshot.yaml` +
@@ -453,10 +453,10 @@ being M09 residual.
 # Edit recipe
 sed -i 's/mode: word_crops/mode: pages/' recipes/gaelic.yaml
 
-pd-ocr-synth render gaelic -c 200
+pdomain-ocr-synth render gaelic -c 200
 # → 200 page PNGs + labels.json with line/word bboxes
 
-pd-ocr-synth publish gaelic
+pdomain-ocr-synth publish gaelic
 # → imagefolder upload to HF; viewer renders pages with overlay
 #   (parquet sharding via push_to_hub is Future work above)
 ```

@@ -15,7 +15,7 @@ and place the unzipped files in `recipes/gaelic/fonts/`.
 
 ## Project licensing posture
 
-`pd-ocr-synth` and the Gaelic recipe are **non-commercial**. Under the
+`pdomain-ocr-synth` and the Gaelic recipe are **non-commercial**. Under the
 Gaelchló terms, that means **two independent grounds for permission**:
 
 1. The output is Celtic-language content (Irish OCR training data) —
@@ -140,7 +140,7 @@ greater stylistic variation.
 After downloading and placing the fonts, run:
 
 ```bash
-pd-ocr-synth validate gaelic
+pdomain-ocr-synth validate gaelic
 ```
 
 This opens each font and surfaces `font_missing` / `font_unreadable` /

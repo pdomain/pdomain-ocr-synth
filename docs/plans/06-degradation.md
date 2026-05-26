@@ -59,7 +59,7 @@ Spec: [`07-degradation.md`](../specs/07-degradation.md).
 ## Validation criteria
 
 ```bash
-pd-ocr-synth preview gaelic --count 200 --output /tmp/preview
+pdomain-ocr-synth preview gaelic --count 200 --output /tmp/preview
 ```
 
 Looking at the resulting samples:

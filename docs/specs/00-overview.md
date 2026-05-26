@@ -11,7 +11,7 @@ typography. Output drops directly into a `pd-ocr-trainer` profile.
    text source, transforms, fonts, layout, degradation, output target.
 2. **Web-aware corpora.** Recipes can pull text from URLs, Wikisource, the
    Internet Archive, or Hugging Face datasets, with on-disk caching.
-3. **CLI-first.** `pd-ocr-synth render <recipe.yaml>` produces a dataset.
+3. **CLI-first.** `pdomain-ocr-synth render <recipe.yaml>` produces a dataset.
    Other subcommands handle scaffolding, validation, preview, and corpus
    fetching.
 4. **Pluggable seams.** Corpus provider, text transform, and degradation
@@ -37,7 +37,7 @@ typography. Output drops directly into a `pd-ocr-trainer` profile.
 | Inbound (text) | Local files, URLs, Wikisource, CELT, HF datasets, Internet Archive |
 | Inbound (fonts) | User-provided font files referenced by absolute or recipe-relative paths |
 | Outbound (local) | A `pd-ocr-trainer` profile directory (recognition or detection layout) |
-| Outbound (HF) | Optional Hugging Face dataset repo via `pd-ocr-synth publish` (see [10 — Publishing](10-publishing.md) and the workspace-level [`DATASETS.md`](../../../DATASETS.md)) |
+| Outbound (HF) | Optional Hugging Face dataset repo via `pdomain-ocr-synth publish` (see [10 — Publishing](10-publishing.md) and the workspace-level [`DATASETS.md`](../../../DATASETS.md)) |
 
 The outbound contract is defined by `pd-ocr-trainer`'s `dataset_store.py`. See
 [08 — Output format](08-output-format.md) for the layout this project must

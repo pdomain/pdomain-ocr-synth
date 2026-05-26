@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.audit import (
+from pdomain_ocr_synth.audit import (
     AUDIT_DISABLE_ENV,
     AUDIT_FILENAME,
     AUDIT_SCHEMA_VERSION,
@@ -62,11 +62,11 @@ def test_default_global_audit_path_uses_cache_env_var(
 def test_default_global_audit_path_defaults_to_user_cache(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Without the env var the path falls under ``~/.cache/pd-ocr-synth``."""
+    """Without the env var the path falls under ``~/.cache/pdomain-ocr-synth``."""
 
     monkeypatch.delenv("PD_OCR_SYNTH_CACHE", raising=False)
     resolved = default_global_audit_path()
-    assert resolved == Path.home() / ".cache" / "pd-ocr-synth" / GLOBAL_AUDIT_FILENAME
+    assert resolved == Path.home() / ".cache" / "pdomain-ocr-synth" / GLOBAL_AUDIT_FILENAME
 
 
 def test_default_global_audit_path_does_not_create_directory(
@@ -207,7 +207,7 @@ def _setup_recipe(tmp_path: Path, font_bytes: bytes) -> Path:
 
 
 def _drive_render(rp: Path, out: Path, *extra: str) -> int:
-    from pd_ocr_synth.cli import main
+    from pdomain_ocr_synth.cli import main
 
     return main(
         [
@@ -430,7 +430,7 @@ def test_global_audit_mirror_oserror_does_not_fail_render(
     end-to-end via fault injection so the failure-mode contract has
     actual test coverage instead of just a ``pragma: no cover`` marker.
 
-    Setup: monkeypatch ``pd_ocr_synth.render.run.append_audit_entry``
+    Setup: monkeypatch ``pdomain_ocr_synth.render.run.append_audit_entry``
     so that the *first* call (per-output-dir, into ``output_dir``) is
     delegated to the real implementation, and the *second* call
     (global mirror, into ``<cache_root>/audit.jsonl``) raises
@@ -442,7 +442,7 @@ def test_global_audit_mirror_oserror_does_not_fail_render(
     - stderr contains a warning line that mentions the failure mode.
     """
 
-    from pd_ocr_synth.render import run as run_mod
+    from pdomain_ocr_synth.render import run as run_mod
 
     cache_root = tmp_path / "cache"
     monkeypatch.setenv("PD_OCR_SYNTH_CACHE", str(cache_root))
@@ -502,7 +502,7 @@ def test_global_audit_mirror_oserror_still_emits_per_output_audit(
     write or corrupts its content.
     """
 
-    from pd_ocr_synth.render import run as run_mod
+    from pdomain_ocr_synth.render import run as run_mod
 
     cache_root = tmp_path / "cache"
     monkeypatch.setenv("PD_OCR_SYNTH_CACHE", str(cache_root))

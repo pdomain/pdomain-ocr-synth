@@ -1,4 +1,4 @@
-"""End-to-end tests for ``pd-ocr-synth render`` with ``layout.mode = pages``.
+"""End-to-end tests for ``pdomain-ocr-synth render`` with ``layout.mode = pages``.
 
 Exercises the M09 detection-mode pages dispatch chunk: a recipe with
 ``output.mode = detection`` + ``layout.mode = pages`` should walk
@@ -30,14 +30,14 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
-from pd_ocr_synth.output.detection import (
+from pdomain_ocr_synth.cli import main
+from pdomain_ocr_synth.output.detection import (
     LABELS_FILENAME,
     MANIFEST_FILENAME,
     PAGE_PREFIX,
     STATS_FILENAME,
 )
-from pd_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
+from pdomain_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"

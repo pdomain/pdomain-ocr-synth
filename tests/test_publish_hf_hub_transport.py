@@ -1,12 +1,12 @@
 """Unit tests for the ``HfHubTransport`` SDK adapter (M08).
 
-The adapter is the *only* file in ``pd_ocr_synth`` that imports
+The adapter is the *only* file in ``pdomain_ocr_synth`` that imports
 ``huggingface_hub``. Every test in this file mocks ``HfApi`` rather
 than calling the real network — the contract under test is that each
-:class:`pd_ocr_synth.publish.transport.HfTransport` Protocol method
+:class:`pdomain_ocr_synth.publish.transport.HfTransport` Protocol method
 forwards to the documented ``HfApi`` call with the right keyword
 arguments and that SDK-specific exceptions are repackaged as
-:class:`pd_ocr_synth.publish.transport.TransportError`.
+:class:`pdomain_ocr_synth.publish.transport.TransportError`.
 
 The mapping under test mirrors ``docs/specs/10-publishing.md`` § Tooling
 used:
@@ -31,9 +31,9 @@ import pytest
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 
-from pd_ocr_synth.publish import HfTransport
-from pd_ocr_synth.publish.hf_hub_transport import HfHubTransport
-from pd_ocr_synth.publish.transport import TransportError
+from pdomain_ocr_synth.publish import HfTransport
+from pdomain_ocr_synth.publish.hf_hub_transport import HfHubTransport
+from pdomain_ocr_synth.publish.transport import TransportError
 
 
 def _http_error(message: str, *, status: int = 500) -> HfHubHTTPError:
@@ -96,18 +96,18 @@ def test_adapter_constructed_lazily_via_make_default_transport() -> None:
     """``make_default_transport`` is the production seam; it returns
     an :class:`HfHubTransport` when the SDK is importable."""
 
-    from pd_ocr_synth.publish.sdk_transport import make_default_transport
+    from pdomain_ocr_synth.publish.sdk_transport import make_default_transport
 
     t = make_default_transport("hf_fake_test_token")
     assert isinstance(t, HfHubTransport)
 
 
 def test_adapter_exported_from_publish_package() -> None:
-    """``pd_ocr_synth.publish.HfHubTransport`` is the public access
+    """``pdomain_ocr_synth.publish.HfHubTransport`` is the public access
     point. The package surface must expose it lazily — the SDK is an
     optional extra."""
 
-    from pd_ocr_synth import publish
+    from pdomain_ocr_synth import publish
 
     cls = publish.HfHubTransport  # triggers PEP 562 __getattr__
     assert cls is HfHubTransport
@@ -477,12 +477,12 @@ def test_constructor_builds_hf_api_with_token_when_api_omitted(
         captured.update(kwargs)
         return MagicMock(spec=HfApi)
 
-    monkeypatch.setattr("pd_ocr_synth.publish.hf_hub_transport.HfApi", fake_hf_api)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.hf_hub_transport.HfApi", fake_hf_api)
 
     HfHubTransport(token="hf_constructor_test")
 
     assert captured["token"] == "hf_constructor_test"
-    assert captured["library_name"] == "pd-ocr-synth"
+    assert captured["library_name"] == "pdomain-ocr-synth"
 
 
 # ---------------------------------------------------------------------------
@@ -493,7 +493,7 @@ def test_constructor_builds_hf_api_with_token_when_api_omitted(
 # the round-trip test in ``test_cli_publish_upload.py``: the resolved
 # HF token must never reach stdout/stderr. The transport adapter's
 # error wrappers run the message body through
-# :func:`pd_ocr_synth.publish.redaction.redact_token` before raising —
+# :func:`pdomain_ocr_synth.publish.redaction.redact_token` before raising —
 # these tests lock that wiring, on each error branch, against
 # regression. If a future refactor of the wrappers drops the
 # redaction step, the tests below catch it without needing to wait for

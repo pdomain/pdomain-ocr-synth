@@ -26,8 +26,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.render import (
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.render import (
     ParagraphBox,
     RenderContext,
     RenderedSample,

@@ -41,7 +41,7 @@ specific OpenType features for the renderer. (Defaults: `liga: true`,
 `calt: true`, others off.)
 
 The validator inspects each font on disk and surfaces these issues at
-`pd-ocr-synth validate` time:
+`pdomain-ocr-synth validate` time:
 
 | Code | When |
 |------|------|

@@ -26,7 +26,7 @@ this test. To run it live::
     export PD_OCR_SYNTH_HF_E2E=1
     export HF_TOKEN=hf_...                      # write scope on the namespace
     # optional — overrides the default repo name:
-    export PD_OCR_SYNTH_HF_E2E_REPO=me/pd-ocr-synth-livetest-recognition
+    export PD_OCR_SYNTH_HF_E2E_REPO=me/pdomain-ocr-synth-livetest-recognition
     uv run pytest -m integration tests/integration/test_publish_live_hf.py -v
 
 Env-var contract
@@ -44,7 +44,7 @@ Env-var contract
     here because there's no CLI flag in a pytest invocation.
 ``PD_OCR_SYNTH_HF_E2E_REPO``
     Optional. Canonical ``OWNER/NAME`` for the scratch dataset repo.
-    Default: ``ConcaveTrillion/pd-ocr-synth-livetest-recognition``.
+    Default: ``pdomain/pdomain-ocr-synth-livetest-recognition``.
     The test creates and **deletes** this repo each run, so point it
     at a throwaway namespace.
 
@@ -73,17 +73,17 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish.orchestrator import (
+from pdomain_ocr_synth.publish.orchestrator import (
     PublishResult,
     PublishState,
     publish_recognition,
 )
-from pd_ocr_synth.publish.preflight import (
+from pdomain_ocr_synth.publish.preflight import (
     REQUIRED_FRONT_MATTER_KEYS,
     check_required_front_matter,
 )
-from pd_ocr_synth.publish.recognition import build_recognition_staging
-from pd_ocr_synth.publish.sdk_transport import make_default_transport
+from pdomain_ocr_synth.publish.recognition import build_recognition_staging
+from pdomain_ocr_synth.publish.sdk_transport import make_default_transport
 
 # ---------------------------------------------------------------------------
 # Gating helpers
@@ -92,7 +92,7 @@ from pd_ocr_synth.publish.sdk_transport import make_default_transport
 
 _TRUTHY = frozenset({"1", "true", "True", "TRUE", "yes", "on"})
 
-_DEFAULT_REPO = "ConcaveTrillion/pd-ocr-synth-livetest-recognition"
+_DEFAULT_REPO = "pdomain/pdomain-ocr-synth-livetest-recognition"
 
 
 def _live_enabled() -> bool:
@@ -262,7 +262,7 @@ def test_live_publish_create_then_idempotent_no_op(
         transport,
         repo_id,
         staging,
-        commit_message="pd-ocr-synth livetest @initial",
+        commit_message="pdomain-ocr-synth livetest @initial",
     )
     assert first.state in {PublishState.CREATED, PublishState.UPLOADED}, (
         f"unexpected first-publish state {first.state!r}; expected CREATED or UPLOADED"
@@ -276,7 +276,7 @@ def test_live_publish_create_then_idempotent_no_op(
         transport,
         repo_id,
         staging,
-        commit_message="pd-ocr-synth livetest @should-not-fire",
+        commit_message="pdomain-ocr-synth livetest @should-not-fire",
     )
     assert second.state is PublishState.NO_CHANGE, (
         f"second publish was {second.state!r}; expected NO_CHANGE "

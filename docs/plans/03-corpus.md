@@ -5,7 +5,7 @@ in commits ec1c4f4…f3c5a07 on `main`. Less-common providers and the
 `describe` corpus-stats extension are deferred — see below.
 
 **Goal:** corpora load from disk and from the web with on-disk caching
-keyed by recipe-derived hashes. `pd-ocr-synth fetch gaelic` warms a
+keyed by recipe-derived hashes. `pdomain-ocr-synth fetch gaelic` warms a
 cache that `render` can read offline.
 
 Spec: [`04-corpus-providers.md`](../specs/04-corpus-providers.md).
@@ -14,7 +14,7 @@ Spec: [`04-corpus-providers.md`](../specs/04-corpus-providers.md).
 
 ### Provider interface
 
-- [x] `pd_ocr_synth.corpus.Provider` protocol matching spec 09.
+- [x] `pdomain_ocr_synth.corpus.Provider` protocol matching spec 09.
 - [x] `ProviderContext` (recipe_dir, cache, http, offline, logger).
 - [x] Registry of built-in providers with lazy entry-point loading.
 - [ ] `python:` inline loader (deferred — not needed by gaelic; the
@@ -48,7 +48,7 @@ Gaelic uses the first three; those are the priority of M03.
 
 ### Cache layer
 
-- [x] Cache root: `${PD_OCR_SYNTH_CACHE:-~/.cache/pd-ocr-synth/}`.
+- [x] Cache root: `${PD_OCR_SYNTH_CACHE:-~/.cache/pdomain-ocr-synth/}`.
 - [x] `<root>/<provider>/<key>.{txt,meta.json}` layout. Long keys
       collapse to `prefix-sha256[:16]` so URL-shaped keys do not
       blow filesystem path limits.
@@ -56,7 +56,7 @@ Gaelic uses the first three; those are the priority of M03.
 - [x] `--offline` semantics (raises `OfflineCacheMissError` on miss);
       currently exposed via the provider context flag, the CLI flag
       lands with `render` in M05.
-- [ ] `pd-ocr-synth clean <recipe>` (deferred — track as a small
+- [ ] `pdomain-ocr-synth clean <recipe>` (deferred — track as a small
       follow-up; the registry + cache_key plumbing is already in
       place, only the CLI handler needs writing).
 
@@ -76,7 +76,7 @@ Gaelic uses the first three; those are the priority of M03.
 - [ ] `min_word_length` post-tokenization length filter (deferred —
       same story as `max_chars`: spec 04 documents it, the recipe
       model accepts it, but tokenization itself doesn't yet exist as
-      a corpus-stage filter — `pd_ocr_synth.tokenization` is the
+      a corpus-stage filter — `pdomain_ocr_synth.tokenization` is the
       render-time word splitter. Validation now surfaces explicit
       overrides > 1 as `corpus_min_word_length_not_implemented`. To
       implement: decide whether the filter runs as a corpus-stage
@@ -85,11 +85,11 @@ Gaelic uses the first three; those are the priority of M03.
 
 ### CLI surface
 
-- [x] `pd-ocr-synth fetch <recipe>` prints per-provider status
+- [x] `pdomain-ocr-synth fetch <recipe>` prints per-provider status
       (cache vs fetch, char count, elapsed seconds, cache key) and
       a total. Exit 4 (`CORPUS_EXIT`) on any per-entry failure;
       otherwise 0.
-- [ ] `pd-ocr-synth describe gaelic` corpus-stats extension
+- [ ] `pdomain-ocr-synth describe gaelic` corpus-stats extension
       (total chars, unique tokens, top-10 codepoints) — deferred.
       Hangs on tokenization choices that the spec defers to M05;
       revisit alongside `render`.
@@ -110,15 +110,15 @@ Gaelic uses the first three; those are the priority of M03.
 ## Validation criteria
 
 ```bash
-pd-ocr-synth fetch gaelic
+pdomain-ocr-synth fetch gaelic
 # → fetches CELT pages and Wikisource (mul) pages; populates cache.
 #   On a fresh devcontainer the local seed-words.txt entry fails by
 #   design (the user has not yet authored it — see the M02 closeout
 #   note). Web + wikisource succeed.
-ls ~/.cache/pd-ocr-synth/web/
+ls ~/.cache/pdomain-ocr-synth/web/
 # → shows .txt and .meta.json for each URL.
 
-pd-ocr-synth fetch gaelic    # second run
+pdomain-ocr-synth fetch gaelic    # second run
 # → CELT entries served from cache. Wikisource fetches again because
 #   gaelic uses cache: true on the wikisource entry too — verified.
 ```
@@ -148,6 +148,6 @@ pd-ocr-synth fetch gaelic    # second run
 - The deferred providers are all small wrappers: `web_list` is
   literally a loop over `web`; `gutenberg` and `internet_archive`
   are special-cased URL builders. Estimate <1 day each.
-- `pd-ocr-synth clean <recipe>` is the only deferred CLI surface
+- `pdomain-ocr-synth clean <recipe>` is the only deferred CLI surface
   that should land before M04 starts using the cache for
   text-transform staging.

@@ -1,11 +1,11 @@
-"""Tests for parser functions in ``pd_ocr_synth.corpus.parsers``."""
+"""Tests for parser functions in ``pdomain_ocr_synth.corpus.parsers``."""
 
 from __future__ import annotations
 
 import pytest
 
-from pd_ocr_synth.corpus.exceptions import ProviderError
-from pd_ocr_synth.corpus.parsers import (
+from pdomain_ocr_synth.corpus.exceptions import ProviderError
+from pdomain_ocr_synth.corpus.parsers import (
     get_parser,
     parse_html_text,
     parse_json,

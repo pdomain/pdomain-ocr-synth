@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth import __version__
-from pd_ocr_synth.cli import build_parser, main
+from pdomain_ocr_synth import __version__
+from pdomain_ocr_synth.cli import build_parser, main
 
 # Every subcommand the parser knows about — used to verify --help works
 # uniformly. ``schema`` is M02; the rest mirror docs/specs/01-cli.md.
@@ -47,7 +47,7 @@ STILL_STUBBED: list[str] = []
 
 def test_parser_builds() -> None:
     parser = build_parser()
-    assert parser.prog == "pd-ocr-synth"
+    assert parser.prog == "pdomain-ocr-synth"
 
 
 def test_no_args_prints_help_and_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
@@ -360,7 +360,7 @@ def test_describe_text_summary_field_set_matches_recipe_model(
     pins that contract: ``describe`` round-trips the resolved Recipe
     model dump, so every model field is reachable.
     """
-    from pd_ocr_synth.recipe.models import Recipe
+    from pdomain_ocr_synth.recipe.models import Recipe
 
     rp = _make_good_recipe(tmp_path, writable_font_bytes)
     rc = main(["describe", str(rp), "--format", "json"])
@@ -381,7 +381,7 @@ def test_describe_json_round_trips_every_top_level_field(
     This guards against describe accidentally calling ``model_dump``
     with ``exclude=...`` or filtering keys somewhere upstream.
     """
-    from pd_ocr_synth.recipe.models import Recipe
+    from pdomain_ocr_synth.recipe.models import Recipe
 
     rp = _make_good_recipe(tmp_path, writable_font_bytes)
     rc = main(["describe", str(rp), "--format", "json"])

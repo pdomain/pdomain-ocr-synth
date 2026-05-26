@@ -14,14 +14,14 @@ from typing import Any
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     CONTENT_SHA_KEY,
     DATA_DIRNAME,
     METADATA_FILENAME,
     README_FILENAME,
     build_recognition_staging,
 )
-from pd_ocr_synth.publish.recognition import StagingError
+from pdomain_ocr_synth.publish.recognition import StagingError
 
 # ---------------------------------------------------------------------------
 # Fixture helpers
@@ -459,8 +459,8 @@ def test_staging_round_trips_a_real_recognition_writer_output(tmp_path: Path) ->
 
     from types import SimpleNamespace
 
-    from pd_ocr_synth.output import RecognitionWriter
-    from pd_ocr_synth.recipe import load_recipe
+    from pdomain_ocr_synth.output import RecognitionWriter
+    from pdomain_ocr_synth.recipe import load_recipe
 
     font = tmp_path / "fake.otf"
     font.write_bytes(b"\x00fake")

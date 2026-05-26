@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.corpus.cache``."""
+"""Tests for ``pdomain_ocr_synth.corpus.cache``."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.corpus import (
+from pdomain_ocr_synth.corpus import (
     CacheMeta,
     CacheMissError,
     CacheStore,
@@ -24,7 +24,7 @@ def test_default_cache_root_uses_env_var(monkeypatch, tmp_path: Path) -> None:
 def test_default_cache_root_falls_back_to_home(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.delenv("PD_OCR_SYNTH_CACHE", raising=False)
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert default_cache_root() == tmp_path / ".cache" / "pd-ocr-synth"
+    assert default_cache_root() == tmp_path / ".cache" / "pdomain-ocr-synth"
 
 
 def test_write_then_read_roundtrip(tmp_path: Path) -> None:

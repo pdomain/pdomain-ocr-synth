@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.corpus.providers.web.WebProvider``."""
+"""Tests for ``pdomain_ocr_synth.corpus.providers.web.WebProvider``."""
 
 from __future__ import annotations
 
@@ -8,14 +8,14 @@ from pathlib import Path
 import httpx
 import pytest
 
-from pd_ocr_synth.corpus import (
+from pdomain_ocr_synth.corpus import (
     CacheStore,
     OfflineCacheMissError,
     ProviderContext,
     ProviderError,
     WebProvider,
 )
-from pd_ocr_synth.corpus.http import build_client
+from pdomain_ocr_synth.corpus.http import build_client
 
 
 def _ctx(

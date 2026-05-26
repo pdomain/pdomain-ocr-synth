@@ -20,13 +20,13 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.render import (
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.render import (
     MissingGlyphError,
     RenderContext,
     render_word_crop,
 )
-from pd_ocr_synth.render.context import branched_seed
+from pdomain_ocr_synth.render.context import branched_seed
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"

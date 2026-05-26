@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.publish.orchestrator`` (M08).
+"""Unit tests for ``pdomain_ocr_synth.publish.orchestrator`` (M08).
 
 Drives the full upload sequence — pre-flight, content-SHA, idempotency,
 ``create_repo`` (when needed), ``upload_folder``, optional
@@ -19,19 +19,19 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish.content_sha import (
+from pdomain_ocr_synth.publish.content_sha import (
     CONTENT_SHA_KEY,
     apply_content_sha_to_readme,
     compute_content_sha,
 )
-from pd_ocr_synth.publish.orchestrator import (
+from pdomain_ocr_synth.publish.orchestrator import (
     PublishError,
     PublishResult,
     PublishState,
     publish_recognition,
 )
-from pd_ocr_synth.publish.recognition import build_recognition_staging
-from pd_ocr_synth.publish.transport import (
+from pdomain_ocr_synth.publish.recognition import build_recognition_staging
+from pdomain_ocr_synth.publish.transport import (
     FakeTransport,
     TransportError,
 )
@@ -117,7 +117,7 @@ def test_first_publish_creates_repo_and_uploads(tmp_path: Path) -> None:
         transport,
         "alice/x",
         staging,
-        commit_message="pd-ocr-synth render @abc123",
+        commit_message="pdomain-ocr-synth render @abc123",
     )
 
     assert isinstance(result, PublishResult)
@@ -392,7 +392,7 @@ def test_preflight_error_propagates_when_staging_lacks_readme(tmp_path: Path) ->
     orchestrator.
     """
 
-    from pd_ocr_synth.publish.preflight import PreflightError
+    from pdomain_ocr_synth.publish.preflight import PreflightError
 
     transport = FakeTransport()
     staging = _build_staging(tmp_path)
@@ -455,9 +455,9 @@ def test_orchestrator_ignores_pinned_readme_sha_value_for_recompute(
 
 def test_orchestrator_names_reexported_from_publish_package() -> None:
     """Down-stream code (the CLI runner) imports from
-    ``pd_ocr_synth.publish``; make sure the new names land there."""
+    ``pdomain_ocr_synth.publish``; make sure the new names land there."""
 
-    from pd_ocr_synth import publish
+    from pdomain_ocr_synth import publish
 
     assert publish.publish_recognition is publish_recognition
     assert publish.PublishResult is PublishResult

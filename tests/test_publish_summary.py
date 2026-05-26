@@ -1,8 +1,8 @@
 """Unit tests for the manifest-summary helper (M08).
 
-Covers ``pd_ocr_synth.publish.summary``: a pure file-IO aggregator
+Covers ``pdomain_ocr_synth.publish.summary``: a pure file-IO aggregator
 over the staging-dir ``metadata.jsonl`` that the upcoming
-``pd-ocr-synth publish --dry-run`` will print, and that the eventual
+``pdomain-ocr-synth publish --dry-run`` will print, and that the eventual
 dataset-card refinement will reuse for coverage tables.
 
 These tests treat the public surface (``summarize_metadata``,
@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     METADATA_FILENAME,
     ManifestSummary,
     SummaryError,
@@ -487,7 +487,7 @@ def test_summary_against_real_staging_build(tmp_path: Path) -> None:
         "  corpus: []\n"
         "  publish:\n"
         "    hf_dataset:\n"
-        "      repo: ntw8532/pd-ocr-synth-gaelic\n"
+        "      repo: ntw8532/pdomain-ocr-synth-gaelic\n"
         "      license: cc-by-4.0\n"
         "      language: [ga]\n"
         "      tags: [ocr, gaelic]\n"

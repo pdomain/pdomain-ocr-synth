@@ -1,6 +1,6 @@
 """Unit tests for the HF token resolver (M08).
 
-Covers ``pd_ocr_synth.publish.auth``. The resolver is the publish
+Covers ``pdomain_ocr_synth.publish.auth``. The resolver is the publish
 flow's first network-touching gate: it picks a token from the
 documented chain (``--token`` flag → ``HF_TOKEN`` env →
 ``~/.cache/huggingface/token``) and produces a typed error naming
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     HF_TOKEN_ENV_VAR,
     AuthError,
     ResolvedToken,
@@ -186,7 +186,7 @@ def test_hf_home_redirects_cache_lookup(tmp_path: Path) -> None:
 
     Mirrors the SDK's behavior so users with a relocated HF cache
     don't get an inconsistent token resolution between ``hf`` and
-    ``pd-ocr-synth``.
+    ``pdomain-ocr-synth``.
     """
 
     custom_home = tmp_path / "custom-hf-home"

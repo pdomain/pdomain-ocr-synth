@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.fonts``.
+"""Tests for ``pdomain_ocr_synth.fonts``.
 
 Uses the real Gaelic fonts that the bundled fetch script downloads
 when available. Tests skip gracefully when the fonts have not been
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.fonts import FontInfo, FontOpenError, _decode, open_font
+from pdomain_ocr_synth.fonts import FontInfo, FontOpenError, _decode, open_font
 
 FONT_DIR = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"

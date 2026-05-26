@@ -337,7 +337,7 @@
     },
     "Layout": {
       "additionalProperties": false,
-      "description": "Layout block.\n\nDifferent ``mode`` values legally use different keys. Pydantic only\naccepts known keys (``extra=\"forbid\"``); semantic checks for\nmode-specific consistency live in :mod:`pd_ocr_synth.validation`.",
+      "description": "Layout block.\n\nDifferent ``mode`` values legally use different keys. Pydantic only\naccepts known keys (``extra=\"forbid\"``); semantic checks for\nmode-specific consistency live in :mod:`pdomain_ocr_synth.validation`.",
       "properties": {
         "mode": {
           "enum": [

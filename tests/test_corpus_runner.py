@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.corpus.runner.run_providers``."""
+"""Tests for ``pdomain_ocr_synth.corpus.runner.run_providers``."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.corpus import CacheStore, ProviderContext
-from pd_ocr_synth.corpus.runner import collect_corpus_text, run_providers
-from pd_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.corpus import CacheStore, ProviderContext
+from pdomain_ocr_synth.corpus.runner import collect_corpus_text, run_providers
+from pdomain_ocr_synth.recipe import load_recipe
 
 _RECIPE = """\
 schema_version: 1
@@ -178,7 +178,7 @@ def test_runner_no_cache_sets_options_cache_false(
 
     captured: list[dict] = []
 
-    from pd_ocr_synth.corpus.providers.local import LocalProvider
+    from pdomain_ocr_synth.corpus.providers.local import LocalProvider
 
     real_fetch = LocalProvider.fetch
 
@@ -211,7 +211,7 @@ def test_collect_corpus_text_no_cache_threads_through(
 ) -> None:
     """``collect_corpus_text(..., no_cache=True)`` reaches the runner."""
 
-    from pd_ocr_synth.corpus import runner as runner_mod
+    from pdomain_ocr_synth.corpus import runner as runner_mod
 
     seen: dict[str, object] = {}
     real = runner_mod.run_providers

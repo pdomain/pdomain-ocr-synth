@@ -1,4 +1,4 @@
-"""CLI tests for ``pd-ocr-synth lint`` (M10 stretch).
+"""CLI tests for ``pdomain-ocr-synth lint`` (M10 stretch).
 
 Exit-code matrix per the M10 contract:
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.cli import main
 
 
 # Production-shaped recipe — every lint heuristic passes. Mirrors

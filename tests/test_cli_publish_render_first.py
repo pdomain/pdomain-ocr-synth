@@ -1,13 +1,13 @@
-"""End-to-end tests for ``pd-ocr-synth publish --render-first`` (M08).
+"""End-to-end tests for ``pdomain-ocr-synth publish --render-first`` (M08).
 
 Spec 10 § When to publish: "Pass ``--render-first`` to chain them."
 Spec 10 § Errors and recovery: missing local render → exit 5 with
 "render first or use --render-first".
 
-Implementation lives in ``pd_ocr_synth.publish.cli_runner.cmd_publish``
+Implementation lives in ``pdomain_ocr_synth.publish.cli_runner.cmd_publish``
 behind an injectable ``render_first_callable`` parameter, with a
 production default that delegates to
-:func:`pd_ocr_synth.render.run_recipe`. Tests inject a fake render
+:func:`pdomain_ocr_synth.render.run_recipe`. Tests inject a fake render
 callable so they exercise the chaining contract without paying the
 real-rendering cost.
 
@@ -46,7 +46,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.cli import main
+from pdomain_ocr_synth.cli import main
 
 # ---------------------------------------------------------------------------
 # Recipe + fake-render fixtures
@@ -172,7 +172,7 @@ def test_publish_without_render_first_does_not_invoke_render_callable(
     def _spy(recipe_path: Path, output_dir: Path, cache_dir: Path | None) -> None:
         invocations.append(output_dir)
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner._default_render_first", _spy)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner._default_render_first", _spy)
 
     rc = main(["publish", str(rp), "--repo", "alice/x", "--dry-run"])
     captured = capsys.readouterr()
@@ -209,7 +209,7 @@ def test_publish_render_first_invokes_render_then_publishes(
         invocations.append((recipe_path, output_dir))
         _fake_render_layout(output_dir)
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner._default_render_first", _fake_render)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner._default_render_first", _fake_render)
 
     rc = main(
         [
@@ -258,7 +258,7 @@ def test_publish_render_first_with_output_override_uses_overridden_dir(
         invocations.append(output_dir)
         _fake_render_layout(output_dir)
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner._default_render_first", _fake_render)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner._default_render_first", _fake_render)
 
     rc = main(
         [
@@ -303,7 +303,9 @@ def test_publish_render_first_render_failure_short_circuits_with_exit_five(
     def _failing_render(recipe_path: Path, output_dir: Path, cache_dir: Path | None) -> None:
         raise RuntimeError("simulated render failure")
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner._default_render_first", _failing_render)
+    monkeypatch.setattr(
+        "pdomain_ocr_synth.publish.cli_runner._default_render_first", _failing_render
+    )
 
     rc = main(
         [
@@ -347,7 +349,7 @@ def test_publish_render_first_render_writes_to_wrong_path_exits_five(
         # Returns successfully without creating output_dir.
         return None
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner._default_render_first", _silent_no_op)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner._default_render_first", _silent_no_op)
 
     rc = main(
         [
@@ -386,7 +388,7 @@ def test_publish_render_first_chains_into_real_upload_path(
     fires.
     """
 
-    from pd_ocr_synth.publish import SdkUnavailableError
+    from pdomain_ocr_synth.publish import SdkUnavailableError
 
     monkeypatch.setenv("HF_TOKEN", "hf_test_token_value_aaaaaaaaaaaaaaaaaaaa")
     monkeypatch.setenv("HF_HOME", str(tmp_path / "hf-home"))
@@ -403,8 +405,8 @@ def test_publish_render_first_chains_into_real_upload_path(
     def _no_sdk(_token: str) -> None:
         raise SdkUnavailableError("sdk not installed (test fake)")
 
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner._default_render_first", _fake_render)
-    monkeypatch.setattr("pd_ocr_synth.publish.cli_runner.make_default_transport", _no_sdk)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner._default_render_first", _fake_render)
+    monkeypatch.setattr("pdomain_ocr_synth.publish.cli_runner.make_default_transport", _no_sdk)
 
     rc = main(
         [

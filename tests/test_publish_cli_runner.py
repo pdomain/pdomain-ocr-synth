@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.publish.cli_runner`` (M08).
+"""Unit tests for ``pdomain_ocr_synth.publish.cli_runner`` (M08).
 
 The CLI integration tests in ``test_cli_publish.py`` cover the full
 argparse → dispatch → exit-code path. These tests exercise the
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.publish.cli_runner import (
+from pdomain_ocr_synth.publish.cli_runner import (
     DryRunPlan,
     _format_size_mb,
     _front_matter_preview,
@@ -23,9 +23,9 @@ from pd_ocr_synth.publish.cli_runner import (
     format_dry_run_plan,
     format_publish_result,
 )
-from pd_ocr_synth.publish.detection import build_detection_staging
-from pd_ocr_synth.publish.orchestrator import PublishResult, PublishState
-from pd_ocr_synth.publish.recognition import build_recognition_staging
+from pdomain_ocr_synth.publish.detection import build_detection_staging
+from pdomain_ocr_synth.publish.orchestrator import PublishResult, PublishState
+from pdomain_ocr_synth.publish.recognition import build_recognition_staging
 
 # ---------------------------------------------------------------------------
 # _format_size_mb

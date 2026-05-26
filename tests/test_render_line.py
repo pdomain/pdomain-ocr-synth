@@ -1,7 +1,7 @@
 """Tests for ``lines``-mode rendering (M09 layout chunk).
 
 Mirrors the structure of ``test_render.py`` but exercises
-:func:`pd_ocr_synth.render.render_line` — a single baseline with
+:func:`pdomain_ocr_synth.render.render_line` — a single baseline with
 multiple words, returning a :class:`RenderedSample` whose
 ``word_boxes`` carry per-word ground truth.
 
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.recipe import load_recipe
-from pd_ocr_synth.render import (
+from pdomain_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.render import (
     MissingGlyphError,
     RenderContext,
     RenderError,

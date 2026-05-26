@@ -3,7 +3,7 @@
 This spec defines how the synth pipeline emits **per-word glyph
 annotations** as a side channel alongside ground-truth text. It is the
 producer side of a workspace-wide data model whose canonical definition
-lives in `pd-book-tools` (`GlyphAnnotations`, `LigatureMark`). Synth has
+lives in `pdomain-book-tools` (`GlyphAnnotations`, `LigatureMark`). Synth has
 *perfect* knowledge of which glyphs it placed for each word, so it is
 the gold-standard source for any classifier learning to detect
 ligatures, long-s, or swash forms from word crops.
@@ -90,14 +90,14 @@ annotations:
 ```
 
 Unknown ligature kinds are an error at recipe validate time. The
-canonical kind enum lives in `pd-book-tools` so all repos agree on
+canonical kind enum lives in `pdomain-book-tools` so all repos agree on
 spelling; synth imports it.
 
 ### Per-recipe declarations (initial set)
 
 | Recipe | `long_s` | `ligatures` | `swash` |
 |--------|----------|-------------|---------|
-| `gaelic` (Cló Gaelach, target #1) | true | `LONG_S_T`, plus Gaelic-specific kinds documented in pd-book-tools as `GAELIC_*` once enumerated by font/feature inspection | false |
+| `gaelic` (Cló Gaelach, target #1) | true | `LONG_S_T`, plus Gaelic-specific kinds documented in pdomain-book-tools as `GAELIC_*` once enumerated by font/feature inspection | false |
 | `roman` (generic Roman, ct/st coverage) | true | `CT`, `ST`, `FI`, `FL`, `FFI`, `FFL` | false |
 | `fraktur` (future) | true | `CH`, `CK`, `LONG_S_T`, `LONG_S_S` (ſs), plus Fraktur-specific | false |
 | `early-modern-english` (future) | true | `CT`, `ST`, `FI`, `FL`, `FFI`, `FFL`, `LONG_S_T` | true (italic catchwords) |
@@ -227,7 +227,7 @@ does today (spec 08 §"Idempotency and resumption").
 ## Cross-references
 
 - Data model (consumer-facing): see the corresponding
-  `GlyphAnnotations` / `LigatureMark` spec in `pd-book-tools`.
+  `GlyphAnnotations` / `LigatureMark` spec in `pdomain-book-tools`.
 - Spec 06 §"Ground truth captured per sample": baseline of what the
   renderer emits; M12 extends `glyph_runs` with the annotation derive
   step.

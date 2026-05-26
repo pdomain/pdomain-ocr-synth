@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.publish.idempotency`` (M08).
+"""Unit tests for ``pdomain_ocr_synth.publish.idempotency`` (M08).
 
 Covers the three-step procedure from ``docs/specs/10-publishing.md``
 § Idempotency:
@@ -22,13 +22,13 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.publish.content_sha import CONTENT_SHA_KEY
-from pd_ocr_synth.publish.idempotency import (
+from pdomain_ocr_synth.publish.content_sha import CONTENT_SHA_KEY
+from pdomain_ocr_synth.publish.idempotency import (
     IdempotencyDecision,
     IdempotencyState,
     check_idempotency,
 )
-from pd_ocr_synth.publish.transport import FakeTransport, TransportError
+from pdomain_ocr_synth.publish.transport import FakeTransport, TransportError
 
 _LOCAL_SHA = "deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcdef"
 _OTHER_SHA = "00000000000000000000000000000000000000000000000000000000feedface"
@@ -272,9 +272,9 @@ def test_idempotency_state_values_are_string_compatible() -> None:
 
 def test_idempotency_names_reexported_from_publish_package() -> None:
     """Down-stream code (the runner) imports from
-    ``pd_ocr_synth.publish``; make sure the new names land there."""
+    ``pdomain_ocr_synth.publish``; make sure the new names land there."""
 
-    from pd_ocr_synth import publish
+    from pdomain_ocr_synth import publish
 
     assert publish.check_idempotency is check_idempotency
     assert publish.IdempotencyDecision is IdempotencyDecision

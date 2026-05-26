@@ -1,4 +1,4 @@
-# Lint-rule Deviations — pd-ocr-synth
+# Lint-rule Deviations — pdomain-ocr-synth
 
 Standing lint-rule suppressions and per-file overrides in this repo. Each
 entry records the rule, the tool, the file(s) affected, and the
@@ -10,7 +10,7 @@ Most suppressions trace to the 2026-05-17 strict-linting rollout, which
 expanded `ruff` and switched `basedpyright` to `recommended` mode. The
 annotation/docstring backlog (`ANN` / `D`) was deferred per-file rather
 than fixed in a single sweep — that cleanup is tracked by
-[`ConcaveTrillion/pd-ocr-synth#3`](https://github.com/ConcaveTrillion/pd-ocr-synth/issues/3).
+[`pdomain/pdomain-ocr-synth#3`](https://github.com/pdomain/pdomain-ocr-synth/issues/3).
 
 ---
 
@@ -87,17 +87,17 @@ Ignored: `D`. Internal-convention modules; no docstrings required.
 
 ### 2.5 Typography modules — `RUF002` / `RUF003`
 
-`src/pd_ocr_synth/render/paragraph.py` and
+`src/pdomain_ocr_synth/render/paragraph.py` and
 `tests/integration/test_trainer_dataset_contract.py` ignore `RUF002`
 (and `paragraph.py` also `RUF003`): typography docs use `×`
 (MULTIPLICATION SIGN) as the standard unit notation for line-height
 multipliers; replacing it with `x` would be less precise.
 
-### 2.6 ANN/D/G/BLE/TRY/TC deferred backlog — `src/pd_ocr_synth/**`
+### 2.6 ANN/D/G/BLE/TRY/TC deferred backlog — `src/pdomain_ocr_synth/**`
 
 The 2026-05-17 rollout added ~55 per-file-ignores so the strict-lint
 config could land without a 90-minute annotation marathon. Every
-`src/pd_ocr_synth/` production module carries some subset of
+`src/pdomain_ocr_synth/` production module carries some subset of
 `ANN D G BLE TRY TC` — `ANN` (missing annotations), `D` (missing
 docstrings), `G` (logging-format), `BLE` (blind except), `TRY`
 (tryceratops), `TC` (type-only imports not yet moved to `TYPE_CHECKING`;

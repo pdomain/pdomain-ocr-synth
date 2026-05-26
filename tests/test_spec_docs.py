@@ -1,7 +1,7 @@
 """Spec-doc ↔ implementation drift guards.
 
 Each test in this module pairs a claim made in ``docs/specs/`` with
-the source-of-truth in ``src/pd_ocr_synth/`` and fails if the two get
+the source-of-truth in ``src/pdomain_ocr_synth/`` and fails if the two get
 out of sync. The pattern mirrors the degradation-kind catalog meta-
 tests in ``test_validation.py`` (iter 66).
 
@@ -31,12 +31,12 @@ import dataclasses
 import re
 from pathlib import Path
 
-from pd_ocr_synth.audit import AUDIT_SCHEMA_VERSION, AuditEntry
-from pd_ocr_synth.cli import build_parser
-from pd_ocr_synth.lint import LINT_CODES
-from pd_ocr_synth.output.detection import LABELS_FILENAME as DETECTION_LABELS_FILENAME
-from pd_ocr_synth.output.recognition import LABELS_FILENAME as RECOGNITION_LABELS_FILENAME
-from pd_ocr_synth.validation import VALIDATION_CODES
+from pdomain_ocr_synth.audit import AUDIT_SCHEMA_VERSION, AuditEntry
+from pdomain_ocr_synth.cli import build_parser
+from pdomain_ocr_synth.lint import LINT_CODES
+from pdomain_ocr_synth.output.detection import LABELS_FILENAME as DETECTION_LABELS_FILENAME
+from pdomain_ocr_synth.output.recognition import LABELS_FILENAME as RECOGNITION_LABELS_FILENAME
+from pdomain_ocr_synth.validation import VALIDATION_CODES
 
 SPECS_DIR = Path(__file__).resolve().parent.parent / "docs" / "specs"
 
@@ -147,7 +147,7 @@ def test_spec_06_no_stale_pages_json_reference() -> None:
     assert not offending, (
         "docs/specs/06-rendering.md mentions 'pages.json' in a paragraph "
         f"that does not also name {RECOGNITION_LABELS_FILENAME!r} (see "
-        "src/pd_ocr_synth/output/detection.py:LABELS_FILENAME):\n"
+        "src/pdomain_ocr_synth/output/detection.py:LABELS_FILENAME):\n"
         + "\n\n".join(f"  L{ln}:\n{paragraph}" for ln, paragraph in offending)
     )
 
@@ -474,7 +474,7 @@ def test_argparse_flags_match_spec_01() -> None:
 #
 # Spec 01 documents every code ``lint <recipe>`` can emit so users can
 # grep / filter on stable identifiers. The catalog source-of-truth is
-# ``pd_ocr_synth.lint.LINT_CODES``; behavioural tests in
+# ``pdomain_ocr_synth.lint.LINT_CODES``; behavioural tests in
 # ``tests/test_lint.py`` already pin both directions of the runtime
 # contract (every emitted code ⊆ catalog, every catalog entry reachable
 # by some recipe). This meta-test closes the third side: the spec doc
@@ -532,10 +532,12 @@ def test_spec_01_lint_codes_match_LINT_CODES() -> None:  # noqa: N802
     code_only = sorted(LINT_CODES - spec_codes)
     failures: list[str] = []
     if spec_only:
-        failures.append(f"spec 01 documents codes not in pd_ocr_synth.lint.LINT_CODES: {spec_only}")
+        failures.append(
+            f"spec 01 documents codes not in pdomain_ocr_synth.lint.LINT_CODES: {spec_only}"
+        )
     if code_only:
         failures.append(
-            "pd_ocr_synth.lint.LINT_CODES has codes missing from the spec 01 "
+            "pdomain_ocr_synth.lint.LINT_CODES has codes missing from the spec 01 "
             f"'Lint codes' table: {code_only}"
         )
     assert not failures, "\n".join(failures)
@@ -548,7 +550,7 @@ def test_spec_01_lint_codes_match_LINT_CODES() -> None:  # noqa: N802
 # user-visible (they appear verbatim in ``--json`` payloads, the
 # ``[code]`` prefix on human output, structured logs) so the catalog
 # is part of the public CLI contract. Source-of-truth is
-# ``pd_ocr_synth.validation.VALIDATION_CODES``; the spec doc table
+# ``pdomain_ocr_synth.validation.VALIDATION_CODES``; the spec doc table
 # must match it exactly.
 #
 # A new ``ValidationIssue(code=...)`` site that lands without updating
@@ -609,11 +611,11 @@ def test_spec_01_validation_codes_match_VALIDATION_CODES() -> None:  # noqa: N80
     failures: list[str] = []
     if spec_only:
         failures.append(
-            f"spec 01 documents codes not in pd_ocr_synth.validation.VALIDATION_CODES: {spec_only}"
+            f"spec 01 documents codes not in pdomain_ocr_synth.validation.VALIDATION_CODES: {spec_only}"
         )
     if code_only:
         failures.append(
-            "pd_ocr_synth.validation.VALIDATION_CODES has codes missing from "
+            "pdomain_ocr_synth.validation.VALIDATION_CODES has codes missing from "
             f"the spec 01 'Validation codes' table: {code_only}"
         )
     assert not failures, "\n".join(failures)
@@ -730,7 +732,7 @@ def test_font_validator_codes_today_are_in_VALIDATION_CODES() -> None:  # noqa: 
     missing = _FONT_VALIDATOR_CODES_TODAY - VALIDATION_CODES
     assert not missing, (
         "tests/test_spec_docs.py:_FONT_VALIDATOR_CODES_TODAY references "
-        f"codes absent from pd_ocr_synth.validation.VALIDATION_CODES: {sorted(missing)}"
+        f"codes absent from pdomain_ocr_synth.validation.VALIDATION_CODES: {sorted(missing)}"
     )
 
 
@@ -754,11 +756,11 @@ def test_spec_06_font_validator_table_matches_check_fonts() -> None:
     if spec_only:
         failures.append(
             "docs/specs/06-rendering.md '## Font selection' validator table "
-            f"lists codes not emitted by pd_ocr_synth.validation._check_fonts: {spec_only}"
+            f"lists codes not emitted by pdomain_ocr_synth.validation._check_fonts: {spec_only}"
         )
     if code_only:
         failures.append(
-            "pd_ocr_synth.validation._check_fonts emits codes missing from "
+            "pdomain_ocr_synth.validation._check_fonts emits codes missing from "
             f"docs/specs/06-rendering.md '## Font selection' validator table: {code_only}"
         )
     assert not failures, "\n".join(failures)
@@ -847,7 +849,7 @@ def test_spec_01_audit_schema_matches_AuditEntry() -> None:  # noqa: N802
         )
     if dataclass_only:
         failures.append(
-            "pd_ocr_synth.audit.AuditEntry has fields missing from the spec 01 "
+            "pdomain_ocr_synth.audit.AuditEntry has fields missing from the spec 01 "
             f"'Audit log schema' table: {dataclass_only}"
         )
     assert not failures, "\n".join(failures)
@@ -945,7 +947,7 @@ def _registered_corpus_provider_types() -> set[str]:
     spread across every meta-test.
     """
 
-    from pd_ocr_synth.corpus.registry import default_registry
+    from pdomain_ocr_synth.corpus.registry import default_registry
 
     return set(default_registry().types())
 
@@ -962,7 +964,7 @@ def _model_corpus_provider_types() -> set[str]:
 
     from typing import get_args, get_type_hints
 
-    from pd_ocr_synth.recipe.models import (
+    from pdomain_ocr_synth.recipe.models import (
         HFDatasetCorpus,
         LocalCorpus,
         WebCorpus,
@@ -1122,7 +1124,7 @@ _SPEC_04_PROVIDERS_WITHOUT_MODEL: frozenset[str] = frozenset(
 # Stays small and explicit; the catalog meta-tests above already
 # enforce that the key set matches the union members.
 def _model_for_provider(name: str) -> type | None:
-    from pd_ocr_synth.recipe.models import (
+    from pdomain_ocr_synth.recipe.models import (
         HFDatasetCorpus,
         LocalCorpus,
         WebCorpus,
@@ -1287,7 +1289,7 @@ def test_spec_04_per_provider_options_accepted_by_pydantic_model() -> None:
 
     assert not failures, (
         "docs/specs/04-corpus-providers.md per-provider options drift from "
-        "pd_ocr_synth.recipe.models (iter-96 bug class):\n"
+        "pdomain_ocr_synth.recipe.models (iter-96 bug class):\n"
         + "\n".join(failures)
         + "\n\nFix: add each missing field to the model "
         "(see iter-96 WebCorpus.field_path for the pattern), regenerate "
@@ -1383,7 +1385,7 @@ def _registered_text_transform_names() -> set[str]:
     spread across every meta-test.
     """
 
-    from pd_ocr_synth.text_transforms import default_registry
+    from pdomain_ocr_synth.text_transforms import default_registry
 
     return set(default_registry().names())
 
@@ -1471,7 +1473,7 @@ def test_registered_text_transforms_documented_in_spec_05() -> None:
 
 
 def _cli_source() -> str:
-    cli_path = Path(__file__).resolve().parent.parent / "src" / "pd_ocr_synth" / "cli.py"
+    cli_path = Path(__file__).resolve().parent.parent / "src" / "pdomain_ocr_synth" / "cli.py"
     return cli_path.read_text(encoding="utf-8")
 
 
@@ -1619,7 +1621,7 @@ def test_known_unread_dests_are_actually_unread() -> None:
 # Spec 02 (recipe format) ↔ pydantic recipe models
 #
 # Spec 02 is the user-facing contract for the YAML schema; the pydantic
-# models in ``pd_ocr_synth.recipe.models`` are the source-of-truth that
+# models in ``pdomain_ocr_synth.recipe.models`` are the source-of-truth that
 # decides whether a key loads. ``extra="forbid"`` on the frozen base
 # rejects unknown keys, so any key spec 02 advertises that the model
 # doesn't declare would *fail loudly at load time* — not silently.
@@ -1665,7 +1667,7 @@ def test_spec_02_overview_keys_match_recipe_model() -> None:
 
     import yaml
 
-    from pd_ocr_synth.recipe.models import Recipe
+    from pdomain_ocr_synth.recipe.models import Recipe
 
     blocks = _spec_02_yaml_blocks()
     assert blocks, "spec 02 has no fenced YAML blocks; doc layout changed?"
@@ -1721,7 +1723,7 @@ def _per_block_yaml() -> dict[str, dict]:
 def test_spec_02_output_block_keys_match_model() -> None:
     """Keys inside the ``output:`` example must be ``OutputBlock`` fields."""
 
-    from pd_ocr_synth.recipe.models import OutputBlock
+    from pdomain_ocr_synth.recipe.models import OutputBlock
 
     blocks = _per_block_yaml()
     assert "output" in blocks, "spec 02 ``output:`` example block missing"
@@ -1736,7 +1738,7 @@ def test_spec_02_rendering_block_keys_match_model() -> None:
     against ``ColorSpec``.
     """
 
-    from pd_ocr_synth.recipe.models import ColorSpec, Rendering
+    from pdomain_ocr_synth.recipe.models import ColorSpec, Rendering
 
     blocks = _per_block_yaml()
     assert "rendering" in blocks, "spec 02 ``rendering:`` example block missing"
@@ -1756,7 +1758,7 @@ def test_spec_02_rendering_block_keys_match_model() -> None:
 def test_spec_02_layout_block_keys_match_model() -> None:
     """Keys inside the ``layout:`` example must be ``Layout`` fields."""
 
-    from pd_ocr_synth.recipe.models import Layout
+    from pdomain_ocr_synth.recipe.models import Layout
 
     blocks = _per_block_yaml()
     assert "layout" in blocks, "spec 02 ``layout:`` example block missing"
@@ -1768,7 +1770,7 @@ def test_spec_02_publish_block_keys_match_model() -> None:
     """Keys inside the ``publish:`` example must be ``PublishBlock`` /
     ``HFDatasetPublishConfig`` fields."""
 
-    from pd_ocr_synth.recipe.models import HFDatasetPublishConfig, PublishBlock
+    from pdomain_ocr_synth.recipe.models import HFDatasetPublishConfig, PublishBlock
 
     blocks = _per_block_yaml()
     assert "publish" in blocks, "spec 02 ``publish:`` example block missing"
@@ -1787,7 +1789,7 @@ def test_spec_02_corpus_entries_match_models() -> None:
     """Each entry in the ``corpus:`` example must use keys on the matching
     union member (dispatched on ``type``)."""
 
-    from pd_ocr_synth.recipe.models import (
+    from pdomain_ocr_synth.recipe.models import (
         HFDatasetCorpus,
         LocalCorpus,
         WebCorpus,
@@ -1826,7 +1828,7 @@ def test_spec_02_corpus_entries_match_models() -> None:
 def test_spec_02_fonts_entries_match_model() -> None:
     """Each entry in the ``fonts:`` example must use ``Font`` fields."""
 
-    from pd_ocr_synth.recipe.models import Font
+    from pdomain_ocr_synth.recipe.models import Font
 
     blocks = _per_block_yaml()
     assert "fonts" in blocks, "spec 02 ``fonts:`` example block missing"
@@ -1848,7 +1850,7 @@ def test_spec_02_degradation_entries_use_known_kind_field() -> None:
     fields, which keeps the spec example honest about the contract.
     """
 
-    from pd_ocr_synth.recipe.models import DegradationStage
+    from pdomain_ocr_synth.recipe.models import DegradationStage
 
     blocks = _per_block_yaml()
     assert "degradation" in blocks, "spec 02 ``degradation:`` example block missing"
@@ -1870,7 +1872,7 @@ def test_spec_02_degradation_entries_use_known_kind_field() -> None:
 # Spec 02 ``## Validation rules (summary)`` ↔ ``validate_recipe`` (iter 88)
 #
 # Spec 02's "Validation rules" section is the user-facing contract for
-# what ``pd-ocr-synth validate`` enforces. Iter 87 caught spec 06
+# what ``pdomain-ocr-synth validate`` enforces. Iter 87 caught spec 06
 # making a render-time check sound like a validate-time check; this
 # meta-test catches the same drift sub-class in spec 02. Two specific
 # stale claims tripped the audit:
@@ -1989,7 +1991,7 @@ def test_validate_recipe_offline_param_is_a_no_op() -> None:
 
     import inspect
 
-    from pd_ocr_synth.validation import validate_recipe
+    from pdomain_ocr_synth.validation import validate_recipe
 
     src = inspect.getsource(validate_recipe)
     assert "_ = offline" in src or "# placeholder for M03 wiring" in src, (

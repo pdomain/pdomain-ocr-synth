@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.corpus.providers.wikisource.WikisourceProvider``."""
+"""Tests for ``pdomain_ocr_synth.corpus.providers.wikisource.WikisourceProvider``."""
 
 from __future__ import annotations
 
@@ -9,14 +9,14 @@ from pathlib import Path
 import httpx
 import pytest
 
-from pd_ocr_synth.corpus import (
+from pdomain_ocr_synth.corpus import (
     CacheStore,
     OfflineCacheMissError,
     ProviderContext,
     ProviderError,
     WikisourceProvider,
 )
-from pd_ocr_synth.corpus.http import build_client
+from pdomain_ocr_synth.corpus.http import build_client
 
 
 def _ctx(

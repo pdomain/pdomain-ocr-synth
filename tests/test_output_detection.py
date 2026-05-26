@@ -21,13 +21,13 @@ from typing import Any
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.output import (
+from pdomain_ocr_synth.output import (
     DetectionStats,
     DetectionWriter,
     bbox_to_polygon,
     page_filename,
 )
-from pd_ocr_synth.output.detection import (
+from pdomain_ocr_synth.output.detection import (
     LABELS_FILENAME,
     MANIFEST_FILENAME,
     PAGE_PREFIX,
@@ -35,8 +35,8 @@ from pd_ocr_synth.output.detection import (
     DestinationNotEmptyError,
     width_for_count,
 )
-from pd_ocr_synth.output.snapshot import SNAPSHOT_FILENAME, SnapshotMismatchError
-from pd_ocr_synth.recipe import load_recipe
+from pdomain_ocr_synth.output.snapshot import SNAPSHOT_FILENAME, SnapshotMismatchError
+from pdomain_ocr_synth.recipe import load_recipe
 
 _RECIPE_TEMPLATE = """\
 schema_version: 1

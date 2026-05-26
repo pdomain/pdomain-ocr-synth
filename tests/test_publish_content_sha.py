@@ -1,6 +1,6 @@
 """Unit tests for the staging-dir content SHA (M08).
 
-Covers ``pd_ocr_synth.publish.content_sha``: deterministic digest over
+Covers ``pdomain_ocr_synth.publish.content_sha``: deterministic digest over
 the staging-dir contents and the README front-matter rewrite that
 embeds the digest under ``pd-ocr-content-sha``. Pure file-IO; no
 network, no HF SDK.
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pd_ocr_synth.publish import (
+from pdomain_ocr_synth.publish import (
     CONTENT_SHA_ALGORITHM,
     CONTENT_SHA_KEY,
     README_FILENAME,
@@ -29,7 +29,7 @@ from pd_ocr_synth.publish import (
     build_recognition_staging,
     compute_content_sha,
 )
-from pd_ocr_synth.publish.content_sha import (
+from pdomain_ocr_synth.publish.content_sha import (
     _CONTENT_SHA_LINE_RE,
     _embed_content_sha,
 )

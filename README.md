@@ -1,4 +1,4 @@
-# pd-ocr-synth
+# pdomain-ocr-synth
 
 Synthetic OCR training-data generator. Produces labeled image+text pairs for
 historical and specialty typography (first target: Cló Gaelach / early Irish
@@ -23,13 +23,13 @@ matter of writing a YAML file plus optional custom transforms.
 ## How it fits the workspace
 
 ```
-[ pd-ocr-synth ]  →  recognition crops + detection pages
+[ pdomain-ocr-synth ]  →  recognition crops + detection pages
         │
         ▼
 [ pd-ocr-trainer ]  reads new profile (e.g. `gaelic`)
         │
         ▼
-[ pd-ocr-cli ]  uses fine-tuned model on real scans
+[ pdomain-ocr-cli ]  uses fine-tuned model on real scans
 ```
 
 The output adapter writes directly into the directory layout

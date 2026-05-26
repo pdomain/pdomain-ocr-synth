@@ -1,6 +1,6 @@
 """Smoke tests for the package metadata."""
 
-from pd_ocr_synth import __all__, __version__
+from pdomain_ocr_synth import __all__, __version__
 
 
 def test_version_is_defined() -> None:

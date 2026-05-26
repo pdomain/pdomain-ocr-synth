@@ -1,4 +1,4 @@
-# Roadmap — pd-ocr-synth implementation
+# Roadmap — pdomain-ocr-synth implementation
 
 The specs in [`../specs/`](../specs/) describe the destination. This
 roadmap is the path to get there. Each milestone is a vertical slice
@@ -14,8 +14,8 @@ Archived (fully shipped) plans live in [`../archive/plans/`](../archive/plans/).
 |---|-----------|--------|------|---------|
 | [00](00-bootstrap.md) | Bootstrap | mostly done (LICENSE + DEVELOPMENT.md pending) | Repo exists with workspace conventions | `git clone` works; matches peer-project layout |
 | 01 | Dev tooling parity | ✅ archived | Make / lint / test / pre-commit / CI | `make setup && make test && make lint` all green on a stub |
-| 02 | Recipe schema + validator | ✅ archived | Recipes load, validate, list, init | `pd-ocr-synth validate gaelic` passes |
-| [03](03-corpus.md) | Corpus providers + cache | mostly done (deferred providers noted) | Pull text from local + web + Wikisource | `pd-ocr-synth fetch gaelic` warms a cache |
+| 02 | Recipe schema + validator | ✅ archived | Recipes load, validate, list, init | `pdomain-ocr-synth validate gaelic` passes |
+| [03](03-corpus.md) | Corpus providers + cache | mostly done (deferred providers noted) | Pull text from local + web + Wikisource | `pdomain-ocr-synth fetch gaelic` warms a cache |
 | 04 | Text transforms | ✅ archived | Lenition, long-s, Tironian et, base ops | Round-trip transform tests pass |
 | [05](05-rendering.md) | Rendering | mostly done (deferred UX features noted) | HarfBuzz, fonts, word-crop layout | Single sample renders deterministically |
 | [06](06-degradation.md) | Degradation pipeline | mostly done (deferred stages noted) | Geometric + optical + paper + jpeg stages | Sample with degradation looks plausible |
@@ -23,7 +23,7 @@ Archived (fully shipped) plans live in [`../archive/plans/`](../archive/plans/).
 | 08 | HF publish | ✅ archived | Push rendered output to HF dataset repo | A dataset on HF that the trainer can consume |
 | [09](09-detection-mode.md) | Output: detection mode | mostly done (future HF parquet work noted) | Layouts: paragraphs, pages; bbox-aware degradations | Trainer detection profile fed |
 | [10](10-stretch.md) | Stretch | partially done (extra recipes + cloud render remain) | Extra recipes, cloud render, polish | Opt-in follow-ups |
-| [11](11-preview-ui.md) | Preview UI | not started | NiceGUI for visual recipe tuning | `pd-ocr-synth-preview --recipe gaelic` works |
+| [11](11-preview-ui.md) | Preview UI | not started | NiceGUI for visual recipe tuning | `pdomain-ocr-synth-preview --recipe gaelic` works |
 | [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
 
 ## NiceGUI surface — preview only, not edit
@@ -96,7 +96,7 @@ not commitments.
 | 09 | two sessions |
 | 10 | open-ended |
 | 11 | two sessions (depends on M07; can run in parallel with M08/M09) |
-| 12 | one to two sessions (depends on M07 + M09 + pd-book-tools data model) |
+| 12 | one to two sessions (depends on M07 + M09 + pdomain-book-tools data model) |
 
 Total: ~12–15 focused sessions to a usable v0.1.0 (engine + publish);
 add ~2 sessions for the preview UI.

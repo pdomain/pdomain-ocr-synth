@@ -1,4 +1,4 @@
-"""Unit tests for ``pd_ocr_synth.publish.transport`` (M08).
+"""Unit tests for ``pdomain_ocr_synth.publish.transport`` (M08).
 
 The transport module defines the seam between the publish CLI runner
 and the Hugging Face SDK; the runner depends on the ``HfTransport``
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.publish.transport import (
+from pdomain_ocr_synth.publish.transport import (
     CommitInfo,
     FakeTransport,
     HfTransport,
@@ -410,10 +410,10 @@ def test_seed_repo_does_not_show_up_in_calls() -> None:
 
 
 def test_transport_types_reexported_from_publish_package() -> None:
-    """Down-stream code imports from ``pd_ocr_synth.publish``; make
+    """Down-stream code imports from ``pdomain_ocr_synth.publish``; make
     sure the new names land there too."""
 
-    from pd_ocr_synth import publish
+    from pdomain_ocr_synth import publish
 
     assert publish.HfTransport is HfTransport
     assert publish.FakeTransport is FakeTransport

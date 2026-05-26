@@ -137,7 +137,7 @@ character change; sets internal markers consumed by the renderer.)
 
 A transform is a Python callable
 `(text: str, options: dict, rng: Random) -> str`, registered with the
-`pd_ocr_synth.text_transforms` entry point. See
+`pdomain_ocr_synth.text_transforms` entry point. See
 [09 — Extending](09-extending.md) for the full contract.
 
 For one-off transforms, drop a `transforms.py` next to the recipe file and

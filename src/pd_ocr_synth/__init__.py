@@ -1,4 +1,0 @@
-"""pd-ocr-synth: synthetic OCR training-data generator (recipe-driven)."""
-
-__version__ = "0.0.1"
-__all__ = ["__version__"]

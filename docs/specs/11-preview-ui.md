@@ -24,7 +24,7 @@ should be the right tool; for everything else, the CLI is.
 - **Real-time render on keystroke.** Click-to-render is enough; live
   rendering is too much engineering for the value.
 - **Multi-user / hosted mode.** Single-user, runs on `localhost`.
-- **Dataset browsing.** Once `pd-ocr-synth render` produces output,
+- **Dataset browsing.** Once `pdomain-ocr-synth render` produces output,
   the trainer's UI / file system is the right place to inspect it.
 
 ## Architecture
@@ -43,7 +43,7 @@ views         (NiceGUI components)
 ```
 
 The UI does not duplicate any rendering logic — it calls
-`pd_ocr_synth.render.run_recipe(..., count=N, output_dir=tmp)` and
+`pdomain_ocr_synth.render.run_recipe(..., count=N, output_dir=tmp)` and
 displays the resulting `manifest.jsonl` rows alongside their images.
 
 ## Run / install
@@ -59,18 +59,18 @@ Console script:
 
 ```toml
 [project.scripts]
-pd-ocr-synth-preview = "pd_ocr_synth.preview.app:main"
+pdomain-ocr-synth-preview = "pdomain_ocr_synth.preview.app:main"
 ```
 
 Invocation:
 
 ```bash
-pd-ocr-synth-preview                       # opens on default port
-pd-ocr-synth-preview --recipe gaelic       # preselects a recipe
-pd-ocr-synth-preview --port 8765
+pdomain-ocr-synth-preview                       # opens on default port
+pdomain-ocr-synth-preview --recipe gaelic       # preselects a recipe
+pdomain-ocr-synth-preview --port 8765
 ```
 
-The UI never starts on its own from `pd-ocr-synth render` — keeping
+The UI never starts on its own from `pdomain-ocr-synth render` — keeping
 them decoupled lets the headless CLI run without a browser handler.
 
 ## Surfaces
@@ -79,11 +79,11 @@ Three pages. Nothing more in v1.
 
 ### `/` — recipe picker
 
-- Lists recipes via the same logic as `pd-ocr-synth list`.
+- Lists recipes via the same logic as `pdomain-ocr-synth list`.
 - Each row: name, path, layout mode, sample count, last-rendered
   timestamp (from `<destination>/stats.json` if present).
 - Click → `/recipe/<name>`.
-- "New recipe" button shells out to `pd-ocr-synth init <name>` then
+- "New recipe" button shells out to `pdomain-ocr-synth init <name>` then
   reloads the picker.
 
 ### `/recipe/<name>` — recipe view
@@ -169,13 +169,13 @@ on the recipe file.
 
 ## Integration with existing CLI
 
-- The UI imports `pd_ocr_synth.render.run_recipe` and pre-existing
+- The UI imports `pdomain_ocr_synth.render.run_recipe` and pre-existing
   recipe loaders. No duplicate code paths.
-- The UI never invokes `pd-ocr-synth fetch` automatically — if a
+- The UI never invokes `pdomain-ocr-synth fetch` automatically — if a
   recipe needs network corpora, the CLI must have been run first or
   the cache must already exist. A clear banner says "corpora not
-  cached; run `pd-ocr-synth fetch <recipe>`" when applicable.
-- The UI does not call `pd-ocr-synth render` — preview sample counts
+  cached; run `pdomain-ocr-synth fetch <recipe>`" when applicable.
+- The UI does not call `pdomain-ocr-synth render` — preview sample counts
   are small (≤200) and the temp directory is short-lived.
 
 ## Tests
@@ -210,7 +210,7 @@ on the recipe file.
 ## Open questions
 
 1. **Persistence of preview overrides.** Should we cache the last
-   override set per recipe in a file under `~/.cache/pd-ocr-synth/`,
+   override set per recipe in a file under `~/.cache/pdomain-ocr-synth/`,
    so reopening the page restores them? v1 says no — explicit
    ephemeral state is simpler. Revisit if users complain.
 2. **Authentication for shared dev envs.** The dev container exposes

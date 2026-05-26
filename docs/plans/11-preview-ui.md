@@ -15,12 +15,12 @@ This milestone depends on M07 (recognition render) being in place. M08
 
 - [ ] Add `[project.optional-dependencies]` (or uv-style
       `[dependency-groups]`) entry `ui = ["nicegui>=2.0", "pillow"]`.
-- [ ] Console script `pd-ocr-synth-preview` registered in
+- [ ] Console script `pdomain-ocr-synth-preview` registered in
       `pyproject.toml`.
 - [ ] `make setup-ui` target installs the `ui` group separately,
       mirroring how peers separate optional deps.
 
-### `pd_ocr_synth.preview` package
+### `pdomain_ocr_synth.preview` package
 
 - [ ] Layered structure mirroring `pd-ocr-labeler` / `pd-ocr-trainer`:
   - `state.py` — `PreviewSession`, `RecipeOverride`, immutable types
@@ -53,8 +53,8 @@ This milestone depends on M07 (recognition render) being in place. M08
 
 ### Reuse, no duplication
 
-- [ ] Sample rendering uses `pd_ocr_synth.render.run_recipe` (M07).
-- [ ] Recipe loading uses `pd_ocr_synth.recipe` (M02).
+- [ ] Sample rendering uses `pdomain_ocr_synth.render.run_recipe` (M07).
+- [ ] Recipe loading uses `pdomain_ocr_synth.recipe` (M02).
 - [ ] No copy of degradation, font sampling, or layout logic in
       `preview/`.
 
@@ -66,7 +66,7 @@ This milestone depends on M07 (recognition render) being in place. M08
 
 ### CLI wiring
 
-- [ ] `pd-ocr-synth-preview` flags:
+- [ ] `pdomain-ocr-synth-preview` flags:
   - `--recipe <name>` preselects a recipe.
   - `--port <n>` default 8000-something free.
   - `--host <addr>` default `127.0.0.1`.
@@ -85,7 +85,7 @@ This milestone depends on M07 (recognition render) being in place. M08
 
 ```bash
 make setup-ui
-pd-ocr-synth-preview --recipe gaelic
+pdomain-ocr-synth-preview --recipe gaelic
 # → opens on http://127.0.0.1:8080 (or wherever)
 ```
 

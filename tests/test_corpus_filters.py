@@ -1,10 +1,10 @@
-"""Tests for ``pd_ocr_synth.corpus.filters``."""
+"""Tests for ``pdomain_ocr_synth.corpus.filters``."""
 
 from __future__ import annotations
 
 import pytest
 
-from pd_ocr_synth.corpus import CorpusFilter, apply_filter
+from pdomain_ocr_synth.corpus import CorpusFilter, apply_filter
 
 
 def test_no_options_is_passthrough() -> None:

@@ -1,4 +1,4 @@
-"""Tests for ``pd_ocr_synth.text_transforms``."""
+"""Tests for ``pdomain_ocr_synth.text_transforms``."""
 
 from __future__ import annotations
 
@@ -6,13 +6,13 @@ import random
 
 import pytest
 
-from pd_ocr_synth.text_transforms import (
+from pdomain_ocr_synth.text_transforms import (
     PipelineStep,
     UnknownTransformError,
     apply_pipeline,
     default_registry,
 )
-from pd_ocr_synth.text_transforms.builtins import (
+from pdomain_ocr_synth.text_transforms.builtins import (
     apply_lenition_dots,
     dot_to_seimhiu,
     keep_only,

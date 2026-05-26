@@ -1,4 +1,4 @@
-"""End-to-end tests for ``pd-ocr-synth render`` (M07).
+"""End-to-end tests for ``pdomain-ocr-synth render`` (M07).
 
 The full pipeline — corpus → transforms → tokenize → render → degrade
 → writer — exercised against a hermetic recipe built around the
@@ -15,13 +15,13 @@ from pathlib import Path
 
 import pytest
 
-from pd_ocr_synth.cli import main
-from pd_ocr_synth.output.recognition import (
+from pdomain_ocr_synth.cli import main
+from pdomain_ocr_synth.output.recognition import (
     LABELS_FILENAME,
     MANIFEST_FILENAME,
     STATS_FILENAME,
 )
-from pd_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
+from pdomain_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
 
 _BUNDLED_FONT = (
     Path(__file__).resolve().parent.parent / "recipes" / "gaelic" / "fonts" / "bungc" / "bungc.otf"
@@ -452,8 +452,8 @@ def test_render_serial_and_parallel_produce_same_pngs_and_manifest(
     The existing labels-only parity test (above) is comment-justified by
     "PNG byte equality is already covered by the preview tests" — but
     ``preview`` and ``render`` have **independent** parallel
-    implementations (:mod:`pd_ocr_synth.render.preview` vs
-    :mod:`pd_ocr_synth.render.run`), so preview's parity coverage does
+    implementations (:mod:`pdomain_ocr_synth.render.preview` vs
+    :mod:`pdomain_ocr_synth.render.run`), so preview's parity coverage does
     not transit to ``run_recipe``.
 
     The render-path parallel worker pickles a ``RenderedSample`` over
@@ -576,7 +576,7 @@ def _setup_named_degrade(tmp_path: Path) -> Path:
 
 
 def _read_manifest_rendered(out: Path) -> list[dict]:
-    from pd_ocr_synth.output.recognition import MANIFEST_FILENAME as _MF
+    from pdomain_ocr_synth.output.recognition import MANIFEST_FILENAME as _MF
 
     rows = [json.loads(line) for line in (out / _MF).read_text().splitlines() if line.strip()]
     return [r for r in rows if r.get("status") == "rendered"]
@@ -728,7 +728,7 @@ def test_render_no_cache_flag_threads_to_corpus_runner(
 
     rp = _setup(tmp_path)
 
-    from pd_ocr_synth.render import run as run_mod
+    from pdomain_ocr_synth.render import run as run_mod
 
     seen: dict[str, object] = {}
     real = run_mod.collect_corpus_text
@@ -765,7 +765,7 @@ def test_render_dry_run_no_cache_threads_to_plan_recipe(
 
     rp = _setup(tmp_path)
 
-    from pd_ocr_synth.render import run as run_mod
+    from pdomain_ocr_synth.render import run as run_mod
 
     seen: dict[str, object] = {}
     real = run_mod.collect_corpus_text

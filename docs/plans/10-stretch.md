@@ -44,7 +44,7 @@ heading are tracked in **Future work — beyond M10**.
 
 ### Recipe linter
 
-- [x] `pd-ocr-synth lint <recipe>` layered on top of `validate`,
+- [x] `pdomain-ocr-synth lint <recipe>` layered on top of `validate`,
       with seven heuristic warning codes:
       `lint_degradation_always_certain`, `lint_single_font`,
       `lint_no_text_transforms`, `lint_low_sample_count`,
@@ -68,7 +68,7 @@ heading are tracked in **Future work — beyond M10**.
       worker count, rendered/skipped counts, and wall-time. Disabled
       via CLI `--no-audit` or env var `PD_OCR_SYNTH_NO_AUDIT=1`
       (`2f05c3a`).
-- [x] `pd-ocr-synth audit <output_dir>` reads JSONL back, with
+- [x] `pdomain-ocr-synth audit <output_dir>` reads JSONL back, with
       `--json` for machine-readable output and `--limit N` to tail to
       the most recent N entries (`862afd6`).
 - [x] `--since` and `--until` accept ISO-8601 timestamps (date-only
@@ -160,8 +160,8 @@ shipping or M11 from starting.
   portability shim to pin them too remains a candidate follow-up.
 - **Audit — global aggregate cache.** [x] Shipped: `run_recipe`
   mirrors every audit row to `<cache_root>/audit.jsonl` (default
-  `~/.cache/pd-ocr-synth/audit.jsonl`) so cross-recipe runs share one
-  timeline. `pd-ocr-synth audit --global` reads the aggregate without
+  `~/.cache/pdomain-ocr-synth/audit.jsonl`) so cross-recipe runs share one
+  timeline. `pdomain-ocr-synth audit --global` reads the aggregate without
   needing a per-output-dir positional. Mutually exclusive with
   `--audit-file`; composes with all existing filters (`--since`,
   `--until`, `--recipe-sha`, `--limit`, `--summary`, `--json`).
@@ -206,7 +206,7 @@ of work, mostly in:
 ### Cloud rendering
 
 Per the workspace `newarch.md`, GPU/cloud render targets are
-documented (Modal, Celery, AWS Batch). For pd-ocr-synth this means:
+documented (Modal, Celery, AWS Batch). For pdomain-ocr-synth this means:
 
 - [ ] Refactor render orchestration to be worker-pluggable.
 - [ ] Add a `--workers cloud:modal` flag.
