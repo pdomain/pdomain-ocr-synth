@@ -2,6 +2,14 @@
 
 <!-- workspace-conventions:start -->
 
+## Rule: Write docs clearly
+
+**The rule.** Follow [Writing Style](docs/process/writing-style.md) for docs,
+reports, issue text, PR text, and user-facing copy.
+
+**Why.** Detailed style guidance belongs in a process doc. CONVENTIONS.md
+should stay short.
+
 ## Rule: No comments explaining what code does
 
 **The rule.** Don't add comments that restate what the code does;
@@ -118,7 +126,7 @@ guarded by `try`/`except`). When a suppression *is* warranted —
 `[tool.ruff.lint]` `ignore` / `per-file-ignores` entry — it must (1) carry a
 short inline rationale at the point of deviation explaining *why* the
 suppression is safe, and (2) be catalogued in the repo's
-`docs/process/lint-deviations.md`, which records the rule, the tool, the
+`docs/conventions/lint-deviations.md`, which records the rule, the tool, the
 file locations, and the justification. Use basedpyright's native
 `# pyright: ignore[reportRuleName]` form — mypy-style `# type: ignore[code]`
 codes are not honored by basedpyright.
@@ -142,7 +150,7 @@ this is how it gets justified.
 **Common judgment-call violations** (bot flags, CT decides)
 
 - A suppression whose inline rationale exists but is missing from
-  `docs/process/lint-deviations.md` — CT decides whether to catalogue it or
+  `docs/conventions/lint-deviations.md` — CT decides whether to catalogue it or
   remove the suppression.
 - A long-standing suppression whose stated rationale no longer holds after a
   refactor — CT decides whether to drop the suppression.
