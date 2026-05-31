@@ -96,6 +96,9 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 Repository = "https://github.com/pdomain/pdomain-ocr-synth"
 Issues = "https://github.com/pdomain/pdomain-ocr-synth/issues"
 
+[tool.uv]
+required-version = "0.11.16"
+
 [tool.hatch.version]
 source = "vcs"
 
