@@ -71,9 +71,11 @@ allowed (`T201`); `RET`, `TC`, `G`, `PLC0206` relaxed as test ergonomics.
 
 ### 2.2 Scripts — `scripts/*.py`
 
-Ignored: `T201 D S607 ANN BLE TRY RET TC`. `print()` is the script output
+Ignored: `T201 D S607 ANN BLE TRY RET TC N999`. `print()` is the script output
 mechanism; no docstrings required; `S607` (partial executable path) is
-idiomatic when invoking system tools (`uv`, `git`).
+idiomatic when invoking system tools (`uv`, `git`); `N999` suppressed because
+hyphenated filenames (`ai-filter-log`, `generate-paper-textures`) are standalone
+scripts, not importable modules.
 
 ### 2.3 Package `__init__.py` — `**/__init__.py`
 
