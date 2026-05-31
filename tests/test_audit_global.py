@@ -165,7 +165,7 @@ schema_version: 1
 name: global-audit-smoke
 seed: 21
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./trainer-out
   count: 3

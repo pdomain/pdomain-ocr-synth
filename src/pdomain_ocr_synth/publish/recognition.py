@@ -27,7 +27,7 @@ Resulting staging layout::
     ├── metadata.jsonl       # one row per rendered sample
     ├── recipe.snapshot.yaml
     └── README.md            # dataset card; front matter carries the
-                             # ``pd-ocr-content-sha`` idempotency key
+                             # ``pdomain-ocr-content-sha`` idempotency key
 
 Skipped manifest entries (no image on disk) are left out of
 ``metadata.jsonl``: the dataset only wants rows that actually
@@ -102,7 +102,7 @@ class StagingResult:
     # render is auditable.
     missing_images: list[str] = field(default_factory=list)
     # Content-SHA over the built staging dir, embedded into the README's
-    # front matter as ``pd-ocr-content-sha``. Populated only when a
+    # front matter as ``pdomain-ocr-content-sha``. Populated only when a
     # README was written (the SHA needs a README to live in, and the
     # README is the only file generated as a function of the SHA). The
     # future ``--dry-run`` summary reads this directly so it doesn't
@@ -223,7 +223,7 @@ def build_recognition_staging(
         # idempotent (strip-then-insert), so a second staging build over
         # identical local input lands the same digest and produces a
         # byte-identical README. The dataset-card writer deliberately
-        # omits ``pd-ocr-content-sha`` (see its module docstring) so
+        # omits ``pdomain-ocr-content-sha`` (see its module docstring) so
         # this single insert is the only place the key is set; no other
         # site has to know how the digest is computed.
         content_sha = compute_content_sha(staging)

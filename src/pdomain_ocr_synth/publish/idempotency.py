@@ -6,7 +6,7 @@ Per ``docs/specs/10-publishing.md`` § Idempotency:
 >
 > 1. Compute a content SHA over the local output (image bytes +
 >    metadata + recipe snapshot).
-> 2. Read the latest commit's ``card_data.pd-ocr-content-sha``.
+> 2. Read the latest commit's ``card_data.pdomain-ocr-content-sha``.
 > 3. If equal → exit 0 with "no changes" and do not commit.
 
 This module is the **decision** half of that contract: given a
@@ -27,17 +27,17 @@ The matching deliverable in ``docs/roadmap/08-publishing-hf.md``
 M08 § Idempotency:
 
 > Before uploading: read the latest commit's ``card_data`` from HF.
-> If ``pd-ocr-content-sha`` matches → exit 0 with "no changes".
+> If ``pdomain-ocr-content-sha`` matches → exit 0 with "no changes".
 
 ## States
 
 The check distills the spec's three-step procedure into a
 three-valued :class:`IdempotencyState`:
 
-- ``up_to_date`` — remote ``pd-ocr-content-sha`` equals the local
+- ``up_to_date`` — remote ``pdomain-ocr-content-sha`` equals the local
   digest. The publish is a no-op; the runner exits 0.
 - ``changed`` — the repo exists but its card either has no
-  ``pd-ocr-content-sha`` (e.g. brand-new repo without a README, or
+  ``pdomain-ocr-content-sha`` (e.g. brand-new repo without a README, or
   a card from a different tool) or has one that disagrees with the
   local digest. The runner proceeds with upload.
 - ``repo_missing`` — :meth:`HfTransport.repo_exists` returned
@@ -126,7 +126,7 @@ class IdempotencyDecision:
         no normalization. Empty string is treated as a programmer-
         side bug — see :func:`check_idempotency`.
     remote_sha:
-        The value the transport returned for ``pd-ocr-content-sha``,
+        The value the transport returned for ``pdomain-ocr-content-sha``,
         or ``None`` if the repo is missing, the card is empty, or the
         key is absent. The runner uses this to format the
         "would publish: <local> ≠ <remote>" log line; tests assert on

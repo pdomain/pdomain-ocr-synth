@@ -9,7 +9,7 @@ first; this doc covers only the synth-specific details.
 ## When to publish
 
 Publish is **explicit and separate from render**. Render writes the local
-`pd-ocr-trainer/v1` layout for fast trainer iteration; publish takes that
+`pdomain-ocr-training/v1` layout for fast trainer iteration; publish takes that
 output and ships it to HF for sharing or cloud training.
 
 ```bash
@@ -104,14 +104,14 @@ A `README.md` is generated with YAML front-matter:
 license: cc-by-4.0
 task_categories: [text-recognition]
 language: [ga]
-tags: [ocr, gaelic, irish, pd-ocr, synthetic]
+tags: [ocr, gaelic, irish, pdomain-ocr, synthetic]
 size_categories: [10K<n<100K]
 
-# pd-ocr conventional keys (from DATASETS.md)
-pd-ocr-shape: recognition/v1
-pd-ocr-source: pdomain-ocr-synth
-pd-ocr-recipe-sha: 2c4f...
-pd-ocr-render-tool-version: 0.1.0
+# pdomain-ocr conventional keys (from DATASETS.md)
+pdomain-ocr-shape: recognition/v1
+pdomain-ocr-source: pdomain-ocr-synth
+pdomain-ocr-recipe-sha: 2c4f...
+pdomain-ocr-render-tool-version: 0.1.0
 ---
 
 # pdomain-ocr-synth — gaelic
@@ -155,7 +155,7 @@ publish:
     repo: ntw8532/pdomain-ocr-synth-gaelic
     private: false
     license: cc-by-4.0
-    tags: [ocr, gaelic, irish, pd-ocr, synthetic]
+    tags: [ocr, gaelic, irish, pdomain-ocr, synthetic]
     language: [ga]
     description_file: ./gaelic/README.md.template   # optional override
 ```
@@ -169,7 +169,7 @@ Publish is **idempotent against repo state**:
 
 1. Compute a content SHA over the local output (image bytes +
    metadata + recipe snapshot).
-2. Read the latest commit's `card_data.pd-ocr-content-sha`.
+2. Read the latest commit's `card_data.pdomain-ocr-content-sha`.
 3. If equal → exit 0 with "no changes" and do not commit.
 
 This makes `pdomain-ocr-synth publish gaelic` safe to invoke from CI on
@@ -249,7 +249,7 @@ Total size: 247.3 MB
 Dataset card preview:
   ---
   license: cc-by-4.0
-  pd-ocr-shape: recognition/v1
+  pdomain-ocr-shape: recognition/v1
   ...
 Content SHA: 2c4f8e... (no existing commit; first publish)
 ```

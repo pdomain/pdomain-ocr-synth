@@ -46,7 +46,7 @@ schema_version: 1
 name: page-smoke
 seed: 42
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: 1
@@ -342,7 +342,7 @@ def test_render_page_taller_paragraph_spacing_yields_taller_canvas(
             f"name: page-spacing-{spacing}\n"
             "seed: 42\n"
             "output:\n"
-            "  format: pd-ocr-trainer/v1\n"
+            "  format: pdomain-ocr-training/v1\n"
             "  mode: detection\n"
             "  destination: ./out\n"
             "  count: 1\n"
@@ -511,7 +511,7 @@ def _build_indent_recipe(tmp_path: Path, indent_px: int | None) -> object:
         f"name: page-indent-{indent_px}\n"
         "seed: 42\n"
         "output:\n"
-        "  format: pd-ocr-trainer/v1\n"
+        "  format: pdomain-ocr-training/v1\n"
         "  mode: detection\n"
         "  destination: ./out\n"
         "  count: 1\n"
@@ -727,7 +727,7 @@ def test_split_page_into_paragraph_lines_passes_indent_to_wrap_fitter(
             f"name: page-wrap-indent-{indent}\n"
             "seed: 11\n"
             "output:\n"
-            "  format: pd-ocr-trainer/v1\n"
+            "  format: pdomain-ocr-training/v1\n"
             "  mode: detection\n"
             "  destination: ./out\n"
             "  count: 1\n"
@@ -884,7 +884,7 @@ def _build_aligned_recipe(tmp_path: Path, alignment: str | None) -> object:
         f"name: page-align-{alignment}\n"
         "seed: 42\n"
         "output:\n"
-        "  format: pd-ocr-trainer/v1\n"
+        "  format: pdomain-ocr-training/v1\n"
         "  mode: detection\n"
         "  destination: ./out\n"
         "  count: 1\n"
@@ -1149,7 +1149,7 @@ def _build_page_size_recipe(tmp_path: Path, page_size_px: tuple[int, int] | None
         f"name: page-pagesize-{suffix}\n"
         "seed: 42\n"
         "output:\n"
-        "  format: pd-ocr-trainer/v1\n"
+        "  format: pdomain-ocr-training/v1\n"
         "  mode: detection\n"
         "  destination: ./out\n"
         "  count: 1\n"

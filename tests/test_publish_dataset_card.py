@@ -136,16 +136,16 @@ def _inputs(
 # ---------------------------------------------------------------------------
 
 
-def test_front_matter_has_pd_ocr_conventional_keys() -> None:
+def test_front_matter_has_pdomain_ocr_conventional_keys() -> None:
     card = render_dataset_card(_inputs())
     fm, _ = _split_card(card)
-    assert fm["pd-ocr-shape"] == "recognition/v1"
-    assert fm["pd-ocr-source"] == "pdomain-ocr-synth"
-    assert fm["pd-ocr-render-tool-version"] == "0.1.2"
+    assert fm["pdomain-ocr-shape"] == "recognition/v1"
+    assert fm["pdomain-ocr-source"] == "pdomain-ocr-synth"
+    assert fm["pdomain-ocr-render-tool-version"] == "0.1.2"
     # SHA-256 hex is 64 lowercase hex chars; we don't pin the value
     # because it's a hash of yaml.safe_dump output (Python-version
     # stable but locking it would just make the test brittle).
-    sha = fm["pd-ocr-recipe-sha"]
+    sha = fm["pdomain-ocr-recipe-sha"]
     assert isinstance(sha, str)
     assert len(sha) == 64
     assert all(c in "0123456789abcdef" for c in sha)
@@ -156,7 +156,7 @@ def test_front_matter_carries_publish_block_values() -> None:
         publish={
             "repo": "ntw8532/pdomain-ocr-synth-gaelic",
             "license": "cc-by-4.0",
-            "tags": ["ocr", "gaelic", "irish", "pd-ocr", "synthetic"],
+            "tags": ["ocr", "gaelic", "irish", "pdomain-ocr", "synthetic"],
             "language": ["ga"],
         },
     )
@@ -165,12 +165,12 @@ def test_front_matter_carries_publish_block_values() -> None:
     assert fm["license"] == "cc-by-4.0"
     assert fm["task_categories"] == ["text-recognition"]
     assert fm["language"] == ["ga"]
-    assert fm["tags"] == ["ocr", "gaelic", "irish", "pd-ocr", "synthetic"]
+    assert fm["tags"] == ["ocr", "gaelic", "irish", "pdomain-ocr", "synthetic"]
 
 
 def test_front_matter_omits_keys_when_recipe_has_no_publish_block() -> None:
     """A recipe without a publish block should still produce a valid
-    card — the pd-ocr-* keys come from the snapshot, not the publish
+    card — the pdomain-ocr-* keys come from the snapshot, not the publish
     block."""
 
     snapshot = _snapshot(publish=None)
@@ -181,7 +181,7 @@ def test_front_matter_omits_keys_when_recipe_has_no_publish_block() -> None:
     assert "tags" not in fm
     # task_categories is fixed so it's always set.
     assert fm["task_categories"] == ["text-recognition"]
-    assert fm["pd-ocr-shape"] == "recognition/v1"
+    assert fm["pdomain-ocr-shape"] == "recognition/v1"
 
 
 def test_license_override_wins_over_recipe_publish_block() -> None:
@@ -258,13 +258,13 @@ def test_recipe_sha_changes_with_snapshot_bytes() -> None:
     b = render_dataset_card(_inputs(snapshot_bytes=b"recipe: b\n"))
     fm_a, _ = _split_card(a)
     fm_b, _ = _split_card(b)
-    assert fm_a["pd-ocr-recipe-sha"] != fm_b["pd-ocr-recipe-sha"]
+    assert fm_a["pdomain-ocr-recipe-sha"] != fm_b["pdomain-ocr-recipe-sha"]
 
 
 def test_recipe_sha_omitted_when_snapshot_bytes_empty() -> None:
     card = render_dataset_card(_inputs(snapshot_bytes=b""))
     fm, _ = _split_card(card)
-    assert "pd-ocr-recipe-sha" not in fm
+    assert "pdomain-ocr-recipe-sha" not in fm
 
 
 # ---------------------------------------------------------------------------
@@ -425,7 +425,7 @@ def test_body_renders_provenance_section_with_corpus_and_recipe_sha() -> None:
     card = render_dataset_card(_inputs(snapshot))
     fm, body = _split_card(card)
     assert "## Provenance" in body
-    assert f"- Recipe SHA: {fm['pd-ocr-recipe-sha']}" in body
+    assert f"- Recipe SHA: {fm['pdomain-ocr-recipe-sha']}" in body
     assert "- Tool version: pdomain-ocr-synth 0.1.2" in body
     assert "wikisource:ga:Séadna" in body
     assert "celt:G100001A" in body
@@ -554,7 +554,7 @@ def test_write_dataset_card_writes_to_readme_in_staging(tmp_path: Path) -> None:
     assert target.is_file()
     text = target.read_text(encoding="utf-8")
     assert text.startswith("---\n")
-    assert "pd-ocr-shape: recognition/v1" in text
+    assert "pdomain-ocr-shape: recognition/v1" in text
 
 
 # ---------------------------------------------------------------------------
@@ -620,7 +620,7 @@ def test_build_recognition_staging_writes_readme(tmp_path: Path) -> None:
     text = readme.read_text(encoding="utf-8")
     fm, body = _split_card(text)
     assert fm["license"] == "cc-by-4.0"
-    assert fm["pd-ocr-shape"] == "recognition/v1"
+    assert fm["pdomain-ocr-shape"] == "recognition/v1"
     assert "# pdomain-ocr-synth — integration" in body
 
 
@@ -684,7 +684,7 @@ name: round-trip
 description: Round-trip integration recipe.
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1
@@ -737,10 +737,10 @@ publish:
     assert fm["license"] == "cc-by-4.0"
     assert fm["language"] == ["ga"]
     assert fm["tags"] == ["ocr", "round-trip"]
-    assert fm["pd-ocr-shape"] == "recognition/v1"
+    assert fm["pdomain-ocr-shape"] == "recognition/v1"
     # The tool_version key gets written by output.snapshot — its
     # presence proves the round-trip wired through.
-    assert "pd-ocr-render-tool-version" in fm
+    assert "pdomain-ocr-render-tool-version" in fm
     assert "# pdomain-ocr-synth — round-trip" in body
     assert "Round-trip integration recipe." in body
 

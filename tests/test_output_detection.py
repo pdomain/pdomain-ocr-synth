@@ -43,7 +43,7 @@ schema_version: 1
 name: detection-writer-smoke
 seed: 5
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: {count}

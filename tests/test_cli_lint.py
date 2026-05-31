@@ -27,7 +27,7 @@ schema_version: 1
 name: cli-lint-clean
 seed: 42
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 10000
@@ -106,7 +106,7 @@ schema_version: 1
 name: cli-lint-paragraph-alignment-on-lines
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -156,7 +156,7 @@ schema_version: 1
 name: cli-lint-single-font
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -200,7 +200,7 @@ schema_version: 1
 name: cli-lint-missing-fonts
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -244,7 +244,7 @@ schema_version: 1
 name: cli-lint-no-fonts
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -328,7 +328,7 @@ schema_version: 1
 name: cli-lint-json-single-font
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -383,7 +383,7 @@ schema_version: 1
 name: cli-lint-json-missing-fonts
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -439,7 +439,7 @@ schema_version: 1
 name: cli-lint-strict-single-font
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -534,7 +534,7 @@ schema_version: 1
 name: cli-lint-strict-missing-fonts
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -604,7 +604,7 @@ schema_version: 1
 name: cli-lint-json-no-fonts
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000

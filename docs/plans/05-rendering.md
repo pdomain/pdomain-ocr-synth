@@ -76,7 +76,7 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
 - [x] `pdomain-ocr-synth preview <recipe>` — renders N samples (default 50)
       to a configurable output dir. Honors `--count` / `--output` /
       `--seed`. Writes `images/`, `manifest.jsonl`, `stats.json`. No
-      degradation yet (M06); no `pd-ocr-trainer/v1` adapter (M07).
+      degradation yet (M06); no `pdomain-ocr-training/v1` adapter (M07).
 
 ### Tests
 
@@ -106,7 +106,7 @@ varied sizes and fonts, without paper texture or degradation yet.
 ## Out of scope
 
 - Degradation pipeline (M06).
-- Output adapter to `pd-ocr-trainer/v1` format (M07).
+- Output adapter to `pdomain-ocr-training/v1` format (M07).
 - Lines / paragraphs / pages layouts (M09).
 - Detection-mode bbox geometry (M09).
 

@@ -1,4 +1,4 @@
-"""Detection-mode output writer for ``pd-ocr-trainer/v1``.
+"""Detection-mode output writer for ``pdomain-ocr-training/v1``.
 
 This is the M09 analog of :mod:`pdomain_ocr_synth.output.recognition`. It
 writes the on-disk layout that ``pd-ocr-trainer``'s detection pipeline

@@ -33,7 +33,7 @@ schema_version: 1
 name: lint-fixture
 seed: {seed}
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: {count}
@@ -166,7 +166,7 @@ schema_version: 1
 name: lone-font
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -298,7 +298,7 @@ schema_version: 1
 name: zero-weight
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -349,7 +349,7 @@ schema_version: 1
 name: all-optional
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -394,7 +394,7 @@ schema_version: 1
 name: mixed-optional
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 5000
@@ -434,7 +434,7 @@ schema_version: 1
 name: dirty
 seed: 0
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 1
@@ -514,7 +514,7 @@ schema_version: 1
 name: dirty-everything
 seed: 0
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {tmp_path / "out"}
   count: 1
@@ -590,7 +590,7 @@ schema_version: 1
 name: lone-font
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 5000
@@ -656,7 +656,7 @@ schema_version: 1
 name: zw
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 5000
@@ -689,7 +689,7 @@ schema_version: 1
 name: ao
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 5000

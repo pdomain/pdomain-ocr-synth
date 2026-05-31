@@ -121,7 +121,7 @@ schema_version: 1
 name: trainer-contract-detection
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: 2

@@ -92,7 +92,7 @@ schema_version: 1
 name: visreg-e2e-word-crops
 seed: 1
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 3

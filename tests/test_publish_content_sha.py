@@ -2,7 +2,7 @@
 
 Covers ``pdomain_ocr_synth.publish.content_sha``: deterministic digest over
 the staging-dir contents and the README front-matter rewrite that
-embeds the digest under ``pd-ocr-content-sha``. Pure file-IO; no
+embeds the digest under ``pdomain-ocr-content-sha``. Pure file-IO; no
 network, no HF SDK.
 
 The tests treat the digest as a *contract*, not an implementation
@@ -304,10 +304,10 @@ def test_apply_content_sha_to_readme_keeps_front_matter_block(tmp_path: Path) ->
     # Preserve the key markers that the dataset-card writer always
     # emits: shape, source, recipe-sha, render-tool-version.
     for required in (
-        "pd-ocr-shape:",
-        "pd-ocr-source:",
-        "pd-ocr-recipe-sha:",
-        "pd-ocr-render-tool-version:",
+        "pdomain-ocr-shape:",
+        "pdomain-ocr-source:",
+        "pdomain-ocr-recipe-sha:",
+        "pdomain-ocr-render-tool-version:",
     ):
         assert required in before, f"fixture missing {required}"
         assert required in after, f"rewrite dropped {required}"
@@ -424,11 +424,11 @@ def test_embed_content_sha_creates_front_matter_when_missing() -> None:
 def test_content_sha_line_regex_matches_key_only() -> None:
     """The strip regex shouldn't fire on similarly-named keys."""
 
-    text = "pd-ocr-content-sha-old: nope\npd-ocr-content-sha: real\nother-content-sha: nope\n"
+    text = "pdomain-ocr-content-sha-old: nope\npdomain-ocr-content-sha: real\nother-content-sha: nope\n"
     stripped = _CONTENT_SHA_LINE_RE.sub("", text)
-    assert "pd-ocr-content-sha-old: nope" in stripped
+    assert "pdomain-ocr-content-sha-old: nope" in stripped
     assert "other-content-sha: nope" in stripped
-    assert "pd-ocr-content-sha: real" not in stripped
+    assert "pdomain-ocr-content-sha: real" not in stripped
 
 
 # ---------------------------------------------------------------------------
@@ -474,7 +474,7 @@ def test_compute_content_sha_invariant_holds_for_any_pinned_value(
     tmp_path: Path,
 ) -> None:
     """A README with a *different* (e.g. stale or tampered)
-    ``pd-ocr-content-sha`` value must still hash to the canonical
+    ``pdomain-ocr-content-sha`` value must still hash to the canonical
     pre-embed digest. The line is stripped before hashing regardless
     of its current value.
     """

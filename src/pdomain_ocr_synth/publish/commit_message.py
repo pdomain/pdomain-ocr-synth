@@ -13,7 +13,7 @@ default format only edits one place.
 
 The formatter is deliberately lenient about a missing recipe SHA: a
 staging dir whose README front matter happens to be missing
-``pd-ocr-recipe-sha`` (e.g. a hand-edited card) still gets a
+``pdomain-ocr-recipe-sha`` (e.g. a hand-edited card) still gets a
 defensible default message rather than an exception. The preflight
 step is what enforces "the staging dir is publish-ready"; this
 helper is one rung lower and just renders the string.
@@ -34,7 +34,7 @@ def default_commit_message(recipe_sha: str | None) -> str:
 
     Spec 10 § Versioning prescribes ``pdomain-ocr-synth render
     @<recipe-sha>``. The caller supplies the SHA (typically pulled
-    from the staging README's ``pd-ocr-recipe-sha`` front-matter key
+    from the staging README's ``pdomain-ocr-recipe-sha`` front-matter key
     via the preflight report); we format it.
 
     Parameters

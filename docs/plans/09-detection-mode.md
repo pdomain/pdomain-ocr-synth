@@ -1,7 +1,7 @@
 # M09 — Output: detection mode
 
 **Goal:** layouts beyond word-crops, bbox-aware degradation, and a
-detection-mode writer that emits `pd-ocr-trainer/v1` detection layout
+detection-mode writer that emits `pdomain-ocr-training/v1` detection layout
 plus parquet for HF.
 
 Spec: [`06-rendering.md`](../specs/06-rendering.md) +
@@ -13,7 +13,7 @@ All four layout modes (`word_crops`, `lines`, `paragraphs`, `pages`)
 render end-to-end through `run_recipe` with deterministic output;
 validation pairs `output.mode` with `layout.mode` and warns on unused
 keys per spec 08; the detection writer emits the
-`pd-ocr-trainer/v1` layout (`images/page_*.png`, `labels.json`,
+`pdomain-ocr-training/v1` layout (`images/page_*.png`, `labels.json`,
 `manifest.jsonl`, `recipe.snapshot.yaml`, `stats.json`) that
 `doctr.datasets.DetectionDataset` accepts; bbox-aware geometric
 degradation is in place for the only registered geometric stage
@@ -131,7 +131,7 @@ contract test), `08a4809` (page_size_px), `ee54805` (indent),
 
 ### Detection writer
 
-- [x] Emit local `pd-ocr-trainer/v1` detection layout:
+- [x] Emit local `pdomain-ocr-training/v1` detection layout:
       `images/page_*.png`, `labels.json`, `manifest.jsonl`,
       `recipe.snapshot.yaml`, `stats.json`.
       (`DetectionWriter` lands with full force/resume semantics +
@@ -360,7 +360,7 @@ spine-only modes. All commits are on `main`.
       the local detection layout (`images/page_*.png` + `labels.json`
       + `recipe.snapshot.yaml`) and emits an HF-shaped staging dir
       (`data/page_*.png` + `labels.json` + `recipe.snapshot.yaml` +
-      `README.md` with `pd-ocr-shape: detection/v1` and
+      `README.md` with `pdomain-ocr-shape: detection/v1` and
       `task_categories: [object-detection]`). `cmd_publish` dispatches
       on `recipe.output.mode` via `_staging_builder_for` (recognition
       → `build_recognition_staging`, detection →

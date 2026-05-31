@@ -7,7 +7,7 @@ code path:
 
     build_recognition_staging
         → publish_recognition(transport=make_default_transport(token))
-        → assert (created | uploaded), README has pd-ocr-* keys
+        → assert (created | uploaded), README has pdomain-ocr-* keys
         → publish_recognition again
         → assert NO_CHANGE (idempotent no-op)
         → finally: HfApi.delete_repo (cleanup)
@@ -217,7 +217,7 @@ def test_live_publish_create_then_idempotent_no_op(
        to an existing repo (a previous live run lingered). Both are
        valid first-call outcomes; we don't assume which.
     2. The staged README's front matter carries every required
-       ``pd-ocr-*`` key plus ``pd-ocr-content-sha`` (per
+       ``pdomain-ocr-*`` key plus ``pdomain-ocr-content-sha`` (per
        ``REQUIRED_FRONT_MATTER_KEYS`` + the post-build SHA pin).
     3. Re-running ``publish_recognition`` with the same staging dir
        returns ``PublishState.NO_CHANGE`` — the spec's "exit 0 with
@@ -249,8 +249,8 @@ def test_live_publish_create_then_idempotent_no_op(
     fm = report.front_matter
     for key in REQUIRED_FRONT_MATTER_KEYS:
         assert key in fm, f"staged README missing required front-matter key {key!r}"
-    assert fm.get("pd-ocr-content-sha") == expected_sha, (
-        "staged README's pd-ocr-content-sha must match the value "
+    assert fm.get("pdomain-ocr-content-sha") == expected_sha, (
+        "staged README's pdomain-ocr-content-sha must match the value "
         "compute_content_sha returned during the build"
     )
 
@@ -280,7 +280,7 @@ def test_live_publish_create_then_idempotent_no_op(
     )
     assert second.state is PublishState.NO_CHANGE, (
         f"second publish was {second.state!r}; expected NO_CHANGE "
-        "(idempotency check should match the remote pd-ocr-content-sha)"
+        "(idempotency check should match the remote pdomain-ocr-content-sha)"
     )
     assert second.is_no_change
     assert second.content_sha == expected_sha
@@ -363,8 +363,8 @@ def test_resolve_repo_id_honors_env_override() -> None:
 
     saved = os.environ.get("PD_OCR_SYNTH_HF_E2E_REPO")
     try:
-        os.environ["PD_OCR_SYNTH_HF_E2E_REPO"] = "alice/scratch-pd-ocr"
-        assert _resolve_repo_id() == "alice/scratch-pd-ocr"
+        os.environ["PD_OCR_SYNTH_HF_E2E_REPO"] = "alice/scratch-pdomain-ocr"
+        assert _resolve_repo_id() == "alice/scratch-pdomain-ocr"
     finally:
         if saved is None:
             os.environ.pop("PD_OCR_SYNTH_HF_E2E_REPO", None)

@@ -2,7 +2,7 @@
 
 Covers ``pdomain_ocr_synth.publish.preflight``: the read-only validator
 that asserts a built staging dir's README front matter carries every
-required ``pd-ocr-*`` key. Pure file-IO; no network, no HF SDK.
+required ``pdomain-ocr-*`` key. Pure file-IO; no network, no HF SDK.
 
 The pre-flight is the natural last gate before the upload step
 contacts HF, and it's what a future ``--dry-run`` would echo "card
@@ -105,11 +105,11 @@ def test_required_keys_set_matches_spec() -> None:
     """
 
     assert REQUIRED_FRONT_MATTER_KEYS == (
-        "pd-ocr-shape",
-        "pd-ocr-source",
-        "pd-ocr-recipe-sha",
-        "pd-ocr-render-tool-version",
-        "pd-ocr-content-sha",
+        "pdomain-ocr-shape",
+        "pdomain-ocr-source",
+        "pdomain-ocr-recipe-sha",
+        "pdomain-ocr-render-tool-version",
+        "pdomain-ocr-content-sha",
     )
 
 
@@ -161,17 +161,17 @@ def test_missing_required_key_surfaces_in_report(tmp_path: Path) -> None:
         staging,
         "---\n"
         "license: cc-by-4.0\n"
-        "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pdomain-ocr-synth\n"
-        "pd-ocr-recipe-sha: " + ("a" * 64) + "\n"
-        "pd-ocr-content-sha: " + ("b" * 64) + "\n"
+        "pdomain-ocr-shape: recognition/v1\n"
+        "pdomain-ocr-source: pdomain-ocr-synth\n"
+        "pdomain-ocr-recipe-sha: " + ("a" * 64) + "\n"
+        "pdomain-ocr-content-sha: " + ("b" * 64) + "\n"
         "---\n\n"
         "# pdomain-ocr-synth — gaelic\n",
     )
 
     report = check_required_front_matter(staging)
     assert not report.ok
-    assert report.missing_keys == ("pd-ocr-render-tool-version",)
+    assert report.missing_keys == ("pdomain-ocr-render-tool-version",)
     assert report.empty_keys == ()
 
 
@@ -182,11 +182,11 @@ def test_empty_required_value_treated_as_failure(tmp_path: Path) -> None:
     _rewrite_readme(
         staging,
         "---\n"
-        "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pdomain-ocr-synth\n"
-        'pd-ocr-recipe-sha: ""\n'
-        "pd-ocr-render-tool-version: 0.1.2\n"
-        "pd-ocr-content-sha: " + ("c" * 64) + "\n"
+        "pdomain-ocr-shape: recognition/v1\n"
+        "pdomain-ocr-source: pdomain-ocr-synth\n"
+        'pdomain-ocr-recipe-sha: ""\n'
+        "pdomain-ocr-render-tool-version: 0.1.2\n"
+        "pdomain-ocr-content-sha: " + ("c" * 64) + "\n"
         "---\n\n"
         "body\n",
     )
@@ -194,7 +194,7 @@ def test_empty_required_value_treated_as_failure(tmp_path: Path) -> None:
     report = check_required_front_matter(staging)
     assert not report.ok
     assert report.missing_keys == ()
-    assert report.empty_keys == ("pd-ocr-recipe-sha",)
+    assert report.empty_keys == ("pdomain-ocr-recipe-sha",)
 
 
 def test_multiple_failures_listed_in_stable_order(tmp_path: Path) -> None:
@@ -204,9 +204,9 @@ def test_multiple_failures_listed_in_stable_order(tmp_path: Path) -> None:
     _rewrite_readme(
         staging,
         "---\n"
-        "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pdomain-ocr-synth\n"
-        'pd-ocr-render-tool-version: "   "\n'
+        "pdomain-ocr-shape: recognition/v1\n"
+        "pdomain-ocr-source: pdomain-ocr-synth\n"
+        'pdomain-ocr-render-tool-version: "   "\n'
         "---\n\n"
         "body\n",
     )
@@ -214,8 +214,8 @@ def test_multiple_failures_listed_in_stable_order(tmp_path: Path) -> None:
     report = check_required_front_matter(staging)
     # Missing list keeps the order of REQUIRED_FRONT_MATTER_KEYS so
     # the user sees a stable, easy-to-diff message across runs.
-    assert report.missing_keys == ("pd-ocr-recipe-sha", "pd-ocr-content-sha")
-    assert report.empty_keys == ("pd-ocr-render-tool-version",)
+    assert report.missing_keys == ("pdomain-ocr-recipe-sha", "pdomain-ocr-content-sha")
+    assert report.empty_keys == ("pdomain-ocr-render-tool-version",)
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ def test_assert_publish_ready_raises_on_missing_key(tmp_path: Path) -> None:
     staging = _build_staging(tmp_path)
     _rewrite_readme(
         staging,
-        "---\npd-ocr-shape: recognition/v1\npd-ocr-source: pdomain-ocr-synth\n---\n\nbody\n",
+        "---\npdomain-ocr-shape: recognition/v1\npdomain-ocr-source: pdomain-ocr-synth\n---\n\nbody\n",
     )
 
     with pytest.raises(PreflightError) as excinfo:
@@ -240,9 +240,9 @@ def test_assert_publish_ready_raises_on_missing_key(tmp_path: Path) -> None:
     assert str(staging / README_FILENAME) in msg
     assert "missing front-matter keys" in msg
     # All three of the missing keys present — stable message ordering.
-    assert "pd-ocr-recipe-sha" in msg
-    assert "pd-ocr-render-tool-version" in msg
-    assert "pd-ocr-content-sha" in msg
+    assert "pdomain-ocr-recipe-sha" in msg
+    assert "pdomain-ocr-render-tool-version" in msg
+    assert "pdomain-ocr-content-sha" in msg
 
 
 def test_assert_publish_ready_lists_empty_separately(tmp_path: Path) -> None:
@@ -252,11 +252,11 @@ def test_assert_publish_ready_lists_empty_separately(tmp_path: Path) -> None:
     _rewrite_readme(
         staging,
         "---\n"
-        "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-source: pdomain-ocr-synth\n"
-        "pd-ocr-recipe-sha: " + ("a" * 64) + "\n"
-        'pd-ocr-render-tool-version: ""\n'
-        "pd-ocr-content-sha: " + ("b" * 64) + "\n"
+        "pdomain-ocr-shape: recognition/v1\n"
+        "pdomain-ocr-source: pdomain-ocr-synth\n"
+        "pdomain-ocr-recipe-sha: " + ("a" * 64) + "\n"
+        'pdomain-ocr-render-tool-version: ""\n'
+        "pdomain-ocr-content-sha: " + ("b" * 64) + "\n"
         "---\n\n"
         "body\n",
     )
@@ -266,7 +266,7 @@ def test_assert_publish_ready_lists_empty_separately(tmp_path: Path) -> None:
 
     msg = str(excinfo.value)
     assert "empty front-matter values" in msg
-    assert "pd-ocr-render-tool-version" in msg
+    assert "pdomain-ocr-render-tool-version" in msg
     assert "missing" not in msg.lower() or "empty" in msg.lower()
 
 
@@ -280,24 +280,26 @@ def test_required_override_skips_keys_not_yet_applied(tmp_path: Path) -> None:
 
     A caller that runs the check between dataset-card write and
     content-SHA embed should still see ``ok`` if it passes a custom
-    required set without ``pd-ocr-content-sha``.
+    required set without ``pdomain-ocr-content-sha``.
     """
 
     staging = _build_staging(tmp_path)
     # Strip the content-SHA line manually to simulate the
     # "before apply_content_sha_to_readme" state.
     text = (staging / README_FILENAME).read_text(encoding="utf-8")
-    rewritten_lines = [ln for ln in text.splitlines() if not ln.startswith("pd-ocr-content-sha:")]
+    rewritten_lines = [
+        ln for ln in text.splitlines() if not ln.startswith("pdomain-ocr-content-sha:")
+    ]
     _rewrite_readme(staging, "\n".join(rewritten_lines) + "\n")
 
-    custom = tuple(k for k in REQUIRED_FRONT_MATTER_KEYS if k != "pd-ocr-content-sha")
+    custom = tuple(k for k in REQUIRED_FRONT_MATTER_KEYS if k != "pdomain-ocr-content-sha")
     report = check_required_front_matter(staging, required=custom)
     assert report.ok
 
     # The default set still flags it as missing.
     default_report = check_required_front_matter(staging)
     assert not default_report.ok
-    assert default_report.missing_keys == ("pd-ocr-content-sha",)
+    assert default_report.missing_keys == ("pdomain-ocr-content-sha",)
 
 
 # ---------------------------------------------------------------------------

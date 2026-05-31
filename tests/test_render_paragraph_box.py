@@ -51,7 +51,7 @@ schema_version: 1
 name: para-box-test
 seed: 42
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: 1
@@ -78,7 +78,7 @@ schema_version: 1
 name: wc-para-box-test
 seed: 42
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1

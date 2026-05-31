@@ -3,7 +3,7 @@
 Exercises the M09 detection-mode dispatch chunk: a recipe with
 ``output.mode = detection`` + ``layout.mode = paragraphs`` should walk
 ``run_recipe`` through ``render_paragraph`` and into
-:class:`DetectionWriter`, producing the ``pd-ocr-trainer/v1`` detection
+:class:`DetectionWriter`, producing the ``pdomain-ocr-training/v1`` detection
 layout (``images/page_*.png`` + ``labels.json`` with per-line polygons).
 
 These tests skip when the bundled Bunchló GC font isn't present on
@@ -47,7 +47,7 @@ schema_version: 1
 name: render-paragraphs-smoke
 seed: 31
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./trainer-out
   count: 4
@@ -446,7 +446,7 @@ schema_version: 1
 name: render-paragraphs-wrap
 seed: 31
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./trainer-out
   count: 1
@@ -679,7 +679,7 @@ schema_version: 1
 name: render-paragraphs-nowrap
 seed: 31
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./trainer-out
   count: 1

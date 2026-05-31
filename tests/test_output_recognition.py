@@ -36,7 +36,7 @@ schema_version: 1
 name: writer-smoke
 seed: 5
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: {count}

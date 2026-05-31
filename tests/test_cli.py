@@ -142,7 +142,7 @@ _GOOD_RECIPE = """\
 schema_version: 1
 name: smoke
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1
@@ -311,7 +311,7 @@ schema_version: 1
 name: rich
 description: a richly-populated recipe
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1

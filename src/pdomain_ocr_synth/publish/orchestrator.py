@@ -9,8 +9,8 @@ Per ``docs/specs/10-publishing.md`` the upload sequence is, in order:
 
 1. **Pre-flight** the staging dir (already built upstream by
    :func:`pdomain_ocr_synth.publish.recognition.build_recognition_staging`):
-   the README must carry the documented ``pd-ocr-*`` keys including
-   the freshly-embedded ``pd-ocr-content-sha``.
+   the README must carry the documented ``pdomain-ocr-*`` keys including
+   the freshly-embedded ``pdomain-ocr-content-sha``.
 2. **Compute the local content SHA** from the staging dir. For a
    staging dir built by :func:`build_recognition_staging` the digest
    is already pinned in the README, so we recompute over the
@@ -19,7 +19,7 @@ Per ``docs/specs/10-publishing.md`` the upload sequence is, in order:
    path resilient to a hand-edited README and matches the contract
    the idempotency check uses.
 3. **Idempotency check** against the transport. If the repo already
-   carries our digest in ``card_data.pd-ocr-content-sha`` the publish
+   carries our digest in ``card_data.pdomain-ocr-content-sha`` the publish
    is a no-op and we return early with state ``"no_change"``. Spec 10
    § Idempotency: "If equal → exit 0 with 'no changes' and do not
    commit."
@@ -128,7 +128,7 @@ class PublishState(StrEnum):
     Members
     -------
     NO_CHANGE:
-        Idempotency check found a matching ``pd-ocr-content-sha`` on
+        Idempotency check found a matching ``pdomain-ocr-content-sha`` on
         the remote. No ``upload_folder`` happened. The runner exits 0
         with the spec's "no changes" message.
     CREATED:
@@ -166,7 +166,7 @@ class PublishResult:
     content_sha:
         The digest the orchestrator computed locally. On the
         ``NO_CHANGE`` branch this equals the remote's
-        ``pd-ocr-content-sha`` by construction.
+        ``pdomain-ocr-content-sha`` by construction.
     commit_sha:
         The 40-char SHA of the upload commit, or empty string if no
         upload happened (``NO_CHANGE``). Tests treat empty-string as
@@ -270,7 +270,7 @@ def publish_recognition(
     ------
     pdomain_ocr_synth.publish.preflight.PreflightError
         Staging dir is structurally invalid (missing README, missing
-        ``pd-ocr-*`` keys, etc). The runner maps this to exit 6.
+        ``pdomain-ocr-*`` keys, etc). The runner maps this to exit 6.
     pdomain_ocr_synth.publish.content_sha.ContentShaError
         Could not hash the staging dir.
     PublishError

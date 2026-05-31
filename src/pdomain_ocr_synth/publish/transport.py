@@ -146,7 +146,7 @@ class HfTransport(Protocol):
         """Return the latest commit's README YAML front matter.
 
         Used for the idempotency check: the runner compares
-        ``card_data["pd-ocr-content-sha"]`` against the locally
+        ``card_data["pdomain-ocr-content-sha"]`` against the locally
         computed digest and short-circuits when they match.
 
         Implementations may legitimately return an empty mapping for a
@@ -231,7 +231,7 @@ class FakeTransport:
 
     The fake stores file *contents* (bytes), not just paths, so a
     future test that wants to assert e.g. that the uploaded README has
-    a specific ``pd-ocr-content-sha`` line can just decode
+    a specific ``pdomain-ocr-content-sha`` line can just decode
     ``transport.repos["alice/x"].files["README.md"]`` and parse it.
     """
 
@@ -380,7 +380,7 @@ class FakeTransport:
             new_files[rel] = path.read_bytes()
         repo.files = new_files
 
-        # If the upload includes a README with a ``pd-ocr-*`` front
+        # If the upload includes a README with a ``pdomain-ocr-*`` front
         # matter block, refresh the repo's ``card_data`` so the next
         # ``read_remote_card_data`` call sees the just-uploaded values.
         # This mirrors HF's behavior: ``card_data`` on a repo IS the

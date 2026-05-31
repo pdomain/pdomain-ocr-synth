@@ -5,7 +5,7 @@ Subcommands wired to date:
 - M02: ``list``, ``validate``, ``describe``, ``init``, ``schema``.
 - M03: ``fetch``, ``clean`` (corpus cache management).
 - M05: ``preview`` (render N samples to a preview directory).
-- M07: ``render`` (full dataset → ``pd-ocr-trainer/v1`` recognition).
+- M07: ``render`` (full dataset → ``pdomain-ocr-training/v1`` recognition).
 - M08: ``publish --dry-run`` (preview HF upload plan; real upload
   lands in a later chunk of M08).
 - M10: ``lint`` (heuristic recipe checks layered on top of
@@ -801,7 +801,7 @@ def _cmd_render(
     no_audit: bool = False,
     no_cache: bool = False,
 ) -> int:
-    """Render the full recipe dataset into the ``pd-ocr-trainer/v1`` layout.
+    """Render the full recipe dataset into the ``pdomain-ocr-training/v1`` layout.
 
     Default output: ``recipe.output.destination`` from the YAML.
     Pass ``-o`` to override (handy for smoke runs into ``/tmp``).

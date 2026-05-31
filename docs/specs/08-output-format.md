@@ -2,7 +2,7 @@
 
 This project produces datasets in a layout that `pd-ocr-trainer`'s
 `dataset_store.py` already knows how to consume. The contract is
-versioned: `output.format: pd-ocr-trainer/v1`.
+versioned: `output.format: pdomain-ocr-training/v1`.
 
 ## Modes
 

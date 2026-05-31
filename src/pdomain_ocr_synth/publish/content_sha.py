@@ -4,11 +4,11 @@ Per ``docs/specs/10-publishing.md`` § Idempotency and the matching
 deliverable in ``docs/roadmap/08-publishing-hf.md``:
 
 > Compute a content SHA over the staging directory (sorted file list +
-> per-file SHA-256). Persist it as ``pd-ocr-content-sha`` in the
+> per-file SHA-256). Persist it as ``pdomain-ocr-content-sha`` in the
 > dataset card front matter.
 
 The SHA closes the idempotency loop: ``publish`` reads the latest HF
-commit's ``card_data.pd-ocr-content-sha``; if it matches the freshly
+commit's ``card_data.pdomain-ocr-content-sha``; if it matches the freshly
 computed digest, nothing has changed and the publish exits 0 with "no
 changes" without creating a commit. ``--dry-run`` prints the same
 digest so a caller can preview whether a re-run would be a no-op.
@@ -19,7 +19,7 @@ Two pieces live here, both pure file-IO (no network, no HF SDK):
    produce a deterministic 64-char hex digest.
 2. :func:`apply_content_sha_to_readme` — rewrite
    ``<staging>/README.md`` so its front matter carries
-   ``pd-ocr-content-sha: <digest>``. The dataset-card writer in
+   ``pdomain-ocr-content-sha: <digest>``. The dataset-card writer in
    ``dataset_card.py`` deliberately omits this key (see its module
    docstring): the SHA is computed *over* the staging dir contents
    (which include the README), so it must be inserted *after* the
@@ -32,9 +32,9 @@ The digest must be invariant across:
 - **Filesystem walk order.** We sort relative paths byte-wise (POSIX
   separator) before hashing, so any two filesystems / OSes produce
   the same digest for the same logical content.
-- **Pre-existing ``pd-ocr-content-sha`` in README.md.** The README is
+- **Pre-existing ``pdomain-ocr-content-sha`` in README.md.** The README is
   hashed as it sits on disk, but ``apply_content_sha_to_readme``
-  always strips any old ``pd-ocr-content-sha`` line before inserting
+  always strips any old ``pdomain-ocr-content-sha`` line before inserting
   the new one — see :func:`apply_content_sha_to_readme` for why this
   matters and how round-trips stay stable.
 
@@ -44,7 +44,7 @@ The digest must change for *any* logical change to the dataset:
 - ``metadata.jsonl`` row text or column changes.
 - ``recipe.snapshot.yaml`` byte-level changes.
 - README body / front-matter changes (excluding the
-  ``pd-ocr-content-sha`` line itself, which is intentionally part of
+  ``pdomain-ocr-content-sha`` line itself, which is intentionally part of
   the strip-and-replace cycle).
 
 What we *don't* hash:
@@ -69,12 +69,12 @@ from pdomain_ocr_synth.publish.dataset_card import README_FILENAME
 # tests can assert against one name.
 CONTENT_SHA_ALGORITHM = "sha256"
 
-# Front-matter key. Mirrors the conventional ``pd-ocr-*`` namespace
+# Front-matter key. Mirrors the conventional ``pdomain-ocr-*`` namespace
 # the rest of ``dataset_card`` already uses. Defined here (rather than
 # imported back from ``dataset_card``) to keep that module free of any
 # notion of content-SHA — it stays a pure render of the static front
 # matter.
-CONTENT_SHA_KEY = "pd-ocr-content-sha"
+CONTENT_SHA_KEY = "pdomain-ocr-content-sha"
 
 # Chunk size for streaming file reads. 1 MiB balances syscall
 # overhead against memory pressure on the largest images we expect
@@ -113,7 +113,7 @@ def compute_content_sha(staging_dir: Path) -> str:
       currently emit any) would sort by UTF-8 byte order.
 
     Idempotency w.r.t. the embedded SHA line: when the staging README
-    already carries a ``pd-ocr-content-sha:`` front-matter line (e.g.
+    already carries a ``pdomain-ocr-content-sha:`` front-matter line (e.g.
     after :func:`apply_content_sha_to_readme` has run), that line is
     stripped before the README is hashed. This makes the digest
     invariant across the apply-then-recompute cycle the upload
@@ -178,9 +178,9 @@ def compute_content_sha(staging_dir: Path) -> str:
 
 
 def apply_content_sha_to_readme(staging_dir: Path, content_sha: str) -> Path:
-    """Insert ``pd-ocr-content-sha`` into the staging README's front matter.
+    """Insert ``pdomain-ocr-content-sha`` into the staging README's front matter.
 
-    Strips any pre-existing ``pd-ocr-content-sha:`` line before
+    Strips any pre-existing ``pdomain-ocr-content-sha:`` line before
     inserting the new value. This makes the operation idempotent:
     calling it twice with the same SHA leaves the README byte-for-byte
     unchanged, and calling it twice with different SHAs leaves only
@@ -191,10 +191,10 @@ def apply_content_sha_to_readme(staging_dir: Path, content_sha: str) -> Path:
     SHA *over the staging dir as it would be uploaded*. Once the SHA
     is in the README, hashing again with that line would change the
     digest. The stable convention is "hash the staging dir with no
-    ``pd-ocr-content-sha`` line in the README, then write that digest
+    ``pdomain-ocr-content-sha`` line in the README, then write that digest
     in" — :func:`compute_content_sha` is called *before* this helper.
 
-    The insertion point is right after the last ``pd-ocr-*`` key in
+    The insertion point is right after the last ``pdomain-ocr-*`` key in
     the front matter so the conventional keys stay grouped. If no
     front matter is found, one is created.
 
@@ -265,7 +265,7 @@ def _hash_file(path: Path) -> str:
 
 
 def _hash_readme_without_content_sha(path: Path) -> str:
-    """SHA-256 of the README's bytes with any ``pd-ocr-content-sha`` line removed.
+    """SHA-256 of the README's bytes with any ``pdomain-ocr-content-sha`` line removed.
 
     Used by :func:`compute_content_sha` so the digest is invariant
     across the apply-then-recompute cycle. The README is small (a few
@@ -283,7 +283,7 @@ def _hash_readme_without_content_sha(path: Path) -> str:
     return hashlib.sha256(stripped.encode("utf-8")).hexdigest()
 
 
-# Match a top-level YAML key line for ``pd-ocr-content-sha``. Tolerant
+# Match a top-level YAML key line for ``pdomain-ocr-content-sha``. Tolerant
 # of leading whitespace (none expected in our writer but cheap to
 # allow) and of the line being the last in the front-matter body
 # without a trailing newline (``\Z``). The trailing-``\n`` consume

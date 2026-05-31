@@ -4,7 +4,7 @@ Covers the three-step procedure from ``docs/specs/10-publishing.md``
 § Idempotency:
 
 1. (Caller-supplied) compute local content SHA.
-2. Read remote ``card_data.pd-ocr-content-sha``.
+2. Read remote ``card_data.pdomain-ocr-content-sha``.
 3. If equal → no-op; otherwise → upload.
 
 We drive every test against :class:`FakeTransport` so the suite stays
@@ -70,7 +70,7 @@ def test_repo_missing_short_circuits_before_read_remote_card() -> None:
 
 def test_up_to_date_when_remote_sha_matches() -> None:
     """The spec's "exit 0 with no changes" branch: remote card has
-    a ``pd-ocr-content-sha`` equal to the local digest."""
+    a ``pdomain-ocr-content-sha`` equal to the local digest."""
 
     transport = FakeTransport()
     transport.seed_repo(
@@ -146,7 +146,7 @@ def test_empty_local_sha_raises_value_error() -> None:
 
 
 def test_non_string_remote_sha_treated_as_changed() -> None:
-    """If a malformed README parses ``pd-ocr-content-sha`` to a non-
+    """If a malformed README parses ``pdomain-ocr-content-sha`` to a non-
     string (e.g. an unquoted hex got coerced to int), we don't crash
     and we don't pretend it matches — we fall through to ``changed``
     with ``remote_sha=None``."""
@@ -181,7 +181,7 @@ def test_transport_error_during_repo_exists_propagates() -> None:
 
 
 def test_round_trip_after_upload_yields_up_to_date(tmp_path: Path) -> None:
-    """End-to-end: stage a folder with a README carrying ``pd-ocr-
+    """End-to-end: stage a folder with a README carrying ``pdomain-ocr-
     content-sha: <X>``, upload it, then call ``check_idempotency``
     with the same SHA. The fake's ``upload_folder`` refreshes
     ``card_data`` from the README front matter (mirrors real HF), so
@@ -199,8 +199,8 @@ def test_round_trip_after_upload_yields_up_to_date(tmp_path: Path) -> None:
     (tmp_path / "README.md").write_text(
         "---\n"
         "license: cc-by-4.0\n"
-        "pd-ocr-shape: recognition/v1\n"
-        f"pd-ocr-content-sha: {_LOCAL_SHA}\n"
+        "pdomain-ocr-shape: recognition/v1\n"
+        f"pdomain-ocr-content-sha: {_LOCAL_SHA}\n"
         "---\n"
         "# Body\n",
         encoding="utf-8",
@@ -219,7 +219,7 @@ def test_round_trip_with_local_change_yields_changed(tmp_path: Path) -> None:
     transport.create_repo("alice/x", private=False)
 
     (tmp_path / "README.md").write_text(
-        f"---\npd-ocr-content-sha: {_OTHER_SHA}\n---\n",
+        f"---\npdomain-ocr-content-sha: {_OTHER_SHA}\n---\n",
         encoding="utf-8",
     )
     transport.upload_folder("alice/x", folder_path=tmp_path, commit_message="v1")

@@ -13,7 +13,7 @@ _RECIPE = """\
 schema_version: 1
 name: clean-smoke
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1

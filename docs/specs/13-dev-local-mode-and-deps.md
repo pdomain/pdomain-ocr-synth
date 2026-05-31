@@ -75,13 +75,13 @@ Detection probes in this order, taking the first signal found:
    editable status is a reliable proxy for the whole environment.
    If `uv pip show pdomain-book-tools` fails or returns no
    `Editable project location:` line, fall through to (2).
-2. **Fallback — venv marker file.** If `.venv/pd-dev-local` exists
+2. **Fallback — venv marker file.** If `.venv/pdomain-dev-local` exists
    (a zero-byte sentinel written by `make upgrade-deps-local` /
    the dev-local setup recipe), treat as dev-local. This covers
    environments where `pdomain-book-tools` legitimately is not installed
    (e.g. a synth-only contributor) but the developer has explicitly
    opted into dev-local extras (GPU, doctr-from-git).
-3. **Last resort — env var.** If `PD_DEV_LOCAL=1` is set in the
+3. **Last resort — env var.** If `PDOMAIN_DEV_LOCAL=1` is set in the
    shell, treat as dev-local. Useful for CI runs that
    programmatically opt into dev-local without pre-creating the
    marker.
@@ -95,9 +95,9 @@ If none of (1)/(2)/(3) signal dev-local, the venv is **canonical**.
   running `uv sync`. Recommended message:
 
   > Detected dev-local venv (editable pdomain-book-tools / marker /
-  > PD_DEV_LOCAL). `make upgrade-deps` would revert this environment
+  > PDOMAIN_DEV_LOCAL). `make upgrade-deps` would revert this environment
   > to canonical published deps. Use `make upgrade-deps-local`
-  > instead, or remove the marker / unset PD_DEV_LOCAL to opt into a
+  > instead, or remove the marker / unset PDOMAIN_DEV_LOCAL to opt into a
   > canonical refresh.
 
   The message MUST name the detection signal that triggered the
@@ -121,7 +121,7 @@ Detection and refusal logic MUST work on Linux, macOS, and any
 Windows shell currently supported by the Makefile (treat `bash` as
 the lowest common denominator; do not depend on GNU-only utilities
 beyond `grep` / `test`). The marker file path uses POSIX-style
-`.venv/pd-dev-local`; on Windows uv venvs the equivalent path under
+`.venv/pdomain-dev-local`; on Windows uv venvs the equivalent path under
 `.venv\` is acceptable.
 
 ## Why pdomain-book-tools as the anchor

@@ -215,13 +215,13 @@ def test_read_remote_card_data_returns_dict_for_existing_card() -> None:
 
     api = _make_api_mock()
     fake_card = SimpleNamespace(
-        to_dict=lambda: {"pd-ocr-content-sha": "abc123", "license": "cc-by-4.0"}
+        to_dict=lambda: {"pdomain-ocr-content-sha": "abc123", "license": "cc-by-4.0"}
     )
     api.dataset_info.return_value = _fake_dataset_info(fake_card)
     transport = _make_transport(api)
 
     result = transport.read_remote_card_data("alice/x")
-    assert result == {"pd-ocr-content-sha": "abc123", "license": "cc-by-4.0"}
+    assert result == {"pdomain-ocr-content-sha": "abc123", "license": "cc-by-4.0"}
     api.dataset_info.assert_called_once_with("alice/x", revision="main")
 
 
@@ -230,11 +230,11 @@ def test_read_remote_card_data_falls_back_to_dict_when_no_to_dict() -> None:
     long as ``DatasetCardData`` remains dict-like."""
 
     api = _make_api_mock()
-    api.dataset_info.return_value = _fake_dataset_info({"pd-ocr-content-sha": "deadbeef"})
+    api.dataset_info.return_value = _fake_dataset_info({"pdomain-ocr-content-sha": "deadbeef"})
     transport = _make_transport(api)
 
     result = transport.read_remote_card_data("alice/x")
-    assert result == {"pd-ocr-content-sha": "deadbeef"}
+    assert result == {"pdomain-ocr-content-sha": "deadbeef"}
 
 
 def test_read_remote_card_data_returns_empty_for_missing_card() -> None:
