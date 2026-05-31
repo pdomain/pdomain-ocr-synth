@@ -3,7 +3,7 @@
 Exercises the M09 detection-mode pages dispatch chunk: a recipe with
 ``output.mode = detection`` + ``layout.mode = pages`` should walk
 ``run_recipe`` through ``render_page`` and into :class:`DetectionWriter`,
-producing the ``pd-ocr-trainer/v1`` detection layout (``images/page_*.png``
+producing the ``pdomain-ocr-training/v1`` detection layout (``images/page_*.png``
 + ``labels.json``) for **multi-paragraph** page samples.
 
 Mirrors :mod:`tests.test_cli_render_paragraphs` for paragraphs mode.
@@ -59,7 +59,7 @@ schema_version: 1
 name: render-pages-smoke
 seed: 31
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./trainer-out
   count: 4
@@ -405,7 +405,7 @@ schema_version: 1
 name: render-pages-wrap
 seed: 31
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./trainer-out
   count: 1

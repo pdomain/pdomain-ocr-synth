@@ -31,8 +31,8 @@ Resulting staging layout::
     ├── labels.json          # copied verbatim from local; bbox + polygon GT
     ├── recipe.snapshot.yaml
     └── README.md            # detection-flavored dataset card; front
-                             # matter carries the ``pd-ocr-content-sha``
-                             # idempotency key and ``pd-ocr-shape:
+                             # matter carries the ``pdomain-ocr-content-sha``
+                             # idempotency key and ``pdomain-ocr-shape:
                              # detection/v1``.
 
 Why we keep ``labels.json`` *as-is* rather than collapsing it into
@@ -193,7 +193,7 @@ def build_detection_staging(
     if result.snapshot_copied:
         card_inputs = load_card_inputs(local, license_override=license_override)
         # Tag the card as detection-shape so the conventional
-        # ``pd-ocr-shape`` front-matter key reads ``detection/v1``
+        # ``pdomain-ocr-shape`` front-matter key reads ``detection/v1``
         # rather than the recognition default.
         card_inputs.shape = "detection/v1"
         card_inputs.task_categories = ["object-detection"]

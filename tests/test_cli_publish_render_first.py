@@ -58,7 +58,7 @@ schema_version: 1
 name: render-first-smoke
 seed: 11
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 2

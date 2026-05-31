@@ -408,7 +408,7 @@ def test_preflight_error_propagates_when_staging_lacks_readme(tmp_path: Path) ->
 def test_orchestrator_ignores_pinned_readme_sha_value_for_recompute(
     tmp_path: Path,
 ) -> None:
-    """The README's ``pd-ocr-content-sha`` line is *informational*; it
+    """The README's ``pdomain-ocr-content-sha`` line is *informational*; it
     doesn't feed back into the digest. The orchestrator recomputes
     the digest from the staging dir (with that line stripped before
     hashing — see ``compute_content_sha``'s idempotency contract) and

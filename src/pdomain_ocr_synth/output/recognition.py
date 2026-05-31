@@ -1,4 +1,4 @@
-"""Recognition-mode output writer for ``pd-ocr-trainer/v1``.
+"""Recognition-mode output writer for ``pdomain-ocr-training/v1``.
 
 Layout produced (per ``docs/specs/08-output-format.md``, harmonized
 with ``pd-ocr-trainer/dataset_store.py`` which is the actual API

@@ -113,10 +113,10 @@ def test_read_remote_card_data_returns_seeded_card() -> None:
     transport = FakeTransport()
     transport.seed_repo(
         "alice/x",
-        card_data={"pd-ocr-content-sha": "abc123", "license": "cc-by-4.0"},
+        card_data={"pdomain-ocr-content-sha": "abc123", "license": "cc-by-4.0"},
     )
     card = transport.read_remote_card_data("alice/x")
-    assert card["pd-ocr-content-sha"] == "abc123"
+    assert card["pdomain-ocr-content-sha"] == "abc123"
     assert card["license"] == "cc-by-4.0"
 
 
@@ -144,11 +144,11 @@ def test_read_remote_card_data_returns_a_copy_not_a_view() -> None:
     pop / set keys for normalization."""
 
     transport = FakeTransport()
-    transport.seed_repo("alice/x", card_data={"pd-ocr-content-sha": "abc"})
+    transport.seed_repo("alice/x", card_data={"pdomain-ocr-content-sha": "abc"})
     card = transport.read_remote_card_data("alice/x")
-    card["pd-ocr-content-sha"] = "tampered"  # type: ignore[index]
+    card["pdomain-ocr-content-sha"] = "tampered"  # type: ignore[index]
     fresh = transport.read_remote_card_data("alice/x")
-    assert fresh["pd-ocr-content-sha"] == "abc"
+    assert fresh["pdomain-ocr-content-sha"] == "abc"
 
 
 # ---------------------------------------------------------------------------
@@ -168,8 +168,8 @@ def _write_staging(root: Path) -> None:
     (root / "README.md").write_text(
         "---\n"
         "license: cc-by-4.0\n"
-        "pd-ocr-shape: recognition/v1\n"
-        "pd-ocr-content-sha: deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcdef\n"
+        "pdomain-ocr-shape: recognition/v1\n"
+        "pdomain-ocr-content-sha: deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcdef\n"
         "---\n"
         "# Body\n",
         encoding="utf-8",
@@ -216,7 +216,7 @@ def test_upload_folder_refreshes_card_data_from_uploaded_readme(tmp_path: Path) 
 
     card = transport.read_remote_card_data("alice/x")
     assert (
-        card["pd-ocr-content-sha"]
+        card["pdomain-ocr-content-sha"]
         == "deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcdef"
     )
     assert card["license"] == "cc-by-4.0"
@@ -400,7 +400,7 @@ def test_seed_repo_does_not_show_up_in_calls() -> None:
     on the runner's behavior)."""
 
     transport = FakeTransport()
-    transport.seed_repo("alice/x", card_data={"pd-ocr-content-sha": "abc"})
+    transport.seed_repo("alice/x", card_data={"pdomain-ocr-content-sha": "abc"})
     assert transport.calls == []
 
 

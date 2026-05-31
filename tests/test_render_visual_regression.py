@@ -115,7 +115,7 @@ schema_version: 1
 name: visreg-word-crop
 seed: 1
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1
@@ -140,7 +140,7 @@ schema_version: 1
 name: visreg-lines
 seed: 1
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1
@@ -165,7 +165,7 @@ schema_version: 1
 name: visreg-paragraphs
 seed: 1
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: 1
@@ -191,7 +191,7 @@ schema_version: 1
 name: visreg-pages
 seed: 1
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: 1
@@ -227,7 +227,7 @@ schema_version: 1
 name: visreg-lines-degraded
 seed: 1
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1

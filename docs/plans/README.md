@@ -19,7 +19,7 @@ Archived (fully shipped) plans live in [`../archive/plans/`](../archive/plans/).
 | 04 | Text transforms | ✅ archived | Lenition, long-s, Tironian et, base ops | Round-trip transform tests pass |
 | [05](05-rendering.md) | Rendering | mostly done (deferred UX features noted) | HarfBuzz, fonts, word-crop layout | Single sample renders deterministically |
 | [06](06-degradation.md) | Degradation pipeline | mostly done (deferred stages noted) | Geometric + optical + paper + jpeg stages | Sample with degradation looks plausible |
-| 07 | Output: recognition mode | ✅ archived | Writer for `pd-ocr-trainer/v1` recognition | Trainer can read 50k Gaelic crops |
+| 07 | Output: recognition mode | ✅ archived | Writer for `pdomain-ocr-training/v1` recognition | Trainer can read 50k Gaelic crops |
 | 08 | HF publish | ✅ archived | Push rendered output to HF dataset repo | A dataset on HF that the trainer can consume |
 | [09](09-detection-mode.md) | Output: detection mode | mostly done (future HF parquet work noted) | Layouts: paragraphs, pages; bbox-aware degradations | Trainer detection profile fed |
 | [10](10-stretch.md) | Stretch | partially done (extra recipes + cloud render remain) | Extra recipes, cloud render, polish | Opt-in follow-ups |

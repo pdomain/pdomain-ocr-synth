@@ -60,7 +60,7 @@ def test_front_matter_preview_returns_only_the_fenced_block(tmp_path: Path) -> N
     readme.write_text(
         "---\n"
         "license: cc-by-4.0\n"
-        "pd-ocr-shape: recognition/v1\n"
+        "pdomain-ocr-shape: recognition/v1\n"
         "---\n"
         "\n"
         "# Body should not appear\n"
@@ -70,7 +70,7 @@ def test_front_matter_preview_returns_only_the_fenced_block(tmp_path: Path) -> N
 
     preview = _front_matter_preview(readme)
     assert "license: cc-by-4.0" in preview
-    assert "pd-ocr-shape: recognition/v1" in preview
+    assert "pdomain-ocr-shape: recognition/v1" in preview
     # Body is stripped.
     assert "Body should not appear" not in preview
     # Both fences are kept so consumers can re-parse if they want.
@@ -200,7 +200,7 @@ def test_format_publish_result_no_change_state() -> None:
 
     text = format_publish_result(result)
     assert "No changes to upload: alice/x" in text
-    assert "pd-ocr-content-sha=abcdef012345" in text
+    assert "pdomain-ocr-content-sha=abcdef012345" in text
     # NO_CHANGE has no commit; ensure we don't print a bogus SHA line.
     assert "commit:" not in text
 

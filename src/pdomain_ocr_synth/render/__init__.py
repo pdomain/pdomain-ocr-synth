@@ -8,7 +8,7 @@ Public surface:
 - ``sample_value`` — draw a value from a recipe scalar / range /
   weighted-choice field.
 - ``run_recipe`` (M07) — full dataset loop into the
-  ``pd-ocr-trainer/v1`` recognition layout.
+  ``pdomain-ocr-training/v1`` recognition layout.
 - ``plan_recipe`` — dry-run summary of what ``run_recipe`` would do.
 """
 

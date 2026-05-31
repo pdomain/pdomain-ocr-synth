@@ -14,7 +14,7 @@ _RECIPE = """\
 schema_version: 1
 name: runner-smoke
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1
@@ -76,7 +76,7 @@ schema_version: 1
 name: pipeline
 seed: 99
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1
@@ -122,7 +122,7 @@ def test_collect_corpus_text_no_transforms_returns_raw(tmp_path: Path) -> None:
 schema_version: 1
 name: bare
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 1

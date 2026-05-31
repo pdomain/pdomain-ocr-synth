@@ -3,23 +3,23 @@
 Per ``docs/specs/10-publishing.md`` § Dataset card and the matching
 deliverable in ``docs/roadmap/08-publishing-hf.md``, the README that
 ships in the staging dir must carry a fixed set of conventional
-``pd-ocr-*`` front-matter keys:
+``pdomain-ocr-*`` front-matter keys:
 
-- ``pd-ocr-shape`` — fixed shape label, e.g. ``recognition/v1``.
-- ``pd-ocr-source`` — producer tool name; always ``pdomain-ocr-synth``.
-- ``pd-ocr-recipe-sha`` — SHA over the snapshot YAML bytes.
-- ``pd-ocr-render-tool-version`` — tool version that produced the
+- ``pdomain-ocr-shape`` — fixed shape label, e.g. ``recognition/v1``.
+- ``pdomain-ocr-source`` — producer tool name; always ``pdomain-ocr-synth``.
+- ``pdomain-ocr-recipe-sha`` — SHA over the snapshot YAML bytes.
+- ``pdomain-ocr-render-tool-version`` — tool version that produced the
   output, copied from the snapshot.
-- ``pd-ocr-content-sha`` — SHA over the staging-dir contents,
+- ``pdomain-ocr-content-sha`` — SHA over the staging-dir contents,
   written into the front matter by ``apply_content_sha_to_readme``.
 
 The staging builder (`recognition.build_recognition_staging`) populates
 these in two passes: the dataset-card writer fills in the first four
 from the local snapshot, and ``apply_content_sha_to_readme`` rewrites
-the README to add ``pd-ocr-content-sha`` once the rest of the dir has
+the README to add ``pdomain-ocr-content-sha`` once the rest of the dir has
 settled. The risk this module guards against is a *silently dropped*
 key — if the snapshot is missing a ``tool_version`` field the
-``pd-ocr-render-tool-version`` line never gets written, and the
+``pdomain-ocr-render-tool-version`` line never gets written, and the
 upload flow produces a card the trainer can't pin against.
 
 Why a separate module rather than inline checks in ``recognition``:
@@ -53,23 +53,23 @@ import yaml
 from pdomain_ocr_synth.publish.content_sha import CONTENT_SHA_KEY
 from pdomain_ocr_synth.publish.dataset_card import README_FILENAME
 
-# The conventional ``pd-ocr-*`` keys the dataset card MUST carry by
+# The conventional ``pdomain-ocr-*`` keys the dataset card MUST carry by
 # the time the staging dir is ready for upload. Centralized as a
 # tuple (ordered, immutable) so the error message lists missing keys
 # in a stable order — humans diffing logs across runs benefit from
 # that even when the set itself is small.
 #
-# ``pd-ocr-content-sha`` is included because the staging build runs
+# ``pdomain-ocr-content-sha`` is included because the staging build runs
 # ``apply_content_sha_to_readme`` immediately after the dataset-card
 # writer; pre-flight is run *after* both of those, so by then the key
 # must be present. A future ``--dry-run`` path that wants to validate
 # the card *before* the SHA is applied can call
 # :func:`check_required_front_matter` with a custom ``required`` set.
 REQUIRED_FRONT_MATTER_KEYS: tuple[str, ...] = (
-    "pd-ocr-shape",
-    "pd-ocr-source",
-    "pd-ocr-recipe-sha",
-    "pd-ocr-render-tool-version",
+    "pdomain-ocr-shape",
+    "pdomain-ocr-source",
+    "pdomain-ocr-recipe-sha",
+    "pdomain-ocr-render-tool-version",
     CONTENT_SHA_KEY,
 )
 
@@ -147,7 +147,7 @@ def check_required_front_matter(
         :data:`REQUIRED_FRONT_MATTER_KEYS`. Useful for
         ``check_required_front_matter(staging, required=...)`` calls
         that run *before* ``apply_content_sha_to_readme`` (and so don't
-        yet expect ``pd-ocr-content-sha``).
+        yet expect ``pdomain-ocr-content-sha``).
 
     Returns
     -------

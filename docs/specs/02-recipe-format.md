@@ -69,7 +69,7 @@ inferred from the `min`/`max` types.
 
 ```yaml
 output:
-  format: pd-ocr-trainer/v1     # required; see spec 08
+  format: pdomain-ocr-training/v1     # required; see spec 08
   mode: recognition             # required; recognition | detection
   destination: ${PD_ML_MODELS}/ml-recognition/gaelic/recognition
   count: 50000                  # required; total samples
@@ -215,7 +215,7 @@ publish:
     repo: ntw8532/pdomain-ocr-synth-gaelic   # required when block present
     private: false
     license: cc-by-4.0
-    tags: [ocr, gaelic, irish, pd-ocr, synthetic]
+    tags: [ocr, gaelic, irish, pdomain-ocr, synthetic]
     language: [ga]
     description_file: ./gaelic/README.md.template   # optional
 ```

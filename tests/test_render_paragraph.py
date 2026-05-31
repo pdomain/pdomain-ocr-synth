@@ -43,7 +43,7 @@ schema_version: 1
 name: para-smoke
 seed: 42
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: ./out
   count: 1
@@ -278,7 +278,7 @@ def test_render_paragraph_taller_line_spacing_yields_taller_canvas(
             f"name: para-spacing-{spacing}\n"
             "seed: 42\n"
             "output:\n"
-            "  format: pd-ocr-trainer/v1\n"
+            "  format: pdomain-ocr-training/v1\n"
             "  mode: detection\n"
             "  destination: ./out\n"
             "  count: 1\n"
@@ -549,7 +549,7 @@ def _make_aligned_recipe(tmp_path: Path, alignment: str | None) -> object:
         f"name: para-align-{alignment}\n"
         "seed: 42\n"
         "output:\n"
-        "  format: pd-ocr-trainer/v1\n"
+        "  format: pdomain-ocr-training/v1\n"
         "  mode: detection\n"
         "  destination: ./out\n"
         "  count: 1\n"

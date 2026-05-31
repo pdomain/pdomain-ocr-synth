@@ -182,7 +182,7 @@ def test_detection_staging_writes_detection_shape_in_front_matter(tmp_path: Path
     build_detection_staging(local, staging)
 
     readme = staging / README_FILENAME
-    shape = _read_front_matter_value(readme, "pd-ocr-shape")
+    shape = _read_front_matter_value(readme, "pdomain-ocr-shape")
     assert shape == "detection/v1"
 
 
@@ -210,7 +210,7 @@ def test_detection_staging_announces_object_detection_task(tmp_path: Path) -> No
 
 
 def test_detection_staging_embeds_content_sha_in_readme(tmp_path: Path) -> None:
-    """``pd-ocr-content-sha`` lands in the README front matter."""
+    """``pdomain-ocr-content-sha`` lands in the README front matter."""
 
     local = tmp_path / "local"
     _write_local_detection_output(local, pages=[{"index": 0}])

@@ -634,8 +634,8 @@ def _run_upload(
 
         # Build the commit message: caller's --message, or the spec's
         # default ``pdomain-ocr-synth render @<recipe-sha>`` derived from
-        # the staging README's pd-ocr-recipe-sha key.
-        recipe_sha = preflight_report.front_matter.get("pd-ocr-recipe-sha")
+        # the staging README's pdomain-ocr-recipe-sha key.
+        recipe_sha = preflight_report.front_matter.get("pdomain-ocr-recipe-sha")
         commit_message = resolve_commit_message(
             override=message,
             recipe_sha=recipe_sha if isinstance(recipe_sha, str) else None,
@@ -702,7 +702,7 @@ def format_publish_result(result: PublishResult) -> str:
     lines: list[str] = []
     if result.state is PublishState.NO_CHANGE:
         lines.append(f"No changes to upload: {result.repo_id}")
-        lines.append(f"  remote already has pd-ocr-content-sha={result.content_sha[:12]}")
+        lines.append(f"  remote already has pdomain-ocr-content-sha={result.content_sha[:12]}")
     elif result.state is PublishState.CREATED:
         lines.append(f"Created and uploaded: {result.repo_id}")
         lines.append(f"  commit: {result.commit_sha[:12]}")

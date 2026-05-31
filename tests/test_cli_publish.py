@@ -40,7 +40,7 @@ schema_version: 1
 name: publish-smoke
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 4
@@ -577,7 +577,7 @@ schema_version: 1
 name: publish-detection-smoke
 seed: 11
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: detection
   destination: {dest}
   count: 1
@@ -620,7 +620,7 @@ def test_publish_dry_run_dispatches_detection_mode(
     """Spec 10 § Format conversion — detection: a recipe with
     ``output.mode: detection`` must route through the detection
     staging path, producing a ``data/page_*.png`` layout and a card
-    that announces ``pd-ocr-shape: detection/v1``.
+    that announces ``pdomain-ocr-shape: detection/v1``.
 
     This is the M09 dispatch contract — the CLI runner picks the
     right staging builder for the recipe's mode rather than blindly
@@ -666,7 +666,7 @@ def test_publish_dry_run_dispatches_detection_mode(
     assert rc == 0, captured.err
 
     # The dry-run preview shows the detection-shape front matter.
-    assert "pd-ocr-shape: detection/v1" in captured.out
+    assert "pdomain-ocr-shape: detection/v1" in captured.out
     # Recognition's task category should NOT appear (we'd be lying
     # about the shape if it did).
     assert "text-recognition" not in captured.out

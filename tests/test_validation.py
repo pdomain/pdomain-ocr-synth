@@ -22,7 +22,7 @@ def _minimal_yaml(*, font: str, dest: str, corpus: str) -> str:
 schema_version: 1
 name: minimal
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 100

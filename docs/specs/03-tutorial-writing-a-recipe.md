@@ -47,7 +47,7 @@ description: Cló Gaelach + pre-reform Irish orthography
 seed: 42
 
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ${PD_ML_MODELS}/ml-recognition/gaelic/recognition
   count: 50000
@@ -208,7 +208,7 @@ pdomain-ocr-synth render gaelic
 ```
 
 Output lands in the configured `destination`, in
-`pd-ocr-trainer/v1` format. A `manifest.jsonl` records provenance for each
+`pdomain-ocr-training/v1` format. A `manifest.jsonl` records provenance for each
 sample (source corpus, font, rendering params, applied degradations) — see
 [08 — Output format](08-output-format.md).
 

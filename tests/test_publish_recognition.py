@@ -472,7 +472,7 @@ def test_staging_round_trips_a_real_recognition_writer_output(tmp_path: Path) ->
 name: round-trip
 seed: 7
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ./out
   count: 2
@@ -571,7 +571,7 @@ def test_staging_omits_provenance_when_manifest_lacks_it(tmp_path: Path) -> None
 # ---------------------------------------------------------------------------
 #
 # The staging builder itself doesn't talk to HF, but it owns the
-# generation of the ``pd-ocr-content-sha`` front-matter value the
+# generation of the ``pdomain-ocr-content-sha`` front-matter value the
 # upload step compares against the latest HF commit. These tests lock
 # down: (a) the SHA is in the README, (b) it's surfaced on the result,
 # (c) it's deterministic across re-runs over identical inputs (so a
@@ -599,7 +599,7 @@ def _read_front_matter_value(readme: Path, key: str) -> str | None:
 
 
 def test_staging_embeds_content_sha_in_readme(tmp_path: Path) -> None:
-    """``pd-ocr-content-sha`` lands in the README front matter."""
+    """``pdomain-ocr-content-sha`` lands in the README front matter."""
 
     local = tmp_path / "local"
     _write_local_output(

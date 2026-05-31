@@ -52,7 +52,7 @@ schema_version: 1
 name: publish-upload-smoke
 seed: 11
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: {dest}
   count: 4
@@ -229,7 +229,7 @@ def test_real_upload_unchanged_staging_is_no_op(
     assert "create_repo" not in op_names
 
     assert "No changes to upload: alice/x" in captured.out
-    assert "pd-ocr-content-sha=" in captured.out
+    assert "pdomain-ocr-content-sha=" in captured.out
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +283,7 @@ def test_real_upload_default_commit_message_uses_recipe_sha(
 ) -> None:
     """No ``--message`` → the default ``pdomain-ocr-synth render @<recipe-sha>``
     format. The recipe SHA comes from the staging README's
-    ``pd-ocr-recipe-sha`` key, set by the dataset-card builder."""
+    ``pdomain-ocr-recipe-sha`` key, set by the dataset-card builder."""
 
     monkeypatch.setenv("HF_TOKEN", "hf_test_token_default_msg_" + "d" * 12)
     monkeypatch.setenv("HF_HOME", str(tmp_path / "hf-home"))
@@ -316,7 +316,7 @@ def test_real_upload_default_commit_message_uses_recipe_sha(
     # Default prefix is the spec-mandated literal.
     assert msg.startswith("pdomain-ocr-synth render")
     # ``@<recipe-sha>`` carries because the staging README front matter
-    # always includes ``pd-ocr-recipe-sha`` (preflight enforces it).
+    # always includes ``pdomain-ocr-recipe-sha`` (preflight enforces it).
     assert "@" in msg
     sha = msg.split("@", 1)[1]
     assert len(sha) == 64

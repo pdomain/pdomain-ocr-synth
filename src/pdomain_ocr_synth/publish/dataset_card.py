@@ -1,7 +1,7 @@
 """Dataset-card README generator for the HF imagefolder staging dir.
 
 Per ``docs/specs/10-publishing.md``: the staging dir ships a generated
-``README.md`` with YAML front matter that carries the ``pd-ocr-*``
+``README.md`` with YAML front matter that carries the ``pdomain-ocr-*``
 conventional keys (see ``DATASETS.md`` workspace contract) plus enough
 human-readable body that a viewer landing on the HF dataset page knows
 what they're looking at.
@@ -25,18 +25,18 @@ read+write boilerplate. That split keeps tests fast and avoids
 re-reading files when the future ``--dry-run`` path wants to preview
 the card.
 
-The conventional ``pd-ocr-*`` keys mirror the spec table:
+The conventional ``pdomain-ocr-*`` keys mirror the spec table:
 
-- ``pd-ocr-shape: recognition/v1`` — fixed for recognition mode.
-- ``pd-ocr-source: pdomain-ocr-synth`` — fixed; this tool is the producer.
-- ``pd-ocr-recipe-sha`` — SHA-256 of the snapshot YAML bytes. The
+- ``pdomain-ocr-shape: recognition/v1`` — fixed for recognition mode.
+- ``pdomain-ocr-source: pdomain-ocr-synth`` — fixed; this tool is the producer.
+- ``pdomain-ocr-recipe-sha`` — SHA-256 of the snapshot YAML bytes. The
   snapshot is the canonical resolved recipe (presets expanded, paths
   absolute), so its hash is the right reproducibility pin.
-- ``pd-ocr-render-tool-version`` — copied from
+- ``pdomain-ocr-render-tool-version`` — copied from
   ``snapshot.tool_version``; ties the dataset to the synth release
   that generated it.
 
-``pd-ocr-content-sha`` (idempotency check on the staging dir contents)
+``pdomain-ocr-content-sha`` (idempotency check on the staging dir contents)
 is *not* set here — it's an upload-time concern computed after the
 staging build completes. Leaving it out of the README written by the
 staging step means re-reading and re-writing the README when the
@@ -58,7 +58,7 @@ import yaml
 from pdomain_ocr_synth.output.snapshot import SNAPSHOT_FILENAME
 
 # README written into the staging dir. Centralized so the upload code
-# (which will rewrite the front matter to add ``pd-ocr-content-sha``)
+# (which will rewrite the front matter to add ``pdomain-ocr-content-sha``)
 # and the tests share the same constant.
 README_FILENAME = "README.md"
 
@@ -106,7 +106,7 @@ class DatasetCardInputs:
     stats: dict[str, Any] | None = None
     description_override: str | None = None
     license_override: str | None = None
-    # ``shape`` lands as ``pd-ocr-shape`` in the front matter. Default
+    # ``shape`` lands as ``pdomain-ocr-shape`` in the front matter. Default
     # is the recognition-mode contract; the detection-mode staging
     # builder overrides this to ``"detection/v1"`` so consumers can
     # route the two shapes through different loaders (per
@@ -247,19 +247,19 @@ def _front_matter(inputs: DatasetCardInputs) -> dict[str, Any]:
     if bucket is not None:
         fm["size_categories"] = [bucket]
 
-    # pd-ocr conventional keys (see DATASETS.md). These live alongside
+    # pdomain-ocr conventional keys (see DATASETS.md). These live alongside
     # the standard HF keys; the spec's example also puts them flat at
     # the top level.
-    fm["pd-ocr-shape"] = inputs.shape
-    fm["pd-ocr-source"] = _SOURCE
+    fm["pdomain-ocr-shape"] = inputs.shape
+    fm["pdomain-ocr-source"] = _SOURCE
 
     recipe_sha = _recipe_sha(inputs.snapshot_bytes)
     if recipe_sha:
-        fm["pd-ocr-recipe-sha"] = recipe_sha
+        fm["pdomain-ocr-recipe-sha"] = recipe_sha
 
     tool_version = inputs.snapshot.get("tool_version")
     if tool_version:
-        fm["pd-ocr-render-tool-version"] = str(tool_version)
+        fm["pdomain-ocr-render-tool-version"] = str(tool_version)
 
     return fm
 

@@ -13,10 +13,10 @@ seed: 42
 
 # ----------------------------------------------------------------------------
 # Output: where the dataset lands and how big it is.
-# Format and mode follow the pd-ocr-trainer/v1 contract (spec 08).
+# Format and mode follow the pdomain-ocr-training/v1 contract (spec 08).
 # ----------------------------------------------------------------------------
 output:
-  format: pd-ocr-trainer/v1
+  format: pdomain-ocr-training/v1
   mode: recognition
   destination: ${PD_ML_MODELS}/ml-recognition/gaelic/recognition
   count: 50000
@@ -263,5 +263,5 @@ publish:
     repo: CHANGE-ME/pdomain-ocr-synth-gaelic
     private: false
     license: cc-by-4.0
-    tags: [ocr, gaelic, irish, pd-ocr, synthetic]
+    tags: [ocr, gaelic, irish, pdomain-ocr, synthetic]
     language: [ga]
