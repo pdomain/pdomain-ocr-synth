@@ -11,7 +11,7 @@ seeds, regenerate the bundled set in
 if attribution shifts.
 
 Usage:
-    uv run python scripts/generate-paper-textures.py
+    uv run python scripts/generate_paper_textures.py
 """
 
 from __future__ import annotations
