@@ -107,3 +107,28 @@ def test_update_uv_version_refs_updates_quoted_setup_uv_with_inline_comment(tmp_
 
     assert update_github_actions.update_uv_version_refs(workflow, version="0.11.16")
     assert 'version: "0.11.16"' in workflow.read_text(encoding="utf-8")
+
+
+def test_update_pyproject_uv_version_removed() -> None:
+    """update_pyproject_uv_version must not exist — it caused the self-poisoning dep-refresh bug.
+
+    The function rewrote [tool.uv] required-version to the latest uv release tag.
+    A bare version string is read by uv as an exact == pin, so the dep-refresh job
+    (running the old pinned uv) immediately violated the requirement it just wrote,
+    causing every subsequent uv invocation in the same job to fail.
+    """
+    assert not hasattr(update_github_actions, "update_pyproject_uv_version"), (
+        "update_pyproject_uv_version was removed to stop dep-refresh from pinning "
+        "required-version to the latest uv release, which self-poisons the running job"
+    )
+
+
+def test_update_github_actions_no_pyproject_parameter() -> None:
+    """update_github_actions must not accept a pyproject parameter after the refactor."""
+    import inspect
+
+    sig = inspect.signature(update_github_actions.update_github_actions)
+    assert "pyproject" not in sig.parameters, (
+        "pyproject parameter was removed from update_github_actions — "
+        "the function no longer touches pyproject.toml at all"
+    )
