@@ -1,7 +1,100 @@
-# 01 — CLI
+# Recipe workflow
 
-The CLI is the only supported entry point. Recipes are the only configuration
-surface.
+## Agent Index
+
+- **Kind:** usage
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-07-14
+- **Last verified:** 2026-07-14
+- **Provenance:** verified against the current CLI parser, recipe models, providers, validation, and bundled recipe
+- **Disposition:** Replaces the implemented CLI spec and stale recipe tutorial as current usage.
+- **Provenance note:** Promoted from the retired CLI and recipe-tutorial documents; see `docs/context/decisions.md`.
+
+Create a recipe with the CLI, add licensed assets and a supported corpus, then
+validate, preview, render, and optionally publish it.
+
+## Create and locate a recipe
+
+```bash
+pdomain-ocr-synth init my-recipe
+pdomain-ocr-synth list
+```
+
+`init` creates `recipes/my-recipe/recipe.yaml`, a recipe README, and empty
+`corpora/`, `fonts/`, and `textures/` directories. Use `--dir` to choose another
+parent or `--force` to replace an existing scaffold. A single YAML file under a
+recipe search directory is also valid.
+
+## Configure supported inputs
+
+Set the recipe identity, seed, recognition or detection output, rendering, and
+layout in YAML. Current corpus providers are `local`, `web`, and `wikisource`.
+Do not copy catalog-only `web_list`, `hf_dataset`, Internet Archive, or
+Gutenberg examples into a working recipe; validation rejects providers that
+have no implementation.
+
+The shipped transforms include whitespace normalization and the Gaelic-focused
+lenition, Tironian-et, and long-s transforms used by `recipes/gaelic.yaml`.
+Third-party reusable transforms can use the entry-point registry. Recipe-local
+inline Python and the cataloged `u_v_swap`, `i_j_swap`, and ligature-marker
+transforms are not shipped.
+
+Use HarfBuzz rendering. Required fonts must exist and open successfully;
+optional missing fonts produce warnings. Font coverage remains a render-time
+boundary rather than a complete validation-time corpus scan. Use only registered
+degradation stages; validation reports known but unimplemented stages.
+
+## Validate and render
+
+```bash
+pdomain-ocr-synth validate my-recipe
+pdomain-ocr-synth lint my-recipe --strict
+pdomain-ocr-synth fetch my-recipe
+pdomain-ocr-synth preview my-recipe --count 200
+pdomain-ocr-synth render my-recipe
+```
+
+Use `validate --offline` when checks must not touch the network. `fetch` warms
+remote corpus caches and accepts `--cache-dir` and `--no-cache`; it does not
+accept render controls. `preview --no-degrade` isolates the renderer from the
+degradation pipeline. `render --resume` continues only when the saved snapshot
+matches; `render --force` clears the destination, and the two flags cannot be
+combined.
+
+Recognition output is the simplest starting point. Detection requires a
+paragraph or page layout and produces polygon annotations. See
+[Output and publishing](../architecture/output-and-publishing.md) for exact
+layouts and continuation guarantees.
+
+## Inspect and publish
+
+`describe my-recipe --format json` prints resolved configuration and corpus
+information. `audit OUTPUT` reads the render audit; use `--global`,
+`--audit-file`, time bounds, recipe-SHA filtering, limits, or `--summary` for
+other views.
+
+```bash
+pdomain-ocr-synth publish my-recipe --dry-run
+pdomain-ocr-synth publish my-recipe --repo OWNER/NAME --render-first
+```
+
+Publishing accepts visibility, license, tag, token, local-output, repository
+creation, and dry-run controls. A custom message is accepted, but the current
+large-folder Hub transport cannot apply it and reports that limitation.
+
+## CLI reference
+
+Run `pdomain-ocr-synth --help` or `pdomain-ocr-synth COMMAND --help` for the
+exhaustive parser-generated option list. The command/configuration boundary and
+schema implementation are recorded in
+[Development and recipe system](../architecture/development-and-recipe-system.md).
+
+## Detailed CLI contract
+
+The tables below are drift-guarded against the parser and implementation. They
+are retained here because parser help is exhaustive per command but does not
+provide one reviewable cross-command contract.
 
 ## Invocation
 
@@ -28,7 +121,7 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `fetch <recipe>` | Pre-fetch and cache all web/HF corpora for a recipe |
 | `preview <recipe>` | Render N samples to a preview directory for visual review |
 | `render <recipe>` | Full run; writes the dataset to the output destination |
-| `publish <recipe>` | Upload rendered output to a Hugging Face dataset repo (see [10 — Publishing](10-publishing.md)) |
+| `publish <recipe>` | Upload rendered output to a Hugging Face dataset repo (see [10 — Publishing](../architecture/output-and-publishing.md)) |
 | `clean <recipe>` | Remove cached corpora (and optionally rendered output) |
 | `audit [output-dir]` | Read back the per-render audit JSONL log written by `render` (M10) |
 
@@ -238,7 +331,7 @@ ship undocumented.
 | `schema_version_unsupported` | error | `schema_version` is not in `SUPPORTED_SCHEMA_VERSIONS`. Defensive — pydantic normally rejects this on load. |
 | `output_destination_unresolved` | error | `output.destination` still contains `${VAR}` or starts with `~`; the env var isn't set, or the recipe was passed unresolved. |
 | `output_destination_unwritable` | error | No writable ancestor exists for `output.destination` — typically a permission problem or a path under a non-existent mount. |
-| `output_layout_mode_mismatch` | error | `output.mode` and `layout.mode` aren't a valid pairing (recognition needs `word_crops`/`lines`; detection needs `paragraphs`/`pages`). See [spec 08](08-output-format.md). |
+| `output_layout_mode_mismatch` | error | `output.mode` and `layout.mode` aren't a valid pairing (recognition needs `word_crops`/`lines`; detection needs `paragraphs`/`pages`). See [spec 08](../architecture/output-and-publishing.md). |
 | `optional_font_missing` | warning | A font marked `optional: true` doesn't exist on disk; it will be skipped at render time. |
 | `font_missing` | error | A required (non-optional) font path doesn't exist. |
 | `font_unreadable` | error | The font file exists but `open_font` couldn't parse it (corrupt header, unsupported format). |
@@ -328,3 +421,13 @@ errors keep their stricter code 3 either way — strict never
 - `--log-format json` emits one JSON record per line (for piping into
   `jq`, log collectors, or wrapping scripts).
 - Render reports rate (samples/sec), ETA, and a final manifest path.
+
+## Evidence
+
+- Code: `src/pdomain_ocr_synth/cli.py`, `src/pdomain_ocr_synth/recipe/`,
+  `src/pdomain_ocr_synth/corpus/providers/`, `src/pdomain_ocr_synth/validation.py`,
+  and `recipes/gaelic.yaml`.
+- Tests: `tests/test_cli.py`, `tests/test_recipe_loader.py`,
+  `tests/test_validation.py`, `tests/test_cli_preview.py`, and
+  `tests/test_cli_render.py`.
+- Verified: 2026-07-14 by repository inspection during the docgraph migration.

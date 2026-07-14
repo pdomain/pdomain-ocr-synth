@@ -1,5 +1,15 @@
 # 12 — Glyph-level annotation emission
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-07
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as current intent or process guidance.
+
 This spec defines how the synth pipeline emits **per-word glyph
 annotations** as a side channel alongside ground-truth text. It is the
 producer side of a workspace-wide data model whose canonical definition
@@ -10,6 +20,18 @@ ligatures, long-s, or swash forms from word crops.
 
 Status: spec only. Implementation lands in M12 (see
 [`../plans/12-glyph-annotations.md`](../plans/12-glyph-annotations.md)).
+
+## Current implementation status
+
+M12 is unbuilt. This repository has no annotation recipe block, semantic span
+mapping, output side channel, or annotation tests. Current `GlyphRun` records
+contain rendering geometry and do not establish the semantic mapping required
+by this design.
+
+The proposed shared `GlyphAnnotations` and `LigatureMark` API is not a confirmed
+runtime dependency. The default-on compatibility policy also needs a fresh
+decision because it would change existing recipes and output digests. Fraktur
+and early-modern-English rows are later sketches, not M12 deliverables.
 
 ## Hard invariant: GT text stays semantic
 
@@ -235,3 +257,26 @@ does today (spec 08 §"Idempotency and resumption").
   this spec extends additively.
 - Spec 05 §"long_s_medial" / §"ct_st_ligature_marker": text
   transforms whose effects feed the annotations.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time design-stage review of the document, repository history,
+  code, tests, and linked plans. Evidence included f11ea65: added M12 glyph annotation
+  roadmap/spec, docs/plans/12-glyph-annotations.md: all implementation tasks unchecked,
+  docs/plans/README.md: M12 not started, docs/specs/recipe.schema.json: no annotations block,
+  src/pdomain_ocr_synth/render/sample.py, src/pdomain_ocr_synth/output/recognition.py.
+- **Accepted findings:** M12 is an explicitly remaining milestone and none of its model, recipe,
+  render, validation, or output side-channel is present. The semantic-ground-truth invariant and
+  additive consumer contract remain valuable active intent rather than stale scaffolding.
+- **Effect on this document:** Status: `active`. Retained as current intent; unshipped details
+  are not current usage.
+- **Implementation deviations:** The spec depends on GlyphAnnotations/LigatureMark in
+  pdomain-book-tools but this repo has no runtime dependency or confirmed current shared-model
+  API. Current GlyphRun data does not establish the required shaping-input-to-GT span map. The
+  planned default annotations.enabled=true would change all existing recipes and output digests,
+  so compatibility and opt-in policy need fresh confirmation. Fraktur and early-modern-English
+  rows are later sketches, not M12 deliverables.
+- **Residual risks:** Implement only the Gaelic/Roman v1 annotation model, traceable char spans,
+  long-s validation, additive recognition/detection/manifest outputs, and disabled-feature
+  semantics after confirming the cross-repo model. Defer speculative recipe families and
+  combining/cross-line annotations.

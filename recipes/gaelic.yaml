@@ -1,6 +1,6 @@
 # Gaelic recipe: Cló Gaelach + pre-reform Irish orthography
 #
-# This is the worked example referenced by docs/specs/03-tutorial-writing-a-recipe.md.
+# This is the worked example referenced by docs/usage/recipe-workflow.md.
 # Heavily commented; trim aggressively for production use.
 
 schema_version: 1
@@ -255,7 +255,7 @@ degradation:
 
 # ----------------------------------------------------------------------------
 # Publish: optional defaults for `pdomain-ocr-synth publish gaelic`. Edit the
-# repo to your namespace before publishing. See docs/specs/10-publishing.md
+# repo to your namespace before publishing. See docs/architecture/output-and-publishing.md
 # and the workspace-level DATASETS.md for the dataset contract.
 # ----------------------------------------------------------------------------
 publish:

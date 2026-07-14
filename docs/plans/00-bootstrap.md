@@ -1,5 +1,35 @@
 # M00 — Bootstrap
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Establish a repository that follows the workspace's Python project, contributor-guidance, and CI
+conventions. Most bootstrap work shipped, while the license file and `DEVELOPMENT.md` remain open.
+
+## Architecture
+
+This milestone defines repository structure rather than runtime architecture: top-level guidance,
+`src/`, `tests/`, `docs/`, packaging metadata, Git configuration, and automation entry points.
+
+## Tech Stack
+
+The repository uses Python 3.13+, uv, Make, pytest, Ruff, basedpyright, pre-commit, and GitHub
+Actions as declared in current project configuration.
+
+## Global Constraints
+
+Use repository Make targets and uv-managed tools. Keep peer-project conventions evidence-based; do
+not treat the unchecked license and contributor-guide items as complete.
+
 **Goal:** the repo exists, has a remote, and matches the workspace
 conventions established by `pd-ocr-trainer` / `pd-ocr-labeler` /
 `pdomain-book-tools`. No code yet; this milestone ends with `git clone`

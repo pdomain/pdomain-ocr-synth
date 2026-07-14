@@ -1,8 +1,30 @@
 # 04 — Corpus providers
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
 A `corpus` entry has a `type` that selects a provider. All providers emit
 a stream of UTF-8 text to a shared post-processing pipeline (transforms +
 tokenization).
+
+## Current implementation status
+
+Local files, generic web pages, and Wikisource are the registered providers in
+`src/pdomain_ocr_synth/corpus/registry.py`, with behavior covered by the corpus
+tests. Cache and cleanup behavior should be read from the current CLI and
+provider implementations.
+
+`web_list`, `hf_dataset`, Internet Archive, and Gutenberg are not registered.
+Robots enforcement is not implemented. Non-default `max_chars` and
+`min_word_length` are rejected, and the broad category traversal and
+`corpus_sampling` claims below are not current runnable contracts.
 
 ## Common keys
 
@@ -197,3 +219,27 @@ filters are about cleaning *source* data before it joins the pool.
 See [09 — Extending](09-extending.md). A provider is a Python class
 implementing `fetch(recipe_dir, options) -> Iterable[str]`, registered via
 an entry point.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included 72d7eb7, 84d4abe, 374865a,
+  src/pdomain_ocr_synth/corpus/registry.py, src/pdomain_ocr_synth/corpus/providers/local.py,
+  src/pdomain_ocr_synth/corpus/providers/web.py.
+- **Accepted findings:** Local, web, Wikisource-title fetching, parsing, cache, retries, offline
+  mode, and provider filters shipped with tests. Roughly half of the advertised provider catalog
+  and several common semantics remain explicitly deferred, making partial the evidence-backed
+  lifecycle state.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** web_list, hf_dataset input, internet_archive, and gutenberg are
+  not registered providers. robots.txt enforcement is not implemented despite the stated
+  default. max_chars and min_word_length are schema-reserved but validation rejects non-default
+  use. Wikisource category traversal is modeled but runtime support is limited/deferred compared
+  with the broad prose. clean behavior and cache ownership evolved after M03 and should be
+  verified from CLI implementation rather than this prose. The claimed corpus_sampling modes are
+  not exposed as the documented recipe-level switch.
+- **Residual risks:** Decide whether to implement the four deferred providers, robots
+  enforcement, provider limits, and weighted sampling. Preserve cache/offline/retry/filter
+  contracts and provider registry seams as durable architecture. Narrow the provider reference
+  to shipped behavior if the deferred catalog is abandoned.

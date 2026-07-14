@@ -1,7 +1,7 @@
 """Recipe search-path resolution.
 
 A recipe argument on the CLI may be either a path or a name. Names are
-resolved against the search path defined in ``docs/specs/01-cli.md``:
+resolved against the search path defined in ``docs/usage/recipe-workflow.md``:
 
 1. ``$PD_OCR_SYNTH_RECIPES`` (colon-separated)
 2. ``./recipes/`` relative to CWD

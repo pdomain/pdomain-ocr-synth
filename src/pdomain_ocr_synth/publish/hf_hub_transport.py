@@ -7,7 +7,7 @@ the :class:`pdomain_ocr_synth.publish.transport.HfTransport` Protocol so
 they remain unit-testable without the SDK and without the network.
 
 The adapter is a thin translator: each Protocol method forwards to the
-corresponding ``HfApi`` call documented in ``docs/specs/10-publishing.md``
+corresponding ``HfApi`` call documented in ``docs/architecture/output-and-publishing.md``
 § Tooling used. The mapping is:
 
 ============================  ==============================================
@@ -34,7 +34,7 @@ Why ``upload_large_folder`` rather than ``upload_folder``: spec 10
 uploads use HF's auto-generated messages. The CLI surfaces this with
 a stderr warning when the user passes ``--message`` — see
 ``cli_runner.py`` ``_MESSAGE_LIMITATION_WARNING`` and
-``docs/specs/10-publishing.md`` § Tooling used → Known limitation.
+``docs/architecture/output-and-publishing.md`` § Tooling used → Known limitation.
 The Protocol still accepts ``commit_message`` so the orchestrator
 keeps a single message-formation site and so a future detection-mode
 ``push_to_hub`` path can honor it. Recovering the latest commit SHA
@@ -198,8 +198,8 @@ class HfHubTransport:
         # changes the shape.
         to_dict = getattr(card, "to_dict", None)
         if callable(to_dict):
-            return dict(to_dict())  # pyright: ignore[reportCallIssue,reportReturnType,reportArgumentType]
-        return dict(card)  # pyright: ignore[reportArgumentType,reportReturnType]
+            return dict(to_dict())  # pyright: ignore[reportCallIssue,reportReturnType,reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
+        return dict(card)  # pyright: ignore[reportArgumentType,reportReturnType]  # runtime schema or explicit coercion narrows the broader static union
 
     def upload_folder(
         self,
@@ -231,7 +231,7 @@ class HfHubTransport:
         (detection-mode parquet — spec 10 § Tooling used) can use
         the same field. The CLI runner emits a stderr warning when the
         user explicitly passes ``--message`` so the gap is visible at
-        the command line; see ``docs/specs/10-publishing.md``
+        the command line; see ``docs/architecture/output-and-publishing.md``
         § Tooling used → Known limitation, and
         ``docs/roadmap/08-publishing-hf.md`` § Residual M08 work →
         Commit-message limitation.

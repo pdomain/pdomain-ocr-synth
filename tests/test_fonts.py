@@ -106,7 +106,7 @@ def _make_info(codepoints: frozenset[int]) -> FontInfo:
 def test_font_info_is_frozen() -> None:
     info = _make_info(frozenset({0x41}))
     with pytest.raises(dataclasses.FrozenInstanceError):
-        info.family = "Mutated"  # type: ignore[misc]
+        info.family = "Mutated"  # pyright: ignore[reportAttributeAccessIssue]  # test intentionally mutates protected state to exercise the failure path
 
 
 def test_covers_handles_int_zero() -> None:

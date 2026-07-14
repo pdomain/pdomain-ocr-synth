@@ -5,7 +5,7 @@ build, content-SHA, preflight, idempotency check, transport — into the
 single end-to-end upload call the CLI runner will dispatch to once the
 real-upload path replaces the current "use --dry-run" stub.
 
-Per ``docs/specs/10-publishing.md`` the upload sequence is, in order:
+Per ``docs/architecture/output-and-publishing.md`` the upload sequence is, in order:
 
 1. **Pre-flight** the staging dir (already built upstream by
    :func:`pdomain_ocr_synth.publish.recognition.build_recognition_staging`):

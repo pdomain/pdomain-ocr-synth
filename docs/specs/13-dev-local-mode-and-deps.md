@@ -1,5 +1,15 @@
 # 13 — Dev-local mode and dependency upgrades
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** draft
+- **Owner:** CT
+- **Created:** 2026-05-07
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as deferred design pending implementation.
+
 This spec captures a workspace-wide hazard around `uv sync` and how
 `pdomain-ocr-synth` must behave once the Makefile gains an `upgrade-deps`
 target (already stubbed in M01) so it does not silently undo a
@@ -7,9 +17,20 @@ contributor's local development setup.
 
 Status: **spec only**. Implementation is **deferred until the Makefile
 `dev-local` recipe lands**; the requirement is hooked into M01 (see
-[`../archive/plans/01-dev-tooling.md`](../archive/plans/01-dev-tooling.md)) so that
+[development and recipe architecture](../architecture/development-and-recipe-system.md)) so that
 whichever milestone introduces the dev-local recipe across the
 workspace also lands the detection logic here.
+
+## Current implementation status
+
+This draft is not implemented. `Makefile` has no sibling-editable probe,
+dev-local marker check, `PDOMAIN_DEV_LOCAL` guard, refusal path, or
+`upgrade-deps-local` target. Its current `upgrade-deps` target runs `uv lock
+--upgrade` followed by an unconditional sync.
+
+The claimed workspace-wide editable dependency invariant is not established by
+this repository, and the archived M01 plan did not deliver the trigger assumed
+below. Revalidate that external contract before implementing this safeguard.
 
 ## Background
 
@@ -150,3 +171,27 @@ The marker file and env var exist to cover legitimate cases where
   siblings yet — added when a future milestone introduces them).
 - Migrating other workspace repos; this spec describes pdomain-ocr-synth's
   share of the standardized fix.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time design-stage review of the document, repository history,
+  code, tests, and linked plans. Evidence included d19975b: captured the deferred dev-local
+  contract, Makefile:64 upgrade-deps unconditionally runs uv lock --upgrade then uv sync --group
+  all-dev, Makefile: no upgrade-deps-local target, pyproject.toml and uv.lock: canonical
+  dependency sources and
+  [Development and recipe system](../architecture/development-and-recipe-system.md).
+- **Accepted findings:** The hazard is plausible and the intended safeguard is explicit, but the
+  document itself says spec only and deferred, and no current editable sibling dependency makes
+  the path exercised here. The Makefile directly contradicts the MUST-level behavior by syncing
+  unconditionally. Draft best represents worthwhile but uncommitted future design.
+- **Effect on this document:** Status: `draft`. Retained as deferred design, not current
+  behavior.
+- **Implementation deviations:** No sibling editable probe, .venv/pdomain-dev-local marker
+  check, PDOMAIN_DEV_LOCAL check, refusal path, signal-specific message, or upgrade-deps-local
+  target exists. The claimed workspace-wide invariant that every participating pd-* repo pins
+  pdomain-book-tools editable is external and not established by this repository. The archived
+  M01 plan did not deliver this requirement, so its implementation trigger is stale.
+- **Residual risks:** Before any editable sibling/GPU/git-ref development mode is introduced,
+  revalidate the workspace standard and add a small tested guard around upgrade-deps. Until
+  then, retain the hazard and UX requirement but discard assumptions about exact sibling anchors
+  that are not current in this repo.

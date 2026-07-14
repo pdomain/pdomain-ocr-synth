@@ -71,7 +71,7 @@ KNOWN_DEGRADATION_KINDS: frozenset[str] = frozenset(
 # Source-of-truth pairing mirrors ``LINT_CODES`` in ``lint.py``:
 #
 #   1. A drift-guard meta-test in ``tests/test_spec_docs.py`` enforces
-#      that the "Validation codes" table in ``docs/specs/01-cli.md``
+#      that the "Validation codes" table in ``docs/usage/recipe-workflow.md``
 #      lists exactly these codes — no more, no fewer.
 #   2. A behavioural test in ``tests/test_validation.py`` asserts every
 #      code emitted by ``validate_recipe`` belongs to this set, so a
@@ -146,7 +146,7 @@ _LAYOUT_KEYS_BY_MODE: dict[str, frozenset[str]] = {
     ),
 }
 
-# Per docs/specs/08-output-format.md §Modes:
+# Per docs/architecture/output-and-publishing.md §Modes:
 #
 #   Detection-mode rendering requires layout.mode in {paragraphs, pages}.
 #   Recognition-mode rendering requires layout.mode in {word_crops, lines}.
@@ -607,7 +607,7 @@ def _check_output_layout_pairing(recipe: Recipe) -> list[ValidationIssue]:
             message=(
                 f"output.mode='{output_mode}' requires layout.mode in "
                 f"{{{', '.join(sorted(allowed))}}}, got '{layout_mode}'. "
-                "See docs/specs/08-output-format.md (Modes table)."
+                "See docs/architecture/output-and-publishing.md (Modes table)."
             ),
             location="layout.mode",
         )

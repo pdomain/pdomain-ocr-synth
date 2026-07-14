@@ -82,7 +82,7 @@ def test_loaded_recipe_is_frozen(write_recipe) -> None:
     recipe = load_recipe(write_recipe(MINIMAL_RECIPE))
     with pytest.raises(ValidationError):
         # frozen models reject attribute assignment
-        recipe.name = "other"  # type: ignore[misc]
+        recipe.name = "other"  # pyright: ignore[reportAttributeAccessIssue]  # test intentionally mutates protected state to exercise the failure path
 
 
 # ---------------------------------------------------------------------------

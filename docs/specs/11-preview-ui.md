@@ -1,14 +1,40 @@
 # 11 — Preview UI (NiceGUI)
 
-A small, read-only-on-recipes NiceGUI surface for tuning recipes by
-sight. The CLI remains the contract; the UI is a faster feedback loop
+## Agent Index
+
+- **Kind:** spec
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as current intent or process guidance.
+
+A small, preview-focused NiceGUI surface for tuning recipes by sight. The
+picker may create a new recipe through the existing CLI. Modifying an existing
+recipe requires the separate diff-and-save flow. The CLI remains the contract;
+the UI is a faster feedback loop
 for the parts of recipe authoring where seeing the result matters most
 — degradation tuning, font sampling, and quick coverage checks.
 
 This spec is deliberately scoped tight. Anything that can be done in
 VS Code with the recipe JSON Schema (free YAML editing, IntelliSense)
-is out of scope. Anything that needs auth, publishing, or repo
-mutations is out of scope.
+is out of scope. Auth, publishing, and repository mutations other than
+the explicit recipe create/save actions are also out of scope.
+
+## Current implementation status
+
+M11 is not implemented. The optional NiceGUI dependency and deterministic
+backend preview primitive exist, but there is no UI package, console script,
+page, viewmodel, or UI test. See `src/pdomain_ocr_synth/render/preview.py`,
+`tests/test_cli_preview.py`, and the current scoping plan.
+
+The current scoping direction builds the UI under `pdomain_ocr_synth.ui` and
+presents over `render.preview.run_preview`; the package name still needs owner
+confirmation. Diff-and-save is sequenced as M11.5 and introduces `ruamel.yaml`
+under the `ui` extra. The older `pdomain_ocr_synth.preview.app`, direct
+`render.run_recipe` integration, and M10 cloud-renderer dependency are not
+current implementation guidance.
 
 ## Goal
 
@@ -42,9 +68,9 @@ viewmodels    (one per page; binds operations to UI components)
 views         (NiceGUI components)
 ```
 
-The UI does not duplicate any rendering logic — it calls
-`pdomain_ocr_synth.render.run_recipe(..., count=N, output_dir=tmp)` and
-displays the resulting `manifest.jsonl` rows alongside their images.
+The UI does not duplicate rendering logic. Its presentation layer calls
+`pdomain_ocr_synth.render.preview.run_preview(...)` and displays the resulting
+`manifest.jsonl` rows alongside their images.
 
 ## Run / install
 
@@ -59,7 +85,7 @@ Console script:
 
 ```toml
 [project.scripts]
-pdomain-ocr-synth-preview = "pdomain_ocr_synth.preview.app:main"
+pdomain-ocr-synth-preview = "pdomain_ocr_synth.ui.app:main"
 ```
 
 Invocation:
@@ -84,7 +110,8 @@ Three pages. Nothing more in v1.
   timestamp (from `<destination>/stats.json` if present).
 - Click → `/recipe/<name>`.
 - "New recipe" button shells out to `pdomain-ocr-synth init <name>` then
-  reloads the picker.
+  reloads the picker. This creates a new file; it does not modify an existing
+  recipe.
 
 ### `/recipe/<name>` — recipe view
 
@@ -164,13 +191,13 @@ Sessions are per browser tab. A page reload discards overrides
   round-trip (preserves comments where possible — use `ruamel.yaml`).
 - "Cancel" closes the panel without saving.
 
-This is the **only write-side feature.** Everything else is read-only
-on the recipe file.
+This is the only feature that modifies an existing recipe. The picker also has
+the separate, explicit "New recipe" action described above.
 
 ## Integration with existing CLI
 
-- The UI imports `pdomain_ocr_synth.render.run_recipe` and pre-existing
-  recipe loaders. No duplicate code paths.
+- The UI imports `pdomain_ocr_synth.render.preview.run_preview` and
+  pre-existing recipe loaders. No duplicate code paths.
 - The UI never invokes `pdomain-ocr-synth fetch` automatically — if a
   recipe needs network corpora, the CLI must have been run first or
   the cache must already exist. A clear banner says "corpora not
@@ -204,18 +231,38 @@ on the recipe file.
 - Live edit-as-you-type rendering.
 - Auth, publish, fetch.
 - Multi-recipe diffing (could be a follow-up).
-- Cloud-rendered previews (pulled from M10 cloud renderer once that
-  exists).
+- Cloud-rendered previews.
 
-## Open questions
+## Decisions required before M11.1
 
-1. **Persistence of preview overrides.** Should we cache the last
-   override set per recipe in a file under `~/.cache/pdomain-ocr-synth/`,
-   so reopening the page restores them? v1 says no — explicit
-   ephemeral state is simpler. Revisit if users complain.
-2. **Authentication for shared dev envs.** The dev container exposes
-   ports; multiple developers on the same host could collide. Bind
-   to `127.0.0.1` only by default; require an explicit `--host` flag
-   to expose externally.
-3. **Comparison view.** A "with vs. without each stage" matrix is
-   tempting but multiplies render cost. Defer until users ask.
+1. **Package name.** Confirm the recommended `pdomain_ocr_synth.ui` package or
+   choose another name that does not collide with
+   `pdomain_ocr_synth.render.preview`.
+2. **NiceGUI version.** Keep the current `nicegui>=2.0` minimum or align with
+   the sibling labeler's constraint.
+3. **Default port.** Confirm the recommended port `8765` or choose another
+   localhost default.
+4. **Test marker.** Confirm the recommended `ui` marker or choose `nicegui` or
+   `preview_ui`.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time design-stage review of the document, repository history,
+  code, tests, and linked plans. Evidence included 852c878: initial M11 spec/plan baseline,
+  docs/plans/11-preview-ui.md: milestone not started, docs/plans/11-preview-ui-scoping.md:
+  current scoping and package-layout decisions, docs/plans/README.md: M11 not started,
+  pyproject.toml: ui optional dependency contains nicegui,
+  src/pdomain_ocr_synth/render/preview.py.
+- **Accepted findings:** M11 is one of the repository's two remaining milestones. NiceGUI is
+  declared as an optional dependency and the deterministic CLI preview renderer provides a base,
+  but no UI package, preview console script, pages, viewmodels, or UI tests exist. The design
+  remains worthwhile active intent, refined by the later scoping plan.
+- **Effect on this document:** Status: `active`. Retained as current intent; unshipped details
+  are not current usage.
+- **Implementation deviations:** The migration replaced the older `render.run_recipe` and
+  `pdomain_ocr_synth.preview.app` instructions with the scoping plan's `render.preview.run_preview`
+  and recommended `pdomain_ocr_synth.ui.app` direction. It also separates new-recipe creation from
+  modification of an existing recipe and removes the M10 cloud-renderer dependency.
+- **Residual risks:** Confirm the package name, NiceGUI version constraint, default port, and test
+  marker before M11.1. Preserve recipe browsing, sample inspection, deterministic rerender, and
+  transient degradation overrides through the sequenced implementation chunks.

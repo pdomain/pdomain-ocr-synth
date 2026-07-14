@@ -3,8 +3,8 @@
 M08 builds out the Hugging Face publish path. The first piece, landed
 here, is the **staging-dir builder**: a pure-Python file transformer
 that reads a recognition-mode local layout (per
-``docs/specs/08-output-format.md``) and emits the HF imagefolder
-layout (per ``docs/specs/10-publishing.md``) into a separate directory
+``docs/architecture/output-and-publishing.md``) and emits the HF imagefolder
+layout (per ``docs/architecture/output-and-publishing.md``) into a separate directory
 ready for upload.
 
 Network / SDK calls (``huggingface_hub``, auth resolution, idempotency

@@ -1,5 +1,36 @@
 # M11 — Preview UI scoping notes
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-06
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as current intent or process guidance.
+
+## Goal
+
+Define the smallest evidence-backed sequence for M11 before implementation. The scoping work
+identifies reusable preview primitives and four owner choices; it does not claim that the UI exists.
+
+## Architecture
+
+The recommended presentation package is `pdomain_ocr_synth.ui`, layered over
+`render.preview.run_preview`. Seven ordered chunks add the picker, recipe view, rendering,
+overrides, gated diff-and-save, sample detail, and polish.
+
+## Tech Stack
+
+The proposed stack uses the existing `ui` extra with NiceGUI, pytest's NiceGUI user plugin, current
+recipe/validation helpers, and `ruamel.yaml` only in the M11.5 save chunk.
+
+## Global Constraints
+
+Reuse the deterministic preview backend and keep the headless CLI independent. Confirm package name,
+NiceGUI version, default port, and test marker before M11.1; all UI implementation remains unbuilt.
+
 Companion to [`11-preview-ui.md`](./11-preview-ui.md) and the spec at
 [`../specs/11-preview-ui.md`](../specs/11-preview-ui.md). Written ahead of
 implementation to scope a clean **first chunk** that a future supervised

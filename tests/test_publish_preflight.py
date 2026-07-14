@@ -96,7 +96,7 @@ def _rewrite_readme(staging: Path, text: str) -> None:
 
 
 def test_required_keys_set_matches_spec() -> None:
-    """Lock the spec contract: keys named in ``docs/specs/10-publishing.md``.
+    """Lock the spec contract: keys named in ``docs/architecture/output-and-publishing.md``.
 
     This is intentionally a string-match test against the documented
     set rather than reading from another module. The point is to catch

@@ -1,5 +1,37 @@
 # M03 — Corpus providers + cache (mostly complete)
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Provide deterministic, cached corpus ingestion for the Gaelic recipe. Local, web, and Wikisource
+providers shipped; the broader provider catalog and several reserved controls remain deferred.
+
+## Architecture
+
+Providers load through `src/pdomain_ocr_synth/corpus/registry.py`, feed shared filters and
+tokenization, and use the HTTP/cache infrastructure. Registered providers define the runnable
+surface.
+
+## Tech Stack
+
+The implementation uses Python provider protocols, HTTPX, filesystem caching, recipe validation,
+Typer CLI commands, and pytest coverage in the corpus tests.
+
+## Global Constraints
+
+Network access must be explicit and cache-aware. Do not present `web_list`, Hugging Face input,
+Internet Archive, Gutenberg, robots enforcement, or rejected non-default filter controls as shipped
+behavior.
+
 **Status:** ✅ everything the bundled `gaelic` recipe needs is landed
 in commits ec1c4f4…f3c5a07 on `main`. Less-common providers and the
 `describe` corpus-stats extension are deferred — see below.

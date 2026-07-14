@@ -1,6 +1,6 @@
 """Unit tests for ``pdomain_ocr_synth.publish.commit_message`` (M08).
 
-Per ``docs/specs/10-publishing.md`` § Versioning, the default commit
+Per ``docs/architecture/output-and-publishing.md`` § Versioning, the default commit
 message is ``pdomain-ocr-synth render @<recipe-sha>`` and ``--message
 <MSG>`` overrides it. These tests pin the exact format and the
 override semantics so a regression in either direction is caught

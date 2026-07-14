@@ -131,7 +131,7 @@ def test_empty_input_returns_empty_list_for_every_mode() -> None:
     here would surface as a stack trace instead, hiding the cause.
     """
     for mode in ("word_crops", "lines", "paragraphs", "pages"):
-        assert tokenize("", mode=mode) == []  # type: ignore[arg-type]
+        assert tokenize("", mode=mode) == []  # pyright: ignore[reportArgumentType]  # test intentionally supplies a value outside the annotated contract
 
 
 def test_only_whitespace_or_newlines_returns_empty_list() -> None:
@@ -139,7 +139,7 @@ def test_only_whitespace_or_newlines_returns_empty_list() -> None:
     tokens that would crash the renderer downstream."""
     for raw in ("   ", "\n", "\n\n", "\n\n\n", "  \n\n\n  ", "\t\t\t"):
         for mode in ("word_crops", "lines", "paragraphs", "pages"):
-            assert tokenize(raw, mode=mode) == [], (raw, mode)  # type: ignore[arg-type]
+            assert tokenize(raw, mode=mode) == [], (raw, mode)  # pyright: ignore[reportArgumentType]  # test intentionally supplies a value outside the annotated contract
 
 
 def test_crlf_line_endings_work_for_lines_mode() -> None:
@@ -237,4 +237,4 @@ def test_pages_mode_falls_back_with_only_paragraph_breaks_and_crlf() -> None:
 
 def test_unknown_mode_raises() -> None:
     with pytest.raises(ValueError, match="unknown layout"):
-        tokenize("x", mode="ranchwords")  # type: ignore[arg-type]
+        tokenize("x", mode="ranchwords")  # pyright: ignore[reportArgumentType]  # test intentionally supplies a value outside the annotated contract

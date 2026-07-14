@@ -1643,7 +1643,7 @@ def test_output_layout_mode_mismatch_message_cites_spec(
     recipe = load_recipe(_write(tmp_path, yaml_text))
     report = validate_recipe(recipe)
     msg = next(i.message for i in report.errors if i.code == "output_layout_mode_mismatch")
-    assert "08-output-format.md" in msg
+    assert "output-and-publishing.md" in msg
     # The message should hint at which layout modes are valid for detection.
     assert "paragraphs" in msg and "pages" in msg
 
@@ -2031,7 +2031,7 @@ def test_schema_version_unsupported_emission_is_defensive(
 # ---------------------------------------------------------------------------
 
 
-def test_VALIDATION_CODES_covers_every_emission_site() -> None:  # noqa: N802
+def test_VALIDATION_CODES_covers_every_emission_site() -> None:  # noqa: N802  # test name mirrors the exported uppercase validation constant
     """Every ``code="..."`` in validation.py must appear in VALIDATION_CODES.
 
     Static scan of the source: walks every ``code="..."`` assignment
@@ -2055,11 +2055,11 @@ def test_VALIDATION_CODES_covers_every_emission_site() -> None:  # noqa: N802
     assert not leaked, (
         f"validation.py emits code(s) not in VALIDATION_CODES: {sorted(leaked)}. "
         "Add them to src/pdomain_ocr_synth/validation.py:VALIDATION_CODES and "
-        "document them in docs/specs/01-cli.md's 'Validation codes' table."
+        "document them in docs/usage/recipe-workflow.md's 'Validation codes' table."
     )
 
 
-def test_VALIDATION_CODES_no_stale_entries() -> None:  # noqa: N802
+def test_VALIDATION_CODES_no_stale_entries() -> None:  # noqa: N802  # test name mirrors the exported uppercase validation constant
     """Every code in ``VALIDATION_CODES`` must have an emission site.
 
     Inverse of the previous test: walks ``src/pdomain_ocr_synth/validation.py``
@@ -2085,7 +2085,7 @@ def test_VALIDATION_CODES_no_stale_entries() -> None:  # noqa: N802
     assert not stale, (
         f"VALIDATION_CODES contains code(s) not emitted by validation.py: {stale}. "
         "Drop them from src/pdomain_ocr_synth/validation.py:VALIDATION_CODES and "
-        "from the 'Validation codes' table in docs/specs/01-cli.md."
+        "from the 'Validation codes' table in docs/usage/recipe-workflow.md."
     )
 
 

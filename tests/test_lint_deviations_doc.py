@@ -10,7 +10,9 @@ documented file is renamed/removed, a test fails.
 from __future__ import annotations
 
 import re
+import tokenize
 import tomllib
+from io import BytesIO
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -18,7 +20,23 @@ DEVIATIONS_DOC = REPO_ROOT / "docs" / "process" / "lint-deviations.md"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 
 # Inline-suppression marker comments.
-_INLINE_RE = re.compile(r"#\s*(pyright:\s*ignore|type:\s*ignore|noqa)")
+_INLINE_RE = re.compile(
+    r"#\s*((?:pyright:\s*ignore|type:\s*ignore)(?:\[[^]]+\])?|noqa(?::\s*[^\s]+)?)"
+)
+
+
+def _inline_suppressions(path: Path) -> list[tuple[int, str, str]]:
+    suppressions: list[tuple[int, str, str]] = []
+    tokens = tokenize.tokenize(BytesIO(path.read_bytes()).readline)
+    for token in tokens:
+        if token.type != tokenize.COMMENT:
+            continue
+        match = _INLINE_RE.search(token.string)
+        if match is not None:
+            marker = " ".join(match.group(1).split())
+            rationale = token.string[match.end() :].lstrip(" #-\u2014").strip()
+            suppressions.append((token.start[0], marker, rationale))
+    return suppressions
 
 
 def _doc_text() -> str:
@@ -66,21 +84,20 @@ def test_doc_documents_basedpyright_overrides() -> None:
     assert not missing, f"basedpyright overrides absent from doc: {missing}"
 
 
-def test_doc_lists_files_with_inline_suppressions() -> None:
-    """Every src/ file carrying an inline suppression is named in the doc.
-
-    Tests and scripts are blanket-covered by per-file-ignores, so only
-    production ``src/`` files need individual mention.
-    """
+def test_doc_enumerates_every_inline_suppression() -> None:
+    """Every inline suppression location and rule marker is catalogued."""
     text = _doc_text()
-    src_dir = REPO_ROOT / "src"
-    offenders: list[str] = []
-    for py in sorted(src_dir.rglob("*.py")):
-        content = py.read_text(encoding="utf-8")
-        if not _INLINE_RE.search(content):
-            continue
-        # The doc may reference the file by basename or by package path.
-        rel = py.relative_to(src_dir)
-        if py.name not in text and str(rel) not in text:
-            offenders.append(str(rel))
-    assert not offenders, f"src files with undocumented inline suppressions: {offenders}"
+    missing: list[str] = []
+    for root_name in ("src", "scripts", "tests"):
+        for path in sorted((REPO_ROOT / root_name).rglob("*.py")):
+            if path == Path(__file__):
+                continue
+            relative = path.relative_to(REPO_ROOT)
+            for line, marker, rationale in _inline_suppressions(path):
+                location = f"`{relative}:{line}`"
+                documented_marker = f"`{marker}`"
+                if location not in text or documented_marker not in text:
+                    missing.append(f"{relative}:{line} ({marker})")
+                if not rationale:
+                    missing.append(f"{relative}:{line} ({marker}; missing rationale)")
+    assert not missing, "inline suppressions absent from exact inventory: " + ", ".join(missing)

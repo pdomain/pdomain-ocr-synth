@@ -1,8 +1,8 @@
 """Unit tests for the recognition staging-dir builder (M08).
 
 Covers the format conversion from the local recognition layout (per
-``docs/specs/08-output-format.md``) to the HF imagefolder layout (per
-``docs/specs/10-publishing.md``). Pure file-IO; no network, no HF SDK.
+``docs/architecture/output-and-publishing.md``) to the HF imagefolder layout (per
+``docs/architecture/output-and-publishing.md``). Pure file-IO; no network, no HF SDK.
 """
 
 from __future__ import annotations

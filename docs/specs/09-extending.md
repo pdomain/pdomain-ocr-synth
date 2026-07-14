@@ -1,8 +1,29 @@
 # 09 — Extending
 
-Three extension points: corpus providers, text transforms, and degradation
-stages. Each is a small Python interface registered via entry points or
-referenced inline by file path.
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+This design considers corpus providers, text transforms, and degradation
+stages as extension points.
+
+## Current implementation status
+
+Corpus providers and text transforms load package entry points through
+`src/pdomain_ocr_synth/corpus/registry.py` and
+`src/pdomain_ocr_synth/text_transforms/registry.py`.
+
+Inline module-path extensions are not supported. Degradation stages have an
+internal registry but no entry-point loader. Per-extension schema negotiation,
+validation hooks, isolation, and the advertised testing helpers are also
+unimplemented. Broken third-party entry points are skipped rather than
+reported through the clear migration feedback described below.
 
 ## Inline (per-recipe) extensions
 
@@ -173,3 +194,29 @@ A custom extension's test suite should cover:
 
 These constraints exist so `validate` and `--dry-run` give honest
 signals.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included c2c25da: M03 corpus registry
+  scaffold, 7dae047: web provider and HTTP infrastructure, bbe9d8e: Wikisource provider,
+  src/pdomain_ocr_synth/corpus/registry.py, src/pdomain_ocr_synth/text_transforms/registry.py,
+  src/pdomain_ocr_synth/degradation/pipeline.py.
+- **Accepted findings:** Two package extension mechanisms exist: corpus providers and text
+  transforms lazily load the documented entry-point groups. The overall spec is not implemented
+  because inline module-path extensions, degradation-stage entry-point discovery, extension
+  validation hooks, registry schema negotiation, and the advertised pdomain_ocr_synth.testing
+  helpers are absent.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** The corpus Provider protocol differs from the prose example and
+  runtime fetch path; text transforms use the registry contract but no general inline-python
+  recipe shape exists. Degradation has an internal registry/pipeline but no importlib
+  entry-point loader for pdomain_ocr_synth.degradation_stages. Recipe schema_version validates
+  the recipe format, not per-extension schema compatibility. Extension loading silently skips
+  broken third-party entry points, so the promised clear validation/migration feedback is not
+  delivered.
+- **Residual risks:** Decide whether third-party extensibility remains a product goal. If yes,
+  narrow and implement the missing degradation, validation, versioning, isolation, and testing
+  contracts. If no, supersede this broad plugin design with documentation of only the two
+  supported registries.

@@ -1,5 +1,37 @@
 # M12 — Glyph-level annotation emission
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** draft
+- **Owner:** CT
+- **Created:** 2026-05-07
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as deferred design pending implementation.
+
+## Goal
+
+Add semantic per-word glyph annotations without changing OCR ground-truth text. M12 remains unbuilt
+and depends on confirming the cross-repository annotation model.
+
+## Architecture
+
+The design adds recipe controls, shaping-input-to-ground-truth span mapping, validation, and
+additive recognition and detection side-channel outputs. Existing `GlyphRun` geometry is not that
+semantic mapping.
+
+## Tech Stack
+
+The proposed work uses the Python recipe/render/output pipeline, Pydantic schema generation,
+HarfBuzz cluster data, shared models from `pdomain-book-tools` if confirmed, and pytest coverage.
+
+## Global Constraints
+
+Ground-truth text stays semantic and existing outputs remain compatible when annotations are
+disabled. Confirm the shared-model API and opt-in/default policy before implementation; Fraktur and
+early-modern-English sketches are not M12 deliverables.
+
 **Goal:** synth emits a per-word `GlyphAnnotations` side channel
 alongside semantic GT text, capturing ligatures, long-s positions, and
 swash usage as gold-standard training signal for ligature/long-s

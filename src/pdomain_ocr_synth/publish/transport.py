@@ -1,6 +1,6 @@
 """Transport interface for the Hugging Face publish step (M08).
 
-Per ``docs/specs/10-publishing.md`` § Tooling used, the upload path
+Per ``docs/architecture/output-and-publishing.md`` § Tooling used, the upload path
 needs five primitive operations:
 
 1. ``HfApi.create_repo`` — first-time repo creation.
@@ -59,7 +59,7 @@ class TransportError(Exception):
 
     Distinct exception type so the CLI runner maps it cleanly to the
     publish auth/network exit code (per
-    ``docs/specs/10-publishing.md`` § Errors and recovery: auth
+    ``docs/architecture/output-and-publishing.md`` § Errors and recovery: auth
     errors → exit 7).
 
     Concrete adapters wrap their library-specific exceptions in this

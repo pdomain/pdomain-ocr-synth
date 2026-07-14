@@ -1,5 +1,36 @@
 # M06 — Degradation pipeline
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Apply deterministic, ordered print and scan degradations while preserving geometry needed by OCR
+outputs. The major stages shipped, but six catalog stages remain unimplemented.
+
+## Architecture
+
+`src/pdomain_ocr_synth/degradation/` runs registered stages in recipe order with seeded probability
+draws. Recipe-local presets expand into that pipeline, and skew is the current geometry-aware stage.
+
+## Tech Stack
+
+The implementation uses Python, Pillow, NumPy, Pydantic recipe validation, and pytest coverage in
+`tests/test_degradation.py` and validation tests.
+
+## Global Constraints
+
+Stage order, probability, deterministic RNG, and bbox propagation are durable invariants. Validation
+rejects `perspective`, `scale`, `bleed_through`, `scratches`, `fold_line`, and `binarize`; no custom
+degradation entry-point contract is shipped.
+
 **Goal:** apply realistic dirt to clean rendered samples. Word-crop
 samples are sufficient for M06; bbox-aware geometric stages can be
 M09 if the recognition path doesn't need them yet.

@@ -1,5 +1,36 @@
 # M04 — Text transforms (mostly complete)
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Deliver deterministic, ordered text transforms for generic and Gaelic OCR text while retaining the
+unbuilt antique-convention work as explicit residual intent.
+
+## Architecture
+
+Transforms form a seeded pipeline in `src/pdomain_ocr_synth/text_transforms/`. Registry-loaded
+built-ins process text in order; third-party entry points are the shipped extension seam. The inline
+Python loader and `u_v_swap`, `i_j_swap`, and `ct_st_ligature_marker` remain unimplemented.
+
+## Tech Stack
+
+The implementation uses Python, the recipe models and loader, NumPy-backed seeded randomness, and
+pytest coverage in `tests/test_text_transforms.py`.
+
+## Global Constraints
+
+Transform order and deterministic RNG flow must remain stable. Probability granularity is
+transform-specific, and the renderer does not consume the proposed `ct`/`st` markers.
+
 **Status:** ✅ every transform the bundled gaelic recipe needs is
 landed. Antique-conventions transforms and the ``python:`` inline
 loader are deferred — see below.
@@ -7,7 +38,7 @@ loader are deferred — see below.
 **Goal:** every transform documented in spec 05 works, is
 deterministic under a fixed seed, and is independently testable.
 
-Spec: [`05-text-transforms.md`](../specs/05-text-transforms.md).
+Spec: [`05-text-transforms.md`](../../specs/05-text-transforms.md).
 
 ## Deliverables
 

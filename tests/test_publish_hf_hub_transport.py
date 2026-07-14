@@ -8,7 +8,7 @@ forwards to the documented ``HfApi`` call with the right keyword
 arguments and that SDK-specific exceptions are repackaged as
 :class:`pdomain_ocr_synth.publish.transport.TransportError`.
 
-The mapping under test mirrors ``docs/specs/10-publishing.md`` § Tooling
+The mapping under test mirrors ``docs/architecture/output-and-publishing.md`` § Tooling
 used:
 
 - ``repo_exists`` → ``HfApi.repo_exists(repo_id, repo_type='dataset')``
@@ -489,7 +489,7 @@ def test_constructor_builds_hf_api_with_token_when_api_omitted(
 # Token-redaction wiring
 # ---------------------------------------------------------------------------
 #
-# Audit invariant from ``docs/specs/10-publishing.md`` § Authentication +
+# Audit invariant from ``docs/architecture/output-and-publishing.md`` § Authentication +
 # the round-trip test in ``test_cli_publish_upload.py``: the resolved
 # HF token must never reach stdout/stderr. The transport adapter's
 # error wrappers run the message body through

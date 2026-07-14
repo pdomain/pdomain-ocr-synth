@@ -1,6 +1,6 @@
 """Recognition-mode output writer for ``pdomain-ocr-training/v1``.
 
-Layout produced (per ``docs/specs/08-output-format.md``, harmonized
+Layout produced (per ``docs/architecture/output-and-publishing.md``, harmonized
 with ``pd-ocr-trainer/dataset_store.py`` which is the actual API
 contract — see the spec note about ``labels.json`` vs ``labels.csv``)::
 
@@ -473,5 +473,5 @@ class DestinationNotEmptyError(Exception):
     ``--force`` or ``--resume``.
 
     Distinct from :class:`SnapshotMismatchError` so the CLI can map
-    each to its own exit code (per ``docs/specs/01-cli.md``).
+    each to its own exit code (per ``docs/usage/recipe-workflow.md``).
     """

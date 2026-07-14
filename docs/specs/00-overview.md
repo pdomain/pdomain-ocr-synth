@@ -1,9 +1,30 @@
 # 00 — Overview
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
 ## Purpose
 
 Generate labeled synthetic images for OCR training of historical and specialty
 typography. Output drops directly into a `pd-ocr-trainer` profile.
+
+## Current implementation status
+
+The recipe-driven CLI, HarfBuzz rendering, local/web/Wikisource corpus inputs,
+recognition and detection outputs, and Hugging Face publishing are shipped.
+See `src/pdomain_ocr_synth/` and the integration tests under `tests/`.
+
+Hugging Face corpus input, Internet Archive, Gutenberg, `web_list`, the M11
+browser UI, and M12 semantic glyph annotations are not shipped. Current
+`glyph_runs` describe rendering geometry; they are not the planned semantic
+annotation side channel.
 
 ## Goals
 
@@ -37,10 +58,10 @@ typography. Output drops directly into a `pd-ocr-trainer` profile.
 | Inbound (text) | Local files, URLs, Wikisource, CELT, HF datasets, Internet Archive |
 | Inbound (fonts) | User-provided font files referenced by absolute or recipe-relative paths |
 | Outbound (local) | A `pd-ocr-trainer` profile directory (recognition or detection layout) |
-| Outbound (HF) | Optional Hugging Face dataset repo via `pdomain-ocr-synth publish` (see [10 — Publishing](10-publishing.md) and the workspace-level [`DATASETS.md`](../../../DATASETS.md)) |
+| Outbound (HF) | Optional Hugging Face dataset repo via `pdomain-ocr-synth publish` (see [Output and publishing](../architecture/output-and-publishing.md) and the workspace-level filesystem path `DATASETS.md`, which is outside this governed Markdown graph) |
 
 The outbound contract is defined by `pd-ocr-trainer`'s `dataset_store.py`. See
-[08 — Output format](08-output-format.md) for the layout this project must
+[Output and publishing](../architecture/output-and-publishing.md) for the layout this project must
 match.
 
 ## First recipe: Gaelic
@@ -86,3 +107,27 @@ These are flagged here so the spec doesn't pretend they're settled.
    character a reader perceives may not match the codepoint string. We
    record the codepoint string as ground truth and let the trainer's vocab
    handle the rest; this matches `pd-ocr-trainer`'s current behavior.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included 852c878, fd9fe7c, CLAUDE.md,
+  README.md, recipes/gaelic.yaml, src/pdomain_ocr_synth/cli.py.
+- **Accepted findings:** The core recipe-driven OCR synthesizer, Gaelic recipe, CLI, extensible
+  registries, corpus cache, recognition/detection output, and publishing path shipped across
+  M00-M10, so most of the overview describes real product direction. It remains the repository's
+  architecture pointer and still contains live M11/M12 intent, so it is neither fully
+  implemented nor disposable.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** The document promises broad web-aware corpus coverage, but only
+  local, web, and Wikisource providers are registered; Hugging Face input, Internet Archive,
+  Gutenberg, and web_list remain deferred. The CLI table elsewhere includes preview, but the
+  planned M11 browser preview UI is not shipped. Glyph-level ground truth is deferred to M12;
+  current glyph_runs are rendering geometry, not the planned semantic ligature/long-s annotation
+  side channel. The outbound trainer name and repository-wide command names were renamed after
+  the original design.
+- **Residual risks:** Ship M11 preview UI. Ship M12 semantic glyph annotations. Retain the
+  explicit non-goals, font-licensing boundary, trainer output contract, and concrete-first
+  abstraction rule as durable rationale. Decide whether the sketched non-Gaelic recipes and
+  deferred corpus providers remain roadmap bets.

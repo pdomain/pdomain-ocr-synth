@@ -773,9 +773,9 @@ def _worker_init(recipe_path: str, seed: int) -> None:
     from pdomain_ocr_synth.recipe import load_recipe
 
     global _WORKER_RECIPE, _WORKER_CTX, _WORKER_SEED
-    _WORKER_RECIPE = load_recipe(recipe_path)  # pyright: ignore[reportConstantRedefinition]
-    _WORKER_CTX = RenderContext.for_seed(seed)  # pyright: ignore[reportConstantRedefinition]
-    _WORKER_SEED = seed  # pyright: ignore[reportConstantRedefinition]
+    _WORKER_RECIPE = load_recipe(recipe_path)  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
+    _WORKER_CTX = RenderContext.for_seed(seed)  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
+    _WORKER_SEED = seed  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
 
 
 def _worker_render(payload: tuple[int, str]) -> tuple[int, dict[str, object]]:
@@ -805,19 +805,19 @@ def _worker_render(payload: tuple[int, str]) -> tuple[int, dict[str, object]]:
     from io import BytesIO
 
     buf = BytesIO()
-    sample.image.save(buf, format="PNG")  # pyright: ignore[reportAttributeAccessIssue]
+    sample.image.save(buf, format="PNG")  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
     return index, {
         "status": "rendered",
         "text": token,
         "png_bytes": buf.getvalue(),
-        "font_path": str(sample.font_path),  # pyright: ignore[reportAttributeAccessIssue]
-        "font_size_pt": float(sample.font_size_pt),  # pyright: ignore[reportAttributeAccessIssue]
-        "dpi": int(sample.dpi),  # pyright: ignore[reportAttributeAccessIssue]
-        "ink_color": list(sample.ink_color),  # pyright: ignore[reportAttributeAccessIssue]
-        "background_color": list(sample.background_color),  # pyright: ignore[reportAttributeAccessIssue]
-        "size": list(sample.size),  # pyright: ignore[reportAttributeAccessIssue]
-        "bbox": list(sample.bbox),  # pyright: ignore[reportAttributeAccessIssue]
-        "word_boxes": [{"text": wb.text, "bbox": list(wb.bbox)} for wb in sample.word_boxes],  # pyright: ignore[reportAttributeAccessIssue]
+        "font_path": str(sample.font_path),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "font_size_pt": float(sample.font_size_pt),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "dpi": int(sample.dpi),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "ink_color": list(sample.ink_color),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "background_color": list(sample.background_color),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "size": list(sample.size),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "bbox": list(sample.bbox),  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        "word_boxes": [{"text": wb.text, "bbox": list(wb.bbox)} for wb in sample.word_boxes],  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
         # ``line_boxes`` ride alongside ``word_boxes`` so the parent
         # process can rebuild a paragraph-shaped sample shim for the
         # detection writer. Empty for layouts that don't emit line GT
@@ -869,7 +869,7 @@ def _drive_parallel(
                     index,
                     reason=str(payload["reason"]),
                     text=str(payload.get("text") or ""),
-                    details=dict(payload.get("details") or {}),  # pyright: ignore[reportArgumentType,reportCallIssue]
+                    details=dict(payload.get("details") or {}),  # pyright: ignore[reportArgumentType,reportCallIssue]  # runtime schema or explicit coercion narrows the broader static union
                 )
             else:
                 _write_parallel_rendered(writer, index, payload)
@@ -902,26 +902,26 @@ def _write_parallel_rendered(
     from pdomain_ocr_synth.render.sample import LineBox, ParagraphBox, WordBox
 
     s = _ParallelSample()
-    s.image = image  # pyright: ignore[reportAttributeAccessIssue]
-    s.text = payload["text"]  # pyright: ignore[reportAttributeAccessIssue]
-    s.font_path = Path(payload["font_path"])  # pyright: ignore[reportAttributeAccessIssue]
-    s.font_size_pt = payload["font_size_pt"]  # pyright: ignore[reportAttributeAccessIssue]
-    s.dpi = payload["dpi"]  # pyright: ignore[reportAttributeAccessIssue]
-    s.ink_color = tuple(payload["ink_color"])  # pyright: ignore[reportAttributeAccessIssue]
-    s.background_color = tuple(payload["background_color"])  # pyright: ignore[reportAttributeAccessIssue]
-    s.size = tuple(payload["size"])  # pyright: ignore[reportAttributeAccessIssue]
-    s.bbox = tuple(payload["bbox"])  # pyright: ignore[reportAttributeAccessIssue]
-    s.glyph_runs = ()  # pyright: ignore[reportAttributeAccessIssue]
-    s.word_boxes = tuple(  # pyright: ignore[reportAttributeAccessIssue]
-        WordBox(text=str(wb["text"]), bbox=tuple(wb["bbox"]))  # pyright: ignore[reportArgumentType]
+    s.image = image  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.text = payload["text"]  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.font_path = Path(payload["font_path"])  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.font_size_pt = payload["font_size_pt"]  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.dpi = payload["dpi"]  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.ink_color = tuple(payload["ink_color"])  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.background_color = tuple(payload["background_color"])  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.size = tuple(payload["size"])  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.bbox = tuple(payload["bbox"])  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.glyph_runs = ()  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    s.word_boxes = tuple(  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        WordBox(text=str(wb["text"]), bbox=tuple(wb["bbox"]))  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
         for wb in payload.get("word_boxes") or ()
     )
-    s.line_boxes = tuple(  # pyright: ignore[reportAttributeAccessIssue]
-        LineBox(text=str(lb["text"]), bbox=tuple(lb["bbox"]))  # pyright: ignore[reportArgumentType]
+    s.line_boxes = tuple(  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        LineBox(text=str(lb["text"]), bbox=tuple(lb["bbox"]))  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
         for lb in payload.get("line_boxes") or ()
     )
-    s.paragraph_boxes = tuple(  # pyright: ignore[reportAttributeAccessIssue]
-        ParagraphBox(text=str(pb["text"]), bbox=tuple(pb["bbox"]))  # pyright: ignore[reportArgumentType]
+    s.paragraph_boxes = tuple(  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+        ParagraphBox(text=str(pb["text"]), bbox=tuple(pb["bbox"]))  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
         for pb in payload.get("paragraph_boxes") or ()
     )
 

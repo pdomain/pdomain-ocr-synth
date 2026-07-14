@@ -1,6 +1,6 @@
 """Idempotency check for ``pdomain-ocr-synth publish`` (M08).
 
-Per ``docs/specs/10-publishing.md`` § Idempotency:
+Per ``docs/architecture/output-and-publishing.md`` § Idempotency:
 
 > Publish is idempotent against repo state:
 >
@@ -165,7 +165,7 @@ def check_idempotency(
     """Decide whether a publish to ``repo_id`` would be a no-op.
 
     Implements the three-step procedure from
-    ``docs/specs/10-publishing.md`` § Idempotency. The local content
+    ``docs/architecture/output-and-publishing.md`` § Idempotency. The local content
     SHA is supplied by the caller (already computed by
     :func:`pdomain_ocr_synth.publish.content_sha.compute_content_sha`);
     this function consults the transport for the remote side.

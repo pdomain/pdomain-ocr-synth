@@ -5,7 +5,7 @@ exercise the actual upload orchestration through ``cmd_publish`` with
 the ``transport_factory`` seam injected as a :class:`FakeTransport`-
 returning callable. No network, no ``huggingface_hub`` import.
 
-Per ``docs/specs/10-publishing.md`` we lock down:
+Per ``docs/architecture/output-and-publishing.md`` we lock down:
 
 - Spec § Idempotency: a re-publish over an unchanged staging dir is
   a no-op (NO_CHANGE state, exit 0, no upload commit).

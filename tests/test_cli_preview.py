@@ -553,7 +553,7 @@ def test_preview_dry_run_no_cache_threads_to_plan_recipe(
     seen: dict[str, object] = {}
     real = run_mod.plan_recipe
 
-    def spy(*args, **kwargs):  # type: ignore[no-untyped-def]
+    def spy(*args, **kwargs):  # pyright: ignore[reportUnknownParameterType,reportMissingParameterType]  # spy accepts the dynamic call shape from the code under test
         seen["no_cache"] = kwargs.get("no_cache")
         return real(*args, **kwargs)
 
@@ -620,7 +620,7 @@ def test_preview_no_cache_flag_threads_to_corpus_runner(
     seen: dict[str, object] = {}
     real = preview_mod.collect_corpus_text
 
-    def spy(*args, **kwargs):  # type: ignore[no-untyped-def]
+    def spy(*args, **kwargs):  # pyright: ignore[reportUnknownParameterType,reportMissingParameterType]  # spy accepts the dynamic call shape from the code under test
         seen["no_cache"] = kwargs.get("no_cache")
         return real(*args, **kwargs)
 

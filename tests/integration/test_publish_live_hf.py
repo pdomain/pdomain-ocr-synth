@@ -14,7 +14,7 @@ code path:
 
 Tracked under "Residual M08 work → End-to-end live HF test" in
 ``docs/roadmap/08-publishing-hf.md``. The corresponding spec entry is
-``docs/specs/10-publishing.md`` § Tests ("End-to-end test against a
+``docs/architecture/output-and-publishing.md`` § Tests ("End-to-end test against a
 private 'scratch' repo on HF (gated by an HF_TOKEN env var; skipped on
 CI without secrets)").
 

@@ -18,7 +18,7 @@ from pdomain_ocr_synth import __version__
 from pdomain_ocr_synth.cli import build_parser, main
 
 # Every subcommand the parser knows about — used to verify --help works
-# uniformly. ``schema`` is M02; the rest mirror docs/specs/01-cli.md.
+# uniformly. ``schema`` is M02; the rest mirror docs/usage/recipe-workflow.md.
 ALL_SUBCOMMANDS = [
     "init",
     "list",

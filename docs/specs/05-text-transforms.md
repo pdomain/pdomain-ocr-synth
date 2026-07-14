@@ -1,7 +1,28 @@
 # 05 — Text transforms
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
 Transforms run on the concatenated corpus text **before** tokenization. They
 are an ordered list; each transform sees the output of the previous one.
+
+## Current implementation status
+
+Ordered transforms, seeded execution, Gaelic conversions, aliases, and
+third-party entry-point registration ship in
+`src/pdomain_ocr_synth/text_transforms/` and `tests/test_text_transforms.py`.
+
+`u_v_swap`, `i_j_swap`, and `ct_st_ligature_marker` are not implemented.
+Recipe-relative Python transforms and renderer consumption of `ct`/`st`
+markers are also unsupported. Probability granularity varies by transform;
+the universal per-token wording below is not a current guarantee.
 
 ```yaml
 text_transforms:
@@ -154,3 +175,27 @@ text_transforms:
 
 The module is loaded relative to the recipe directory and is not
 auto-installed system-wide.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included 5d23fc1,
+  src/pdomain_ocr_synth/text_transforms/builtins.py,
+  src/pdomain_ocr_synth/text_transforms/pipeline.py,
+  src/pdomain_ocr_synth/text_transforms/registry.py, src/pdomain_ocr_synth/validation.py,
+  tests/test_text_transforms.py.
+- **Accepted findings:** All generic and Gaelic transforms needed by the bundled recipe shipped,
+  including ordering, seeded probabilities, aliases, registry loading, and tests. The
+  antique-convention group and inline Python loader remain catalog-only and are rejected by
+  validation, so the spec is only partially implemented.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** u_v_swap, i_j_swap, and ct_st_ligature_marker are
+  unimplemented. Recipe-relative python transforms are unimplemented; third-party entry-point
+  registration is the actual extension seam. ct/st marker consumption by the renderer does not
+  exist. Probability semantics vary by transform implementation rather than following one
+  universal per-token rule.
+- **Residual risks:** Implement or explicitly abandon the antique-convention transforms and
+  inline loader. Preserve transform order, deterministic RNG flow, Gaelic conversion semantics,
+  and entry-point registry architecture. Clarify per-transform probability granularity in
+  permanent reference docs.

@@ -1,6 +1,6 @@
 """Token redaction for upload-path error messages (M08).
 
-Per ``docs/specs/10-publishing.md`` § Authentication and the audit
+Per ``docs/architecture/output-and-publishing.md`` § Authentication and the audit
 invariant exercised by ``test_cli_publish_upload.py``::
 
     assert secret not in captured.out

@@ -1,6 +1,6 @@
 """Content-SHA digest over a built HF staging directory.
 
-Per ``docs/specs/10-publishing.md`` § Idempotency and the matching
+Per ``docs/architecture/output-and-publishing.md`` § Idempotency and the matching
 deliverable in ``docs/roadmap/08-publishing-hf.md``:
 
 > Compute a content SHA over the staging directory (sorted file list +

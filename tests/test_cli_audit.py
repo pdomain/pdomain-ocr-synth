@@ -172,7 +172,7 @@ def test_audit_limit_non_positive_is_usage_error(
 
     rc = main(["audit", str(out), "--limit", "0"])
     captured = capsys.readouterr()
-    assert rc == 2  # USAGE_EXIT per docs/specs/01-cli.md
+    assert rc == 2  # USAGE_EXIT per docs/usage/recipe-workflow.md
     assert "limit" in captured.err.lower()
 
 
@@ -182,7 +182,7 @@ def test_audit_missing_output_dir_is_destination_error(
 ) -> None:
     rc = main(["audit", str(tmp_path / "does-not-exist")])
     captured = capsys.readouterr()
-    assert rc == 6  # DESTINATION_EXIT per docs/specs/01-cli.md
+    assert rc == 6  # DESTINATION_EXIT per docs/usage/recipe-workflow.md
     assert "does not exist" in captured.err
 
 

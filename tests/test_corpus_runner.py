@@ -182,7 +182,7 @@ def test_runner_no_cache_sets_options_cache_false(
 
     real_fetch = LocalProvider.fetch
 
-    def spy_fetch(self, ctx, options):  # type: ignore[no-untyped-def]
+    def spy_fetch(self, ctx, options):  # pyright: ignore[reportUnknownParameterType,reportMissingParameterType]  # spy accepts the dynamic call shape from the code under test
         # Snapshot the options dict the runner passed to the provider.
         captured.append(dict(options))
         yield from real_fetch(self, ctx, options)
@@ -216,7 +216,7 @@ def test_collect_corpus_text_no_cache_threads_through(
     seen: dict[str, object] = {}
     real = runner_mod.run_providers
 
-    def spy(*args, **kwargs):  # type: ignore[no-untyped-def]
+    def spy(*args, **kwargs):  # pyright: ignore[reportUnknownParameterType,reportMissingParameterType]  # spy accepts the dynamic call shape from the code under test
         seen["no_cache"] = kwargs.get("no_cache")
         return real(*args, **kwargs)
 

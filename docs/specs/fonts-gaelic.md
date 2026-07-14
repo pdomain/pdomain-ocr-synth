@@ -1,5 +1,15 @@
 # Fonts — Gaelic recipe
 
+## Agent Index
+
+- **Kind:** usage
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as the active operational font reference.
+
 This is a non-normative reference for the four free font families used by
 `recipes/gaelic.yaml`. None are bundled in the repo. Download them yourself
 and place the unzipped files in `recipes/gaelic/fonts/`.
@@ -149,3 +159,29 @@ This opens each font and surfaces `font_missing` / `font_unreadable` /
 Per-codepoint corpus-vs-font coverage reporting at validate time is
 deferred; today, missing glyphs are detected at *render* time and
 recorded as `missing_glyph` skip entries in the manifest.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time current-state and operational review of the document,
+  repository history, code, tests, and linked plans. Evidence included 852c878: initial Gaelic
+  font reference and fetch script, aafa376: aligned font validation description with
+  implementation, scripts/fetch-fonts-gaelic.sh, recipes/gaelic.yaml: default and optional
+  Gaelic font paths/licenses, Makefile: fetch-fonts target, src/pdomain_ocr_synth/fonts.py.
+- **Accepted findings:** This is an operational reference, not a completed design: it explains
+  the recipe's unbundled font set, licensing posture, fetch workflow, and validation behavior.
+  The script, recipe, Make target, and tests depend on those facts, and docgraph shows
+  recipe/spec/test inbound neighbors. It should remain active while the Gaelic recipe is
+  supported.
+- **Effect on this document:** Status: `active`. Retained as an operational usage reference;
+  time-sensitive details still require periodic verification.
+- **Implementation deviations:** The heading path classifies it as a spec even though its body
+  calls itself non-normative reference; a usage or research location would better describe its
+  role. External download URLs and paraphrased license claims are time-sensitive and cannot be
+  guaranteed by repository tests. The statement that the project is non-commercial is a project
+  posture, not an enforceable restriction on downstream generated datasets. The helper shell
+  filename remains hyphenated despite a later general script-renaming commit, so callers must
+  preserve the actual path.
+- **Residual risks:** Keep the no-bundled-font and user-fetch policy, exact recipe paths,
+  license cautions, and validation instructions. Periodically verify upstream URLs/licenses;
+  consider moving this durable operational content to usage/reference documentation without
+  changing its meaning.

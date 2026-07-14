@@ -274,11 +274,11 @@ def _worker_init(recipe_path: str, seed: int, images_dir: str, apply_degrade: bo
     from pdomain_ocr_synth.recipe import load_recipe
 
     global _WORKER_RECIPE, _WORKER_CTX, _WORKER_IMAGES_DIR, _WORKER_SEED, _WORKER_APPLY_DEGRADE
-    _WORKER_RECIPE = load_recipe(recipe_path)  # pyright: ignore[reportConstantRedefinition]
-    _WORKER_CTX = RenderContext.for_seed(seed)  # pyright: ignore[reportConstantRedefinition]
-    _WORKER_IMAGES_DIR = Path(images_dir)  # pyright: ignore[reportConstantRedefinition]
-    _WORKER_SEED = seed  # pyright: ignore[reportConstantRedefinition]
-    _WORKER_APPLY_DEGRADE = apply_degrade  # pyright: ignore[reportConstantRedefinition]
+    _WORKER_RECIPE = load_recipe(recipe_path)  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
+    _WORKER_CTX = RenderContext.for_seed(seed)  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
+    _WORKER_IMAGES_DIR = Path(images_dir)  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
+    _WORKER_SEED = seed  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
+    _WORKER_APPLY_DEGRADE = apply_degrade  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
 
 
 def _worker_render(payload: tuple[int, str]) -> tuple[int, dict[str, Any]]:

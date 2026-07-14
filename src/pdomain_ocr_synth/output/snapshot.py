@@ -1,6 +1,6 @@
 """``recipe.snapshot.yaml`` writer + comparator.
 
-Per ``docs/specs/08-output-format.md``: the snapshot is the resolved
+Per ``docs/architecture/output-and-publishing.md``: the snapshot is the resolved
 recipe written next to the output. It carries:
 
 - absolute paths (the loader already does this; we round-trip the

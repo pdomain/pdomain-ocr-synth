@@ -104,5 +104,5 @@ def default_registry() -> Registry:
         registry.register(LocalProvider())
         registry.register(WebProvider())
         registry.register(WikisourceProvider())
-        _DEFAULT_REGISTRY = registry  # pyright: ignore[reportConstantRedefinition]
+        _DEFAULT_REGISTRY = registry  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
     return _DEFAULT_REGISTRY

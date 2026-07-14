@@ -67,7 +67,7 @@ def run_providers(
         options = _options_for(entry)
         if no_cache:
             options["cache"] = False
-        provider = registry.get(entry.type)  # type: ignore[arg-type]
+        provider = registry.get(entry.type)  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
         cache_key = provider.cache_key(options)
         was_cached = ctx.cache.has(provider.type_name, cache_key)
         started = time.monotonic()
@@ -93,7 +93,7 @@ def _options_for(entry: object) -> dict[str, Any]:
     Path (which providers expect) and unwraps any nested submodels.
     """
 
-    return entry.model_dump(mode="python")  # pyright: ignore[reportAttributeAccessIssue]
+    return entry.model_dump(mode="python")  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
 
 
 def collect_corpus_text(

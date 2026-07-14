@@ -1,8 +1,30 @@
 # 07 — Degradation
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
 The degradation pipeline takes a clean rendered image and produces a
 realistically dirty one. It is the single most important component for
 domain transfer to real scans.
+
+## Current implementation status
+
+The ordered probability pipeline, recipe-local presets, skew geometry, and the
+major optical, print, and compression stages ship in
+`src/pdomain_ocr_synth/degradation/` with coverage in
+`tests/test_degradation.py`.
+
+`perspective`, `scale`, `bleed_through`, `scratches`, `fold_line`, and
+`binarize` are catalog-only and validation rejects them. Only skew currently
+provides geometry-aware bbox propagation. A degradation entry-point contract
+and the OpenCV-based affine stages remain unresolved.
 
 ```yaml
 degradation:
@@ -226,3 +248,27 @@ A `preset:` entry expands inline. Presets are local to one recipe.
 
 Same extension contract as transforms / providers — see
 [09 — Extending](09-extending.md).
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included f616596, 25c67a4, 2466df6, 6a31080,
+  b9086d2, src/pdomain_ocr_synth/degradation/pipeline.py.
+- **Accepted findings:** The ordered probability pipeline, geometry-aware skew, major
+  optical/print/compression stages, presets, validation, and bbox propagation shipped and are
+  well tested. Six catalog stages and the advertised custom-stage story remain unbuilt or
+  underspecified, so the spec retains meaningful residual intent.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** perspective, scale, bleed_through, scratches, fold_line, and
+  binarize are cataloged but unregistered; validation rejects them as not implemented. Only skew
+  currently provides the documented geometry-aware behavior. Named presets are recipe-local
+  expansion data rather than a global built-in preset library; the bundled recipe supplies
+  concrete presets. Custom degradation entry-point loading is not evidenced like the
+  corpus/text-transform registries. The OpenCV retrofit question remains intentionally
+  unresolved.
+- **Residual risks:** Decide whether the six deferred stages merit implementation, especially
+  bbox-safe perspective and scale. Define and test a real custom-stage registration contract or
+  remove the promise. Preserve stage ordering, probability, deterministic RNG, preset expansion,
+  validation, and bbox invariants as durable architecture. Resolve the imaging dependency choice
+  before adding OpenCV-affine stages.

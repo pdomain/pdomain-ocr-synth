@@ -1,6 +1,6 @@
 """Pre-flight checks against a built HF staging directory.
 
-Per ``docs/specs/10-publishing.md`` § Dataset card and the matching
+Per ``docs/architecture/output-and-publishing.md`` § Dataset card and the matching
 deliverable in ``docs/roadmap/08-publishing-hf.md``, the README that
 ships in the staging dir must carry a fixed set of conventional
 ``pdomain-ocr-*`` front-matter keys:

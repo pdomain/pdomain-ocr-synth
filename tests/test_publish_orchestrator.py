@@ -483,7 +483,7 @@ def test_publish_result_is_frozen(tmp_path: Path) -> None:
     result = publish_recognition(transport, "alice/x", staging, commit_message="initial")
 
     with pytest.raises(AttributeError):
-        result.state = PublishState.NO_CHANGE  # type: ignore[misc]
+        result.state = PublishState.NO_CHANGE  # pyright: ignore[reportAttributeAccessIssue]  # test intentionally mutates protected state to exercise the failure path
 
 
 # ---------------------------------------------------------------------------

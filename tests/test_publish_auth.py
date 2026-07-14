@@ -7,7 +7,7 @@ documented chain (``--token`` flag → ``HF_TOKEN`` env →
 that chain when nothing resolves.
 
 Tests treat the resolution order as a contract per
-``docs/specs/10-publishing.md`` § Authentication and the matching
+``docs/architecture/output-and-publishing.md`` § Authentication and the matching
 deliverable in ``docs/roadmap/08-publishing-hf.md``: ordering matters,
 empty-string inputs must fall through (not silently succeed), and the
 error message must name every step.

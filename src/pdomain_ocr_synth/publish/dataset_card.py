@@ -1,6 +1,6 @@
 """Dataset-card README generator for the HF imagefolder staging dir.
 
-Per ``docs/specs/10-publishing.md``: the staging dir ships a generated
+Per ``docs/architecture/output-and-publishing.md``: the staging dir ships a generated
 ``README.md`` with YAML front matter that carries the ``pdomain-ocr-*``
 conventional keys (see ``DATASETS.md`` workspace contract) plus enough
 human-readable body that a viewer landing on the HF dataset page knows

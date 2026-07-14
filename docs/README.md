@@ -1,6 +1,18 @@
 # docs/
 
+## Agent Index
+
+- **Kind:** usage
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-19
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as the documentation entry point.
+
 How documentation is organized in this repo.
+
+Repository-wide documentation governance lives in [`DOCGRAPH.md`](../DOCGRAPH.md).
 
 | Folder | Purpose | Use when |
 | --- | --- | --- |

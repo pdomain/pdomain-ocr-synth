@@ -645,7 +645,7 @@ def _cmd_fetch(recipe_arg: str, *, cache_dir: str | None, no_cache: bool) -> int
     print(f"total: {total_chars:,} chars across {len(recipe.corpus)} entries")
     if failures:
         print(f"failures: {failures}", file=sys.stderr)
-        return 4  # CORPUS_EXIT per docs/specs/01-cli.md
+        return 4  # CORPUS_EXIT per docs/usage/recipe-workflow.md
     return 0
 
 
@@ -775,7 +775,7 @@ def _cmd_preview(
         )
     except RenderError as exc:
         print(f"error: render failed: {exc}", file=sys.stderr)
-        return 5  # RENDER_EXIT per docs/specs/01-cli.md
+        return 5  # RENDER_EXIT per docs/usage/recipe-workflow.md
 
     print()
     print(f"rendered: {stats.rendered}/{stats.count}")
@@ -949,7 +949,7 @@ def _cmd_publish(
     :class:`pdomain_ocr_synth.publish.SdkUnavailableError` (a
     :class:`TransportError`) and the runner maps it to exit 7 with
     a clear remediation message. Exit-code mapping matches
-    ``docs/specs/01-cli.md`` (canonical) — spec 10 was reconciled in
+    ``docs/usage/recipe-workflow.md`` (canonical) — spec 10 was reconciled in
     the dry-run dispatch commit.
 
     ``--render-first`` (spec 10 § When to publish) chains the render
@@ -1086,6 +1086,16 @@ def _parse_audit_timestamp(raw: str) -> str | None:
     return iso.replace("+00:00", "Z")
 
 
+def _audit_int(value: object) -> int:
+    """Return zero for a malformed hand-edited audit count."""
+    if not isinstance(value, str | int | float):
+        return 0
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _summarize_audit_entries(entries: list[dict[str, Any]]) -> dict[str, Any]:
     """Aggregate a filtered audit-entry list into a summary dict.
 
@@ -1130,20 +1140,9 @@ def _summarize_audit_entries(entries: list[dict[str, Any]]) -> dict[str, Any]:
     sha_counter: Counter[str] = Counter()
     timestamps: list[str] = []
     for entry in entries:
-        # Defensive ints: an audit row hand-edited to a string would
-        # otherwise crash the summary. We coerce, falling back to 0.
-        try:  # noqa: SIM105
-            total_count += int(entry.get("count", 0) or 0)
-        except (TypeError, ValueError):
-            pass
-        try:  # noqa: SIM105
-            total_rendered += int(entry.get("rendered", 0) or 0)
-        except (TypeError, ValueError):
-            pass
-        try:  # noqa: SIM105
-            total_skipped += int(entry.get("skipped", 0) or 0)
-        except (TypeError, ValueError):
-            pass
+        total_count += _audit_int(entry.get("count"))
+        total_rendered += _audit_int(entry.get("rendered"))
+        total_skipped += _audit_int(entry.get("skipped"))
         runtime = entry.get("runtime_seconds")
         if isinstance(runtime, int | float):
             total_runtime += float(runtime)

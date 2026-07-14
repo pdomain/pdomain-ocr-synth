@@ -262,7 +262,7 @@ def test_append_audit_entry_closes_file_when_serialization_raises(
     with _warnings.catch_warnings():
         _warnings.simplefilter("error", ResourceWarning)
         with pytest.raises(_BoomError):
-            append_audit_entry(audit_path, _BadEntry())  # type: ignore[arg-type]
+            append_audit_entry(audit_path, _BadEntry())  # pyright: ignore[reportArgumentType]  # test intentionally supplies a value outside the annotated contract
         # Force the GC: an unclosed file would trip ResourceWarning
         # only on finalization, which CPython runs eagerly for
         # refcount-zero objects but not always immediately under

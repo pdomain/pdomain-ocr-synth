@@ -7,7 +7,7 @@ upload orchestrator). The split keeps ``cli.py`` short and lets each
 flow (dry-run preview, real upload) be exercised in isolation by
 tests that don't need to round-trip through ``main()``.
 
-Per ``docs/specs/10-publishing.md`` and ``docs/roadmap/08-publishing-hf.md``:
+Per ``docs/architecture/output-and-publishing.md`` and ``docs/roadmap/08-publishing-hf.md``:
 
 - ``publish --dry-run`` shows what would be uploaded **without
   contacting HF**: target repo, file count, total size, dataset-card
@@ -116,7 +116,7 @@ TransportFactory = Callable[[str], HfTransport]
 # :class:`SnapshotMismatchError` for the runner to catch.
 RenderFirstCallable = Callable[[Path, Path, "Path | None"], None]
 
-# Exit codes (must match ``docs/specs/01-cli.md``). Mirrored here as
+# Exit codes (must match ``docs/usage/recipe-workflow.md``). Mirrored here as
 # constants so the CLI dispatch and the runner share one source of
 # truth — the CLI module imports these rather than re-declaring them.
 PUBLISH_OK_EXIT = 0
@@ -127,7 +127,7 @@ PUBLISH_AUTH_EXIT = 7  # auth or repo-state failure
 
 
 # Filenames the README front-matter preview keeps. Mirrors the dry-run
-# example in ``docs/specs/10-publishing.md`` § Dry run, which truncates
+# example in ``docs/architecture/output-and-publishing.md`` § Dry run, which truncates
 # the body and shows just the front-matter block.
 _FRONT_MATTER_FENCE = "---"
 
@@ -153,7 +153,7 @@ _FRONT_MATTER_FENCE = "---"
 _MESSAGE_LIMITATION_WARNING = (
     "warning: --message accepted but huggingface_hub.upload_large_folder "
     "auto-generates per-shard commit messages; your message will not "
-    "appear on the HF commit. See docs/specs/10-publishing.md "
+    "appear on the HF commit. See docs/architecture/output-and-publishing.md "
     "§ Tooling used."
 )
 
@@ -261,7 +261,7 @@ def run_publish_dry_run(
             visibility="private" if private else "public",
             file_count=file_count,
             total_bytes=total_bytes,
-            content_sha=result.content_sha or "",  # pyright: ignore[reportAttributeAccessIssue]
+            content_sha=result.content_sha or "",  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
             front_matter_preview=front_matter_preview,
             summary_block=summary_block,
             token_source=token_source,
@@ -272,7 +272,7 @@ def run_publish_dry_run(
 def format_dry_run_plan(plan: DryRunPlan) -> str:
     """Render the plan as the human-readable block from spec 10.
 
-    Mirrors the example in ``docs/specs/10-publishing.md`` § Dry run.
+    Mirrors the example in ``docs/architecture/output-and-publishing.md`` § Dry run.
     Kept separate from :func:`run_publish_dry_run` so tests can assert
     on the structured plan without pattern-matching prose.
     """

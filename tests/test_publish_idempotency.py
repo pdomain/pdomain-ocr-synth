@@ -1,6 +1,6 @@
 """Unit tests for ``pdomain_ocr_synth.publish.idempotency`` (M08).
 
-Covers the three-step procedure from ``docs/specs/10-publishing.md``
+Covers the three-step procedure from ``docs/architecture/output-and-publishing.md``
 § Idempotency:
 
 1. (Caller-supplied) compute local content SHA.
@@ -252,7 +252,7 @@ def test_decision_is_frozen_so_runner_logging_cannot_mutate() -> None:
     decision = check_idempotency(transport, "alice/x", _LOCAL_SHA)
 
     with pytest.raises(AttributeError):
-        decision.state = IdempotencyState.UP_TO_DATE  # type: ignore[misc]
+        decision.state = IdempotencyState.UP_TO_DATE  # pyright: ignore[reportAttributeAccessIssue]  # test intentionally mutates protected state to exercise the failure path
 
 
 def test_idempotency_state_values_are_string_compatible() -> None:

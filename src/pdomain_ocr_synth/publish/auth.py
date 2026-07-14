@@ -1,6 +1,6 @@
 """Hugging Face token resolution for ``pdomain-ocr-synth publish``.
 
-Per ``docs/specs/10-publishing.md`` § Authentication and the matching
+Per ``docs/architecture/output-and-publishing.md`` § Authentication and the matching
 deliverable in ``docs/roadmap/08-publishing-hf.md``:
 
 > Order: ``--token`` flag → ``HF_TOKEN`` env →
@@ -67,7 +67,7 @@ class AuthError(Exception):
 
     Distinct exception type so the future CLI's exit-code mapping can
     catch this specifically (publish auth failures → exit 7 per
-    ``docs/specs/01-cli.md``) without swallowing unrelated errors.
+    ``docs/usage/recipe-workflow.md``) without swallowing unrelated errors.
     The message is pre-formatted to name every step of the resolution
     chain so the user knows exactly which knobs they can turn.
     """

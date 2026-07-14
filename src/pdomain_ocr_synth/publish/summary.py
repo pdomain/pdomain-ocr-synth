@@ -1,6 +1,6 @@
 """Summary helper over a staged HF imagefolder ``metadata.jsonl``.
 
-Per ``docs/specs/10-publishing.md`` § Dry run, the upcoming
+Per ``docs/architecture/output-and-publishing.md`` § Dry run, the upcoming
 ``pdomain-ocr-synth publish --dry-run`` surface needs to print a short
 recap of what the staging dir holds before any HF call is made:
 

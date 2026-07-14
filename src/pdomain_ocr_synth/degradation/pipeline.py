@@ -124,13 +124,13 @@ def apply_degradation(
         # ``probability``. That's the stage's options dict.
         options: dict[str, Any] = dict(stage_cfg.model_extra or {})
         if entry.shape == "pixel":
-            new_image = entry.fn(current.image, options, rng)  # pyright: ignore[reportArgumentType,reportAttributeAccessIssue]
-            if new_image is current.image:  # pyright: ignore[reportAttributeAccessIssue]
+            new_image = entry.fn(current.image, options, rng)  # pyright: ignore[reportArgumentType,reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+            if new_image is current.image:  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
                 continue
-            current = replace(current, image=new_image)  # pyright: ignore[reportArgumentType]
+            current = replace(current, image=new_image)  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
         else:
-            current = entry.fn(current, options, rng)  # pyright: ignore[reportArgumentType,reportReturnType]
-    return current  # pyright: ignore[reportReturnType]
+            current = entry.fn(current, options, rng)  # pyright: ignore[reportArgumentType,reportReturnType]  # runtime schema or explicit coercion narrows the broader static union
+    return current  # pyright: ignore[reportReturnType]  # runtime value is the concrete member required by the declared return contract
 
 
 _BUILTINS_REGISTERED = False
@@ -148,6 +148,8 @@ def _ensure_builtins_registered() -> None:
     if _BUILTINS_REGISTERED:
         return
 
-    from pdomain_ocr_synth.degradation import builtins  # noqa: F401
+    from pdomain_ocr_synth.degradation import (
+        builtins,  # noqa: F401  # import is required for registration or contract stability, not direct use
+    )
 
-    _BUILTINS_REGISTERED = True  # pyright: ignore[reportConstantRedefinition]
+    _BUILTINS_REGISTERED = True  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once

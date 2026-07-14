@@ -1,6 +1,6 @@
 """Commit-message formatting for ``pdomain-ocr-synth publish`` (M08).
 
-Per ``docs/specs/10-publishing.md`` § Versioning:
+Per ``docs/architecture/output-and-publishing.md`` § Versioning:
 
 > ``--message "..."`` overrides the auto-generated commit message
 > (default: ``pdomain-ocr-synth render @<recipe-sha>``).

@@ -129,7 +129,7 @@ def test_paragraph_box_constructs_with_text_and_bbox() -> None:
 def test_paragraph_box_is_frozen() -> None:
     pb = ParagraphBox(text="hello", bbox=(0, 0, 10, 20))
     with pytest.raises((FrozenInstanceError, AttributeError)):
-        pb.text = "changed"  # type: ignore[misc]
+        pb.text = "changed"  # pyright: ignore[reportAttributeAccessIssue]  # test intentionally mutates protected state to exercise the failure path
 
 
 def test_paragraph_box_equality_is_value_based() -> None:

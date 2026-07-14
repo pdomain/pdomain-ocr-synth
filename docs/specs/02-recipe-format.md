@@ -1,7 +1,29 @@
 # 02 — Recipe format
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
 This is the reference for the YAML schema. For a tutorial walkthrough, see
-[03 — Tutorial](03-tutorial-writing-a-recipe.md).
+[Recipe workflow](../usage/recipe-workflow.md).
+
+## Current implementation status
+
+The Pydantic recipe models, YAML loader, generated schema, and validation path
+are shipped in `src/pdomain_ocr_synth/recipe/`, `validation.py`, and their tests.
+Use the generated `recipe.schema.json` as the exact accepted shape.
+
+Several catalog values are reserved rather than runnable. `hf_dataset` has no
+registered provider; Pillow shaping and `antialiasing: false` are rejected by
+validation. Internet Archive, Gutenberg, and `web_list` are not modeled as
+runnable inputs. Current pages use `paragraph_indent_px`, not the older
+`paragraph_indent_em` claim.
 
 ## Top-level structure
 
@@ -207,7 +229,7 @@ See [07 — Degradation](07-degradation.md).
 ## `publish`
 
 Optional defaults consumed by `pdomain-ocr-synth publish` (see
-[10 — Publishing](10-publishing.md)).
+[Output and publishing](../architecture/output-and-publishing.md)).
 
 ```yaml
 publish:
@@ -238,7 +260,7 @@ command line. CLI flags always override recipe values.
    `*_not_implemented` errors so render-time crashes (or silent
    default-fallback) don't surprise the user.
 6. Layout mode keys are consistent (and the `output.mode` ↔
-   `layout.mode` pairing matches `docs/specs/08-output-format.md`).
+   `layout.mode` pairing matches the [output architecture](../architecture/output-and-publishing.md)).
 7. Degradation `kind` values are in the spec catalog and per-stage
    option keys match the spec tables.
 8. Output destination is writable.
@@ -252,3 +274,26 @@ deferred. The `--offline` contract is enforced at fetch time —
 `docs/roadmap/03-corpus.md` "Cache layer" for the runtime semantics.
 
 Any failure exits with code 3 and a structured error report.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included b09b15d, 412f861, 6a31080, 374865a,
+  4564ff0, src/pdomain_ocr_synth/recipe/models.py.
+- **Accepted findings:** Schema v1, path resolution, core scalar/range/choice models, output,
+  fonts, rendering, layouts, presets, publishing, and semantic validation are shipped and
+  tested. The format deliberately reserves several schema-valid capabilities that validation
+  rejects because runtime support is absent, so the design remains partially implemented.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** hf_dataset input is modeled but has no registered provider;
+  web_list, Internet Archive, and Gutenberg are documented but not modeled as runnable corpus
+  entries. shaping_engine=pillow is accepted by the model but rejected by validation because
+  rendering always uses HarfBuzz. antialiasing=false is reserved but rejected. The spec's broad
+  varying-value language exceeds the exact fields represented by the Pydantic unions. Several
+  layout names/units evolved during M09, notably paragraph_indent_px replacing the advertised
+  paragraph_indent_em.
+- **Residual risks:** Either implement or remove the reserved corpus, Pillow, and antialiasing
+  capabilities. Promote the shipped schema contract and path-resolution rules to
+  architecture/reference documentation when all reserved v1 fields are adjudicated. Keep JSON
+  Schema generation and spec/model drift tests as durable controls.

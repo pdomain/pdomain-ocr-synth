@@ -113,4 +113,4 @@ class RenderedSample:
 
     @property
     def size(self) -> tuple[int, int]:
-        return self.image.size  # type: ignore[no-any-return]
+        return self.image.size  # pyright: ignore[reportUnknownVariableType]  # Pillow returns a two-integer size tuple although its stub exposes an unknown type

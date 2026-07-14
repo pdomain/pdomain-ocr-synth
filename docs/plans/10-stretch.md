@@ -1,5 +1,35 @@
 # M10 — Stretch
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Track post-core polish and bounded follow-up work. Linting, audit logs, visual regression coverage,
+and listed bug fixes shipped; additional recipes, cloud rendering, and live statistics remain open.
+
+## Architecture
+
+This milestone spans existing CLI, validation, rendering, audit, and test modules rather than
+creating a new subsystem. Future chunks must extend those seams independently.
+
+## Tech Stack
+
+The shipped work uses the existing Python CLI and recipe stack, JSONL audit output, image-comparison
+tests, pytest, Ruff, and basedpyright. Future cloud work has no selected runtime stack.
+
+## Global Constraints
+
+Keep optional follow-ups out of the core deterministic pipeline until separately designed and
+tested. Do not present extra recipes, cloud execution, or real-time statistics as available usage.
+
 The engine works after M00–M09. M10 is open-ended polish, additional
 recipes, and cloud rendering. The preview UI moved out of stretch and
 is now [M11](11-preview-ui.md) with its own

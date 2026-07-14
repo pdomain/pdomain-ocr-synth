@@ -25,8 +25,8 @@ import uharfbuzz as hb
 
 @dataclass(slots=True)
 class _FontHandles:
-    ft_face: freetype.Face  # pyright: ignore[reportAttributeAccessIssue]
-    hb_face: hb.Face  # pyright: ignore[reportAttributeAccessIssue]
+    ft_face: freetype.Face  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    hb_face: hb.Face  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
 
 
 def branched_seed(base_seed: int, sample_index: int) -> int:
@@ -56,7 +56,7 @@ class RenderContext:
         ft_face = freetype.Face(key)
         with open(key, "rb") as fh:
             font_bytes = fh.read()
-        hb_face = hb.Face(font_bytes)  # pyright: ignore[reportAttributeAccessIssue]
+        hb_face = hb.Face(font_bytes)  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
         handles = _FontHandles(ft_face=ft_face, hb_face=hb_face)
         self._font_cache[key] = handles
         return handles

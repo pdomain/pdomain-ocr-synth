@@ -1,5 +1,18 @@
 # CLAUDE — pdomain-ocr-synth
 
+## Agent Index
+
+- **Kind:** process
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-09
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as authoritative repository guidance.
+
+Start with [`AGENTS.md`](AGENTS.md) for the guidance chain and
+[`DOCGRAPH.md`](DOCGRAPH.md) for documentation governance.
+
 Recipe-driven synthetic OCR training-data generator; produces labeled
 image+text pairs for historical and specialty typography (first target:
 Cló Gaelach / early Irish). Status: M00–M10 substantially shipped;

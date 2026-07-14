@@ -1,6 +1,6 @@
 """End-to-end tests for ``pdomain-ocr-synth publish --dry-run`` (M08).
 
-Per ``docs/specs/10-publishing.md`` § Dry run + the matching M08
+Per ``docs/architecture/output-and-publishing.md`` § Dry run + the matching M08
 deliverable in ``docs/roadmap/08-publishing-hf.md``, the dry-run
 surface previews what would be uploaded **without contacting HF**:
 target repo, file count, total size, dataset-card preview, content

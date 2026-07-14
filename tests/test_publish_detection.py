@@ -1,7 +1,7 @@
 """Unit tests for the detection staging-dir builder (M09 chunk #7).
 
 Covers the format conversion from the local detection layout (per
-``docs/specs/08-output-format.md`` § Detection mode layout +
+``docs/architecture/output-and-publishing.md`` § Detection mode layout +
 ``pdomain_ocr_synth.output.detection``) to an HF imagefolder-shaped staging
 dir suitable for upload via :func:`publish_recognition` (which is
 shape-agnostic — see :mod:`pdomain_ocr_synth.publish.detection` module
@@ -28,7 +28,6 @@ from pdomain_ocr_synth.publish import (
     StagingError,
     build_detection_staging,
 )
-from pdomain_ocr_synth.publish.dataset_card import write_dataset_card  # noqa: F401 — stable import
 
 # ---------------------------------------------------------------------------
 # Fixture helpers

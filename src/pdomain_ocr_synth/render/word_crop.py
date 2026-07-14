@@ -80,11 +80,11 @@ def render_word_crop(
     """
 
     font = _pick_font(recipe, ctx.rng)
-    font_size_pt = float(sample_value(recipe.rendering.font_size_pt, ctx.rng))  # pyright: ignore[reportArgumentType]
-    dpi = int(sample_value(recipe.rendering.dpi, ctx.rng))  # pyright: ignore[reportArgumentType]
+    font_size_pt = float(sample_value(recipe.rendering.font_size_pt, ctx.rng))  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
+    dpi = int(sample_value(recipe.rendering.dpi, ctx.rng))  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
     ink = sample_color(recipe.rendering.ink_color, ctx.rng)
     bg = sample_color(recipe.rendering.background_color, ctx.rng)
-    padding = int(sample_value(recipe.layout.padding_px or 0, ctx.rng))  # pyright: ignore[reportArgumentType]
+    padding = int(sample_value(recipe.layout.padding_px or 0, ctx.rng))  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
 
     # Codepoint-coverage check before we spin up shaping. Cheaper to
     # skip a missing-glyph sample here than to render a row of tofu.
@@ -162,23 +162,23 @@ def _pick_font(recipe: Recipe, rng: Random):
 
 
 def _shape(
-    hb_face: hb.Face,  # pyright: ignore[reportAttributeAccessIssue]
+    hb_face: hb.Face,  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
     text: str,
     pixel_size: int,
     feature_overrides: dict[str, Any] | None,
-) -> tuple[list[hb.GlyphInfo], list[hb.GlyphPosition]]:  # pyright: ignore[reportAttributeAccessIssue]
-    hb_font = hb.Font(hb_face)  # pyright: ignore[reportAttributeAccessIssue]
+) -> tuple[list[hb.GlyphInfo], list[hb.GlyphPosition]]:  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
+    hb_font = hb.Font(hb_face)  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
     hb_font.scale = (pixel_size * 64, pixel_size * 64)
-    hb.ot_font_set_funcs(hb_font)  # pyright: ignore[reportAttributeAccessIssue]
+    hb.ot_font_set_funcs(hb_font)  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
 
-    buf = hb.Buffer()  # pyright: ignore[reportAttributeAccessIssue]
+    buf = hb.Buffer()  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
     buf.add_str(text)
     buf.guess_segment_properties()
 
     features = dict(_DEFAULT_FEATURES)
     if feature_overrides:
         features.update(feature_overrides)
-    hb.shape(hb_font, buf, features)  # pyright: ignore[reportAttributeAccessIssue]
+    hb.shape(hb_font, buf, features)  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
 
     return list(buf.glyph_infos), list(buf.glyph_positions)
 
@@ -188,12 +188,12 @@ def _shape(
 # ---------------------------------------------------------------------------
 
 
-def _rasterize_glyphs(face: freetype.Face, glyphs: list[hb.GlyphInfo]):  # pyright: ignore[reportAttributeAccessIssue]
+def _rasterize_glyphs(face: freetype.Face, glyphs: list[hb.GlyphInfo]):  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
     """Return a list of (bitmap_array, left, top, width, height) tuples."""
 
     out = []
     for info in glyphs:
-        face.load_glyph(info.codepoint, freetype.FT_LOAD_RENDER)  # pyright: ignore[reportAttributeAccessIssue]
+        face.load_glyph(info.codepoint, freetype.FT_LOAD_RENDER)  # pyright: ignore[reportAttributeAccessIssue]  # runtime object provides this attribute but its third-party or reconstructed static shape does not
         bmp = face.glyph.bitmap
         out.append(
             {

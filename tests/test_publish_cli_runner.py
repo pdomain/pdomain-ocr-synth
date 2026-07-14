@@ -110,7 +110,7 @@ def test_walk_dir_stats_counts_files_and_bytes_recursively(tmp_path: Path) -> No
 
 
 def test_format_dry_run_plan_includes_every_spec_section() -> None:
-    """Per ``docs/specs/10-publishing.md`` § Dry run, the plan output
+    """Per ``docs/architecture/output-and-publishing.md`` § Dry run, the plan output
     must include the upload target, file count, dataset card preview,
     and content SHA. Each shows up here exactly once."""
 

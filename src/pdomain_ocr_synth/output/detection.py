@@ -4,7 +4,7 @@ This is the M09 analog of :mod:`pdomain_ocr_synth.output.recognition`. It
 writes the on-disk layout that ``pd-ocr-trainer``'s detection pipeline
 consumes — full pages with bbox annotations.
 
-Layout produced (per ``docs/specs/08-output-format.md`` §"Detection
+Layout produced (per ``docs/architecture/output-and-publishing.md`` §"Detection
 mode layout", harmonized with ``pd-ocr-trainer/dataset_store.py`` and
 ``doctr.datasets.DetectionDataset`` which is the actual API contract)::
 
@@ -450,7 +450,7 @@ class DetectionWriter:
                 {
                     "text": line.text,
                     "bbox": list(line_bbox),
-                    "polygon": bbox_to_polygon(line_bbox),  # pyright: ignore[reportArgumentType]
+                    "polygon": bbox_to_polygon(line_bbox),  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
                     "words": line_words,
                 }
             )
@@ -488,7 +488,7 @@ class DetectionWriter:
                 {
                     "text": pb.text,
                     "bbox": [int(v) for v in pb.bbox],
-                    "polygon": bbox_to_polygon(tuple(int(v) for v in pb.bbox)),  # pyright: ignore[reportArgumentType]
+                    "polygon": bbox_to_polygon(tuple(int(v) for v in pb.bbox)),  # pyright: ignore[reportArgumentType]  # runtime schema or explicit coercion narrows the broader static union
                 }
                 for pb in paragraph_boxes
             ]
@@ -634,5 +634,5 @@ class DestinationNotEmptyError(Exception):
     ``--force`` or ``--resume``.
 
     Distinct from :class:`SnapshotMismatchError` so the CLI can map
-    each to its own exit code (per ``docs/specs/01-cli.md``).
+    each to its own exit code (per ``docs/usage/recipe-workflow.md``).
     """

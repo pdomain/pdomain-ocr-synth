@@ -183,7 +183,7 @@ def test_write_text_meta_rename_failure_does_not_publish(
     real_replace = os.replace
     calls: list[str] = []
 
-    def flaky_replace(src, dst):  # type: ignore[no-untyped-def]
+    def flaky_replace(src, dst):  # pyright: ignore[reportUnknownParameterType,reportMissingParameterType]  # spy accepts the dynamic call shape from the code under test
         calls.append(str(dst))
         # Let the text rename succeed; fail the meta rename.
         if str(dst).endswith(".meta.json"):

@@ -38,7 +38,13 @@ from pdomain_ocr_synth.output.detection import LABELS_FILENAME as DETECTION_LABE
 from pdomain_ocr_synth.output.recognition import LABELS_FILENAME as RECOGNITION_LABELS_FILENAME
 from pdomain_ocr_synth.validation import VALIDATION_CODES
 
-SPECS_DIR = Path(__file__).resolve().parent.parent / "docs" / "specs"
+DOCS_DIR = Path(__file__).resolve().parent.parent / "docs"
+_REPLACEMENT_DOCS = {
+    "01-cli.md": DOCS_DIR / "usage" / "recipe-workflow.md",
+    "03-tutorial-writing-a-recipe.md": DOCS_DIR / "usage" / "recipe-workflow.md",
+    "08-output-format.md": DOCS_DIR / "architecture" / "output-and-publishing.md",
+    "10-publishing.md": DOCS_DIR / "architecture" / "output-and-publishing.md",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +64,8 @@ SPECS_DIR = Path(__file__).resolve().parent.parent / "docs" / "specs"
 
 
 def _spec_text(name: str) -> str:
-    return (SPECS_DIR / name).read_text(encoding="utf-8")
+    path = _REPLACEMENT_DOCS.get(name, DOCS_DIR / "specs" / name)
+    return path.read_text(encoding="utf-8")
 
 
 def test_recognition_and_detection_labels_filename_consistent() -> None:
@@ -167,7 +174,7 @@ def test_spec_10_no_stale_pages_json_reference() -> None:
 
     offending = _stale_pages_json_paragraphs(_spec_text("10-publishing.md"))
     assert not offending, (
-        "docs/specs/10-publishing.md has 'pages.json' references in a "
+        "docs/architecture/output-and-publishing.md has 'pages.json' references in a "
         f"paragraph that does not also name {RECOGNITION_LABELS_FILENAME!r}:\n"
         + "\n\n".join(f"  L{ln}:\n{paragraph}" for ln, paragraph in offending)
     )
@@ -185,7 +192,7 @@ def test_spec_08_pages_json_only_in_historical_context() -> None:
 
     offending = _stale_pages_json_paragraphs(_spec_text("08-output-format.md"))
     assert not offending, (
-        "docs/specs/08-output-format.md has 'pages.json' references in a "
+        "docs/architecture/output-and-publishing.md has 'pages.json' references in a "
         f"paragraph that does not also name {RECOGNITION_LABELS_FILENAME!r}:\n"
         + "\n\n".join(f"  L{ln}:\n{paragraph}" for ln, paragraph in offending)
     )
@@ -378,7 +385,7 @@ def test_spec_01_subcommands_match_argparse() -> None:
 
     spec_only = [name for name in spec_names if name not in sub_map]
     assert not spec_only, (
-        "docs/specs/01-cli.md lists subcommands not in build_parser():\n  "
+        "docs/usage/recipe-workflow.md lists subcommands not in build_parser():\n  "
         + ", ".join(spec_only)
         + f"\nargparse has: {sorted(sub_map)}"
     )
@@ -398,7 +405,7 @@ def test_argparse_subcommands_match_spec_01() -> None:
     parser_only = sorted(name for name in sub_map if name not in spec_names)
     assert not parser_only, (
         "build_parser() registers subcommands missing from "
-        "docs/specs/01-cli.md Subcommands table:\n  "
+        "docs/usage/recipe-workflow.md Subcommands table:\n  "
         + ", ".join(parser_only)
         + "\nAdd a row to the table with a one-line purpose."
     )
@@ -427,7 +434,8 @@ def test_spec_01_flag_tables_match_argparse() -> None:
         if spec_only:
             failures.append(f"  {name}: documented flag(s) not in argparse: {spec_only}")
     assert not failures, (
-        "docs/specs/01-cli.md lists flags missing from build_parser():\n" + "\n".join(failures)
+        "docs/usage/recipe-workflow.md lists flags missing from build_parser():\n"
+        + "\n".join(failures)
     )
 
 
@@ -461,7 +469,7 @@ def test_argparse_flags_match_spec_01() -> None:
                 continue
             failures.append(f"  {name} {flag}: in argparse, not in spec 01")
     assert not failures, (
-        "docs/specs/01-cli.md is missing flag entries the parser declares:\n"
+        "docs/usage/recipe-workflow.md is missing flag entries the parser declares:\n"
         + "\n".join(failures)
         + "\nAdd them to the relevant '### `<subcommand>`' table, or "
         "extend _RENDER_FAMILY_FLAGS / _OMIT_FROM_SPEC_CHECK in the "
@@ -516,7 +524,7 @@ def _spec_lint_codes(spec_text: str) -> set[str]:
     return codes
 
 
-def test_spec_01_lint_codes_match_LINT_CODES() -> None:  # noqa: N802
+def test_spec_01_lint_codes_match_LINT_CODES() -> None:  # noqa: N802  # test name mirrors the exported uppercase contract constant
     """The Lint codes table in spec 01 must equal ``LINT_CODES``.
 
     Both directions checked in one assertion:
@@ -594,7 +602,7 @@ def _spec_validation_codes(spec_text: str) -> set[str]:
     return codes
 
 
-def test_spec_01_validation_codes_match_VALIDATION_CODES() -> None:  # noqa: N802
+def test_spec_01_validation_codes_match_VALIDATION_CODES() -> None:  # noqa: N802  # test name mirrors the exported uppercase contract constant
     """The Validation codes table in spec 01 must equal ``VALIDATION_CODES``.
 
     Both directions checked in one assertion:
@@ -719,7 +727,7 @@ _FONT_VALIDATOR_CODES_TODAY: frozenset[str] = frozenset(
 )
 
 
-def test_font_validator_codes_today_are_in_VALIDATION_CODES() -> None:  # noqa: N802
+def test_font_validator_codes_today_are_in_VALIDATION_CODES() -> None:  # noqa: N802  # test name mirrors the exported uppercase contract constant
     """``_FONT_VALIDATOR_CODES_TODAY`` must be a subset of ``VALIDATION_CODES``.
 
     Sanity-check the list this test file uses to identify font-related
@@ -827,7 +835,7 @@ def _spec_audit_fields(spec_text: str) -> set[str]:
     return fields
 
 
-def test_spec_01_audit_schema_matches_AuditEntry() -> None:  # noqa: N802
+def test_spec_01_audit_schema_matches_AuditEntry() -> None:  # noqa: N802  # test name mirrors the exported uppercase contract constant
     """The Audit log schema table in spec 01 must equal ``AuditEntry`` fields.
 
     Both directions checked in one assertion:
@@ -882,7 +890,7 @@ def test_spec_01_audit_schema_version_matches_constant() -> None:
         spec_text[section_start:next_section] if next_section != -1 else spec_text[section_start:]
     )
     assert needle in section, (
-        f"docs/specs/01-cli.md '## Audit log schema' section does not name "
+        f"docs/usage/recipe-workflow.md '## Audit log schema' section does not name "
         f"AUDIT_SCHEMA_VERSION={AUDIT_SCHEMA_VERSION}. Expected substring "
         f"{needle!r}; update the spec to match the constant in audit.py."
     )
@@ -1093,7 +1101,7 @@ def test_corpus_model_types_documented_in_spec_04() -> None:
 #     ``web_list`` — that provider is roadmap-deferred, has no
 #     pydantic model, and the spec lists keys we'll need when it
 #     ships).
-#   - Assert ``provider_keys_in_spec ⊆ model_field_names ∪  # noqa: RUF003
+#   - Assert ``provider_keys_in_spec ⊆ model_field_names ∪  # noqa: RUF003  # mathematical subset notation is intentional in this explanatory comment
 #     ALLOWED_RUNTIME_KEYS``. A key in the spec but missing from both
 #     is real drift — exactly the iter-96 bug class.
 #

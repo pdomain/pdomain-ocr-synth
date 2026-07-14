@@ -1,11 +1,44 @@
 # M09 — Output: detection mode
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Extend synthesis from recognition crops to paragraph and page detection datasets with bbox-aware
+output and trainer compatibility. Core M09 behavior shipped; later publishing and layout ideas
+remain future work.
+
+## Architecture
+
+Layout renderers produce page images and word/paragraph geometry, geometric degradation updates
+boxes, and the detection writer emits trainer-facing `labels.json` data. Publishing stages detection
+data through the current imagefolder path.
+
+## Tech Stack
+
+The implementation uses Python, HarfBuzz/Freetype rendering, Pillow, NumPy, Pydantic models, Hugging
+Face publishing adapters, and detection/integration pytest suites.
+
+## Global Constraints
+
+Preserve deterministic geometry and the `pd-ocr-trainer` contract. Do not treat deferred headings,
+drop caps, extra geometric stages, parquet sharding, or stronger trainer-driver assertions as
+shipped.
+
 **Goal:** layouts beyond word-crops, bbox-aware degradation, and a
 detection-mode writer that emits `pdomain-ocr-training/v1` detection layout
 plus parquet for HF.
 
 Spec: [`06-rendering.md`](../specs/06-rendering.md) +
-[`08-output-format.md`](../specs/08-output-format.md).
+[Output and publishing](../architecture/output-and-publishing.md).
 
 ## Status — substantially complete
 
@@ -163,7 +196,8 @@ contract test), `08a4809` (page_size_px), `ee54805` (indent),
       `datasets.Dataset.from_generator(...).push_to_hub(...)` for a
       ~500 MB shard target is **deferred to Future work** — it needs
       `datasets` as a runtime dependency and a different transport
-      surface than `upload_folder`. See `docs/specs/10-publishing.md`.
+      surface than `upload_folder`. See
+      [Output and publishing](../architecture/output-and-publishing.md).
 - [~] Imagefolder staging emits `labels.json` carrying the spec-08
       `lines` / `words` / `polygons` ground truth plus
       `recipe.snapshot.yaml` (font, degradations, transforms). The

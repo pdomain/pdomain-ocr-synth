@@ -30,7 +30,7 @@ SMALL_SAMPLE_THRESHOLD = 100
 
 
 # Catalog of every issue ``code`` :func:`lint_recipe` can emit. This
-# is the source-of-truth the spec doc (``docs/specs/01-cli.md``) and
+# is the source-of-truth the spec doc (``docs/usage/recipe-workflow.md``) and
 # the meta-test in ``tests/test_spec_docs.py`` both compare against;
 # behavioural tests in ``tests/test_lint.py`` also assert equality
 # with the codes actually produced when each lint trigger fires. Add

@@ -146,7 +146,7 @@ def test_read_remote_card_data_returns_a_copy_not_a_view() -> None:
     transport = FakeTransport()
     transport.seed_repo("alice/x", card_data={"pdomain-ocr-content-sha": "abc"})
     card = transport.read_remote_card_data("alice/x")
-    card["pdomain-ocr-content-sha"] = "tampered"  # type: ignore[index]
+    card["pdomain-ocr-content-sha"] = "tampered"  # pyright: ignore[reportArgumentType]  # test intentionally supplies a value outside the annotated contract
     fresh = transport.read_remote_card_data("alice/x")
     assert fresh["pdomain-ocr-content-sha"] == "abc"
 

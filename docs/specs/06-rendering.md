@@ -1,12 +1,33 @@
 # 06 — Rendering
 
+## Agent Index
+
+- **Kind:** spec
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
 Rendering turns transformed text + a chosen font into a clean (un-degraded)
 image plus per-glyph ground-truth metadata. Degradation runs after, on the
 clean output.
 
+## Current implementation status
+
+HarfBuzz word, line, paragraph, and page rendering ships in
+`src/pdomain_ocr_synth/render/`, with deterministic layout and geometry covered
+by `tests/test_render*.py`. Current glyph runs provide cluster geometry.
+
+Pillow rendering is schema-accepted but rejected by validation. `subpixel` is
+not a recipe field; headings and drop caps remain deferred; page indentation
+uses `paragraph_indent_px`. Semantic ligature, long-s, and swash annotations
+belong to unbuilt M12 and must not be inferred from current glyph runs.
+
 ## Shaping engine
 
-Two engines are supported:
+The design catalog describes two engines, but only HarfBuzz is supported now:
 
 | Engine | Use when |
 |--------|----------|
@@ -191,3 +212,28 @@ earlier draft of spec 08 called this file `pages.json`; the trainer's
   sizes — let DPI variation cover this rather than sweeping hint settings.
 - **Italic fonts at low DPI.** Glyphs touch and confuse the model. Use
   italics sparingly and at higher DPI.
+
+## Adversarial Review
+
+- **Stage and source:** Migration-time post-implementation review of the document, repository
+  history, code, tests, and linked plans. Evidence included 7776904, eaf961b, 861ae8b, ee54805,
+  f7b59e4, 4a6b199.
+- **Accepted findings:** HarfBuzz word, line, paragraph, and page rendering; weighted fonts;
+  deterministic draws; fixed page canvases; and bbox/glyph-run geometry shipped with extensive
+  tests. Pillow rendering, some advertised layout controls, and the semantic glyph-annotation
+  objective remain unbuilt or deliberately changed, so the design is partial.
+- **Effect on this document:** Status: `partial`. Retained for unresolved intent; the original
+  design is not fully shipped truth.
+- **Implementation deviations:** pillow is schema-accepted but validation rejects it; only
+  HarfBuzz rendering ships. subpixel is documented but absent from the recipe model. OpenType
+  feature toggles are modeled on fonts but the promised general feature behavior is not fully
+  established by the renderer/tests. paragraph_indent_em became paragraph_indent_px and is
+  meaningful for pages; paragraph alignment support evolved separately. heading_probability and
+  drop_cap_probability are advertised but deferred. Glyph runs provide cluster geometry today,
+  while M12's semantic ligature/long-s/swash annotations are not started. The prose says the
+  validator should catch tofu, but coverage is intentionally render-time.
+- **Residual risks:** Complete or remove Pillow/antialiasing/subpixel and font-feature promises.
+  Adjudicate page headings/drop caps and deferred font coverage/GSUB reports. Ship M12 semantic
+  glyph annotations without confusing them with existing geometric glyph_runs. Promote the
+  shipped HarfBuzz/layout/bbox invariants to architecture when open rendering intent is
+  separated.

@@ -77,7 +77,7 @@ class StagingError(Exception):
     """Raised for unrecoverable problems building the staging dir.
 
     Distinct exception type so the future CLI can map it to its own
-    exit code (per ``docs/specs/10-publishing.md`` "Errors and
+    exit code (per ``docs/architecture/output-and-publishing.md`` "Errors and
     recovery": local output corrupt / missing maps to exit 6 / 5).
     """
 
@@ -334,7 +334,7 @@ def _build_metadata_row(
 ) -> dict[str, Any]:
     """Build one ``metadata.jsonl`` row.
 
-    Schema lives in ``docs/specs/10-publishing.md`` — flat columns
+    Schema lives in ``docs/architecture/output-and-publishing.md`` — flat columns
     only. Missing provenance keys are simply omitted rather than
     written as ``null``: HF's parquet inference is happier with a
     column that's *absent* on some rows than one that mixes types.

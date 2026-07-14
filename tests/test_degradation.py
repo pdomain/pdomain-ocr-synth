@@ -56,7 +56,7 @@ def _make_sample(
         text="dummy",
         image=img,
         bbox=bbox,
-        font_path=None,  # type: ignore[arg-type]  # not used by pipeline
+        font_path=None,  # pyright: ignore[reportArgumentType]  # not used by pipeline
         font_size_pt=14.0,
         dpi=300,
         ink_color=ink,
@@ -477,7 +477,7 @@ def _make_textured_sample() -> RenderedSample:
         text="alpha beta",
         image=img,
         bbox=bbox,
-        font_path=None,  # type: ignore[arg-type]  # not used by pipeline
+        font_path=None,  # pyright: ignore[reportArgumentType]  # not used by pipeline
         font_size_pt=14.0,
         dpi=300,
         ink_color=ink,
@@ -652,7 +652,7 @@ def _make_paragraph_sample() -> RenderedSample:
         text="alpha beta\ngamma delta",
         image=img,
         bbox=bbox,
-        font_path=None,  # type: ignore[arg-type]  # not used by pipeline
+        font_path=None,  # pyright: ignore[reportArgumentType]  # not used by pipeline
         font_size_pt=14.0,
         dpi=300,
         ink_color=ink,

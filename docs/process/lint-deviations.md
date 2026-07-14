@@ -1,10 +1,20 @@
 # Lint-rule Deviations — pdomain-ocr-synth
 
-Standing lint-rule suppressions and per-file overrides in this repo. Each
-entry records the rule, the tool, the file(s) affected, and the
-justification. **Update this file whenever a new suppression is added** —
-`tests/test_lint_deviations_doc.py` fails if a suppression code or an
-`src/` file with an inline suppression is not mentioned here.
+## Agent Index
+
+- **Kind:** process
+- **Status:** active
+- **Owner:** CT
+- **Created:** 2026-05-22
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained as current intent or process guidance.
+
+Standing lint-rule suppressions and per-file overrides in this repo. Each entry
+records the rule, tool, affected files, and justification. **Update this file
+whenever a suppression changes**: `tests/test_lint_deviations_doc.py` checks
+exact locations, markers, and inline rationales across `src/`, `scripts/`, and
+`tests/`.
 
 Most suppressions trace to the 2026-05-17 strict-linting rollout, which
 expanded `ruff` and switched `basedpyright` to `recommended` mode. The
@@ -209,17 +219,9 @@ records the rationale.
 
 ## 5. Inline `# type: ignore` suppressions
 
-Two `src/` occurrences remain in mypy-code form (the rest are in `tests/`,
-blanket-covered by §2.1):
-
-| File | Code | Justification |
-|------|------|---------------|
-| `corpus/runner.py` | `[arg-type]` | `registry.get(entry.type)` — `entry.type` is a discriminated-union literal that the registry lookup accepts at runtime. |
-| `render/sample.py` | `[no-any-return]` | `self.image.size` returns `Any` from the `pillow` stub; the runtime value is the expected `tuple[int, int]`. |
-
-> **Needs review.** These two should migrate to the tool-native
-> `# pyright: ignore[...]` form (or be fixed) for consistency with §4 —
-> folded into the issue #3 cleanup.
+None remain. The 2026-07-14 migration converted production and test sites to
+the narrow basedpyright-native `# pyright: ignore[reportRuleName]` form. The
+exact occurrence ledger below guards against reintroducing mypy-only codes.
 
 ---
 
@@ -227,6 +229,125 @@ blanket-covered by §2.1):
 
 | File | Code | Justification |
 |------|------|---------------|
-| `cli.py` (×3) | `SIM105` | `try/except: pass` blocks kept explicit for readability; `contextlib.suppress` would obscure intent at these call sites. |
 | `degradation/pipeline.py` | `F401` | Deferred `import builtins` inside `_ensure_builtins_registered()` — the import is for its registration side effect, not a name. |
 | `degradation/pipeline.py` | `PLW0603` | `global _BUILTINS_REGISTERED` — module-level one-time registration guard; the `global` is intrinsic to the idempotency pattern. |
+
+## 7. Exact inline suppression inventory
+
+This migration-time inventory is the exact repository occurrence ledger.
+`tests/test_lint_deviations_doc.py` requires every live occurrence, rule
+marker, and inline safety rationale to appear here.
+
+| Location | Marker | Inline rationale |
+|---|---|---|
+| `tests/test_corpus_cache.py:186` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `scripts/update_github_actions.py:48` | `noqa: S603` | fixed executable and validated argument list; shell execution is disabled |
+| `tests/test_audit.py:265` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
+| `src/pdomain_ocr_synth/recipe/models.py:169` | `pyright: ignore[reportIncompatibleVariableOverride,reportGeneralTypeIssues]` | required field narrows base str \| None |
+| `tests/test_publish_idempotency.py:255` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
+| `tests/test_render_paragraph_box.py:132` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
+| `tests/test_validation.py:2034` | `noqa: N802` | test name mirrors the exported uppercase validation constant |
+| `tests/test_validation.py:2062` | `noqa: N802` | test name mirrors the exported uppercase validation constant |
+| `tests/test_cli_preview.py:556` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_cli_preview.py:623` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_fonts.py:109` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
+| `src/pdomain_ocr_synth/output/detection.py:453` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/output/detection.py:491` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `tests/test_degradation.py:59` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
+| `tests/test_degradation.py:480` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
+| `tests/test_degradation.py:655` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
+| `tests/test_publish_orchestrator.py:486` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
+| `tests/test_publish_transport.py:149` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
+| `tests/test_spec_docs.py:527` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:605` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:730` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:838` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:1104` | `noqa: RUF003` | mathematical subset notation is intentional in this explanatory comment |
+| `tests/test_recipe_loader.py:85` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
+| `tests/test_tokenization.py:134` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
+| `tests/test_tokenization.py:142` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
+| `tests/test_tokenization.py:240` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
+| `src/pdomain_ocr_synth/text_transforms/registry.py:89` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `tests/test_corpus_runner.py:185` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_corpus_runner.py:219` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_cli_render.py:736` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_cli_render.py:773` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `src/pdomain_ocr_synth/render/page.py:167` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/line.py:88` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/line.py:89` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/line.py:92` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/sample.py:116` | `pyright: ignore[reportUnknownVariableType]` | Pillow returns a two-integer size tuple although its stub exposes an unknown type |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:127` | `pyright: ignore[reportArgumentType,reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:128` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:130` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:132` | `pyright: ignore[reportArgumentType,reportReturnType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:133` | `pyright: ignore[reportReturnType]` | runtime value is the concrete member required by the declared return contract |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:147` | `noqa: PLW0603` | module-level one-time registration guard |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:152` | `noqa: F401` | import is required for registration or contract stability, not direct use |
+| `src/pdomain_ocr_synth/degradation/pipeline.py:155` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/preview.py:277` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/preview.py:278` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/preview.py:279` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/preview.py:280` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/preview.py:281` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/degradation/builtins.py:71` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/degradation/builtins.py:72` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/degradation/builtins.py:73` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/degradation/builtins.py:525` | `pyright: ignore[reportReturnType]` | runtime value is the concrete member required by the declared return contract |
+| `src/pdomain_ocr_synth/render/run.py:776` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/run.py:777` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/run.py:778` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/render/run.py:808` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:813` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:814` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:815` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:816` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:817` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:818` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:819` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:820` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:872` | `pyright: ignore[reportArgumentType,reportCallIssue]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/run.py:905` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:906` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:907` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:908` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:909` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:910` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:911` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:912` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:913` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:914` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:915` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:916` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/run.py:919` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:920` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/run.py:923` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/run.py:924` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/context.py:28` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/context.py:29` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/context.py:59` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:83` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/word_crop.py:84` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/word_crop.py:87` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/word_crop.py:165` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:169` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:170` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:172` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:174` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:181` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:191` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/word_crop.py:196` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/corpus/runner.py:70` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/corpus/runner.py:96` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/paragraph.py:138` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/paragraph.py:139` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/paragraph.py:142` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/paragraph.py:144` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/corpus/registry.py:107` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
+| `src/pdomain_ocr_synth/corpus/filters.py:39` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/publish/cli_runner.py:264` | `pyright: ignore[reportAttributeAccessIssue]` | runtime object provides this attribute but its third-party or reconstructed static shape does not |
+| `src/pdomain_ocr_synth/render/sampling.py:61` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/sampling.py:62` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/render/sampling.py:63` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/publish/hf_hub_transport.py:201` | `pyright: ignore[reportCallIssue,reportReturnType,reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/publish/hf_hub_transport.py:202` | `pyright: ignore[reportArgumentType,reportReturnType]` | runtime schema or explicit coercion narrows the broader static union |

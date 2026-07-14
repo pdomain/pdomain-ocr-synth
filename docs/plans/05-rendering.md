@@ -1,5 +1,37 @@
 # M05 — Rendering
 
+## Agent Index
+
+- **Kind:** plan
+- **Status:** partial
+- **Owner:** CT
+- **Created:** 2026-05-05
+- **Last verified:** 2026-07-14
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Disposition:** Retained because shipped behavior and unresolved intent both remain.
+
+## Goal
+
+Render deterministic OCR samples with HarfBuzz across word, line, paragraph, and page layouts.
+Preserve the remaining rendering and semantic-annotation work as open intent.
+
+## Architecture
+
+`src/pdomain_ocr_synth/render/` separates shaping, layout renderers, sample assembly, and geometry.
+Current glyph runs carry cluster geometry; M12 semantic annotations are a separate unbuilt side
+channel.
+
+## Tech Stack
+
+The shipped path uses Python, uharfbuzz, freetype-py, Pillow image objects, NumPy randomness,
+Pydantic recipe models, and `tests/test_render*.py`.
+
+## Global Constraints
+
+Only HarfBuzz rendering is supported now. Preserve deterministic draws and bbox invariants; do not
+rely on the rejected Pillow engine, absent `subpixel` field, deferred headings/drop caps, or
+obsolete `paragraph_indent_em` name.
+
 **Goal:** transformed text turns into a clean image plus per-glyph
 ground truth. Word-crop layout works end-to-end; line/paragraph/page
 layouts may slip to M09.

@@ -86,5 +86,5 @@ def default_registry() -> Registry:
         from pdomain_ocr_synth.text_transforms.builtins import register_builtins
 
         register_builtins(registry)
-        _DEFAULT_REGISTRY = registry  # pyright: ignore[reportConstantRedefinition]
+        _DEFAULT_REGISTRY = registry  # pyright: ignore[reportConstantRedefinition]  # process-local registry or worker state is intentionally installed once
     return _DEFAULT_REGISTRY
