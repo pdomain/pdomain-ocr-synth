@@ -166,25 +166,57 @@ scope), so this does not confirm the token is unavailable — `pdomain-ops`
 did produce real dep-refresh branches and PRs, so the token resolves
 somewhere in this org. Flagged as an open question, not a confirmed defect.
 
+### 7. GitHub Actions is disabled for this repository
+
+```console
+$ gh api repos/pdomain/pdomain-ocr-synth/actions/permissions --jq '.enabled'
+false
+
+$ gh run list --repo pdomain/pdomain-ocr-synth --limit 1 \
+    --json createdAt,workflowName
+2026-07-12  Dependency Graph
+```
+
+Nothing has run here since 2026-07-12, and nothing can. The setting is
+repository-wide, so it stops every workflow, not just this one.
+
+The same is true of four sibling repos, all stopping on the same date:
+`pdomain-ocr-labeler-spa`, `pdomain-ocr-trainer-spa`, `pdomain-ocr-training`,
+and `pdomain-prep-for-pgdp`. The seven repos where Actions remains enabled
+have all continued running weekly through 2026-08-02. A single date across
+five repos points at one deliberate action, not five coincidences.
+
+2026-07-12 is also the date of the `main` to `master` default-branch rename
+and of a batch closure of stale dependency pull requests across several
+repos. Whether the disabling was intentional and temporary, or a side effect
+of that day's work, is not answerable from repository-scoped data.
+
 ## Root-cause hypotheses
 
-1. **(Confirmed) Zero accumulation reflects dormancy, not a healthy
-   workflow.** `total_count: 0` on the workflow's own runs endpoint is
-   decisive: the schedule has not fired and nobody has dispatched it
-   manually across roughly nine weekly windows. This rules out "cleaned up
-   by hand" as an explanation for the empty branch/PR list.
+1. **(Confirmed) The workflow has not run because Actions is disabled for the
+   whole repository**, not because the schedule is misconfigured. Evidence #7
+   settles this: `enabled: false`, and the last run of any workflow was
+   2026-07-12. The cron in `dep-refresh.yml` is correct and identical to the
+   seven repos that still run weekly. Nothing in this repo's workflow files
+   needs changing to restore the schedule.
+
+   This also means the repository has had **no CI of any kind** for nearly a
+   month, which is a larger problem than the one this report was opened for.
+   Every pull request opened here since 2026-07-12 has been merged, or is
+   waiting, without a single check having run.
 2. **(Confirmed, structural) The branch-naming and delete-on-merge design is
    identical in shape to `pdomain-ops` before its fix.** Once real dependency
    diffs start landing PRs, `dep-refresh/<date>-<run-id>` plus
    `delete_branch_on_merge: false` will accumulate branches and PRs the same
    way, because nothing in this repo's configuration differs from the
    pattern that produced seven stray branches there.
-3. **(Unconfirmed) `DEP_REFRESH_TOKEN` may not be provisioned for this
-   repo**, which would make the very first run fail at checkout or push
-   rather than accumulate anything. This would explain continued dormancy
-   under manual dispatch too, but cannot be confirmed without org-admin
-   secret visibility (see Evidence #6). Not needed to explain the *scheduled*
-   dormancy, since a token problem would surface only once a run starts.
+3. **(Unconfirmed, and now secondary) `DEP_REFRESH_TOKEN` may not be
+   provisioned for this repo**, which would make the first run fail at
+   checkout or push. This cannot be confirmed without org-admin secret
+   visibility (see Evidence #6), and it is no longer needed to explain the
+   dormancy, which Evidence #7 accounts for on its own. It stays listed
+   because it would surface the moment Actions is re-enabled, and is worth
+   checking before assuming the restore worked.
 
 ## Defects to fix
 
@@ -227,6 +259,17 @@ land on its own.
   fails visibly at checkout/push rather than silently never starting.
 
 ## Next steps
+
+Step 0 comes first and is not optional. Nothing else in this list can be
+tested until it is done.
+
+0. **Decide whether GitHub Actions should be re-enabled for this repository**
+   (Evidence #7). It has been off since 2026-07-12 along with four siblings,
+   so this is a workspace-level decision, not a per-repo one, and it should be
+   answered for all five together. Until it is answered, this repository has
+   no CI, every merge here is unchecked, and the rest of this report is
+   untestable. If the disabling was deliberate, say so in the resolution and
+   the remaining steps become dormant rather than wrong.
 
 1. Apply the design at
    `pdomain-ui:docs/specs/2026-07-16-dep-refresh-auto-land-design.md`,
