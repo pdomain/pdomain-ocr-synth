@@ -43,3 +43,8 @@ guarded resume, and bbox propagation for geometry-changing degradation.
 Current limitations and demand-driven options are classified in
 [Intent map](intent-map.md); durable changed-direction decisions are in
 [Decisions](decisions.md).
+
+The weekly `dep-refresh` workflow has never executed since it was added
+(2026-05-31), so it carries the same branch-accumulation design that already
+cost peer repos stray branches, unexercised so far — see
+[weekly dep-refresh shares peers' branch-accumulation design](../issues/2026-08-08-dep-refresh-cannot-auto-land.md).
