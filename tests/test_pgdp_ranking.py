@@ -138,6 +138,36 @@ def test_write_report_removes_temporary_file_and_preserves_output_on_replace_fai
     assert sorted(path.name for path in tmp_path.iterdir()) == ["corpus", "report.json"]
 
 
+def test_write_report_groups_cleanup_failure_with_write_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    output = tmp_path / "report.json"
+    output.write_text("previous report\n", encoding="utf-8")
+    original_unlink = Path.unlink
+
+    def _raise_replace(self: Path, target: str | Path) -> Path:
+        raise OSError("replace failed")
+
+    def _raise_temporary_unlink(self: Path, *, missing_ok: bool = False) -> None:
+        if self.parent == tmp_path and self.name.startswith(".report.json."):
+            raise PermissionError("temporary cleanup failed")
+        original_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "replace", _raise_replace)
+    monkeypatch.setattr(Path, "unlink", _raise_temporary_unlink)
+
+    with pytest.raises(ExceptionGroup) as errors:
+        write_report(RankingReport.empty(), output, corpus_root)
+
+    assert [str(error) for error in errors.value.exceptions] == [
+        "replace failed",
+        "temporary cleanup failed",
+    ]
+    assert output.read_text(encoding="utf-8") == "previous report\n"
+
+
 def test_natural_page_key_orders_numeric_runs_by_value_then_width() -> None:
     names = ["p10.png", "p002.png", "p2.png", "P02.png", "p1.png"]
 

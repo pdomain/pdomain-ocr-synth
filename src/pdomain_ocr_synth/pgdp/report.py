@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import tempfile
@@ -44,6 +43,21 @@ def write_report(report: RankingReport, output_path: str | Path, corpus_root: st
             _ = os.fsync(directory_descriptor)
         finally:
             os.close(directory_descriptor)
-    finally:
-        with contextlib.suppress(OSError):
-            temporary_path.unlink(missing_ok=True)
+    except Exception as write_error:
+        try:
+            _remove_temporary_file(temporary_path)
+        except OSError as cleanup_error:
+            raise ExceptionGroup(
+                "Writing the report and removing its temporary file both failed.",
+                [write_error, cleanup_error],
+            ) from None
+        raise
+    else:
+        _remove_temporary_file(temporary_path)
+
+
+def _remove_temporary_file(temporary_path: Path) -> None:
+    try:
+        temporary_path.unlink()
+    except FileNotFoundError:
+        return
