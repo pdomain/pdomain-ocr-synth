@@ -30,8 +30,8 @@ UNCALIBRATED_CONFIDENCE_KIND = "uncalibrated"
 
 TruthClass = Literal["observed", "derived", "pooled"]
 ConfidenceKind = Literal["uncalibrated"]
-Bounds = tuple[int, int, int, int]
-Margins = tuple[int | None, int | None, int | None, int | None]
+Bounds = tuple[int, int, int, int] | list[int]
+Margins = tuple[int | None, int | None, int | None, int | None] | list[int | None]
 
 _JSON_OBJECT_ADAPTER = TypeAdapter(dict[str, JsonValue])
 
@@ -42,6 +42,8 @@ def _require_nonnegative_integer(value: int, *, name: str) -> None:
 
 
 def _require_finite(value: float, *, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be a number.")
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite.")
 
@@ -183,6 +185,8 @@ class Estimate:
             raise ValueError("Estimate evidence_pages contains duplicate pages.")
         if self.sample_count != len(self.evidence_pages):
             raise ValueError("Estimate sample_count must match evidence_pages.")
+        if self.value is not None and self.sample_count == 0:
+            raise ValueError("A numeric estimate requires page evidence.")
         object.__setattr__(self, "extensions", _normalized_extensions(self.extensions))
 
     def to_dict(self) -> dict[str, JsonValue]:
@@ -239,10 +243,10 @@ class PageMeasurement:
     source_frame: CoordinateFrame
     image_mode: str
     grayscale_threshold: int | None
-    foreground_pixels: int
+    foreground_pixels: int | None
     foreground_bounds: Bounds | None
-    margins: Margins
-    ink_bands: tuple[InkBand, ...] = ()
+    margins: Margins | None
+    ink_bands: tuple[InkBand, ...] | None = ()
     derived_estimates: tuple[Estimate, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnostic, ...] = ()
@@ -262,10 +266,11 @@ class PageMeasurement:
             raise ValueError("Image mode must not be empty.")
         if self.grayscale_threshold is not None:
             _require_nonnegative_integer(self.grayscale_threshold, name="grayscale_threshold")
-        _require_nonnegative_integer(self.foreground_pixels, name="foreground_pixels")
+        self._normalize_geometry()
+        if self.foreground_pixels is not None:
+            _require_nonnegative_integer(self.foreground_pixels, name="foreground_pixels")
         self._validate_bounds()
         self._validate_margins()
-        object.__setattr__(self, "ink_bands", tuple(self.ink_bands))
         object.__setattr__(self, "derived_estimates", tuple(self.derived_estimates))
         object.__setattr__(self, "exclusions", tuple(self.exclusions))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
@@ -277,6 +282,43 @@ class PageMeasurement:
         object.__setattr__(
             self, "margin_extensions", _normalized_extensions(self.margin_extensions)
         )
+        self._validate_foreground_coherence()
+        if any(estimate.truth_class != "derived" for estimate in self.derived_estimates):
+            raise ValueError("Page derived_estimates must use the derived truth_class.")
+
+    def _normalize_geometry(self) -> None:
+        if self.foreground_bounds is not None:
+            normalized_bounds = tuple(self.foreground_bounds)
+            if len(normalized_bounds) != 4:
+                raise ValueError("Foreground bounds must contain four coordinates.")
+            object.__setattr__(self, "foreground_bounds", normalized_bounds)
+        if self.margins is not None:
+            normalized_margins = tuple(self.margins)
+            if len(normalized_margins) != 4:
+                raise ValueError("Margins must contain left, top, right, and bottom values.")
+            object.__setattr__(self, "margins", normalized_margins)
+        if self.ink_bands is not None:
+            object.__setattr__(self, "ink_bands", tuple(self.ink_bands))
+
+    def _validate_foreground_coherence(self) -> None:
+        if self.foreground_pixels is None:
+            if (
+                self.foreground_bounds is not None
+                or self.margins is not None
+                or self.ink_bands is not None
+            ):
+                raise ValueError(
+                    "Unavailable foreground measurements must have unavailable geometry."
+                )
+            return
+        if self.foreground_pixels == 0:
+            if self.foreground_bounds is not None or self.margins is not None:
+                raise ValueError("A blank page must not have foreground bounds or margins.")
+            if self.ink_bands not in (None, ()):
+                raise ValueError("A blank page must not have ink bands.")
+            return
+        if self.foreground_bounds is None or self.margins is None or self.ink_bands is None:
+            raise ValueError("Measured foreground pixels require bounds, margins, and ink bands.")
 
     def _validate_bounds(self) -> None:
         if self.foreground_bounds is None:
@@ -295,6 +337,8 @@ class PageMeasurement:
             raise ValueError("Foreground bounds must stay inside the source frame.")
 
     def _validate_margins(self) -> None:
+        if self.margins is None:
+            return
         if len(self.margins) != 4:
             raise ValueError("Margins must contain left, top, right, and bottom values.")
         for margin in self.margins:
@@ -305,21 +349,31 @@ class PageMeasurement:
         foreground_bounds: list[JsonValue] | None = (
             None if self.foreground_bounds is None else list(self.foreground_bounds)
         )
+        margins: dict[str, JsonValue] | None
+        if self.margins is None:
+            margins = None
+        else:
+            margins = _merged_payload(
+                {
+                    "left": self.margins[0],
+                    "top": self.margins[1],
+                    "right": self.margins[2],
+                    "bottom": self.margins[3],
+                },
+                self.margin_extensions,
+            )
+        ink_bands: list[JsonValue] | None = (
+            None
+            if self.ink_bands is None
+            else list[JsonValue](band.to_dict() for band in self.ink_bands)
+        )
         observations = _merged_payload(
             {
                 "grayscale_threshold": self.grayscale_threshold,
                 "foreground_pixels": self.foreground_pixels,
                 "foreground_bounds": foreground_bounds,
-                "margins": _merged_payload(
-                    {
-                        "left": self.margins[0],
-                        "top": self.margins[1],
-                        "right": self.margins[2],
-                        "bottom": self.margins[3],
-                    },
-                    self.margin_extensions,
-                ),
-                "ink_bands": [band.to_dict() for band in self.ink_bands],
+                "margins": margins,
+                "ink_bands": ink_bands,
             },
             self.observation_extensions,
         )
@@ -364,6 +418,8 @@ class ProjectProfile:
         page_names = tuple(page.page_name for page in self.pages)
         if len(set(page_names)) != len(page_names):
             raise ValueError("Project profile contains duplicate page names.")
+        if any(estimate.truth_class != "pooled" for estimate in self.pooled_estimates):
+            raise ValueError("Project pooled_estimates must use the pooled truth_class.")
 
     def to_dict(self) -> dict[str, JsonValue]:
         return _merged_payload(
@@ -491,8 +547,15 @@ class EstimateWire(_WireModel):
     sample_count: StrictInt = Field(ge=0)
     evidence_pages: tuple[str, ...] = ()
     exclusions: tuple[str, ...] = ()
-    confidence: None = None
-    confidence_kind: Literal["uncalibrated"] = UNCALIBRATED_CONFIDENCE_KIND
+    confidence: None
+    confidence_kind: Literal["uncalibrated"]
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def _validate_numeric_value(cls, value: object) -> object:
+        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+            raise ValueError("Estimate value must be a JSON number or null.")
+        return value
 
     def to_domain(self) -> Estimate:
         return Estimate(
@@ -540,10 +603,10 @@ class MarginsWire(_WireModel):
 
 class ObservationsWire(_WireModel):
     grayscale_threshold: StrictInt | None = Field(default=None, ge=0)
-    foreground_pixels: StrictInt = Field(ge=0)
-    foreground_bounds: tuple[StrictInt, StrictInt, StrictInt, StrictInt] | None = None
-    margins: MarginsWire
-    ink_bands: tuple[InkBandWire, ...] = ()
+    foreground_pixels: StrictInt | None = Field(ge=0)
+    foreground_bounds: tuple[StrictInt, StrictInt, StrictInt, StrictInt] | None
+    margins: MarginsWire | None
+    ink_bands: tuple[InkBandWire, ...] | None
 
 
 class PageMeasurementWire(_WireModel):
@@ -557,9 +620,26 @@ class PageMeasurementWire(_WireModel):
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnosticWire, ...] = ()
 
+    @field_validator("derived_estimates")
+    @classmethod
+    def _validate_derived_estimates(
+        cls, estimates: tuple[EstimateWire, ...]
+    ) -> tuple[EstimateWire, ...]:
+        if any(estimate.truth_class != "derived" for estimate in estimates):
+            raise ValueError("Page derived_estimates must use the derived truth_class.")
+        return estimates
+
     def to_domain(self) -> PageMeasurement:
         observations = self.observations
         margins = observations.margins
+        page_margins: tuple[int | None, int | None, int | None, int | None] | None
+        margin_extensions: dict[str, JsonValue]
+        if margins is None:
+            page_margins = None
+            margin_extensions = {}
+        else:
+            page_margins = (margins.left, margins.top, margins.right, margins.bottom)
+            margin_extensions = _wire_extensions(margins)
         return PageMeasurement(
             page_name=self.page_name,
             source_path=self.source_path,
@@ -569,15 +649,19 @@ class PageMeasurementWire(_WireModel):
             grayscale_threshold=observations.grayscale_threshold,
             foreground_pixels=observations.foreground_pixels,
             foreground_bounds=observations.foreground_bounds,
-            margins=(margins.left, margins.top, margins.right, margins.bottom),
-            ink_bands=tuple(band.to_domain() for band in observations.ink_bands),
+            margins=page_margins,
+            ink_bands=(
+                None
+                if observations.ink_bands is None
+                else tuple(band.to_domain() for band in observations.ink_bands)
+            ),
             derived_estimates=tuple(estimate.to_domain() for estimate in self.derived_estimates),
             exclusions=self.exclusions,
             diagnostics=tuple(diagnostic.to_domain() for diagnostic in self.diagnostics),
             extensions=_wire_extensions(self),
             image_extensions=_wire_extensions(self.image),
             observation_extensions=_wire_extensions(observations),
-            margin_extensions=_wire_extensions(margins),
+            margin_extensions=margin_extensions,
         )
 
 
@@ -590,6 +674,15 @@ class ProjectProfileWire(_WireModel):
     pooled_estimates: tuple[EstimateWire, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnosticWire, ...] = ()
+
+    @field_validator("pooled_estimates")
+    @classmethod
+    def _validate_pooled_estimates(
+        cls, estimates: tuple[EstimateWire, ...]
+    ) -> tuple[EstimateWire, ...]:
+        if any(estimate.truth_class != "pooled" for estimate in estimates):
+            raise ValueError("Project pooled_estimates must use the pooled truth_class.")
+        return estimates
 
     def to_domain(self) -> ProjectProfile:
         return ProjectProfile(
@@ -606,23 +699,23 @@ class ProjectProfileWire(_WireModel):
 
 
 class ProfileReportWire(_WireModel):
-    schema_version: StrictInt = SCHEMA_VERSION
-    algorithm_version: str = ALGORITHM_VERSION
+    schema_version: Literal[1]
+    algorithm_version: Literal["pgdp-profile/v1"]
     source_ranking: dict[str, JsonValue]
     methods: dict[str, JsonValue]
     projects: tuple[ProjectProfileWire, ...] = ()
     diagnostics: tuple[ProfileDiagnosticWire, ...] = ()
 
-    @field_validator("schema_version")
+    @field_validator("schema_version", mode="before")
     @classmethod
-    def _validate_schema_version(cls, value: int) -> int:
-        if value != SCHEMA_VERSION:
+    def _validate_schema_version(cls, value: object) -> object:
+        if isinstance(value, bool) or not isinstance(value, int) or value != SCHEMA_VERSION:
             raise ValueError(f"Unsupported schema_version {value!r}.")
         return value
 
     @field_validator("algorithm_version")
     @classmethod
-    def _validate_algorithm_version(cls, value: str) -> str:
+    def _validate_algorithm_version(cls, value: Literal["pgdp-profile/v1"]) -> str:
         if value != ALGORITHM_VERSION:
             raise ValueError(f"Unsupported algorithm_version {value!r}.")
         return value

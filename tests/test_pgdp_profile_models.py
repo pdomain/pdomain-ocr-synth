@@ -91,9 +91,109 @@ def test_profile_report_serializes_deterministically_with_normalized_tuples() ->
 
 
 def test_absent_bounds_do_not_become_zero() -> None:
-    page = _page(foreground_bounds=None)
+    page = PageMeasurement(
+        page_name="missing.png",
+        source_path="projectID1/missing.png",
+        sha256="0" * 64,
+        source_frame=CoordinateFrame(width=100, height=200),
+        image_mode="L",
+        grayscale_threshold=None,
+        foreground_pixels=None,
+        foreground_bounds=None,
+        margins=None,
+        ink_bands=None,
+    )
 
     assert page.to_dict()["observations"]["foreground_bounds"] is None
+
+
+def test_unavailable_foreground_measurements_remain_null() -> None:
+    page = PageMeasurement(
+        page_name="002.png",
+        source_path="projectID1/002.png",
+        sha256="b" * 64,
+        source_frame=CoordinateFrame(width=100, height=200),
+        image_mode="L",
+        grayscale_threshold=None,
+        foreground_pixels=None,
+        foreground_bounds=None,
+        margins=None,
+        ink_bands=None,
+    )
+
+    observations = page.to_dict()["observations"]
+
+    assert observations["foreground_pixels"] is None
+    assert observations["foreground_bounds"] is None
+    assert observations["margins"] is None
+    assert observations["ink_bands"] is None
+
+
+def test_verified_blank_page_keeps_zero_distinct_from_unavailable_measurements() -> None:
+    page = PageMeasurement(
+        page_name="003.png",
+        source_path="projectID1/003.png",
+        sha256="c" * 64,
+        source_frame=CoordinateFrame(width=100, height=200),
+        image_mode="L",
+        grayscale_threshold=127,
+        foreground_pixels=0,
+        foreground_bounds=None,
+        margins=None,
+        ink_bands=(),
+    )
+
+    assert page.to_dict()["observations"]["foreground_pixels"] == 0
+
+
+def test_page_measurement_normalizes_geometry_tuples_before_input_mutation() -> None:
+    bounds = [10, 20, 90, 180]
+    margins = [10, 20, 10, 20]
+    page = PageMeasurement(
+        page_name="004.png",
+        source_path="projectID1/004.png",
+        sha256="d" * 64,
+        source_frame=CoordinateFrame(width=100, height=200),
+        image_mode="L",
+        grayscale_threshold=127,
+        foreground_pixels=1000,
+        foreground_bounds=bounds,
+        margins=margins,
+    )
+    bounds[0] = 0
+    margins[0] = 0
+
+    assert page.foreground_bounds == (10, 20, 90, 180)
+    assert page.margins == (10, 20, 10, 20)
+
+
+@pytest.mark.parametrize(
+    ("foreground_pixels", "foreground_bounds", "margins", "ink_bands"),
+    [
+        (None, (10, 20, 90, 180), None, None),
+        (None, None, (10, 20, 10, 20), None),
+        (None, None, None, (InkBand(y_start=20, y_end=40),)),
+    ],
+)
+def test_unavailable_foreground_measurements_reject_partial_geometry(
+    foreground_pixels: int | None,
+    foreground_bounds: tuple[int, int, int, int] | None,
+    margins: tuple[int, int, int, int] | None,
+    ink_bands: tuple[InkBand, ...] | None,
+) -> None:
+    with pytest.raises(ValueError, match="unavailable"):
+        _ = PageMeasurement(
+            page_name="005.png",
+            source_path="projectID1/005.png",
+            sha256="e" * 64,
+            source_frame=CoordinateFrame(width=100, height=200),
+            image_mode="L",
+            grayscale_threshold=None,
+            foreground_pixels=foreground_pixels,
+            foreground_bounds=foreground_bounds,
+            margins=margins,
+            ink_bands=ink_bands,
+        )
 
 
 @pytest.mark.parametrize(
@@ -144,6 +244,19 @@ def test_profile_records_reject_invalid_values(factory: object, message: str) ->
 
     with pytest.raises(ValueError, match=message):
         _ = factory()
+
+
+def test_profile_records_reject_boolean_estimate_values() -> None:
+    with pytest.raises(TypeError, match="number"):
+        _ = Estimate(
+            name="x",
+            value=True,
+            unit="px",
+            truth_class="observed",
+            method="method",
+            sample_count=1,
+            evidence_pages=("001",),
+        )
 
 
 def test_profile_report_round_trips_through_typed_wire_json() -> None:
@@ -229,6 +342,94 @@ def test_profile_extensions_are_deeply_immutable() -> None:
     nested["value"][1]["two"] = 3
 
     assert report.to_dict()["source_ranking"] == {"details": {"value": [1, {"two": 2}]}}
+
+
+def test_numeric_estimates_require_page_evidence() -> None:
+    with pytest.raises(ValueError, match="numeric"):
+        _ = Estimate(
+            name="margin",
+            value=10.0,
+            unit="px",
+            truth_class="observed",
+            method="method",
+            sample_count=0,
+        )
+
+
+def test_page_measurement_rejects_non_derived_estimates() -> None:
+    estimate = Estimate(
+        name="ink",
+        value=10.0,
+        unit="px",
+        truth_class="observed",
+        method="method",
+        sample_count=1,
+        evidence_pages=("006.png",),
+    )
+
+    with pytest.raises(ValueError, match="derived_estimates"):
+        _ = PageMeasurement(
+            page_name="006.png",
+            source_path="projectID1/006.png",
+            sha256="f" * 64,
+            source_frame=CoordinateFrame(width=100, height=200),
+            image_mode="L",
+            grayscale_threshold=127,
+            foreground_pixels=0,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=(),
+            derived_estimates=(estimate,),
+        )
+
+
+def test_project_profile_rejects_non_pooled_estimates() -> None:
+    estimate = Estimate(
+        name="margin",
+        value=10.0,
+        unit="px",
+        truth_class="derived",
+        method="method",
+        sample_count=1,
+        evidence_pages=("001.png",),
+    )
+
+    with pytest.raises(ValueError, match="pooled_estimates"):
+        _ = ProjectProfile(
+            project_id="projectID1",
+            title=None,
+            author=None,
+            genre=None,
+            pooled_estimates=(estimate,),
+        )
+
+
+@pytest.mark.parametrize("value", ["1.0", True])
+def test_profile_wire_rejects_non_numeric_estimate_values(value: object) -> None:
+    payload = _report().to_dict()
+    payload["projects"][0]["pages"][0]["derived_estimates"][0]["value"] = value
+
+    with pytest.raises(ValueError, match="value"):
+        _ = ProfileReport.from_dict(payload)
+
+
+@pytest.mark.parametrize("field", ["confidence", "confidence_kind"])
+def test_profile_wire_requires_v1_confidence_fields(field: str) -> None:
+    payload = _report().to_dict()
+    estimate = payload["projects"][0]["pages"][0]["derived_estimates"][0]
+    _ = estimate.pop(field)
+
+    with pytest.raises(ValueError, match=field):
+        _ = ProfileReport.from_dict(payload)
+
+
+@pytest.mark.parametrize("field", ["schema_version", "algorithm_version"])
+def test_profile_wire_rejects_unversioned_reports(field: str) -> None:
+    payload = _report().to_dict()
+    _ = payload.pop(field)
+
+    with pytest.raises(ValueError, match=field):
+        _ = ProfileReport.from_dict(payload)
 
 
 @pytest.mark.parametrize(

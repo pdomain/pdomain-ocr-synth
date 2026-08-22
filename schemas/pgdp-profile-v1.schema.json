@@ -94,13 +94,11 @@
           "type": "array"
         },
         "confidence": {
-          "default": null,
           "title": "Confidence",
           "type": "null"
         },
         "confidence_kind": {
           "const": "uncalibrated",
-          "default": "uncalibrated",
           "title": "Confidence Kind",
           "type": "string"
         }
@@ -110,7 +108,9 @@
         "unit",
         "truth_class",
         "method",
-        "sample_count"
+        "sample_count",
+        "confidence",
+        "confidence_kind"
       ],
       "title": "EstimateWire",
       "type": "object"
@@ -228,9 +228,16 @@
           "title": "Grayscale Threshold"
         },
         "foreground_pixels": {
-          "minimum": 0,
-          "title": "Foreground Pixels",
-          "type": "integer"
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Foreground Pixels"
         },
         "foreground_bounds": {
           "anyOf": [
@@ -257,24 +264,38 @@
               "type": "null"
             }
           ],
-          "default": null,
           "title": "Foreground Bounds"
         },
         "margins": {
-          "$ref": "#/$defs/MarginsWire"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarginsWire"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "ink_bands": {
-          "default": [],
-          "items": {
-            "$ref": "#/$defs/InkBandWire"
-          },
-          "title": "Ink Bands",
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/InkBandWire"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ink Bands"
         }
       },
       "required": [
         "foreground_pixels",
-        "margins"
+        "foreground_bounds",
+        "margins",
+        "ink_bands"
       ],
       "title": "ObservationsWire",
       "type": "object"
@@ -472,12 +493,12 @@
   "additionalProperties": true,
   "properties": {
     "schema_version": {
-      "default": 1,
+      "const": 1,
       "title": "Schema Version",
       "type": "integer"
     },
     "algorithm_version": {
-      "default": "pgdp-profile/v1",
+      "const": "pgdp-profile/v1",
       "title": "Algorithm Version",
       "type": "string"
     },
@@ -513,6 +534,8 @@
     }
   },
   "required": [
+    "schema_version",
+    "algorithm_version",
     "source_ranking",
     "methods"
   ],
