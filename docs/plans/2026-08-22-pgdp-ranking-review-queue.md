@@ -7,13 +7,13 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-22
 - **Last verified:** 2026-08-22
 - **Provenance:** derived from the approved PGDP typography and page-structure design and current
   repository evidence
-- **Disposition:** Active implementation plan for M14's first runnable slice.
+- **Disposition:** M14's first runnable ranking and review-queue slice shipped.
 - **Read when:** implementing or reviewing PGDP corpus ranking and multimodal review queues.
 - **Search terms:** PGDP ranking, F2 parser, review queue, typography coverage, structure coverage.
 
@@ -560,8 +560,8 @@ uv run pdomain-ocr-synth rank-pgdp /workspaces/pdomain-data/pgdp-corpus \
   --pages-per-project 12
 ```
 
-Expected: exit 0, 285 projects seen, a nonempty ranked-project list, and a bounded review queue.
-Inspect the top five projects and twelve selected pages for the top project.
+Expected: exit 0, 286 projects seen, 285 projects ranked, and a bounded review queue. Inspect the
+top five projects and twelve selected pages for the top project.
 
 - [x] **Step 3: Prove byte determinism**
 
