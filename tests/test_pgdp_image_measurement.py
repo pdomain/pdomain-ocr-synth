@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageDraw
 
+from pdomain_ocr_synth.pgdp import image_measurement
 from pdomain_ocr_synth.pgdp.image_measurement import measure_image
 
 
@@ -106,6 +107,22 @@ def test_two_rectangles_report_half_open_tight_source_bounds(tmp_path: Path) -> 
     assert result.foreground_pixels == 136
     assert result.foreground_bounds == (5, 4, 35, 26)
     assert result.margins == (5, 4, 5, 4)
+
+
+def test_bounds_avoid_full_page_coordinate_index_arrays(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    image_path = tmp_path / "dense.png"
+    Image.new("L", (20, 10), color=0).save(image_path)
+
+    def fail_nonzero(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Foreground bounds must not materialize pixel coordinate arrays.")
+
+    monkeypatch.setattr(image_measurement.np, "nonzero", fail_nonzero)
+
+    result = measure_image(image_path)
+
+    assert result.foreground_bounds == (0, 0, 20, 10)
 
 
 def test_exif_orientation_is_metadata_and_does_not_rotate_source_coordinates(

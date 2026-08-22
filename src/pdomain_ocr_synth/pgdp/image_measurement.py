@@ -125,14 +125,15 @@ def _otsu_threshold(histogram: tuple[int, ...]) -> int:
 def _foreground_bounds(
     foreground: np.ndarray[tuple[int, int], np.dtype[np.bool]],
 ) -> tuple[int, int, int, int] | None:
-    rows, columns = np.nonzero(foreground)
-    if rows.size == 0:
+    active_rows = foreground.any(axis=1)
+    if not bool(active_rows.any()):
         return None
+    active_columns = foreground.any(axis=0)
     return (
-        int(columns.min()),
-        int(rows.min()),
-        int(columns.max()) + 1,
-        int(rows.max()) + 1,
+        int(active_columns.argmax()),
+        int(active_rows.argmax()),
+        int(active_columns.size - active_columns[::-1].argmax()),
+        int(active_rows.size - active_rows[::-1].argmax()),
     )
 
 
