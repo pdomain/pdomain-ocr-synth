@@ -26,3 +26,9 @@ def test_natural_page_key_orders_numeric_runs_by_value_then_width() -> None:
         "p002.png",
         "p10.png",
     ]
+
+
+def test_natural_page_key_uses_original_name_after_casefolded_parts() -> None:
+    names = ["p02.png", "P02.png"]
+
+    assert sorted(names, key=natural_page_key) == ["P02.png", "p02.png"]
