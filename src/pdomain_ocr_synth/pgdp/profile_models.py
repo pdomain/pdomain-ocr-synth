@@ -315,15 +315,21 @@ class PageMeasurement:
 
     def _validate_image_metadata(self) -> None:
         metadata = (self.sha256, self.source_frame, self.image_mode)
-        has_available_metadata = all(value is not None for value in metadata)
+        has_decoded_metadata = all(value is not None for value in metadata)
+        has_byte_hash_only = (
+            self.sha256 is not None and self.source_frame is None and self.image_mode is None
+        )
         has_unavailable_metadata = all(value is None for value in metadata)
-        if not has_available_metadata and not has_unavailable_metadata:
-            raise ValueError("Image metadata must be all available or all unavailable.")
-        if has_available_metadata:
-            if self.sha256 is None or self.image_mode is None:
+        if not (has_decoded_metadata or has_byte_hash_only or has_unavailable_metadata):
+            raise ValueError(
+                "Image metadata must be decoded, original-byte hash only, or unavailable."
+            )
+        if has_decoded_metadata or has_byte_hash_only:
+            if self.sha256 is None:
                 raise ValueError("Measured image metadata must be complete.")
             _require_sha256(self.sha256)
-            if not self.image_mode:
+        if has_decoded_metadata:
+            if self.image_mode is None or not self.image_mode:
                 raise ValueError("Image mode must not be empty.")
         elif self.image_extensions:
             raise ValueError("Unavailable image metadata cannot have image extensions.")
@@ -331,13 +337,12 @@ class PageMeasurement:
     def _validate_foreground_coherence(self) -> None:
         if self.foreground_pixels is None:
             if (
-                self.sha256 is not None
-                or self.source_frame is not None
+                self.source_frame is not None
                 or self.image_mode is not None
                 or self.grayscale_threshold is not None
             ):
                 raise ValueError(
-                    "Unavailable foreground measurements must have unavailable image metadata."
+                    "Unavailable foreground measurements must not have decoded image metadata."
                 )
             if (
                 self.foreground_bounds is not None
@@ -730,6 +735,31 @@ class PageMeasurementWire(_WireModel):
                     },
                 },
                 {
+                    "title": "Readable undecodable image",
+                    "properties": {
+                        "sha256": {"type": "string"},
+                        "source_frame": {"type": "null"},
+                        "image": {"type": "null"},
+                        "derived_estimates": {"type": "array", "maxItems": 0},
+                        "observations": {
+                            "properties": {
+                                "grayscale_threshold": {"type": "null"},
+                                "foreground_pixels": {"type": "null"},
+                                "foreground_bounds": {"type": "null"},
+                                "margins": {"type": "null"},
+                                "ink_bands": {"type": "null"},
+                            },
+                            "required": [
+                                "grayscale_threshold",
+                                "foreground_pixels",
+                                "foreground_bounds",
+                                "margins",
+                                "ink_bands",
+                            ],
+                        },
+                    },
+                },
+                {
                     "title": "Blank measured image",
                     "properties": {
                         "sha256": {"type": "string"},
@@ -804,15 +834,20 @@ class PageMeasurementWire(_WireModel):
     @model_validator(mode="after")
     def _validate_page_coherence(self) -> Self:
         metadata = (self.sha256, self.source_frame, self.image)
-        has_available_metadata = all(value is not None for value in metadata)
+        has_decoded_metadata = all(value is not None for value in metadata)
+        has_byte_hash_only = (
+            self.sha256 is not None and self.source_frame is None and self.image is None
+        )
         has_unavailable_metadata = all(value is None for value in metadata)
-        if not has_available_metadata and not has_unavailable_metadata:
-            raise ValueError("Image metadata must be all available or all unavailable.")
+        if not (has_decoded_metadata or has_byte_hash_only or has_unavailable_metadata):
+            raise ValueError(
+                "Image metadata must be decoded, original-byte hash only, or unavailable."
+            )
         observations = self.observations
         if observations.foreground_pixels is None:
-            if not has_unavailable_metadata:
+            if has_decoded_metadata:
                 raise ValueError(
-                    "Unavailable foreground measurements require unavailable image metadata."
+                    "Unavailable foreground measurements must not have decoded image metadata."
                 )
             if (
                 observations.grayscale_threshold is not None
@@ -828,7 +863,7 @@ class PageMeasurementWire(_WireModel):
                     "Unavailable foreground measurements must not have derived estimates."
                 )
             return self
-        if not has_available_metadata:
+        if not has_decoded_metadata:
             raise ValueError("Measured foreground measurements require image metadata.")
         self.to_domain()
         return self

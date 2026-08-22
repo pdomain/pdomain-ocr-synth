@@ -354,6 +354,50 @@
               "type": "string"
             },
             "source_frame": {
+              "type": "null"
+            },
+            "image": {
+              "type": "null"
+            },
+            "derived_estimates": {
+              "maxItems": 0,
+              "type": "array"
+            },
+            "observations": {
+              "properties": {
+                "grayscale_threshold": {
+                  "type": "null"
+                },
+                "foreground_pixels": {
+                  "type": "null"
+                },
+                "foreground_bounds": {
+                  "type": "null"
+                },
+                "margins": {
+                  "type": "null"
+                },
+                "ink_bands": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "grayscale_threshold",
+                "foreground_pixels",
+                "foreground_bounds",
+                "margins",
+                "ink_bands"
+              ]
+            }
+          },
+          "title": "Readable undecodable image"
+        },
+        {
+          "properties": {
+            "sha256": {
+              "type": "string"
+            },
+            "source_frame": {
               "type": "object"
             },
             "image": {

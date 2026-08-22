@@ -9,7 +9,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from pdomain_ocr_synth.pgdp import image_measurement
-from pdomain_ocr_synth.pgdp.image_measurement import measure_image
+from pdomain_ocr_synth.pgdp.image_measurement import measure_image, sha256_file
 
 
 def test_blank_white_image_has_no_foreground_geometry(tmp_path: Path) -> None:
@@ -187,6 +187,7 @@ def test_grayscale_image_hashes_original_bytes_and_uses_otsu_threshold(tmp_path:
     result = measure_image(image_path)
 
     assert result.sha256 == sha256(image_path.read_bytes()).hexdigest()
+    assert sha256_file(image_path) == result.sha256
     assert result.grayscale_threshold == 0
     assert result.foreground_pixels == 4
     assert result.foreground_bounds == (2, 1, 4, 3)

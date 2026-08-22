@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -57,7 +58,11 @@ def test_profile_selection_keeps_page_order_and_unavailable_page_records(tmp_pat
                         image_path=corrupt_path,
                         source_path="projectID1/p3.png",
                     ),
-                    ProfileInputPage(name="p4.png", image_path=None, source_path=None),
+                    ProfileInputPage(
+                        name="p4.png",
+                        image_path=tmp_path / "missing.png",
+                        source_path="projectID1/p4.png",
+                    ),
                 ),
             ),
         )
@@ -82,10 +87,14 @@ def test_profile_selection_keeps_page_order_and_unavailable_page_records(tmp_pat
     assert tuple(diagnostic.code for diagnostic in project.pages[2].diagnostics) == (
         "image_measurement_failed",
     )
+    assert project.pages[2].sha256 == sha256(corrupt_path.read_bytes()).hexdigest()
+    assert project.pages[2].source_frame is None
+    assert project.pages[2].image_mode is None
     assert project.pages[3].foreground_pixels is None
     assert tuple(diagnostic.code for diagnostic in project.pages[3].diagnostics) == (
         "image_missing",
     )
+    assert project.pages[3].sha256 is None
     assert project.pages[3].source_path == "projectID1/p4.png"
 
 

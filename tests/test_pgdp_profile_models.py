@@ -134,12 +134,34 @@ def test_unavailable_foreground_measurements_remain_null() -> None:
     assert observations["ink_bands"] is None
 
 
+def test_undecodable_but_readable_page_keeps_its_original_byte_sha256() -> None:
+    page = PageMeasurement(
+        page_name="corrupt.png",
+        source_path="projectID1/corrupt.png",
+        sha256="a" * 64,
+        source_frame=None,
+        image_mode=None,
+        grayscale_threshold=None,
+        foreground_pixels=None,
+        foreground_bounds=None,
+        margins=None,
+        ink_bands=None,
+    )
+
+    payload = page.to_dict()
+
+    assert payload["sha256"] == "a" * 64
+    assert payload["source_frame"] is None
+    assert payload["image"] is None
+
+
 @pytest.mark.parametrize(
     ("sha256", "source_frame", "image_mode"),
     [
-        ("a" * 64, None, None),
         (None, CoordinateFrame(width=100, height=200), None),
         (None, None, "L"),
+        ("a" * 64, CoordinateFrame(width=100, height=200), None),
+        ("a" * 64, None, "L"),
     ],
 )
 def test_unavailable_foreground_measurements_reject_partial_image_metadata(
@@ -742,9 +764,30 @@ def test_profile_wire_rejects_unavailable_page_with_derived_estimates() -> None:
         _ = ProfileReportWire.model_validate(payload)
 
 
+def test_profile_wire_accepts_undecodable_page_with_an_original_byte_sha256() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["source_frame"] = None
+    page["image"] = None
+    page["observations"] = {
+        "grayscale_threshold": None,
+        "foreground_pixels": None,
+        "foreground_bounds": None,
+        "margins": None,
+        "ink_bands": None,
+    }
+    page["derived_estimates"] = []
+
+    parsed = ProfileReportWire.model_validate(payload).to_domain()
+
+    assert parsed.projects[0].pages[0].sha256 == "a" * 64
+
+
 def test_profile_schema_declares_mutually_exclusive_page_availability_states() -> None:
     payload = json.loads(SCHEMA_ARTIFACT.read_text(encoding="utf-8"))
     page_schema = payload["$defs"]["PageMeasurementWire"]
 
-    assert len(page_schema["oneOf"]) == 3
+    assert len(page_schema["oneOf"]) == 4
     assert page_schema["oneOf"][0]["properties"]["derived_estimates"]["maxItems"] == 0
+    assert page_schema["oneOf"][1]["properties"]["sha256"]["type"] == "string"
+    assert page_schema["oneOf"][1]["properties"]["source_frame"]["type"] == "null"

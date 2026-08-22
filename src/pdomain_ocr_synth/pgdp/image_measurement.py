@@ -76,11 +76,11 @@ class ImageMeasurement:
     diagnostics: tuple[ImageMeasurementDiagnostic, ...]
 
 
-def measure_image(image_path: str | Path) -> ImageMeasurement:
+def measure_image(image_path: str | Path, *, sha256: str | None = None) -> ImageMeasurement:
     """Measure one stored raster without applying its EXIF orientation."""
 
     path = Path(image_path)
-    file_sha256 = _sha256_file(path)
+    file_sha256 = sha256_file(path) if sha256 is None else sha256
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
@@ -123,7 +123,10 @@ def measure_image(image_path: str | Path) -> ImageMeasurement:
     )
 
 
-def _sha256_file(path: Path) -> str:
+def sha256_file(image_path: str | Path) -> str:
+    """Return the SHA-256 digest of a file's original stored bytes."""
+
+    path = Path(image_path)
     digest = hashlib.sha256()
     with path.open("rb") as source_file:
         while chunk := source_file.read(_HASH_CHUNK_SIZE):

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from statistics import median
 from typing import TYPE_CHECKING, Literal
 
-from pdomain_ocr_synth.pgdp.image_measurement import measure_image
+from pdomain_ocr_synth.pgdp.image_measurement import measure_image, sha256_file
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.profile_models import (
     Estimate,
@@ -97,11 +97,20 @@ def profile_page(project_id: str, page: ProfileInputPage) -> PageMeasurement:
     if page.image_path is None:
         return _unavailable_page(project_id, page, diagnostic_code="image_missing")
     try:
-        measured = measure_image(page.image_path)
+        file_sha256 = sha256_file(page.image_path)
     except FileNotFoundError:
         return _unavailable_page(project_id, page, diagnostic_code="image_missing")
     except (OSError, ValueError):
         return _unavailable_page(project_id, page, diagnostic_code="image_measurement_failed")
+    try:
+        measured = measure_image(page.image_path, sha256=file_sha256)
+    except (OSError, ValueError):
+        return _unavailable_page(
+            project_id,
+            page,
+            diagnostic_code="image_measurement_failed",
+            sha256=file_sha256,
+        )
     return _measured_page(project_id, page, measured)
 
 
@@ -210,12 +219,16 @@ def _image_extensions(measured: ImageMeasurement) -> dict[str, int]:
 
 
 def _unavailable_page(
-    project_id: str, page: ProfileInputPage, *, diagnostic_code: str
+    project_id: str,
+    page: ProfileInputPage,
+    *,
+    diagnostic_code: str,
+    sha256: str | None = None,
 ) -> PageMeasurement:
     return PageMeasurement(
         page_name=page.name,
         source_path=_source_path(project_id, page),
-        sha256=None,
+        sha256=sha256,
         source_frame=None,
         image_mode=None,
         grayscale_threshold=None,
