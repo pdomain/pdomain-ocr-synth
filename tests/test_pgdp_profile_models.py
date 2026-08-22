@@ -293,6 +293,24 @@ def test_profile_wire_requires_an_eight_bit_grayscale_threshold(threshold: int) 
         _ = ProfileReportWire.model_validate(payload)
 
 
+def test_profile_wire_requires_a_grayscale_threshold_field_when_it_is_null() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["sha256"] = None
+    page["source_frame"] = None
+    page["image"] = None
+    page["observations"] = {
+        "foreground_pixels": None,
+        "foreground_bounds": None,
+        "margins": None,
+        "ink_bands": None,
+    }
+    page["derived_estimates"] = []
+
+    with pytest.raises(ValueError, match="grayscale_threshold"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
 @pytest.mark.parametrize("sha256", ["a" * 63, "g" * 64, "a" * 64 + "\n"])
 def test_profile_wire_requires_a_64_character_hex_sha256(sha256: str) -> None:
     payload = _report().to_dict()

@@ -690,7 +690,7 @@ class MarginsWire(_WireModel):
 
 
 class ObservationsWire(_WireModel):
-    grayscale_threshold: StrictInt | None = Field(default=None, ge=0, le=255)
+    grayscale_threshold: StrictInt | None = Field(..., ge=0, le=255)
     foreground_pixels: StrictInt | None = Field(ge=0)
     foreground_bounds: tuple[StrictInt, StrictInt, StrictInt, StrictInt] | None
     margins: MarginsWire | None

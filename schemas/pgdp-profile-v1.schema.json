@@ -225,7 +225,6 @@
               "type": "null"
             }
           ],
-          "default": null,
           "title": "Grayscale Threshold"
         },
         "foreground_pixels": {
@@ -293,6 +292,7 @@
         }
       },
       "required": [
+        "grayscale_threshold",
         "foreground_pixels",
         "foreground_bounds",
         "margins",
