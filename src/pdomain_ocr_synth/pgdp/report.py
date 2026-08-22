@@ -4,14 +4,17 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pdomain_ocr_synth.pgdp.models import RankingReport
+from typing import Protocol
 
 
-def write_report(report: RankingReport, output_path: str | Path, corpus_root: str | Path) -> None:
-    """Write a deterministic ranking report without modifying the corpus."""
+class _JsonReport(Protocol):
+    """A report that supplies a JSON-safe deterministic payload."""
+
+    def to_dict(self) -> object: ...
+
+
+def write_report(report: _JsonReport, output_path: str | Path, corpus_root: str | Path) -> None:
+    """Write a deterministic report without modifying the corpus."""
 
     output = Path(output_path).resolve()
     root = Path(corpus_root).resolve()

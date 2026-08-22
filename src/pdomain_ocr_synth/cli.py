@@ -13,6 +13,7 @@ Subcommands wired to date:
 - M10: ``audit`` (read back the per-render JSONL log written by
   ``render``; see ``docs/roadmap/10-stretch.md``).
 - M14: ``rank-pgdp`` (rank a local PGDP corpus and write a review report).
+- M15: ``profile-pgdp`` (measure selected local PGDP scans).
 """
 
 from __future__ import annotations
@@ -308,6 +309,22 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=12,
         help="maximum selected review pages per project (default: 12)",
+    )
+
+    p_profile_pgdp = subparsers.add_parser(
+        "profile-pgdp",
+        help="measure selected local PGDP scan geometry",
+    )
+    _ = p_profile_pgdp.add_argument("corpus_root", help="local PGDP corpus root directory")
+    _ = p_profile_pgdp.add_argument(
+        "--ranking",
+        required=True,
+        help="M14 ranking report JSON path",
+    )
+    _ = p_profile_pgdp.add_argument(
+        "--output",
+        required=True,
+        help="write the source-geometry profile JSON here",
     )
 
     return parser
@@ -1547,6 +1564,68 @@ def _cmd_rank_pgdp(
     return 0
 
 
+def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
+    """Measure selected local PGDP scans and write a geometry profile."""
+
+    from pdomain_ocr_synth.pgdp.image_measurement import sha256_file
+    from pdomain_ocr_synth.pgdp.profile_input import load_profile_input
+    from pdomain_ocr_synth.pgdp.profile_models import ProfileReport
+    from pdomain_ocr_synth.pgdp.profiling import profile_methods, profile_selection
+    from pdomain_ocr_synth.pgdp.report import write_report
+
+    root = Path(corpus_root).expanduser()
+    if not root.exists():
+        print(f"error: corpus root does not exist: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if not root.is_dir():
+        print(f"error: corpus root is not a directory: {root}", file=sys.stderr)
+        return USAGE_EXIT
+
+    ranking_path = Path(ranking).expanduser()
+    output_path = Path(output).expanduser()
+    if output_path.resolve().is_relative_to(root.resolve()):
+        print("error: profile output must be outside the corpus root", file=sys.stderr)
+        return DESTINATION_EXIT
+    if output_path.resolve() == ranking_path.resolve():
+        print("error: profile output must differ from the ranking input", file=sys.stderr)
+        return DESTINATION_EXIT
+    if output_path.exists() and not output_path.is_file():
+        print(f"error: profile output is not a file: {output_path}", file=sys.stderr)
+        return DESTINATION_EXIT
+
+    try:
+        selection = load_profile_input(ranking_path, corpus_root=root)
+        ranking_sha256 = sha256_file(ranking_path)
+    except (OSError, ValueError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return USAGE_EXIT
+
+    projects = profile_selection(selection)
+    report = ProfileReport(
+        source_ranking={"algorithm_version": "pgdp-rank/v1", "sha256": ranking_sha256},
+        methods=profile_methods(),
+        projects=projects,
+    )
+    try:
+        write_report(report, output_path, root)
+    except (OSError, ValueError, ExceptionGroup) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return DESTINATION_EXIT
+
+    pages = tuple(page for project in report.projects for page in project.pages)
+    measured_pages = sum(page.foreground_pixels is not None for page in pages)
+    diagnostics = len(report.diagnostics) + sum(
+        len(project.diagnostics) + sum(len(page.diagnostics) for page in project.pages)
+        for project in report.projects
+    )
+    print(f"report: {output_path}")
+    print(f"projects profiled: {len(report.projects)}")
+    print(f"pages measured: {measured_pages}")
+    print(f"pages excluded: {len(pages) - measured_pages}")
+    print(f"diagnostics: {diagnostics}")
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -1624,6 +1703,11 @@ _IMPLEMENTED_DISPATCH = {
         output=args.output,
         project_limit=args.project_limit,
         pages_per_project=args.pages_per_project,
+    ),
+    "profile-pgdp": lambda args: _cmd_profile_pgdp(
+        args.corpus_root,
+        ranking=args.ranking,
+        output=args.output,
     ),
 }
 

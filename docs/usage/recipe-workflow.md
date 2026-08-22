@@ -66,6 +66,26 @@ pages, feature evidence, and score components. It does not contain absolute
 source paths. Re-running the command with the same corpus and limits produces
 the same report bytes.
 
+## Profile selected PGDP scans
+
+```bash
+pdomain-ocr-synth profile-pgdp /path/to/pgdp-corpus \
+  --ranking ./pgdp-ranking.json \
+  --output ./pgdp-profile.json
+```
+
+`profile-pgdp` reads the selected pages in an M14 `rank-pgdp` report. Both
+`--ranking` and `--output` are required. The profile output must be outside the
+corpus root, differ from the ranking input, and name a file rather than a
+directory.
+
+The command measures scan geometry locally and writes deterministic JSON. It
+stores corpus-relative source paths, source-byte hashes, observed ink geometry,
+and non-fatal diagnostics. Missing or undecodable scans remain in the report as
+excluded pages with diagnostics. A completed measurement returns exit code 0
+even when diagnostics are present. Input errors return 2 and output errors
+return 6.
+
 ## Validate and render
 
 ```bash
@@ -146,6 +166,7 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `clean <recipe>` | Remove cached corpora (and optionally rendered output) |
 | `audit [output-dir]` | Read back the per-render audit JSONL log written by `render` (M10) |
 | `rank-pgdp <corpus_root>` | Rank local PGDP projects and select bounded review pages |
+| `profile-pgdp <corpus_root>` | Measure selected local PGDP scan geometry |
 
 ## Render-family options
 
@@ -268,6 +289,16 @@ The positional `corpus_root` is the local PGDP corpus directory.
 | `--output PATH` | Write the JSON report here (default: `./pgdp-ranking.json`); the path must be outside the corpus root |
 | `--project-limit N` | Limit the number of ranked projects in the report (default: 50; must be positive) |
 | `--pages-per-project N` | Limit selected review pages per reported project (default: 12; must be positive) |
+
+### `profile-pgdp <corpus_root>`
+
+The positional `corpus_root` is the local PGDP corpus directory. The command
+profiles only the selected pages in the supplied M14 ranking report.
+
+| Flag | Meaning |
+|------|---------|
+| `--ranking PATH` | Read this required `pgdp-rank/v1` JSON report |
+| `--output PATH` | Write the required `pgdp-profile/v1` JSON report here; it must be outside the corpus root, differ from `--ranking`, and not name a directory |
 
 ## Audit log schema
 

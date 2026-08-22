@@ -32,6 +32,7 @@ ALL_SUBCOMMANDS = [
     "publish",
     "clean",
     "rank-pgdp",
+    "profile-pgdp",
 ]
 
 # Subcommands still fully stubbed after M08-dry-run. ``publish``
