@@ -86,6 +86,12 @@ orthographic features of pre-reform Irish text:
 Each becomes a YAML recipe plus optionally a small Python module of
 script-specific transforms.
 
+## Scan-derived typography and structure
+
+The active [PGDP typography and page-structure design](2026-08-22-pgdp-typography-structure-synthesis-design.md)
+extends the original recognition-first scope. It defines a measurement-first program for learning
+book styles from PGDP scans and generating structured pages with mixed typography.
+
 ## Open questions
 
 These are flagged here so the spec doesn't pretend they're settled.

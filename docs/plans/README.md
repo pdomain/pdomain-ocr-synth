@@ -57,6 +57,7 @@ Archived plans are indexed from this roadmap when they remain useful.
 | [10](10-stretch.md) | Stretch | partially done (extra recipes + cloud render remain) | Extra recipes, cloud render, polish | Opt-in follow-ups |
 | [11](11-preview-ui.md) | Preview UI | partial prerequisites (NiceGUI extra and backend preview primitives exist; UI unbuilt) | NiceGUI for visual recipe tuning | `pdomain-ocr-synth-preview --recipe gaelic` works |
 | [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
+| [14](2026-08-22-pgdp-ranking-review-queue.md) | PGDP discovery and review queue | planned | Rank scan projects and pages from F2 evidence | Deterministic bounded multimodal review queue |
 
 ## NiceGUI surface — preview first, explicit save
 
