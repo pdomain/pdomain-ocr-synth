@@ -322,6 +322,9 @@ class PageMeasurement:
         x_start, y_start, x_end, y_end = self.foreground_bounds
         if x_end == x_start or y_end == y_start:
             raise ValueError("Measured foreground pixels require nonempty bounds.")
+        bounds_area = (x_end - x_start) * (y_end - y_start)
+        if self.foreground_pixels > bounds_area:
+            raise ValueError("Measured foreground pixels must not exceed the bounds area.")
         if any(margin is None for margin in self.margins):
             raise ValueError("Measured foreground pixels require four numeric margins.")
         expected_margins = (
@@ -332,6 +335,11 @@ class PageMeasurement:
         )
         if self.margins != expected_margins:
             raise ValueError("Measured foreground margins must match the bounds and source frame.")
+        if any(
+            band.y_start > self.source_frame.height or band.y_end > self.source_frame.height
+            for band in self.ink_bands
+        ):
+            raise ValueError("Ink bands must stay inside the source frame height.")
 
     def _validate_bounds(self) -> None:
         if self.foreground_bounds is None:

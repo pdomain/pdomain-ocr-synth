@@ -226,6 +226,33 @@ def test_positive_foreground_requires_nonempty_bounds_and_matching_margins(
 
 
 @pytest.mark.parametrize(
+    ("foreground_pixels", "ink_bands", "message"),
+    [
+        (12_801, (), "area"),
+        (1, (InkBand(y_start=20, y_end=201),), "source frame"),
+    ],
+)
+def test_positive_foreground_respects_bounds_area_and_source_frame(
+    foreground_pixels: int,
+    ink_bands: tuple[InkBand, ...],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        _ = PageMeasurement(
+            page_name="bounded.png",
+            source_path="projectID1/bounded.png",
+            sha256="a" * 64,
+            source_frame=CoordinateFrame(width=100, height=200),
+            image_mode="L",
+            grayscale_threshold=127,
+            foreground_pixels=foreground_pixels,
+            foreground_bounds=(10, 20, 90, 180),
+            margins=(10, 20, 10, 20),
+            ink_bands=ink_bands,
+        )
+
+
+@pytest.mark.parametrize(
     ("factory", "message"),
     [
         (lambda: CoordinateFrame(width=-1, height=2), "nonnegative"),
