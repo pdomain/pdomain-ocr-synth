@@ -217,6 +217,7 @@
         "grayscale_threshold": {
           "anyOf": [
             {
+              "maximum": 255,
               "minimum": 0,
               "type": "integer"
             },
@@ -314,7 +315,9 @@
           "type": "string"
         },
         "sha256": {
-          "minLength": 1,
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-fA-F]{64}$",
           "title": "Sha256",
           "type": "string"
         },

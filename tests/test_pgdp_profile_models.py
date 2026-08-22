@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ from pdomain_ocr_synth.pgdp.profile_models import (
     InkBand,
     PageMeasurement,
     ProfileReport,
+    ProfileReportWire,
     ProjectProfile,
     profile_schema_json,
 )
@@ -144,6 +146,72 @@ def test_verified_blank_page_keeps_zero_distinct_from_unavailable_measurements()
     )
 
     assert page.to_dict()["observations"]["foreground_pixels"] == 0
+
+
+def test_verified_blank_page_requires_an_empty_ink_band_tuple() -> None:
+    with pytest.raises(ValueError, match="empty ink bands"):
+        _ = replace(
+            _page(),
+            foreground_pixels=0,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=None,
+        )
+
+
+@pytest.mark.parametrize("threshold", [-1, 256])
+def test_page_measurement_requires_an_eight_bit_grayscale_threshold(threshold: int) -> None:
+    with pytest.raises(ValueError, match="grayscale_threshold"):
+        _ = replace(_page(), grayscale_threshold=threshold)
+
+
+@pytest.mark.parametrize("sha256", ["a" * 63, "g" * 64, "a" * 64 + "\n"])
+def test_page_measurement_requires_a_64_character_hex_sha256(sha256: str) -> None:
+    with pytest.raises(ValueError, match="SHA-256"):
+        _ = replace(_page(), sha256=sha256)
+
+
+def test_ink_band_requires_at_least_two_rows() -> None:
+    with pytest.raises(ValueError, match="two rows"):
+        _ = InkBand(y_start=20, y_end=21)
+
+
+def test_profile_wire_rejects_verified_blank_page_without_an_empty_ink_band_tuple() -> None:
+    payload = _report().to_dict()
+    observations = payload["projects"][0]["pages"][0]["observations"]
+    observations["foreground_pixels"] = 0
+    observations["foreground_bounds"] = None
+    observations["margins"] = None
+    observations["ink_bands"] = None
+
+    with pytest.raises(ValueError, match="empty ink bands"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+@pytest.mark.parametrize("threshold", [256])
+def test_profile_wire_requires_an_eight_bit_grayscale_threshold(threshold: int) -> None:
+    payload = _report().to_dict()
+    payload["projects"][0]["pages"][0]["observations"]["grayscale_threshold"] = threshold
+
+    with pytest.raises(ValueError, match="grayscale_threshold"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+@pytest.mark.parametrize("sha256", ["a" * 63, "g" * 64, "a" * 64 + "\n"])
+def test_profile_wire_requires_a_64_character_hex_sha256(sha256: str) -> None:
+    payload = _report().to_dict()
+    payload["projects"][0]["pages"][0]["sha256"] = sha256
+
+    with pytest.raises(ValueError, match="sha256"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+def test_profile_wire_requires_ink_bands_of_at_least_two_rows() -> None:
+    payload = _report().to_dict()
+    payload["projects"][0]["pages"][0]["observations"]["ink_bands"][0]["y_end"] = 21
+
+    with pytest.raises(ValueError, match="two rows"):
+        _ = ProfileReportWire.model_validate(payload)
 
 
 def test_page_measurement_normalizes_geometry_tuples_before_input_mutation() -> None:
@@ -520,3 +588,11 @@ def test_profile_schema_declares_the_top_level_contract() -> None:
         "projects",
         "diagnostics",
     }
+
+
+def test_profile_schema_constrains_sha256_to_exactly_64_characters() -> None:
+    payload = json.loads(SCHEMA_ARTIFACT.read_text(encoding="utf-8"))
+    sha256 = payload["$defs"]["PageMeasurementWire"]["properties"]["sha256"]
+
+    assert sha256["minLength"] == 64
+    assert sha256["maxLength"] == 64

@@ -6,7 +6,7 @@ import json
 import math
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -14,9 +14,11 @@ from pydantic import (
     Field,
     JsonValue,
     StrictInt,
+    StrictStr,
     TypeAdapter,
     ValidationError,
     field_validator,
+    model_validator,
 )
 
 if TYPE_CHECKING:
@@ -46,6 +48,16 @@ def _require_finite(value: float, *, name: str) -> None:
         raise TypeError(f"{name} must be a number.")
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite.")
+
+
+def _require_sha256(value: object) -> None:
+    hexadecimal_characters = "0123456789abcdefABCDEF"
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in hexadecimal_characters for character in value)
+    ):
+        raise ValueError("SHA-256 must contain exactly 64 hexadecimal characters.")
 
 
 def _deep_freeze_json_value(value: object) -> object:
@@ -138,6 +150,8 @@ class InkBand:
         _require_nonnegative_integer(self.y_end, name="y_end")
         if self.y_end < self.y_start:
             raise ValueError("Ink band must have non-inverted half-open bounds.")
+        if self.y_end - self.y_start < 2:
+            raise ValueError("Ink band must be at least two rows high.")
         object.__setattr__(self, "extensions", _normalized_extensions(self.extensions))
 
     def to_dict(self) -> dict[str, JsonValue]:
@@ -260,12 +274,13 @@ class PageMeasurement:
             raise ValueError("Page name must not be empty.")
         if not self.source_path:
             raise ValueError("Source path must not be empty.")
-        if not self.sha256:
-            raise ValueError("SHA-256 must not be empty.")
+        _require_sha256(self.sha256)
         if not self.image_mode:
             raise ValueError("Image mode must not be empty.")
         if self.grayscale_threshold is not None:
             _require_nonnegative_integer(self.grayscale_threshold, name="grayscale_threshold")
+            if self.grayscale_threshold > 255:
+                raise ValueError("grayscale_threshold must be in the range 0 through 255.")
         self._normalize_geometry()
         if self.foreground_pixels is not None:
             _require_nonnegative_integer(self.foreground_pixels, name="foreground_pixels")
@@ -314,8 +329,8 @@ class PageMeasurement:
         if self.foreground_pixels == 0:
             if self.foreground_bounds is not None or self.margins is not None:
                 raise ValueError("A blank page must not have foreground bounds or margins.")
-            if self.ink_bands not in (None, ()):
-                raise ValueError("A blank page must not have ink bands.")
+            if self.ink_bands != ():
+                raise ValueError("A blank page requires an empty ink bands tuple.")
             return
         if self.foreground_bounds is None or self.margins is None or self.ink_bands is None:
             raise ValueError("Measured foreground pixels require bounds, margins, and ink bands.")
@@ -554,6 +569,12 @@ class InkBandWire(_WireModel):
     y_start: StrictInt = Field(ge=0)
     y_end: StrictInt = Field(ge=0)
 
+    @model_validator(mode="after")
+    def _validate_minimum_height(self) -> Self:
+        if self.y_end - self.y_start < 2:
+            raise ValueError("Ink band must be at least two rows high.")
+        return self
+
     def to_domain(self) -> InkBand:
         return InkBand(y_start=self.y_start, y_end=self.y_end, extensions=_wire_extensions(self))
 
@@ -623,17 +644,23 @@ class MarginsWire(_WireModel):
 
 
 class ObservationsWire(_WireModel):
-    grayscale_threshold: StrictInt | None = Field(default=None, ge=0)
+    grayscale_threshold: StrictInt | None = Field(default=None, ge=0, le=255)
     foreground_pixels: StrictInt | None = Field(ge=0)
     foreground_bounds: tuple[StrictInt, StrictInt, StrictInt, StrictInt] | None
     margins: MarginsWire | None
     ink_bands: tuple[InkBandWire, ...] | None
 
+    @model_validator(mode="after")
+    def _validate_blank_ink_bands(self) -> Self:
+        if self.foreground_pixels == 0 and self.ink_bands != ():
+            raise ValueError("A blank page requires an empty ink bands tuple.")
+        return self
+
 
 class PageMeasurementWire(_WireModel):
     page_name: str = Field(min_length=1)
     source_path: str = Field(min_length=1)
-    sha256: str = Field(min_length=1)
+    sha256: StrictStr = Field(min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$")
     source_frame: CoordinateFrameWire
     image: ImageMetadataWire
     observations: ObservationsWire
