@@ -36,9 +36,9 @@ have no implementation.
 
 The shipped transforms include whitespace normalization and the Gaelic-focused
 lenition, Tironian-et, and long-s transforms used by `recipes/gaelic.yaml`.
-Third-party reusable transforms can use the entry-point registry. Recipe-local
-inline Python and the cataloged `u_v_swap`, `i_j_swap`, and ligature-marker
-transforms are not shipped.
+Third-party reusable transforms can use the entry-point registry. The package
+does not ship recipe-local inline Python or the cataloged `u_v_swap`,
+`i_j_swap`, and ligature-marker transforms.
 
 Use HarfBuzz rendering. Required fonts must exist and open successfully;
 optional missing fonts produce warnings. Font coverage remains a render-time
@@ -162,19 +162,18 @@ Apply to `preview` and `render` (and to `publish` via
 | `--no-cache` | Bypass corpus cache (force re-fetch) |
 | `--dry-run` | Validate + plan only; no fetch, no render |
 
-`fetch` is corpus-only — it walks `recipe.corpus` and warms the cache
-— so it accepts only the two cache-related flags (`--cache-dir`,
-`--no-cache`). The other render-family flags above (`--count`,
-`--output`, `--seed`, `--workers`, `--dry-run`) have no meaning at
-fetch time and are not accepted on the `fetch` subparser.
+`fetch` is corpus-only. It walks `recipe.corpus` and warms the cache, so it
+accepts only the two cache-related flags: `--cache-dir` and `--no-cache`. The
+other render-family flags above, `--count`, `--output`, `--seed`, `--workers`,
+and `--dry-run`, have no meaning at fetch time. The `fetch` subparser does not
+accept them.
 
 ## Per-subcommand flags
 
-Flags that aren't part of the render-family set above. Each table is
-the canonical surface for that subcommand — a flag listed here must
-exist in the parser, and a flag in the parser that isn't listed here
-must be added (a meta-test in `tests/test_spec_docs.py` enforces both
-directions).
+The following tables cover flags outside the render-family set. Each table is
+the canonical surface for its subcommand. A flag listed here must exist in the
+parser, and every parser flag must appear here. A meta-test in
+`tests/test_spec_docs.py` enforces both directions.
 
 ### `init <name>`
 
@@ -272,21 +271,19 @@ The positional `corpus_root` is the local PGDP corpus directory.
 
 ## Audit log schema
 
-`render` appends one JSONL line to `<output_dir>/_audit.jsonl` (and,
-unless `PD_OCR_SYNTH_NO_GLOBAL_AUDIT=1` is set, mirrors the same line
-to `<cache_root>/audit.jsonl`) per invocation. The shape below is the
-contract `audit` reads back; it is also what tools like `jq` /
-`pandas.read_json(lines=True)` will see.
+Each `render` invocation appends one JSONL line to
+`<output_dir>/_audit.jsonl`. Unless `PD_OCR_SYNTH_NO_GLOBAL_AUDIT=1` is set,
+it also mirrors that line to `<cache_root>/audit.jsonl`. The shape below is the
+contract that `audit` reads and that tools such as `jq` and
+`pandas.read_json(lines=True)` receive.
 
-The on-disk fields appear in the order shown — left-to-right
-readability for `cat _audit.jsonl` is intentional: identity first,
-provenance second, run outcome last, schema-version anchor at the
-end.
+The on-disk fields appear in the order shown. This order keeps identity first,
+provenance second, the run outcome last, and the schema-version anchor at the
+end when using `cat _audit.jsonl`.
 
-A meta-test in `tests/test_spec_docs.py` enforces that this table and
-the `AuditEntry` dataclass in `src/pdomain_ocr_synth/audit.py` stay in
-sync: adding a field to the dataclass without listing it here (or
-vice-versa) is a hard test failure.
+A meta-test in `tests/test_spec_docs.py` keeps this table in sync with the
+`AuditEntry` dataclass in `src/pdomain_ocr_synth/audit.py`. Adding a field to
+either one without adding it to the other is a hard test failure.
 
 | Field | Type | Since | Description |
 |-------|------|-------|-------------|
@@ -297,35 +294,32 @@ vice-versa) is a hard test failure.
 | `count` | integer | v1 | Effective sample count (post `--count` override) |
 | `seed` | integer | v1 | Effective seed (post `--seed` override) |
 | `workers` | integer | v1 | Worker pool size as the runner saw it |
-| `rendered` | integer | v1 | Samples actually rendered (from `RunResult`) |
+| `rendered` | integer | v1 | Samples rendered (from `RunResult`) |
 | `skipped` | integer | v1 | Samples skipped, e.g. by `--resume` (from `RunResult`) |
 | `runtime_seconds` | float | v1 | Wall time of the render, from the writer's stats |
 | `schema_version` | integer | v1 | On-disk shape version; bumps on shape changes (current: `1`) |
 
 ### Forward-compatibility policy
 
-The `audit` reader skips rows whose `schema_version` does not match
-the version it understands and emits an `AuditSchemaVersionWarning`
-naming the encountered version. A v1 reader cannot trust v2 field
-semantics (a future bump might rename `count` to `planned_count` or
-change `runtime_seconds` from float-seconds to integer-milliseconds)
-so silently summing them would produce wrong totals. Rows missing
-`schema_version` entirely are treated as legacy v1 — the field was
-introduced in v1, so absence implies pre-versioning or hand-edited
+The `audit` reader skips rows whose `schema_version` does not match the version
+it understands. It emits an `AuditSchemaVersionWarning` naming the encountered
+version. A v1 reader cannot trust v2 field semantics. A future bump might
+rename `count` to `planned_count` or change `runtime_seconds` from float
+seconds to integer milliseconds. Silently summing those rows would produce
+wrong totals. Rows without `schema_version` are treated as legacy v1. The field
+was introduced in v1, so its absence implies pre-versioning or hand-edited
 input.
 
 ## Lint codes
 
-Every issue surfaced by `lint <recipe>` (beyond the validation errors
-forwarded from `validate`) carries a stable `code` field. The full
-catalog is below — these codes appear verbatim in the human-readable
-output, the `--json` payload, and structured logs, so they're safe to
-grep / filter on.
+Every issue from `lint <recipe>`, beyond validation errors forwarded from
+`validate`, carries a stable `code` field. The catalog below uses codes that
+appear verbatim in human-readable output, the `--json` payload, and structured
+logs. They are safe to grep or filter.
 
-A meta-test in `tests/test_spec_docs.py` enforces that this table and
-the `LINT_CODES` constant in `src/pdomain_ocr_synth/lint.py` stay in sync:
-adding a new lint helper without listing it here (or vice-versa) is a
-hard test failure.
+A meta-test in `tests/test_spec_docs.py` keeps this table in sync with the
+`LINT_CODES` constant in `src/pdomain_ocr_synth/lint.py`. Adding a lint helper
+or code to only one of them is a hard test failure.
 
 | Code | Trigger |
 |------|---------|
@@ -337,25 +331,24 @@ hard test failure.
 | `lint_zero_weight_font` | A declared font has `weight=0.0` and will never be sampled; almost always a typo or a leftover from a temporarily disabled font. |
 | `lint_all_optional_fonts` | Every font is marked `optional=True`; if no font files are present on disk the loader ends up with an empty font set and rendering fails. |
 
-All lint issues use `severity="warning"`. A recipe that flunks every
-lint check still renders correctly; lint alone never exits non-zero
-unless `--strict` is passed (see exit codes below).
+All lint issues use `severity="warning"`. A recipe that triggers every lint
+check still renders correctly. Lint alone never exits non-zero unless
+`--strict` is passed. See the exit codes below.
 
 ## Validation codes
 
-Every issue surfaced by `validate <recipe>` (and the validation phase
-of `lint <recipe>`, `render`, `preview`, `fetch`, `publish`) carries a
-stable `code` field in addition to `severity` and a free-form
-`message`. The codes appear verbatim in the human-readable
-`[severity] [code] location: message` output, the `--json` payload,
-and structured logs, so they're safe to grep / filter on.
+Every issue from `validate <recipe>` carries a stable `code` field, as do the
+validation phases of `lint <recipe>`, `render`, `preview`, `fetch`, and
+`publish`. Each issue also carries `severity` and a free-form `message`. The
+codes appear verbatim in the human-readable `[severity] [code] location:
+message` output, the `--json` payload, and structured logs. They are safe to
+grep or filter.
 
-A meta-test in `tests/test_spec_docs.py` enforces that this table and
-the `VALIDATION_CODES` constant in `src/pdomain_ocr_synth/validation.py`
-stay in sync: adding a new emission site without listing it here (or
-vice-versa) is a hard test failure. A second test in
-`tests/test_validation.py` asserts every code emitted by
-`validate_recipe` belongs to `VALIDATION_CODES`, so a new code can't
+A meta-test in `tests/test_spec_docs.py` keeps this table in sync with the
+`VALIDATION_CODES` constant in `src/pdomain_ocr_synth/validation.py`. Adding
+an emission site or code to only one of them is a hard test failure. A second
+test in `tests/test_validation.py` asserts that every code emitted by
+`validate_recipe` belongs to `VALIDATION_CODES`. A new code therefore cannot
 ship undocumented.
 
 | Code | Severity | Trigger |
@@ -442,9 +435,9 @@ pdomain-ocr-synth publish gaelic --dry-run                  # preview only
 | 6 | Output destination invalid or unwritable |
 | 7 | Publish failed (auth, network, or repo-state error) |
 
-`lint --strict` upgrades a clean run with warnings (validate or lint)
-from 0 to 1 so it can be used as a CI / pre-commit gate. Validation
-errors keep their stricter code 3 either way — strict never
+`lint --strict` changes a clean run with validation or lint warnings from exit
+code 0 to 1. It can therefore serve as a CI or pre-commit gate. Validation
+errors keep their stricter exit code 3 either way. Strict mode never
 *downgrades* a stricter exit code.
 
 ## Logging

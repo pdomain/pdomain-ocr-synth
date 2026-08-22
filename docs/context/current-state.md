@@ -11,10 +11,10 @@
 - **Disposition:** Injected operational ground truth.
 
 M00-M10 are substantially shipped. The repository supports recipe discovery and
-validation, local/web/Wikisource corpora, deterministic HarfBuzz rendering,
-recognition and detection output, Hugging Face publishing, recipe linting,
-audit logs, and visual regression pins. The baseline `make ci AI=1` passed before
-the migration edits.
+validation; local, web, and Wikisource corpora; deterministic HarfBuzz rendering;
+recognition and detection output; Hugging Face publishing; recipe linting; audit
+logs; and visual regression pins. The baseline `make ci AI=1` passed before the
+migration edits.
 
 M14's first runnable slice is also shipped. The local-only `rank-pgdp` command
 reads PGDP project metadata and F2 text, ranks projects, and writes a bounded
@@ -71,9 +71,9 @@ start with [Recipe workflow](../usage/recipe-workflow.md).
 ## In-flight milestones
 
 M11 is the local preview UI. Its NiceGUI optional dependency and reusable
-preview/search/validation primitives exist, but the UI package, routes,
-viewmodels, save flow, and UI tests do not. M12 is glyph-annotation emission;
-its shared model, recipe block, render mapping, sidecar output, and tests have
+preview, search, and validation primitives exist. The UI package, routes,
+viewmodels, save flow, and UI tests do not. M12 is glyph-annotation emission.
+Its shared model, recipe block, render mapping, sidecar output, and tests have
 not shipped. Four non-blocking M11 product choices remain in the
 [intent map](intent-map.md). The active roadmap remains
 [plans/README](../plans/README.md).
@@ -82,13 +82,13 @@ not shipped. Four non-blocking M11 product choices remain in the
 
 The live plans retain partial work in corpus providers, transforms, rendering,
 degradation, detection, and stretch features. The strongest invariants are
-deterministic seed-plus-index rendering, trainer-compatible output, snapshot-
-guarded resume, and bbox propagation for geometry-changing degradation.
+deterministic seed-plus-index rendering, trainer-compatible output,
+snapshot-guarded resume, and bbox propagation for geometry-changing degradation.
 Current limitations and demand-driven options are classified in
-[Intent map](intent-map.md); durable changed-direction decisions are in
+[Intent map](intent-map.md). Durable changed-direction decisions are in
 [Decisions](decisions.md).
 
-The weekly `dep-refresh` workflow has never executed since it was added
-(2026-05-31), so it carries the same branch-accumulation design that already
-cost peer repos stray branches, unexercised so far — see
+The weekly `dep-refresh` workflow has never executed since it was added on
+2026-05-31. It carries the same branch-accumulation design that has already cost
+peer repos stray branches, but it remains unexercised here. See
 [weekly dep-refresh shares peers' branch-accumulation design](../issues/2026-08-08-dep-refresh-cannot-auto-land.md).

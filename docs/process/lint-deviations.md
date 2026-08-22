@@ -10,16 +10,16 @@
 - **Provenance:** agent-verified against the current suppression inventory
 - **Disposition:** Retained as current intent or process guidance.
 
-Standing lint-rule suppressions and per-file overrides in this repo. Each entry
-records the rule, tool, affected files, and justification. **Update this file
-whenever a suppression changes**: `tests/test_lint_deviations_doc.py` checks
-exact locations, markers, and inline rationales across `src/`, `scripts/`, and
-`tests/`.
+This file records standing lint-rule suppressions and per-file overrides. Each
+entry names the rule, tool, affected files, and justification. **Update this
+file whenever a suppression changes.** `tests/test_lint_deviations_doc.py`
+checks exact locations, markers, and inline rationales across `src/`,
+`scripts/`, and `tests/`.
 
-Most suppressions trace to the 2026-05-17 strict-linting rollout, which
-expanded `ruff` and switched `basedpyright` to `recommended` mode. The
-annotation/docstring backlog (`ANN` / `D`) was deferred per-file rather
-than fixed in a single sweep — that cleanup is tracked by
+Most suppressions trace to the 2026-05-17 strict-linting rollout. It expanded
+`ruff` and switched `basedpyright` to `recommended` mode. The annotation and
+docstring backlog (`ANN` / `D`) was deferred per-file instead of fixed in one
+sweep. The cleanup is tracked by
 [`pdomain/pdomain-ocr-synth#3`](https://github.com/pdomain/pdomain-ocr-synth/issues/3).
 
 ---
@@ -133,7 +133,7 @@ with the per-module reason:
 | `corpus/registry.py` | `S PLW0603 PLW2901` | Provider-dispatch security; registry module globals; loop-var reassignment. |
 | `text_transforms/pipeline.py` | `S311` | `random` is for visual sampling, not crypto. |
 | `text_transforms/registry.py` | `PLW0603 S112` | Registry module globals; `continue` in `except`. |
-| `render/sampling.py`, `render/sample.py`, `corpus/context.py`, `tokenization.py`, `recipe/models.py` | (subset only) | Carry just `TC` and/or `ANN`/`D` — narrower than the base set. |
+| `render/sampling.py`, `render/sample.py`, `corpus/context.py`, `tokenization.py`, `recipe/models.py` | (subset only) | Carry only `TC` and/or `ANN`/`D` — narrower than the base set. |
 
 ---
 
@@ -173,22 +173,22 @@ constants; renaming would hurt readability.
 `corpus/filters.py`, `degradation/builtins.py`, `degradation/pipeline.py`,
 `output/detection.py`, `publish/hf_hub_transport.py`.
 
-`sample_value()` returns a recipe-value union (`int | float | spec`);
-call sites coerce with `int(...)` / `float(...)` but pyright sees the raw
-union before narrowing. Also covers degradation-dispatch payloads and
-`bbox`/`polygon` tuple coercions where the runtime shape is correct but
-the static type is a broader union.
+`sample_value()` returns a recipe-value union (`int | float | spec`). Call sites
+coerce with `int(...)` or `float(...)`, but pyright sees the raw union before
+narrowing. The suppressions also cover degradation-dispatch payloads and
+`bbox` or `polygon` tuple coercions where the runtime shape is correct but the
+static type is a broader union.
 
 ### 4.3 `reportAttributeAccessIssue`
 
 **Files:** `render/word_crop.py`, `render/context.py`, `render/run.py`,
 `corpus/runner.py`, `publish/cli_runner.py`, `degradation/pipeline.py`.
 
-Two categories: (a) `uharfbuzz` (`hb.Face`, `hb.Font`, `hb.Buffer`,
-`hb.shape`, …) and `freetype-py` expose attributes their bundled stubs
-do not declare; (b) worker round-trip code in `render/run.py` re-hydrates
-a `Sample` by assigning fields outside `__init__` — structurally correct
-but pyright does not see through the pattern.
+There are two categories. First, `uharfbuzz` (`hb.Face`, `hb.Font`,
+`hb.Buffer`, `hb.shape`, …) and `freetype-py` expose attributes that their
+bundled stubs do not declare. Second, worker round-trip code in `render/run.py`
+re-hydrates a `Sample` by assigning fields outside `__init__`. That pattern is
+structurally correct, but pyright cannot recognize it.
 
 ### 4.4 `reportReturnType`
 
@@ -203,8 +203,8 @@ return union.
 
 **Files:** `publish/hf_hub_transport.py`, `render/run.py`.
 
-`huggingface_hub` card APIs and an `AuditEntry`-`details` construction
-call signatures whose stubs lag the runtime API.
+The suppression covers `huggingface_hub` card APIs and an `AuditEntry`-
+`details` construction call signature whose stubs lag the runtime API.
 
 ### 4.6 `reportIncompatibleVariableOverride` / `reportGeneralTypeIssues`
 

@@ -106,10 +106,11 @@ Expected: fail because `pdomain_ocr_synth.pgdp` does not exist.
 
 - [x] **Step 3: Add frozen typed records**
 
-Define `Diagnostic`, `PageFeatures`, `RankedPage`, `RankedProject`, `CorpusSummary`,
-`RankingLimits`, and `RankingReport` as frozen, slotted dataclasses. Give each record an explicit
-`to_dict()` method with concrete return types. Do not store `Path`, `Any`, timestamps, hostnames, or
-absolute source paths in the report.
+Define `Diagnostic`, `PageFeatures`, `RankedPage`, `RankedProject`,
+`CorpusSummary`, `RankingLimits`, and `RankingReport` as frozen, slotted
+dataclasses. Give each record an explicit `to_dict()` method with concrete return
+types. Do not store `Path`, `Any`, timestamps, hostnames, or absolute source
+paths in the report.
 
 `PageFeatures` must expose these integer or boolean components:
 
@@ -182,9 +183,10 @@ def test_parse_continued_block_crosses_natural_page_order() -> None:
 Also test nested controls, overlapping local and continued controls, unmatched openers and closers,
 a non-object JSON root, and non-string values.
 
-Add a cross-page fixture with italic tags and aligned rows on pages inside one continued block.
-Assert that each parsed page exposes only its own valid continued-block body. In Task 3, reuse this
-fixture to assert per-page tag counts and structural features.
+Add a cross-page fixture with italic tags and aligned rows on pages inside one
+continued block. Assert that each parsed page exposes only its own valid
+continued-block body. Reuse this fixture in Task 3 to assert per-page tag counts
+and structural features.
 
 - [x] **Step 2: Run the parser tests and confirm failure**
 
@@ -338,8 +340,8 @@ git commit -m "feat: score PGDP typography and structure features"
 
 - [x] **Step 1: Write ranking and selection tests**
 
-Create project fixtures under `tmp_path` with `project.json`, `rounds/F2.json`, and selected image
-placeholders. Test these rules:
+Create project fixtures under `tmp_path` with `project.json`, `rounds/F2.json`,
+and selected image placeholders. Test these rules:
 
 - directories without F2 are counted but excluded with a diagnostic;
 - malformed metadata does not stop other projects;
@@ -366,9 +368,9 @@ Expected: fail because `rank_corpus` does not exist.
 
 - [x] **Step 3: Implement project discovery and natural ordering**
 
-Discover only immediate directories named `projectID*`. Read `project.json` fields `projectid`,
-`title`, `author`, `genre`, `pages_total`, and `pg_ebook_number` when correctly typed. Preserve
-missing optional fields as `None`.
+Discover only immediate directories named `projectID*`. Read correctly typed
+`project.json` fields `projectid`, `title`, `author`, `genre`, `pages_total`, and
+`pg_ebook_number`. Preserve missing optional fields as `None`.
 
 Load `pages.json` as a string-to-string object and record `transcription_available` for each
 selected F2 page. A missing or malformed `pages.json` adds a diagnostic and sets that field false
@@ -389,9 +391,9 @@ quotation = quotation_like
 multipart_layout = multipart_name
 ```
 
-Select groups in the design order, then fill by ranked pages. Store page names, image availability,
-feature values, score components, and matched groups. Store project metadata, component totals,
-selected pages, and sorted diagnostics.
+Select groups in the design order, then fill by ranked pages. Store page names,
+image availability, feature values, score components, and matched groups. Store
+project metadata, component totals, selected pages, and sorted diagnostics.
 
 After sorting, keep only the first `project_limit` projects. Within each project, stop review
 selection at `pages_per_project`. Report counts before and after truncation.

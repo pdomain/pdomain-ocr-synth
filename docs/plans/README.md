@@ -32,11 +32,10 @@ Each milestone must leave a runnable slice, reuse existing seams, and preserve d
 and trainer compatibility. Status comes from repository evidence; deferred UI, annotations, extra
 recipes, and cloud work must remain visibly unshipped.
 
-The specs linked from the [project README](../../README.md) describe the destination. This
-roadmap is the path to get there. Each milestone is a vertical slice
-that ends in something runnable; nothing is "framework first." The
-order favors **dev tooling and feedback loops early** so every later
-milestone benefits from them.
+This roadmap is the path to the destination described by the specs linked from
+the [project README](../../README.md). Each milestone is a vertical slice that
+ends in something runnable; nothing is "framework first." The order puts **dev
+tooling and feedback loops early** so every later milestone benefits from them.
 
 ## Milestones
 
@@ -61,17 +60,16 @@ Archived plans are indexed from this roadmap when they remain useful.
 
 ## NiceGUI surface — preview first, explicit save
 
-A full YAML editor reproduces VS Code at a worse quality bar — recipes
-are short and well-documented, and the YAML extension already validates
-against `recipe.schema.json` (M02 deliverable). Building a custom editor
-surface adds maintenance for low leverage.
+A full YAML editor reproduces VS Code at a worse quality bar. Recipes are short
+and well-documented, and the YAML extension already validates against
+`recipe.schema.json` (M02 deliverable). A custom editor adds maintenance with
+little benefit.
 
-A **preview UI**, on the other hand, has high leverage: pick a recipe,
-render N samples with the current degradation pipeline, display them in
-a grid, and let you toggle stages or slide probabilities to see the
-effect immediately. Collapses "edit YAML → re-render → open file
-manager" into one page. It also fits the workspace pattern (both
-`pd-ocr-labeler` and `pd-ocr-trainer` use NiceGUI).
+A **preview UI** provides a clear benefit: pick a recipe, render N samples with
+the current degradation pipeline, display them in a grid, and toggle stages or
+slide probabilities to see the effect immediately. It turns "edit YAML →
+re-render → open file manager" into one page. It also fits the workspace
+pattern: both `pd-ocr-labeler` and `pd-ocr-trainer` use NiceGUI.
 
 Captured as **M11** with a separate spec at
 [`../specs/11-preview-ui.md`](../specs/11-preview-ui.md). The UI is
