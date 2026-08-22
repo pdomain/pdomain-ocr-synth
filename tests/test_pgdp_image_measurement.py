@@ -25,6 +25,10 @@ def test_blank_white_image_has_no_foreground_geometry(tmp_path: Path) -> None:
     assert result.foreground_pixels == 0
     assert result.foreground_bounds is None
     assert result.margins is None
+    assert result.ink_bands == ()
+    assert result.median_ink_band_height is None
+    assert result.median_ink_band_top_pitch is None
+    assert result.diagnostics == ("blank",)
 
 
 def test_solid_black_image_uses_the_whole_source_frame(tmp_path: Path) -> None:
@@ -37,6 +41,141 @@ def test_solid_black_image_uses_the_whole_source_frame(tmp_path: Path) -> None:
     assert result.foreground_pixels == 35
     assert result.foreground_bounds == (0, 0, 7, 5)
     assert result.margins == (0, 0, 0, 0)
+    assert result.ink_bands[0].y_start == 0
+    assert result.ink_bands[0].y_end == 5
+    assert result.diagnostics == ("one_band", "border_dominated", "high_foreground_ratio")
+
+
+def test_ink_bands_join_one_row_gaps_and_store_tight_band_geometry(tmp_path: Path) -> None:
+    image_path = tmp_path / "bands.png"
+    image = Image.new("L", (80, 30), color=255)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((10, 3, 25, 5), fill=0)
+    draw.rectangle((11, 7, 22, 9), fill=0)
+    draw.rectangle((30, 16, 39, 18), fill=0)
+    image.save(image_path)
+
+    result = measure_image(image_path)
+
+    assert result.ink_bands == (
+        image_measurement.InkBandMeasurement(
+            y_start=3,
+            y_end=10,
+            x_start=10,
+            x_end=26,
+            foreground_pixels=84,
+        ),
+        image_measurement.InkBandMeasurement(
+            y_start=16,
+            y_end=19,
+            x_start=30,
+            x_end=40,
+            foreground_pixels=30,
+        ),
+    )
+    assert result.median_ink_band_height == 5.0
+    assert result.median_ink_band_top_pitch == 13.0
+    assert result.diagnostics == ()
+
+
+def test_ink_bands_drop_single_row_runs_and_ignore_single_pixel_row_specks(tmp_path: Path) -> None:
+    image_path = tmp_path / "specks.png"
+    image = Image.new("L", (100, 30), color=255)
+    draw = ImageDraw.Draw(image)
+    draw.point((0, 1), fill=0)
+    draw.rectangle((25, 10, 34, 12), fill=0)
+    draw.point((99, 20), fill=0)
+    image.save(image_path)
+
+    result = measure_image(image_path)
+
+    assert result.ink_bands == (
+        image_measurement.InkBandMeasurement(
+            y_start=10,
+            y_end=13,
+            x_start=25,
+            x_end=35,
+            foreground_pixels=30,
+        ),
+    )
+    assert result.median_ink_band_height == 3.0
+    assert result.median_ink_band_top_pitch is None
+    assert result.diagnostics == ("one_band",)
+
+
+def test_horizontal_borders_are_diagnostic_without_becoming_ink_bands(tmp_path: Path) -> None:
+    image_path = tmp_path / "horizontal-border.png"
+    image = Image.new("L", (100, 100), color=255)
+    draw = ImageDraw.Draw(image)
+    draw.line((0, 0, 99, 0), fill=0)
+    draw.line((0, 99, 99, 99), fill=0)
+    image.save(image_path)
+
+    result = measure_image(image_path)
+
+    assert result.ink_bands == ()
+    assert result.diagnostics == ("border_dominated",)
+
+
+def test_vertical_borders_are_diagnostic(tmp_path: Path) -> None:
+    image_path = tmp_path / "vertical-border.png"
+    image = Image.new("L", (100, 100), color=255)
+    draw = ImageDraw.Draw(image)
+    draw.line((0, 0, 0, 99), fill=0)
+    draw.line((99, 0, 99, 99), fill=0)
+    image.save(image_path)
+
+    result = measure_image(image_path)
+
+    assert result.ink_bands == (
+        image_measurement.InkBandMeasurement(
+            y_start=0,
+            y_end=100,
+            x_start=0,
+            x_end=100,
+            foreground_pixels=200,
+        ),
+    )
+    assert result.diagnostics == ("one_band", "border_dominated")
+
+
+def test_one_dark_edge_and_text_near_an_edge_are_not_border_dominated(tmp_path: Path) -> None:
+    single_edge_path = tmp_path / "single-edge.png"
+    single_edge = Image.new("L", (100, 100), color=255)
+    ImageDraw.Draw(single_edge).line((0, 0, 99, 0), fill=0)
+    single_edge.save(single_edge_path)
+
+    edge_text_path = tmp_path / "edge-text.png"
+    edge_text = Image.new("L", (100, 100), color=255)
+    ImageDraw.Draw(edge_text).rectangle((10, 0, 39, 2), fill=0)
+    edge_text.save(edge_text_path)
+
+    single_edge_result = measure_image(single_edge_path)
+    edge_text_result = measure_image(edge_text_path)
+
+    assert "border_dominated" not in single_edge_result.diagnostics
+    assert edge_text_result.ink_bands == (
+        image_measurement.InkBandMeasurement(
+            y_start=0,
+            y_end=3,
+            x_start=10,
+            x_end=40,
+            foreground_pixels=90,
+        ),
+    )
+    assert "border_dominated" not in edge_text_result.diagnostics
+
+
+def test_high_foreground_ratio_requires_more_than_sixty_percent(tmp_path: Path) -> None:
+    image_path = tmp_path / "dense.png"
+    image = Image.new("L", (10, 10), color=255)
+    ImageDraw.Draw(image).rectangle((0, 0, 9, 5), fill=0)
+    image.save(image_path)
+
+    result = measure_image(image_path)
+
+    assert result.foreground_pixels == 60
+    assert "high_foreground_ratio" not in result.diagnostics
 
 
 def test_grayscale_image_hashes_original_bytes_and_uses_otsu_threshold(tmp_path: Path) -> None:
