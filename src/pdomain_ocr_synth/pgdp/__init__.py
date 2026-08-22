@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pdomain_ocr_synth.pgdp.features import extract_page_features, score_page
 from pdomain_ocr_synth.pgdp.models import (
     CorpusSummary,
     Diagnostic,
@@ -21,5 +22,7 @@ __all__ = [
     "RankedProject",
     "RankingLimits",
     "RankingReport",
+    "extract_page_features",
     "natural_page_key",
+    "score_page",
 ]
