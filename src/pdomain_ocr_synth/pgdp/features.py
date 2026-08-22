@@ -29,8 +29,10 @@ _UNCERTAINTY_NOTE_PATTERN = re.compile(r"\[\*\*")
 def extract_page_features(page: ParsedF2Page) -> PageFeatures:
     """Extract deterministic PGDP rank version 1 evidence from one parsed F2 page."""
 
-    body_lines = _nonblank_lines(page.special_blocks)
-    aligned_rows = sum(_is_aligned_fields_line(line) for line in body_lines)
+    block_lines = tuple(_nonblank_lines((block,)) for block in page.special_blocks)
+    aligned_row_counts = tuple(
+        sum(_is_aligned_fields_line(line) for line in lines) for lines in block_lines
+    )
     return PageFeatures(
         special_format=page.has_special_format,
         italic_tags=len(_OPENING_TAG_PATTERNS["italic"].findall(page.source_text)),
@@ -39,9 +41,9 @@ def extract_page_features(page: ParsedF2Page) -> PageFeatures:
         dot_leaders=any(
             _DOT_LEADERS_PATTERN.search(body) is not None for body in page.special_blocks
         ),
-        aligned_fields=aligned_rows >= 2,
-        table_like=aligned_rows >= 3,
-        poetry_like=_is_poetry_like(body_lines, page.source_text),
+        aligned_fields=any(count >= 2 for count in aligned_row_counts),
+        table_like=any(count >= 3 for count in aligned_row_counts),
+        poetry_like=any(_is_poetry_like(lines, page.source_text) for lines in block_lines),
         quotation_like=_is_quotation_like(page.special_blocks),
         multipart_name=_MULTIPART_NAME_PATTERN.search(page.name) is not None,
         illustration_or_ornament=_ILLUSTRATION_OR_ORNAMENT_PATTERN.search(page.source_text)

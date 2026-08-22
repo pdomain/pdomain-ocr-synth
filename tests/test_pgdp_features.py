@@ -89,6 +89,26 @@ def test_extract_page_features_detects_three_table_like_rows() -> None:
     assert features.table_like is True
 
 
+def test_extract_page_features_does_not_combine_aligned_rows_from_separate_blocks() -> None:
+    from pdomain_ocr_synth.pgdp.features import extract_page_features
+
+    features = extract_page_features(_page("p1.png", "/* first   1 */ plain /* second   2 */"))
+
+    assert features.aligned_fields is False
+    assert features.table_like is False
+
+
+def test_extract_page_features_does_not_combine_table_rows_from_separate_blocks() -> None:
+    from pdomain_ocr_synth.pgdp.features import extract_page_features
+
+    features = extract_page_features(
+        _page("p1.png", "/* first   1\nsecond   2 */ plain /* third   3 */")
+    )
+
+    assert features.aligned_fields is True
+    assert features.table_like is False
+
+
 def test_extract_page_features_detects_poetry_line_shape() -> None:
     from pdomain_ocr_synth.pgdp.features import extract_page_features
 
@@ -98,6 +118,19 @@ def test_extract_page_features_detects_poetry_line_shape() -> None:
     features = extract_page_features(_page("p1.png", source_text))
 
     assert features.poetry_like is True
+
+
+def test_extract_page_features_does_not_combine_poetry_lines_from_separate_blocks() -> None:
+    from pdomain_ocr_synth.pgdp.features import extract_page_features
+
+    long_line = "ordinary prose " * 12
+    source_text = (
+        f"{long_line}\n{long_line}\n{long_line}\n{long_line}\n/* a\nbb */ plain /* ccc\ndddd */"
+    )
+
+    features = extract_page_features(_page("p1.png", source_text))
+
+    assert features.poetry_like is False
 
 
 def test_extract_page_features_detects_four_quoted_body_lines() -> None:
