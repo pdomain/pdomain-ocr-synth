@@ -20,7 +20,7 @@ def resolve_project_directory(*, corpus_root: Path, project_id: str) -> Path:
     """Resolve one direct project directory inside a corpus root."""
 
     root = corpus_root.resolve()
-    reference = _validate_relative_reference(
+    reference = require_canonical_relative_reference(
         value=project_id,
         label="project reference",
         direct_child=True,
@@ -63,6 +63,21 @@ def corpus_relative_path(*, path: Path, corpus_root: Path) -> str:
     if not resolved_path.is_relative_to(root):
         raise UnsafePathError(f"Image path escapes the corpus root: {path!s}.")
     return resolved_path.relative_to(root).as_posix()
+
+
+def require_canonical_relative_reference(
+    *, value: str, label: str, direct_child: bool = False
+) -> Path:
+    """Require the portable spelling of a safe relative report reference."""
+
+    reference = _validate_relative_reference(
+        value=value,
+        label=label,
+        direct_child=direct_child,
+    )
+    if reference.as_posix() != value:
+        raise UnsafePathError(f"Noncanonical {label}: {value!r}.")
+    return reference
 
 
 def _validate_relative_reference(*, value: str, label: str, direct_child: bool = False) -> Path:

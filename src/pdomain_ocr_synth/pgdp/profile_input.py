@@ -2,40 +2,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING
 
 from pydantic import TypeAdapter, ValidationError
 
+from pdomain_ocr_synth.pgdp.models import RankingReportData
 from pdomain_ocr_synth.pgdp.paths import (
     UnsafePathError,
     corpus_relative_path,
+    require_canonical_relative_reference,
     resolve_image_candidate,
     resolve_project_directory,
 )
 
+if TYPE_CHECKING:
+    from pdomain_ocr_synth.pgdp.models import RankedPageData
+
 _SCHEMA_VERSION = 1
 _ALGORITHM_VERSION = "pgdp-rank/v1"
-
-
-class _RankedPagePayload(TypedDict):
-    name: str
-
-
-class _RankedProjectPayload(TypedDict):
-    project_id: str
-    title: str | None
-    author: str | None
-    genre: str | None
-    pages: list[_RankedPagePayload]
-
-
-class _RankingReportPayload(TypedDict):
-    schema_version: int
-    algorithm_version: str
-    projects: list[_RankedProjectPayload]
-
-
-_RANKING_REPORT_ADAPTER = TypeAdapter(_RankingReportPayload)
+_RANKING_REPORT_ADAPTER = TypeAdapter(RankingReportData)
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,14 +88,14 @@ def load_profile_input(ranking_path: str | Path, *, corpus_root: str | Path) -> 
     return ProfileInput(projects=tuple(projects))
 
 
-def _load_ranking_payload(path: Path) -> _RankingReportPayload:
+def _load_ranking_payload(path: Path) -> RankingReportData:
     try:
         return _RANKING_REPORT_ADAPTER.validate_json(path.read_text(encoding="utf-8"), strict=True)
     except (OSError, UnicodeDecodeError, ValidationError) as error:
         raise ValueError("Ranking report must be valid ranking JSON.") from error
 
 
-def _validate_version(payload: _RankingReportPayload) -> None:
+def _validate_version(payload: RankingReportData) -> None:
     if payload["schema_version"] != _SCHEMA_VERSION:
         raise ValueError("Ranking report must use schema version 1.")
     if payload["algorithm_version"] != _ALGORITHM_VERSION:
@@ -120,7 +105,7 @@ def _validate_version(payload: _RankingReportPayload) -> None:
 def _load_project_pages(
     *,
     project_id: str,
-    page_payloads: list[_RankedPagePayload],
+    page_payloads: list[RankedPageData],
     project_directory: Path,
     corpus_root: Path,
 ) -> tuple[ProfileInputPage, ...]:
@@ -128,6 +113,7 @@ def _load_project_pages(
     pages: list[ProfileInputPage] = []
     for page_payload in page_payloads:
         page_name = page_payload["name"]
+        _ = require_canonical_relative_reference(value=page_name, label="page reference")
         if page_name in page_names:
             raise ValueError(f"Duplicate page name for project {project_id!r}: {page_name!r}.")
         page_names.add(page_name)

@@ -393,6 +393,21 @@ def test_rank_corpus_finds_nested_images_in_each_allowed_location(tmp_path: Path
     assert all(page.image_available for page in report.projects[0].pages)
 
 
+def test_rank_corpus_retains_legacy_noncanonical_image_resolution(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        "projectIDone",
+        pages={"./p1.png": "plain"},
+        transcriptions={},
+        images=("p1.png",),
+    )
+
+    report = rank_corpus(tmp_path)
+
+    assert report.projects[0].pages[0].image_available is True
+    assert report.diagnostics == ()
+
+
 def test_rank_corpus_keeps_report_bytes_for_root_and_images_candidates(tmp_path: Path) -> None:
     corpus_root = tmp_path / "corpus"
     corpus_root.mkdir()

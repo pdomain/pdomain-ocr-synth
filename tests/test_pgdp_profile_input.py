@@ -14,17 +14,34 @@ def _write_ranking(
     schema_version: object = 1,
     algorithm_version: object = "pgdp-rank/v1",
     projects: object = (),
+    payload: object | None = None,
 ) -> None:
-    path.write_text(
-        json.dumps(
-            {
-                "schema_version": schema_version,
-                "algorithm_version": algorithm_version,
-                "projects": projects,
-            }
-        ),
-        encoding="utf-8",
+    ranking_payload = (
+        _ranking_payload(
+            schema_version=schema_version,
+            algorithm_version=algorithm_version,
+            projects=projects,
+        )
+        if payload is None
+        else payload
     )
+    path.write_text(json.dumps(ranking_payload), encoding="utf-8")
+
+
+def _ranking_payload(
+    *,
+    schema_version: object = 1,
+    algorithm_version: object = "pgdp-rank/v1",
+    projects: object = (),
+) -> dict[str, object]:
+    return {
+        "schema_version": schema_version,
+        "algorithm_version": algorithm_version,
+        "limits": {"projects": 50, "pages_per_project": 12},
+        "corpus": {"projects_seen": 1, "projects_ranked": 1},
+        "diagnostics": [],
+        "projects": projects,
+    }
 
 
 def _project(project_id: str, page_names: tuple[str, ...]) -> dict[str, object]:
@@ -33,8 +50,58 @@ def _project(project_id: str, page_names: tuple[str, ...]) -> dict[str, object]:
         "title": f"Title {project_id}",
         "author": "Author",
         "genre": "Fiction",
-        "pages": [{"name": page_name} for page_name in page_names],
+        "pages_total": 1,
+        "pg_ebook_number": 1,
+        "score": 0,
+        "score_components": {"top_ten_page_scores": 0, "group_bonus": 0},
+        "pages": [_page(page_name) for page_name in page_names],
     }
+
+
+def _page(name: str) -> dict[str, object]:
+    return {
+        "name": name,
+        "transcription_available": False,
+        "image_available": False,
+        "features": {
+            "special_format": False,
+            "italic_tags": 0,
+            "bold_tags": 0,
+            "small_caps_tags": 0,
+            "dot_leaders": False,
+            "aligned_fields": False,
+            "table_like": False,
+            "poetry_like": False,
+            "quotation_like": False,
+            "multipart_name": False,
+            "illustration_or_ornament": False,
+            "uncertainty_note": False,
+        },
+        "score": {"total": 0, "components": {"special_format": 0}},
+        "matched_groups": [],
+    }
+
+
+def _diagnostic() -> dict[str, object]:
+    return {
+        "code": "issue",
+        "message": "Issue",
+        "project_id": None,
+        "page_name": None,
+    }
+
+
+def _remove_path(payload: dict[str, object], path: str) -> None:
+    current: object = payload
+    parts = path.split(".")
+    for part in parts[:-1]:
+        if isinstance(current, list):
+            current = current[int(part)]
+        else:
+            assert isinstance(current, dict)
+            current = current[part]
+    assert isinstance(current, dict)
+    del current[parts[-1]]
 
 
 def _make_project(corpus_root: Path, project_id: str) -> Path:
@@ -106,6 +173,70 @@ def test_profile_input_rejects_malformed_ranking_json(
         _ = load_profile_input(ranking_path, corpus_root=corpus_root)
 
 
+@pytest.mark.parametrize(
+    "missing_path",
+    [
+        "schema_version",
+        "algorithm_version",
+        "limits",
+        "limits.projects",
+        "limits.pages_per_project",
+        "corpus",
+        "corpus.projects_seen",
+        "corpus.projects_ranked",
+        "diagnostics",
+        "diagnostics.0.code",
+        "diagnostics.0.message",
+        "diagnostics.0.project_id",
+        "diagnostics.0.page_name",
+        "projects",
+        "projects.0.project_id",
+        "projects.0.title",
+        "projects.0.author",
+        "projects.0.genre",
+        "projects.0.pages_total",
+        "projects.0.pg_ebook_number",
+        "projects.0.score",
+        "projects.0.score_components",
+        "projects.0.pages",
+        "projects.0.pages.0.name",
+        "projects.0.pages.0.transcription_available",
+        "projects.0.pages.0.image_available",
+        "projects.0.pages.0.features",
+        "projects.0.pages.0.features.special_format",
+        "projects.0.pages.0.features.italic_tags",
+        "projects.0.pages.0.features.bold_tags",
+        "projects.0.pages.0.features.small_caps_tags",
+        "projects.0.pages.0.features.dot_leaders",
+        "projects.0.pages.0.features.aligned_fields",
+        "projects.0.pages.0.features.table_like",
+        "projects.0.pages.0.features.poetry_like",
+        "projects.0.pages.0.features.quotation_like",
+        "projects.0.pages.0.features.multipart_name",
+        "projects.0.pages.0.features.illustration_or_ornament",
+        "projects.0.pages.0.features.uncertainty_note",
+        "projects.0.pages.0.score",
+        "projects.0.pages.0.score.total",
+        "projects.0.pages.0.score.components",
+        "projects.0.pages.0.matched_groups",
+    ],
+)
+def test_profile_input_rejects_each_missing_required_m14_field(
+    tmp_path: Path, missing_path: str
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    payload = _ranking_payload(projects=[_project("projectIDone", ("p1.png",))])
+    if missing_path.startswith("diagnostics.0"):
+        payload["diagnostics"] = [_diagnostic()]
+    _remove_path(payload, missing_path)
+    ranking_path = tmp_path / "ranking.json"
+    _write_ranking(ranking_path, payload=payload)
+
+    with pytest.raises(ValueError, match="valid ranking JSON"):
+        _ = load_profile_input(ranking_path, corpus_root=corpus_root)
+
+
 def test_profile_input_rejects_unknown_schema_version(tmp_path: Path) -> None:
     corpus_root = tmp_path / "corpus"
     corpus_root.mkdir()
@@ -139,6 +270,40 @@ def test_profile_input_rejects_duplicate_page_names(tmp_path: Path) -> None:
     _write_ranking(ranking_path, projects=(_project("projectIDone", ("p1.png", "p1.png")),))
 
     with pytest.raises(ValueError, match="Duplicate page name"):
+        _ = load_profile_input(ranking_path, corpus_root=corpus_root)
+
+
+@pytest.mark.parametrize("project_alias", ["projectIDone/.", "projectIDone//"])
+def test_profile_input_rejects_noncanonical_project_aliases(
+    tmp_path: Path, project_alias: str
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    _make_project(corpus_root, "projectIDone")
+    ranking_path = tmp_path / "ranking.json"
+    _write_ranking(
+        ranking_path,
+        projects=(
+            _project("projectIDone", ()),
+            _project(project_alias, ()),
+        ),
+    )
+
+    with pytest.raises(ValueError, match=r"(?i)canonical"):
+        _ = load_profile_input(ranking_path, corpus_root=corpus_root)
+
+
+@pytest.mark.parametrize("page_alias", ["./p1.png", "nested/../p1.png", "p1.png/"])
+def test_profile_input_rejects_noncanonical_page_aliases(tmp_path: Path, page_alias: str) -> None:
+    corpus_root = tmp_path / "corpus"
+    project_directory = _make_project(corpus_root, "projectIDone")
+    (project_directory / "p1.png").touch()
+    ranking_path = tmp_path / "ranking.json"
+    _write_ranking(
+        ranking_path,
+        projects=(_project("projectIDone", ("p1.png", page_alias)),),
+    )
+
+    with pytest.raises(ValueError, match=r"(?i)(canonical|unsafe)"):
         _ = load_profile_input(ranking_path, corpus_root=corpus_root)
 
 
