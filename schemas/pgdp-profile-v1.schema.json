@@ -303,6 +303,130 @@
     },
     "PageMeasurementWire": {
       "additionalProperties": true,
+      "oneOf": [
+        {
+          "properties": {
+            "sha256": {
+              "type": "null"
+            },
+            "source_frame": {
+              "type": "null"
+            },
+            "image": {
+              "type": "null"
+            },
+            "observations": {
+              "properties": {
+                "grayscale_threshold": {
+                  "type": "null"
+                },
+                "foreground_pixels": {
+                  "type": "null"
+                },
+                "foreground_bounds": {
+                  "type": "null"
+                },
+                "margins": {
+                  "type": "null"
+                },
+                "ink_bands": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "grayscale_threshold",
+                "foreground_pixels",
+                "foreground_bounds",
+                "margins",
+                "ink_bands"
+              ]
+            }
+          },
+          "title": "Unavailable image"
+        },
+        {
+          "properties": {
+            "sha256": {
+              "type": "string"
+            },
+            "source_frame": {
+              "type": "object"
+            },
+            "image": {
+              "type": "object"
+            },
+            "observations": {
+              "properties": {
+                "grayscale_threshold": {
+                  "type": "integer"
+                },
+                "foreground_pixels": {
+                  "const": 0
+                },
+                "foreground_bounds": {
+                  "type": "null"
+                },
+                "margins": {
+                  "type": "null"
+                },
+                "ink_bands": {
+                  "maxItems": 0,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "grayscale_threshold",
+                "foreground_pixels",
+                "foreground_bounds",
+                "margins",
+                "ink_bands"
+              ]
+            }
+          },
+          "title": "Blank measured image"
+        },
+        {
+          "properties": {
+            "sha256": {
+              "type": "string"
+            },
+            "source_frame": {
+              "type": "object"
+            },
+            "image": {
+              "type": "object"
+            },
+            "observations": {
+              "properties": {
+                "grayscale_threshold": {
+                  "type": "integer"
+                },
+                "foreground_pixels": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "foreground_bounds": {
+                  "type": "array"
+                },
+                "margins": {
+                  "type": "object"
+                },
+                "ink_bands": {
+                  "type": "array"
+                }
+              },
+              "required": [
+                "grayscale_threshold",
+                "foreground_pixels",
+                "foreground_bounds",
+                "margins",
+                "ink_bands"
+              ]
+            }
+          },
+          "title": "Foreground measured image"
+        }
+      ],
       "properties": {
         "page_name": {
           "minLength": 1,
@@ -315,17 +439,38 @@
           "type": "string"
         },
         "sha256": {
-          "maxLength": 64,
-          "minLength": 64,
-          "pattern": "^[0-9a-fA-F]{64}$",
-          "title": "Sha256",
-          "type": "string"
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 64,
+              "pattern": "^[0-9a-fA-F]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sha256"
         },
         "source_frame": {
-          "$ref": "#/$defs/CoordinateFrameWire"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoordinateFrameWire"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "image": {
-          "$ref": "#/$defs/ImageMetadataWire"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageMetadataWire"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "observations": {
           "$ref": "#/$defs/ObservationsWire"

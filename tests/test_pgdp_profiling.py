@@ -242,9 +242,9 @@ def _unavailable_page(page_name: str, diagnostic_code: str) -> PageMeasurement:
     return PageMeasurement(
         page_name=page_name,
         source_path=f"projectID1/{page_name}",
-        sha256="0" * 64,
-        source_frame=CoordinateFrame(width=0, height=0),
-        image_mode="unavailable",
+        sha256=None,
+        source_frame=None,
+        image_mode=None,
         grayscale_threshold=None,
         foreground_pixels=None,
         foreground_bounds=None,

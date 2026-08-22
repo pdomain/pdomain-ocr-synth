@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Literal
 from pdomain_ocr_synth.pgdp.image_measurement import measure_image
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.profile_models import (
-    CoordinateFrame,
     Estimate,
     InkBand,
     PageMeasurement,
@@ -54,8 +53,6 @@ _MARGIN_INDEXES: dict[MetricName, int] = {
 _THRESHOLD_METHOD = "otsu-256/v1"
 _PAGE_DERIVATION_METHOD = "row-ink-bands/v1"
 _POOLING_METHOD = "median-mad/v1"
-_UNAVAILABLE_IMAGE_MODE = "unavailable"
-_UNAVAILABLE_SHA256 = "0" * 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,9 +215,9 @@ def _unavailable_page(
     return PageMeasurement(
         page_name=page.name,
         source_path=_source_path(project_id, page),
-        sha256=_UNAVAILABLE_SHA256,
-        source_frame=CoordinateFrame(width=0, height=0),
-        image_mode=_UNAVAILABLE_IMAGE_MODE,
+        sha256=None,
+        source_frame=None,
+        image_mode=None,
         grayscale_threshold=None,
         foreground_pixels=None,
         foreground_bounds=None,

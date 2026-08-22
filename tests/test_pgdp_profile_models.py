@@ -96,9 +96,9 @@ def test_absent_bounds_do_not_become_zero() -> None:
     page = PageMeasurement(
         page_name="missing.png",
         source_path="projectID1/missing.png",
-        sha256="0" * 64,
-        source_frame=CoordinateFrame(width=100, height=200),
-        image_mode="L",
+        sha256=None,
+        source_frame=None,
+        image_mode=None,
         grayscale_threshold=None,
         foreground_pixels=None,
         foreground_bounds=None,
@@ -107,15 +107,18 @@ def test_absent_bounds_do_not_become_zero() -> None:
     )
 
     assert page.to_dict()["observations"]["foreground_bounds"] is None
+    assert page.to_dict()["sha256"] is None
+    assert page.to_dict()["source_frame"] is None
+    assert page.to_dict()["image"] is None
 
 
 def test_unavailable_foreground_measurements_remain_null() -> None:
     page = PageMeasurement(
         page_name="002.png",
         source_path="projectID1/002.png",
-        sha256="b" * 64,
-        source_frame=CoordinateFrame(width=100, height=200),
-        image_mode="L",
+        sha256=None,
+        source_frame=None,
+        image_mode=None,
         grayscale_threshold=None,
         foreground_pixels=None,
         foreground_bounds=None,
@@ -129,6 +132,50 @@ def test_unavailable_foreground_measurements_remain_null() -> None:
     assert observations["foreground_bounds"] is None
     assert observations["margins"] is None
     assert observations["ink_bands"] is None
+
+
+@pytest.mark.parametrize(
+    ("sha256", "source_frame", "image_mode"),
+    [
+        ("a" * 64, None, None),
+        (None, CoordinateFrame(width=100, height=200), None),
+        (None, None, "L"),
+    ],
+)
+def test_unavailable_foreground_measurements_reject_partial_image_metadata(
+    sha256: str | None,
+    source_frame: CoordinateFrame | None,
+    image_mode: str | None,
+) -> None:
+    with pytest.raises(ValueError, match="unavailable"):
+        _ = PageMeasurement(
+            page_name="partial.png",
+            source_path="projectID1/partial.png",
+            sha256=sha256,
+            source_frame=source_frame,
+            image_mode=image_mode,
+            grayscale_threshold=None,
+            foreground_pixels=None,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=None,
+        )
+
+
+def test_measured_foreground_requires_image_metadata() -> None:
+    with pytest.raises(ValueError, match="metadata"):
+        _ = PageMeasurement(
+            page_name="missing-metadata.png",
+            source_path="projectID1/missing-metadata.png",
+            sha256=None,
+            source_frame=None,
+            image_mode=None,
+            grayscale_threshold=127,
+            foreground_pixels=0,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=(),
+        )
 
 
 def test_verified_blank_page_keeps_zero_distinct_from_unavailable_measurements() -> None:
@@ -253,9 +300,9 @@ def test_unavailable_foreground_measurements_reject_partial_geometry(
         _ = PageMeasurement(
             page_name="005.png",
             source_path="projectID1/005.png",
-            sha256="e" * 64,
-            source_frame=CoordinateFrame(width=100, height=200),
-            image_mode="L",
+            sha256=None,
+            source_frame=None,
+            image_mode=None,
             grayscale_threshold=None,
             foreground_pixels=foreground_pixels,
             foreground_bounds=foreground_bounds,
@@ -593,6 +640,65 @@ def test_profile_schema_declares_the_top_level_contract() -> None:
 def test_profile_schema_constrains_sha256_to_exactly_64_characters() -> None:
     payload = json.loads(SCHEMA_ARTIFACT.read_text(encoding="utf-8"))
     sha256 = payload["$defs"]["PageMeasurementWire"]["properties"]["sha256"]
+    string_schema = next(item for item in sha256["anyOf"] if item.get("type") == "string")
 
-    assert sha256["minLength"] == 64
-    assert sha256["maxLength"] == 64
+    assert string_schema["minLength"] == 64
+    assert string_schema["maxLength"] == 64
+    assert {item["type"] for item in sha256["anyOf"]} == {"null", "string"}
+    assert "sha256" in payload["$defs"]["PageMeasurementWire"]["required"]
+
+
+def test_unavailable_page_round_trips_through_the_profile_wire_contract() -> None:
+    unavailable_page = PageMeasurement(
+        page_name="unavailable.png",
+        source_path="projectID1/unavailable.png",
+        sha256=None,
+        source_frame=None,
+        image_mode=None,
+        grayscale_threshold=None,
+        foreground_pixels=None,
+        foreground_bounds=None,
+        margins=None,
+        ink_bands=None,
+    )
+    report = ProfileReport(
+        source_ranking={"algorithm_version": "pgdp-rank/v1"},
+        methods={},
+        projects=(
+            ProjectProfile(
+                project_id="projectID1",
+                title=None,
+                author=None,
+                genre=None,
+                pages=(unavailable_page,),
+            ),
+        ),
+    )
+
+    parsed = ProfileReport.from_dict(report.to_dict())
+
+    assert parsed.projects[0].pages[0].sha256 is None
+    assert parsed.projects[0].pages[0].source_frame is None
+    assert parsed.projects[0].pages[0].image_mode is None
+
+
+def test_profile_wire_rejects_unavailable_page_with_measured_observations() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["sha256"] = None
+    page["source_frame"] = None
+    page["image"] = None
+    page["observations"]["foreground_pixels"] = None
+    page["observations"]["foreground_bounds"] = None
+    page["observations"]["margins"] = None
+    page["observations"]["ink_bands"] = None
+
+    with pytest.raises(ValueError, match="unavailable"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+def test_profile_schema_declares_mutually_exclusive_page_availability_states() -> None:
+    payload = json.loads(SCHEMA_ARTIFACT.read_text(encoding="utf-8"))
+    page_schema = payload["$defs"]["PageMeasurementWire"]
+
+    assert len(page_schema["oneOf"]) == 3

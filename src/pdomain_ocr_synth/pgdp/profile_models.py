@@ -253,9 +253,9 @@ class PageMeasurement:
 
     page_name: str
     source_path: str
-    sha256: str
-    source_frame: CoordinateFrame
-    image_mode: str
+    sha256: str | None
+    source_frame: CoordinateFrame | None
+    image_mode: str | None
     grayscale_threshold: int | None
     foreground_pixels: int | None
     foreground_bounds: Bounds | None
@@ -274,9 +274,7 @@ class PageMeasurement:
             raise ValueError("Page name must not be empty.")
         if not self.source_path:
             raise ValueError("Source path must not be empty.")
-        _require_sha256(self.sha256)
-        if not self.image_mode:
-            raise ValueError("Image mode must not be empty.")
+        self._validate_image_metadata()
         if self.grayscale_threshold is not None:
             _require_nonnegative_integer(self.grayscale_threshold, name="grayscale_threshold")
             if self.grayscale_threshold > 255:
@@ -315,8 +313,32 @@ class PageMeasurement:
         if self.ink_bands is not None:
             object.__setattr__(self, "ink_bands", tuple(self.ink_bands))
 
+    def _validate_image_metadata(self) -> None:
+        metadata = (self.sha256, self.source_frame, self.image_mode)
+        has_available_metadata = all(value is not None for value in metadata)
+        has_unavailable_metadata = all(value is None for value in metadata)
+        if not has_available_metadata and not has_unavailable_metadata:
+            raise ValueError("Image metadata must be all available or all unavailable.")
+        if has_available_metadata:
+            if self.sha256 is None or self.image_mode is None:
+                raise ValueError("Measured image metadata must be complete.")
+            _require_sha256(self.sha256)
+            if not self.image_mode:
+                raise ValueError("Image mode must not be empty.")
+        elif self.image_extensions:
+            raise ValueError("Unavailable image metadata cannot have image extensions.")
+
     def _validate_foreground_coherence(self) -> None:
         if self.foreground_pixels is None:
+            if (
+                self.sha256 is not None
+                or self.source_frame is not None
+                or self.image_mode is not None
+                or self.grayscale_threshold is not None
+            ):
+                raise ValueError(
+                    "Unavailable foreground measurements must have unavailable image metadata."
+                )
             if (
                 self.foreground_bounds is not None
                 or self.margins is not None
@@ -326,6 +348,10 @@ class PageMeasurement:
                     "Unavailable foreground measurements must have unavailable geometry."
                 )
             return
+        if self.sha256 is None or self.source_frame is None or self.image_mode is None:
+            raise ValueError("Measured foreground measurements require image metadata.")
+        if self.grayscale_threshold is None:
+            raise ValueError("Measured foreground measurements require a grayscale threshold.")
         if self.foreground_pixels == 0:
             if self.foreground_bounds is not None or self.margins is not None:
                 raise ValueError("A blank page must not have foreground bounds or margins.")
@@ -342,16 +368,17 @@ class PageMeasurement:
             raise ValueError("Measured foreground pixels must not exceed the bounds area.")
         if any(margin is None for margin in self.margins):
             raise ValueError("Measured foreground pixels require four numeric margins.")
+        source_frame = self.source_frame
         expected_margins = (
             x_start,
             y_start,
-            self.source_frame.width - x_end,
-            self.source_frame.height - y_end,
+            source_frame.width - x_end,
+            source_frame.height - y_end,
         )
         if self.margins != expected_margins:
             raise ValueError("Measured foreground margins must match the bounds and source frame.")
         if any(
-            band.y_start > self.source_frame.height or band.y_end > self.source_frame.height
+            band.y_start > source_frame.height or band.y_end > source_frame.height
             for band in self.ink_bands
         ):
             raise ValueError("Ink bands must stay inside the source frame height.")
@@ -359,6 +386,8 @@ class PageMeasurement:
     def _validate_bounds(self) -> None:
         if self.foreground_bounds is None:
             return
+        if self.source_frame is None:
+            raise ValueError("Unavailable foreground measurements must have unavailable geometry.")
         x_start, y_start, x_end, y_end = self.foreground_bounds
         for name, value in (
             ("foreground_bounds.x_start", x_start),
@@ -413,13 +442,21 @@ class PageMeasurement:
             },
             self.observation_extensions,
         )
+        source_frame: dict[str, JsonValue] | None = (
+            None if self.source_frame is None else self.source_frame.to_dict()
+        )
+        image: dict[str, JsonValue] | None = (
+            None
+            if self.image_mode is None
+            else _merged_payload({"mode": self.image_mode}, self.image_extensions)
+        )
         return _merged_payload(
             {
                 "page_name": self.page_name,
                 "source_path": self.source_path,
                 "sha256": self.sha256,
-                "source_frame": self.source_frame.to_dict(),
-                "image": _merged_payload({"mode": self.image_mode}, self.image_extensions),
+                "source_frame": source_frame,
+                "image": image,
                 "observations": observations,
                 "derived_estimates": [estimate.to_dict() for estimate in self.derived_estimates],
                 "exclusions": list(self.exclusions),
@@ -658,11 +695,93 @@ class ObservationsWire(_WireModel):
 
 
 class PageMeasurementWire(_WireModel):
+    model_config = ConfigDict(
+        extra="allow",
+        frozen=True,
+        json_schema_extra={
+            "oneOf": [
+                {
+                    "title": "Unavailable image",
+                    "properties": {
+                        "sha256": {"type": "null"},
+                        "source_frame": {"type": "null"},
+                        "image": {"type": "null"},
+                        "observations": {
+                            "properties": {
+                                "grayscale_threshold": {"type": "null"},
+                                "foreground_pixels": {"type": "null"},
+                                "foreground_bounds": {"type": "null"},
+                                "margins": {"type": "null"},
+                                "ink_bands": {"type": "null"},
+                            },
+                            "required": [
+                                "grayscale_threshold",
+                                "foreground_pixels",
+                                "foreground_bounds",
+                                "margins",
+                                "ink_bands",
+                            ],
+                        },
+                    },
+                },
+                {
+                    "title": "Blank measured image",
+                    "properties": {
+                        "sha256": {"type": "string"},
+                        "source_frame": {"type": "object"},
+                        "image": {"type": "object"},
+                        "observations": {
+                            "properties": {
+                                "grayscale_threshold": {"type": "integer"},
+                                "foreground_pixels": {"const": 0},
+                                "foreground_bounds": {"type": "null"},
+                                "margins": {"type": "null"},
+                                "ink_bands": {"type": "array", "maxItems": 0},
+                            },
+                            "required": [
+                                "grayscale_threshold",
+                                "foreground_pixels",
+                                "foreground_bounds",
+                                "margins",
+                                "ink_bands",
+                            ],
+                        },
+                    },
+                },
+                {
+                    "title": "Foreground measured image",
+                    "properties": {
+                        "sha256": {"type": "string"},
+                        "source_frame": {"type": "object"},
+                        "image": {"type": "object"},
+                        "observations": {
+                            "properties": {
+                                "grayscale_threshold": {"type": "integer"},
+                                "foreground_pixels": {"type": "integer", "minimum": 1},
+                                "foreground_bounds": {"type": "array"},
+                                "margins": {"type": "object"},
+                                "ink_bands": {"type": "array"},
+                            },
+                            "required": [
+                                "grayscale_threshold",
+                                "foreground_pixels",
+                                "foreground_bounds",
+                                "margins",
+                                "ink_bands",
+                            ],
+                        },
+                    },
+                },
+            ],
+        },
+    )
     page_name: str = Field(min_length=1)
     source_path: str = Field(min_length=1)
-    sha256: StrictStr = Field(min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$")
-    source_frame: CoordinateFrameWire
-    image: ImageMetadataWire
+    sha256: StrictStr | None = Field(
+        ..., min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$"
+    )
+    source_frame: CoordinateFrameWire | None
+    image: ImageMetadataWire | None
     observations: ObservationsWire
     derived_estimates: tuple[EstimateWire, ...] = ()
     exclusions: tuple[str, ...] = ()
@@ -677,6 +796,34 @@ class PageMeasurementWire(_WireModel):
             raise ValueError("Page derived_estimates must use the derived truth_class.")
         return estimates
 
+    @model_validator(mode="after")
+    def _validate_page_coherence(self) -> Self:
+        metadata = (self.sha256, self.source_frame, self.image)
+        has_available_metadata = all(value is not None for value in metadata)
+        has_unavailable_metadata = all(value is None for value in metadata)
+        if not has_available_metadata and not has_unavailable_metadata:
+            raise ValueError("Image metadata must be all available or all unavailable.")
+        observations = self.observations
+        if observations.foreground_pixels is None:
+            if not has_unavailable_metadata:
+                raise ValueError(
+                    "Unavailable foreground measurements require unavailable image metadata."
+                )
+            if (
+                observations.grayscale_threshold is not None
+                or observations.foreground_bounds is not None
+                or observations.margins is not None
+                or observations.ink_bands is not None
+            ):
+                raise ValueError(
+                    "Unavailable foreground measurements must have unavailable geometry."
+                )
+            return self
+        if not has_available_metadata:
+            raise ValueError("Measured foreground measurements require image metadata.")
+        self.to_domain()
+        return self
+
     def to_domain(self) -> PageMeasurement:
         observations = self.observations
         margins = observations.margins
@@ -688,12 +835,14 @@ class PageMeasurementWire(_WireModel):
         else:
             page_margins = (margins.left, margins.top, margins.right, margins.bottom)
             margin_extensions = _wire_extensions(margins)
+        source_frame = self.source_frame
+        image = self.image
         return PageMeasurement(
             page_name=self.page_name,
             source_path=self.source_path,
             sha256=self.sha256,
-            source_frame=self.source_frame.to_domain(),
-            image_mode=self.image.mode,
+            source_frame=None if source_frame is None else source_frame.to_domain(),
+            image_mode=None if image is None else image.mode,
             grayscale_threshold=observations.grayscale_threshold,
             foreground_pixels=observations.foreground_pixels,
             foreground_bounds=observations.foreground_bounds,
@@ -707,7 +856,7 @@ class PageMeasurementWire(_WireModel):
             exclusions=self.exclusions,
             diagnostics=tuple(diagnostic.to_domain() for diagnostic in self.diagnostics),
             extensions=_wire_extensions(self),
-            image_extensions=_wire_extensions(self.image),
+            image_extensions={} if image is None else _wire_extensions(image),
             observation_extensions=_wire_extensions(observations),
             margin_extensions=margin_extensions,
         )
