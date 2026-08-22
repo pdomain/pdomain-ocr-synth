@@ -287,7 +287,9 @@ def _argparse_flags(subparser: argparse.ArgumentParser) -> set[str]:
     return flags
 
 
-_SUBCOMMAND_HEADER = re.compile(r"^### `([a-z]+)(?:\s.*)?`\s*$")
+_SUBCOMMAND_NAME = r"[a-z]+(?:-[a-z]+)*"
+_SUBCOMMAND_HEADER = re.compile(rf"^### `({_SUBCOMMAND_NAME})(?:\s.*)?`\s*$")
+_SUBCOMMAND_TABLE_ROW = re.compile(rf"\|\s*`({_SUBCOMMAND_NAME})(?=\s|`)")
 # Match every option-looking token *inside* a backticked code span on
 # the row's first cell. The backtick-wrapped form is e.g.
 # ``--dir PATH``, ``-o, --output PATH``, or ``--private`` — we want
@@ -320,7 +322,7 @@ def _spec_subcommand_names(spec_text: str) -> list[str]:
         # Skip the header separator row: ``| Command | Purpose |``.
         # That row doesn't start with ``| `<token>`` so the prefix
         # filter above already excludes it; nothing to do here.
-        match = re.match(r"\|\s*`([a-z]+)", line)
+        match = _SUBCOMMAND_TABLE_ROW.match(line)
         if match:
             name = match.group(1)
             if name not in names:
@@ -344,6 +346,9 @@ def _spec_flag_tables(spec_text: str) -> dict[str, set[str]]:
         if header:
             current = header.group(1)
             tables.setdefault(current, set())
+            continue
+        if line.startswith("###"):
+            current = None
             continue
         # A heading at any level closes the section. ``####`` would be
         # a sub-section, but spec 01 doesn't currently use one and
@@ -369,6 +374,34 @@ def _spec_flag_tables(spec_text: str) -> dict[str, set[str]]:
             for match in _FLAG_TOKEN.finditer(code_span):
                 tables[current].add(match.group(1))
     return tables
+
+
+def test_cli_spec_parser_accepts_lowercase_hyphenated_subcommand_names() -> None:
+    spec_text = """\
+## Subcommands
+
+| Command | Purpose |
+|---------|---------|
+| `rank-pgdp <corpus_root>` | Rank projects |
+| `rank--pgdp <corpus_root>` | Invalid doubled separator |
+| `rank-pgdp- <corpus_root>` | Invalid trailing separator |
+| `rank_pgdp <corpus_root>` | Invalid underscore |
+
+### `rank-pgdp <corpus_root>`
+
+| Flag | Purpose |
+|------|---------|
+| `--project-limit LIMIT` | Cap projects |
+
+### `rank--pgdp <corpus_root>`
+
+| Flag | Purpose |
+|------|---------|
+| `--invalid` | Must not be parsed |
+"""
+
+    assert _spec_subcommand_names(spec_text) == ["rank-pgdp"]
+    assert _spec_flag_tables(spec_text) == {"rank-pgdp": {"--project-limit"}}
 
 
 def test_spec_01_subcommands_match_argparse() -> None:
