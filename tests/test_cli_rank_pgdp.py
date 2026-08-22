@@ -163,6 +163,22 @@ def test_rank_pgdp_rejects_output_inside_the_corpus(
     assert captured.out == ""
 
 
+def test_rank_pgdp_rejects_an_existing_non_file_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    output = tmp_path / "ranking.json"
+    output.mkdir()
+
+    rc = main(["rank-pgdp", str(corpus_root), "--output", str(output)])
+
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "output is not a file" in captured.err
+    assert captured.out == ""
+
+
 def test_rank_pgdp_writes_a_partial_report_for_malformed_projects(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

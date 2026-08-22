@@ -1523,6 +1523,9 @@ def _cmd_rank_pgdp(
     if output_path.resolve().is_relative_to(root.resolve()):
         print("error: report output must be outside the corpus root", file=sys.stderr)
         return USAGE_EXIT
+    if output_path.exists() and not output_path.is_file():
+        print(f"error: report output is not a file: {output_path}", file=sys.stderr)
+        return USAGE_EXIT
 
     report = rank_corpus(
         root,
