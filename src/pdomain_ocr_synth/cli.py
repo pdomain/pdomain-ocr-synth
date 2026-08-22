@@ -1568,6 +1568,7 @@ def _cmd_rank_pgdp(
 def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
     """Measure selected local PGDP scans and write a geometry profile."""
 
+    from pdomain_ocr_synth.pgdp.image_measurement import SnapshotSpoolError
     from pdomain_ocr_synth.pgdp.profile_input import load_profile_snapshot, read_profile_snapshot
     from pdomain_ocr_synth.pgdp.profile_models import ProfileReport
     from pdomain_ocr_synth.pgdp.profiling import profile_methods, profile_selection
@@ -1601,7 +1602,11 @@ def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
         print(f"error: {error}", file=sys.stderr)
         return USAGE_EXIT
 
-    projects = profile_selection(selection)
+    try:
+        projects = profile_selection(selection)
+    except SnapshotSpoolError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return DESTINATION_EXIT
     report = ProfileReport(
         source_ranking={"algorithm_version": "pgdp-rank/v1", "sha256": ranking_sha256},
         methods=profile_methods(),

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 from PIL import Image, ImageDraw
 
-from pdomain_ocr_synth.pgdp import profiling
+from pdomain_ocr_synth.pgdp import image_measurement, profiling
 from pdomain_ocr_synth.pgdp.profile_input import (
     ProfileInput,
     ProfileInputPage,
@@ -128,6 +128,79 @@ def test_profile_selection_marks_unreadable_image_paths(tmp_path: Path) -> None:
     result = profile_selection(selection)
 
     page = result[0].pages[0]
+    assert page.sha256 is None
+    assert tuple(diagnostic.code for diagnostic in page.diagnostics) == ("image_unreadable",)
+
+
+def test_profile_page_propagates_a_temporary_snapshot_write_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    image_path = tmp_path / "source.png"
+    Image.new("L", (8, 6), color=255).save(image_path)
+
+    class WriteFailingSnapshot:
+        def __enter__(self) -> WriteFailingSnapshot:
+            return self
+
+        def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+            return None
+
+        def close(self) -> None:
+            return None
+
+        def seek(self, _offset: int, _whence: int = 0) -> int:
+            return 0
+
+        def write(self, _data: bytes) -> int:
+            raise OSError("No space left on device")
+
+    def temporary_file_full(*_args: object, **_kwargs: object) -> WriteFailingSnapshot:
+        return WriteFailingSnapshot()
+
+    monkeypatch.setattr(image_measurement, "TemporaryFile", temporary_file_full)
+
+    with pytest.raises(image_measurement.SnapshotSpoolError, match="temporary scan snapshot"):
+        _ = profiling.profile_page(
+            "projectID1",
+            ProfileInputPage(
+                name="source.png",
+                image_path=image_path,
+                source_path="projectID1/source.png",
+            ),
+        )
+
+
+def test_profile_page_keeps_a_source_read_failure_as_an_unreadable_diagnostic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    image_path = tmp_path / "source.png"
+    Image.new("L", (8, 6), color=255).save(image_path)
+
+    class ReadFailingSource:
+        def __enter__(self) -> ReadFailingSource:
+            return self
+
+        def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+            return None
+
+        def read(self, _size: int = -1) -> bytes:
+            raise OSError("Input/output error")
+
+    def open_source(path: Path, *_args: object, **_kwargs: object) -> ReadFailingSource:
+        assert path == image_path
+        return ReadFailingSource()
+
+    monkeypatch.setattr(Path, "open", open_source)
+
+    page = profiling.profile_page(
+        "projectID1",
+        ProfileInputPage(
+            name="source.png",
+            image_path=image_path,
+            source_path="projectID1/source.png",
+        ),
+    )
+
     assert page.sha256 is None
     assert tuple(diagnostic.code for diagnostic in page.diagnostics) == ("image_unreadable",)
 

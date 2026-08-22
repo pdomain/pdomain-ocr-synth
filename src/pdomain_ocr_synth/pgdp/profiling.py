@@ -7,6 +7,7 @@ from statistics import median
 from typing import TYPE_CHECKING, Literal
 
 from pdomain_ocr_synth.pgdp.image_measurement import (
+    SnapshotSpoolError,
     measure_image_snapshot,
     open_image_snapshot,
 )
@@ -110,6 +111,8 @@ def profile_page(project_id: str, page: ProfileInputPage) -> PageMeasurement:
                     diagnostic_code="image_decode_failed",
                     sha256=snapshot.sha256,
                 )
+    except SnapshotSpoolError:
+        raise
     except FileNotFoundError:
         return _unavailable_page(project_id, page, diagnostic_code="image_missing")
     except (OSError, ValueError):

@@ -10,6 +10,7 @@ import pytest
 from PIL import Image
 
 from pdomain_ocr_synth.cli import build_parser, main
+from pdomain_ocr_synth.pgdp import image_measurement
 
 
 def _write_project(corpus_root: Path, *, image_bytes: bytes | None = None) -> None:
@@ -165,6 +166,52 @@ def test_profile_pgdp_keeps_a_malformed_scan_as_a_diagnostic(
     assert "pages measured: 0" in summary
     assert "pages excluded: 1" in summary
     assert "diagnostics: 1" in summary
+
+
+def test_profile_pgdp_aborts_when_temporary_scan_snapshot_storage_is_full(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus_root, ranking_path = _prepared_ranking(tmp_path)
+    _ = capsys.readouterr()
+    output = tmp_path / "profile.json"
+
+    class WriteFailingSnapshot:
+        def __enter__(self) -> WriteFailingSnapshot:
+            return self
+
+        def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+            return None
+
+        def close(self) -> None:
+            return None
+
+        def seek(self, _offset: int, _whence: int = 0) -> int:
+            return 0
+
+        def write(self, _data: bytes) -> int:
+            raise OSError("No space left on device")
+
+    def temporary_file_full(*_args: object, **_kwargs: object) -> WriteFailingSnapshot:
+        return WriteFailingSnapshot()
+
+    monkeypatch.setattr(image_measurement, "TemporaryFile", temporary_file_full)
+
+    rc = main(
+        [
+            "profile-pgdp",
+            str(corpus_root),
+            "--ranking",
+            str(ranking_path),
+            "--output",
+            str(output),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert rc == 6
+    assert "temporary scan snapshot" in captured.err
+    assert captured.out == ""
+    assert not output.exists()
 
 
 @pytest.mark.parametrize("destination", ["inside-corpus", "ranking-input", "directory"])

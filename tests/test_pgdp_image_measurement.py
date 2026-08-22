@@ -39,6 +39,23 @@ class _ChunkLimitedSource:
         return chunk
 
 
+class _WriteFailingSnapshot:
+    def __enter__(self) -> _WriteFailingSnapshot:
+        return self
+
+    def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+        return None
+
+    def close(self) -> None:
+        return None
+
+    def seek(self, _offset: int, _whence: int = 0) -> int:
+        return 0
+
+    def write(self, _data: bytes) -> int:
+        raise OSError("No space left on device")
+
+
 def _record_temporary_file_then_stop(
     snapshot: ImageSnapshot, source_files: list[BinaryIO]
 ) -> NoReturn:
@@ -97,6 +114,24 @@ def test_open_image_snapshot_closes_its_temporary_file_after_an_error(tmp_path: 
         _record_temporary_file_then_stop(snapshot, source_files)
 
     assert source_files[0].closed
+
+
+def test_open_image_snapshot_raises_for_a_temporary_snapshot_write_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    image_path = tmp_path / "source.bin"
+    image_path.write_bytes(b"source")
+
+    def temporary_file_full(*_args: object, **_kwargs: object) -> _WriteFailingSnapshot:
+        return _WriteFailingSnapshot()
+
+    monkeypatch.setattr(image_measurement, "TemporaryFile", temporary_file_full)
+
+    with (
+        pytest.raises(image_measurement.SnapshotSpoolError, match="temporary scan snapshot"),
+        image_measurement.open_image_snapshot(image_path),
+    ):
+        pass
 
 
 def test_blank_white_image_has_no_foreground_geometry(tmp_path: Path) -> None:

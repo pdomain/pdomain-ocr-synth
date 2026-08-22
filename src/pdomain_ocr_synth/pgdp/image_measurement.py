@@ -30,6 +30,14 @@ ImageMeasurementDiagnostic = Literal[
 ]
 
 
+class SnapshotSpoolError(RuntimeError):
+    """Temporary scan snapshot storage failed."""
+
+
+class _SourceImageReadError(OSError):
+    """Reading the original image file failed while it was being copied."""
+
+
 @dataclass(frozen=True, slots=True)
 class InkBandMeasurement:
     """One retained horizontal ink band in source-frame pixels."""
@@ -146,13 +154,41 @@ def open_image_snapshot(image_path: str | Path) -> Iterator[ImageSnapshot]:
     """Copy one scan to a seekable temporary file while hashing bounded chunks."""
 
     path = Path(image_path)
+    with path.open("rb") as source_file:
+        yielded_snapshot = False
+        try:
+            with TemporaryFile(mode="w+b") as snapshot_file:
+                source_sha256 = _copy_source_to_snapshot(source_file, snapshot_file)
+                yielded_snapshot = True
+                yield ImageSnapshot(sha256=source_sha256, source_file=snapshot_file)
+                yielded_snapshot = False
+        except (_SourceImageReadError, SnapshotSpoolError):
+            raise
+        except OSError as error:
+            if yielded_snapshot:
+                raise
+            raise SnapshotSpoolError("Could not prepare a temporary scan snapshot.") from error
+
+
+def _copy_source_to_snapshot(source_file: BinaryIO, snapshot_file: BinaryIO) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as source_file, TemporaryFile(mode="w+b") as snapshot_file:
-        while chunk := source_file.read(_HASH_CHUNK_SIZE):
-            digest.update(chunk)
+    while True:
+        try:
+            chunk = source_file.read(_HASH_CHUNK_SIZE)
+        except OSError as error:
+            raise _SourceImageReadError("Could not read the source image file.") from error
+        if not chunk:
+            break
+        digest.update(chunk)
+        try:
             _ = snapshot_file.write(chunk)
+        except OSError as error:
+            raise SnapshotSpoolError("Could not write a temporary scan snapshot.") from error
+    try:
         _ = snapshot_file.seek(0)
-        yield ImageSnapshot(sha256=digest.hexdigest(), source_file=snapshot_file)
+    except OSError as error:
+        raise SnapshotSpoolError("Could not rewind a temporary scan snapshot.") from error
+    return digest.hexdigest()
 
 
 def sha256_file(image_path: str | Path) -> str:
