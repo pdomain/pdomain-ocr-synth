@@ -118,6 +118,27 @@ def test_write_report_allows_a_sibling_of_the_corpus(tmp_path: Path) -> None:
     assert output.is_file()
 
 
+def test_write_report_does_not_unlink_after_successful_replace(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    output = tmp_path / "report.json"
+    unlink_calls: list[Path] = []
+    original_unlink = Path.unlink
+
+    def _record_unlink(self: Path, *, missing_ok: bool = False) -> None:
+        unlink_calls.append(self)
+        original_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", _record_unlink)
+
+    write_report(RankingReport.empty(), output, corpus_root)
+
+    assert unlink_calls == []
+    assert output.is_file()
+
+
 def test_write_report_removes_temporary_file_and_preserves_output_on_replace_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

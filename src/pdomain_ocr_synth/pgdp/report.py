@@ -38,11 +38,6 @@ def write_report(report: RankingReport, output_path: str | Path, corpus_root: st
             temporary_file.flush()
             _ = os.fsync(temporary_file.fileno())
         _ = temporary_path.replace(output)
-        directory_descriptor = os.open(output.parent, os.O_RDONLY)
-        try:
-            _ = os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
     except Exception as write_error:
         try:
             _remove_temporary_file(temporary_path)
@@ -52,8 +47,12 @@ def write_report(report: RankingReport, output_path: str | Path, corpus_root: st
                 [write_error, cleanup_error],
             ) from None
         raise
-    else:
-        _remove_temporary_file(temporary_path)
+
+    directory_descriptor = os.open(output.parent, os.O_RDONLY)
+    try:
+        _ = os.fsync(directory_descriptor)
+    finally:
+        os.close(directory_descriptor)
 
 
 def _remove_temporary_file(temporary_path: Path) -> None:
