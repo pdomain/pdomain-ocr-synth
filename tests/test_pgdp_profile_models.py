@@ -178,6 +178,33 @@ def test_measured_foreground_requires_image_metadata() -> None:
         )
 
 
+def test_unavailable_foreground_measurements_reject_derived_estimates() -> None:
+    estimate = Estimate(
+        name="median_band_height_px",
+        value=10.0,
+        unit="px",
+        truth_class="derived",
+        method="row-ink-bands/v1",
+        sample_count=1,
+        evidence_pages=("unavailable.png",),
+    )
+
+    with pytest.raises(ValueError, match="derived estimates"):
+        _ = PageMeasurement(
+            page_name="unavailable.png",
+            source_path="projectID1/unavailable.png",
+            sha256=None,
+            source_frame=None,
+            image_mode=None,
+            grayscale_threshold=None,
+            foreground_pixels=None,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=None,
+            derived_estimates=(estimate,),
+        )
+
+
 def test_verified_blank_page_keeps_zero_distinct_from_unavailable_measurements() -> None:
     page = PageMeasurement(
         page_name="003.png",
@@ -697,8 +724,27 @@ def test_profile_wire_rejects_unavailable_page_with_measured_observations() -> N
         _ = ProfileReportWire.model_validate(payload)
 
 
+def test_profile_wire_rejects_unavailable_page_with_derived_estimates() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["sha256"] = None
+    page["source_frame"] = None
+    page["image"] = None
+    page["observations"] = {
+        "grayscale_threshold": None,
+        "foreground_pixels": None,
+        "foreground_bounds": None,
+        "margins": None,
+        "ink_bands": None,
+    }
+
+    with pytest.raises(ValueError, match="derived estimates"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
 def test_profile_schema_declares_mutually_exclusive_page_availability_states() -> None:
     payload = json.loads(SCHEMA_ARTIFACT.read_text(encoding="utf-8"))
     page_schema = payload["$defs"]["PageMeasurementWire"]
 
     assert len(page_schema["oneOf"]) == 3
+    assert page_schema["oneOf"][0]["properties"]["derived_estimates"]["maxItems"] == 0

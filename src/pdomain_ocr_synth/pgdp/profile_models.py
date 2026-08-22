@@ -347,6 +347,10 @@ class PageMeasurement:
                 raise ValueError(
                     "Unavailable foreground measurements must have unavailable geometry."
                 )
+            if self.derived_estimates:
+                raise ValueError(
+                    "Unavailable foreground measurements must not have derived estimates."
+                )
             return
         if self.sha256 is None or self.source_frame is None or self.image_mode is None:
             raise ValueError("Measured foreground measurements require image metadata.")
@@ -706,6 +710,7 @@ class PageMeasurementWire(_WireModel):
                         "sha256": {"type": "null"},
                         "source_frame": {"type": "null"},
                         "image": {"type": "null"},
+                        "derived_estimates": {"type": "array", "maxItems": 0},
                         "observations": {
                             "properties": {
                                 "grayscale_threshold": {"type": "null"},
@@ -817,6 +822,10 @@ class PageMeasurementWire(_WireModel):
             ):
                 raise ValueError(
                     "Unavailable foreground measurements must have unavailable geometry."
+                )
+            if self.derived_estimates:
+                raise ValueError(
+                    "Unavailable foreground measurements must not have derived estimates."
                 )
             return self
         if not has_available_metadata:

@@ -315,6 +315,10 @@
             "image": {
               "type": "null"
             },
+            "derived_estimates": {
+              "maxItems": 0,
+              "type": "array"
+            },
             "observations": {
               "properties": {
                 "grayscale_threshold": {
