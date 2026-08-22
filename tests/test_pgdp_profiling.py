@@ -85,7 +85,7 @@ def test_profile_selection_keeps_page_order_and_unavailable_page_records(tmp_pat
     assert tuple(diagnostic.code for diagnostic in project.pages[1].diagnostics) == ("blank_page",)
     assert project.pages[2].foreground_pixels is None
     assert tuple(diagnostic.code for diagnostic in project.pages[2].diagnostics) == (
-        "image_measurement_failed",
+        "image_decode_failed",
     )
     assert project.pages[2].sha256 == sha256(corrupt_path.read_bytes()).hexdigest()
     assert project.pages[2].source_frame is None
@@ -96,6 +96,32 @@ def test_profile_selection_keeps_page_order_and_unavailable_page_records(tmp_pat
     )
     assert project.pages[3].sha256 is None
     assert project.pages[3].source_path == "projectID1/p4.png"
+
+
+def test_profile_selection_marks_unreadable_image_paths(tmp_path: Path) -> None:
+    selection = ProfileInput(
+        projects=(
+            ProfileInputProject(
+                project_id="projectID1",
+                title=None,
+                author=None,
+                genre=None,
+                pages=(
+                    ProfileInputPage(
+                        name="image-directory",
+                        image_path=tmp_path,
+                        source_path="projectID1/image-directory",
+                    ),
+                ),
+            ),
+        )
+    )
+
+    result = profile_selection(selection)
+
+    page = result[0].pages[0]
+    assert page.sha256 is None
+    assert tuple(diagnostic.code for diagnostic in page.diagnostics) == ("image_unreadable",)
 
 
 def test_pool_uses_median_mad_natural_evidence_and_metric_exclusions() -> None:
@@ -248,6 +274,11 @@ def _derived_estimate(page_name: str, name: str, value: float | None) -> Estimat
 
 
 def _unavailable_page(page_name: str, diagnostic_code: str) -> PageMeasurement:
+    diagnostic_codes = (
+        (diagnostic_code,)
+        if diagnostic_code in {"image_missing", "image_unreadable"}
+        else (diagnostic_code, "image_missing")
+    )
     return PageMeasurement(
         page_name=page_name,
         source_path=f"projectID1/{page_name}",
@@ -259,7 +290,7 @@ def _unavailable_page(page_name: str, diagnostic_code: str) -> PageMeasurement:
         foreground_bounds=None,
         margins=None,
         ink_bands=None,
-        diagnostics=(_diagnostic(diagnostic_code, page_name),),
+        diagnostics=tuple(_diagnostic(code, page_name) for code in diagnostic_codes),
     )
 
 

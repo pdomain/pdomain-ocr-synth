@@ -101,14 +101,14 @@ def profile_page(project_id: str, page: ProfileInputPage) -> PageMeasurement:
     except FileNotFoundError:
         return _unavailable_page(project_id, page, diagnostic_code="image_missing")
     except (OSError, ValueError):
-        return _unavailable_page(project_id, page, diagnostic_code="image_measurement_failed")
+        return _unavailable_page(project_id, page, diagnostic_code="image_unreadable")
     try:
         measured = measure_image(page.image_path, sha256=file_sha256)
     except (OSError, ValueError):
         return _unavailable_page(
             project_id,
             page,
-            diagnostic_code="image_measurement_failed",
+            diagnostic_code="image_decode_failed",
             sha256=file_sha256,
         )
     return _measured_page(project_id, page, measured)
@@ -263,7 +263,8 @@ def _diagnostic_message(code: str) -> str:
         "high_foreground_ratio": "Foreground occupies more than sixty percent of the scan.",
         "no_ink_bands": "The scan has no retained ink bands.",
         "image_missing": "The selected scan is unavailable.",
-        "image_measurement_failed": "The selected scan could not be measured.",
+        "image_unreadable": "The selected scan could not be read.",
+        "image_decode_failed": "The selected scan could not be decoded.",
         "foreground_bounds_unavailable": "Foreground bounds are unavailable.",
     }
     return messages.get(code, "The page observation is unavailable.")

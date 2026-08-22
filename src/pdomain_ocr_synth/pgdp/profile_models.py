@@ -29,6 +29,9 @@ SCHEMA_VERSION = 1
 ALGORITHM_VERSION = "pgdp-profile/v1"
 SOURCE_FRAME = "source"
 UNCALIBRATED_CONFIDENCE_KIND = "uncalibrated"
+_UNAVAILABLE_IMAGE_DIAGNOSTIC_CODES = frozenset({"image_missing", "image_unreadable"})
+_DECODE_FAILURE_DIAGNOSTIC_CODE = "image_decode_failed"
+_BLANK_PAGE_DIAGNOSTIC_CODE = "blank_page"
 
 TruthClass = Literal["observed", "derived", "pooled"]
 ConfidenceKind = Literal["uncalibrated"]
@@ -356,6 +359,17 @@ class PageMeasurement:
                 raise ValueError(
                     "Unavailable foreground measurements must not have derived estimates."
                 )
+            if self.sha256 is None:
+                self._require_diagnostic(
+                    _UNAVAILABLE_IMAGE_DIAGNOSTIC_CODES,
+                    "Unavailable image measurements require an image_missing or image_unreadable "
+                    "diagnostic.",
+                )
+            else:
+                self._require_diagnostic(
+                    frozenset({_DECODE_FAILURE_DIAGNOSTIC_CODE}),
+                    "Readable undecodable images require an image_decode_failed diagnostic.",
+                )
             return
         if self.sha256 is None or self.source_frame is None or self.image_mode is None:
             raise ValueError("Measured foreground measurements require image metadata.")
@@ -366,6 +380,12 @@ class PageMeasurement:
                 raise ValueError("A blank page must not have foreground bounds or margins.")
             if self.ink_bands != ():
                 raise ValueError("A blank page requires an empty ink bands tuple.")
+            if self.derived_estimates:
+                raise ValueError("A blank page must not have derived_estimates.")
+            self._require_diagnostic(
+                frozenset({_BLANK_PAGE_DIAGNOSTIC_CODE}),
+                "A blank page requires a blank_page diagnostic.",
+            )
             return
         if self.foreground_bounds is None or self.margins is None or self.ink_bands is None:
             raise ValueError("Measured foreground pixels require bounds, margins, and ink bands.")
@@ -391,6 +411,10 @@ class PageMeasurement:
             for band in self.ink_bands
         ):
             raise ValueError("Ink bands must stay inside the source frame height.")
+
+    def _require_diagnostic(self, required_codes: frozenset[str], message: str) -> None:
+        if not any(diagnostic.code in required_codes for diagnostic in self.diagnostics):
+            raise ValueError(message)
 
     def _validate_bounds(self) -> None:
         if self.foreground_bounds is None:
@@ -732,7 +756,19 @@ class PageMeasurementWire(_WireModel):
                                 "ink_bands",
                             ],
                         },
+                        "diagnostics": {
+                            "type": "array",
+                            "contains": {
+                                "properties": {
+                                    "code": {
+                                        "enum": ["image_missing", "image_unreadable"],
+                                    },
+                                },
+                                "required": ["code"],
+                            },
+                        },
                     },
+                    "required": ["diagnostics"],
                 },
                 {
                     "title": "Readable undecodable image",
@@ -757,7 +793,17 @@ class PageMeasurementWire(_WireModel):
                                 "ink_bands",
                             ],
                         },
+                        "diagnostics": {
+                            "type": "array",
+                            "contains": {
+                                "properties": {
+                                    "code": {"const": "image_decode_failed"},
+                                },
+                                "required": ["code"],
+                            },
+                        },
                     },
+                    "required": ["diagnostics"],
                 },
                 {
                     "title": "Blank measured image",
@@ -765,6 +811,7 @@ class PageMeasurementWire(_WireModel):
                         "sha256": {"type": "string"},
                         "source_frame": {"type": "object"},
                         "image": {"type": "object"},
+                        "derived_estimates": {"type": "array", "maxItems": 0},
                         "observations": {
                             "properties": {
                                 "grayscale_threshold": {"type": "integer"},
@@ -781,7 +828,17 @@ class PageMeasurementWire(_WireModel):
                                 "ink_bands",
                             ],
                         },
+                        "diagnostics": {
+                            "type": "array",
+                            "contains": {
+                                "properties": {
+                                    "code": {"const": "blank_page"},
+                                },
+                                "required": ["code"],
+                            },
+                        },
                     },
+                    "required": ["diagnostics"],
                 },
                 {
                     "title": "Foreground measured image",
@@ -862,11 +919,33 @@ class PageMeasurementWire(_WireModel):
                 raise ValueError(
                     "Unavailable foreground measurements must not have derived estimates."
                 )
+            if has_unavailable_metadata:
+                self._require_diagnostic(
+                    _UNAVAILABLE_IMAGE_DIAGNOSTIC_CODES,
+                    "Unavailable image measurements require an image_missing or image_unreadable "
+                    "diagnostic.",
+                )
+            else:
+                self._require_diagnostic(
+                    frozenset({_DECODE_FAILURE_DIAGNOSTIC_CODE}),
+                    "Readable undecodable images require an image_decode_failed diagnostic.",
+                )
             return self
         if not has_decoded_metadata:
             raise ValueError("Measured foreground measurements require image metadata.")
+        if observations.foreground_pixels == 0:
+            if self.derived_estimates:
+                raise ValueError("A blank page must not have derived estimates.")
+            self._require_diagnostic(
+                frozenset({_BLANK_PAGE_DIAGNOSTIC_CODE}),
+                "A blank page requires a blank_page diagnostic.",
+            )
         self.to_domain()
         return self
+
+    def _require_diagnostic(self, required_codes: frozenset[str], message: str) -> None:
+        if not any(diagnostic.code in required_codes for diagnostic in self.diagnostics):
+            raise ValueError(message)
 
     def to_domain(self) -> PageMeasurement:
         observations = self.observations

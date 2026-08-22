@@ -344,8 +344,27 @@
                 "margins",
                 "ink_bands"
               ]
+            },
+            "diagnostics": {
+              "contains": {
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "image_missing",
+                      "image_unreadable"
+                    ]
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              },
+              "type": "array"
             }
           },
+          "required": [
+            "diagnostics"
+          ],
           "title": "Unavailable image"
         },
         {
@@ -388,8 +407,24 @@
                 "margins",
                 "ink_bands"
               ]
+            },
+            "diagnostics": {
+              "contains": {
+                "properties": {
+                  "code": {
+                    "const": "image_decode_failed"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              },
+              "type": "array"
             }
           },
+          "required": [
+            "diagnostics"
+          ],
           "title": "Readable undecodable image"
         },
         {
@@ -402,6 +437,10 @@
             },
             "image": {
               "type": "object"
+            },
+            "derived_estimates": {
+              "maxItems": 0,
+              "type": "array"
             },
             "observations": {
               "properties": {
@@ -429,8 +468,24 @@
                 "margins",
                 "ink_bands"
               ]
+            },
+            "diagnostics": {
+              "contains": {
+                "properties": {
+                  "code": {
+                    "const": "blank_page"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              },
+              "type": "array"
             }
           },
+          "required": [
+            "diagnostics"
+          ],
           "title": "Blank measured image"
         },
         {

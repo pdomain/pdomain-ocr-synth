@@ -14,6 +14,7 @@ from pdomain_ocr_synth.pgdp.profile_models import (
     Estimate,
     InkBand,
     PageMeasurement,
+    ProfileDiagnostic,
     ProfileReport,
     ProfileReportWire,
     ProjectProfile,
@@ -22,6 +23,10 @@ from pdomain_ocr_synth.pgdp.profile_models import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_ARTIFACT = REPO_ROOT / "schemas" / "pgdp-profile-v1.schema.json"
+
+
+def _diagnostic(code: str, page_name: str) -> ProfileDiagnostic:
+    return ProfileDiagnostic(code=code, message=code, project_id="projectID1", page_name=page_name)
 
 
 def _page(
@@ -104,6 +109,7 @@ def test_absent_bounds_do_not_become_zero() -> None:
         foreground_bounds=None,
         margins=None,
         ink_bands=None,
+        diagnostics=(_diagnostic("image_missing", "missing.png"),),
     )
 
     assert page.to_dict()["observations"]["foreground_bounds"] is None
@@ -124,6 +130,7 @@ def test_unavailable_foreground_measurements_remain_null() -> None:
         foreground_bounds=None,
         margins=None,
         ink_bands=None,
+        diagnostics=(_diagnostic("image_missing", "002.png"),),
     )
 
     observations = page.to_dict()["observations"]
@@ -146,6 +153,7 @@ def test_undecodable_but_readable_page_keeps_its_original_byte_sha256() -> None:
         foreground_bounds=None,
         margins=None,
         ink_bands=None,
+        diagnostics=(_diagnostic("image_decode_failed", "corrupt.png"),),
     )
 
     payload = page.to_dict()
@@ -153,6 +161,40 @@ def test_undecodable_but_readable_page_keeps_its_original_byte_sha256() -> None:
     assert payload["sha256"] == "a" * 64
     assert payload["source_frame"] is None
     assert payload["image"] is None
+
+
+def test_unavailable_page_requires_an_unavailable_image_diagnostic() -> None:
+    with pytest.raises(ValueError, match="image_missing or image_unreadable"):
+        _ = PageMeasurement(
+            page_name="unavailable.png",
+            source_path="projectID1/unavailable.png",
+            sha256=None,
+            source_frame=None,
+            image_mode=None,
+            grayscale_threshold=None,
+            foreground_pixels=None,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=None,
+            diagnostics=(_diagnostic("blank_page", "unavailable.png"),),
+        )
+
+
+def test_readable_undecodable_page_requires_a_decode_failure_diagnostic() -> None:
+    with pytest.raises(ValueError, match="image_decode_failed"):
+        _ = PageMeasurement(
+            page_name="corrupt.png",
+            source_path="projectID1/corrupt.png",
+            sha256="a" * 64,
+            source_frame=None,
+            image_mode=None,
+            grayscale_threshold=None,
+            foreground_pixels=None,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=None,
+            diagnostics=(_diagnostic("image_missing", "corrupt.png"),),
+        )
 
 
 @pytest.mark.parametrize(
@@ -197,6 +239,7 @@ def test_measured_foreground_requires_image_metadata() -> None:
             foreground_bounds=None,
             margins=None,
             ink_bands=(),
+            diagnostics=(_diagnostic("image_missing", "blank.png"),),
         )
 
 
@@ -239,9 +282,44 @@ def test_verified_blank_page_keeps_zero_distinct_from_unavailable_measurements()
         foreground_bounds=None,
         margins=None,
         ink_bands=(),
+        diagnostics=(_diagnostic("blank_page", "003.png"),),
     )
 
     assert page.to_dict()["observations"]["foreground_pixels"] == 0
+
+
+def test_verified_blank_page_requires_a_blank_diagnostic() -> None:
+    with pytest.raises(ValueError, match="blank_page"):
+        _ = PageMeasurement(
+            page_name="blank.png",
+            source_path="projectID1/blank.png",
+            sha256="c" * 64,
+            source_frame=CoordinateFrame(width=100, height=200),
+            image_mode="L",
+            grayscale_threshold=127,
+            foreground_pixels=0,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=(),
+        )
+
+
+def test_verified_blank_page_rejects_derived_estimates() -> None:
+    with pytest.raises(ValueError, match="derived_estimates"):
+        _ = PageMeasurement(
+            page_name="blank.png",
+            source_path="projectID1/blank.png",
+            sha256="c" * 64,
+            source_frame=CoordinateFrame(width=100, height=200),
+            image_mode="L",
+            grayscale_threshold=127,
+            foreground_pixels=0,
+            foreground_bounds=None,
+            margins=None,
+            ink_bands=(),
+            derived_estimates=(_page().derived_estimates[0],),
+            diagnostics=(_diagnostic("blank_page", "blank.png"),),
+        )
 
 
 def test_verified_blank_page_requires_an_empty_ink_band_tuple() -> None:
@@ -281,6 +359,34 @@ def test_profile_wire_rejects_verified_blank_page_without_an_empty_ink_band_tupl
     observations["ink_bands"] = None
 
     with pytest.raises(ValueError, match="empty ink bands"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+def test_profile_wire_requires_a_blank_page_diagnostic() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["observations"]["foreground_pixels"] = 0
+    page["observations"]["foreground_bounds"] = None
+    page["observations"]["margins"] = None
+    page["observations"]["ink_bands"] = []
+    page["derived_estimates"] = []
+
+    with pytest.raises(ValueError, match="blank_page"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+def test_profile_wire_rejects_blank_page_derived_estimates() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["observations"]["foreground_pixels"] = 0
+    page["observations"]["foreground_bounds"] = None
+    page["observations"]["margins"] = None
+    page["observations"]["ink_bands"] = []
+    page["diagnostics"] = [
+        _diagnostic("blank_page", "001.png").to_dict(),
+    ]
+
+    with pytest.raises(ValueError, match="derived estimates"):
         _ = ProfileReportWire.model_validate(payload)
 
 
@@ -727,6 +833,7 @@ def test_unavailable_page_round_trips_through_the_profile_wire_contract() -> Non
         foreground_bounds=None,
         margins=None,
         ink_bands=None,
+        diagnostics=(_diagnostic("image_missing", "unavailable.png"),),
     )
     report = ProfileReport(
         source_ranking={"algorithm_version": "pgdp-rank/v1"},
@@ -782,6 +889,25 @@ def test_profile_wire_rejects_unavailable_page_with_derived_estimates() -> None:
         _ = ProfileReportWire.model_validate(payload)
 
 
+def test_profile_wire_requires_an_unavailable_image_diagnostic() -> None:
+    payload = _report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["sha256"] = None
+    page["source_frame"] = None
+    page["image"] = None
+    page["observations"] = {
+        "grayscale_threshold": None,
+        "foreground_pixels": None,
+        "foreground_bounds": None,
+        "margins": None,
+        "ink_bands": None,
+    }
+    page["derived_estimates"] = []
+
+    with pytest.raises(ValueError, match="image_missing or image_unreadable"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
 def test_profile_wire_accepts_undecodable_page_with_an_original_byte_sha256() -> None:
     payload = _report().to_dict()
     page = payload["projects"][0]["pages"][0]
@@ -795,6 +921,9 @@ def test_profile_wire_accepts_undecodable_page_with_an_original_byte_sha256() ->
         "ink_bands": None,
     }
     page["derived_estimates"] = []
+    page["diagnostics"] = [
+        _diagnostic("image_decode_failed", "001.png").to_dict(),
+    ]
 
     parsed = ProfileReportWire.model_validate(payload).to_domain()
 
@@ -807,5 +936,20 @@ def test_profile_schema_declares_mutually_exclusive_page_availability_states() -
 
     assert len(page_schema["oneOf"]) == 4
     assert page_schema["oneOf"][0]["properties"]["derived_estimates"]["maxItems"] == 0
+    assert page_schema["oneOf"][0]["properties"]["diagnostics"]["contains"] == {
+        "properties": {
+            "code": {"enum": ["image_missing", "image_unreadable"]},
+        },
+        "required": ["code"],
+    }
     assert page_schema["oneOf"][1]["properties"]["sha256"]["type"] == "string"
     assert page_schema["oneOf"][1]["properties"]["source_frame"]["type"] == "null"
+    assert page_schema["oneOf"][1]["properties"]["diagnostics"]["contains"] == {
+        "properties": {"code": {"const": "image_decode_failed"}},
+        "required": ["code"],
+    }
+    assert page_schema["oneOf"][2]["properties"]["derived_estimates"]["maxItems"] == 0
+    assert page_schema["oneOf"][2]["properties"]["diagnostics"]["contains"] == {
+        "properties": {"code": {"const": "blank_page"}},
+        "required": ["code"],
+    }
