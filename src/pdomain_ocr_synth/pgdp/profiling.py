@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from statistics import median
 from typing import TYPE_CHECKING, Literal
 
-from pdomain_ocr_synth.pgdp.image_measurement import measure_image, sha256_file
+from pdomain_ocr_synth.pgdp.image_measurement import (
+    measure_image_snapshot,
+    read_image_snapshot,
+    sha256_bytes,
+)
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.profile_models import (
     Estimate,
@@ -97,19 +101,19 @@ def profile_page(project_id: str, page: ProfileInputPage) -> PageMeasurement:
     if page.image_path is None:
         return _unavailable_page(project_id, page, diagnostic_code="image_missing")
     try:
-        file_sha256 = sha256_file(page.image_path)
+        image_snapshot = read_image_snapshot(page.image_path)
     except FileNotFoundError:
         return _unavailable_page(project_id, page, diagnostic_code="image_missing")
     except (OSError, ValueError):
         return _unavailable_page(project_id, page, diagnostic_code="image_unreadable")
     try:
-        measured = measure_image(page.image_path, sha256=file_sha256)
+        measured = measure_image_snapshot(image_snapshot)
     except (OSError, ValueError):
         return _unavailable_page(
             project_id,
             page,
             diagnostic_code="image_decode_failed",
-            sha256=file_sha256,
+            sha256=sha256_bytes(image_snapshot),
         )
     return _measured_page(project_id, page, measured)
 

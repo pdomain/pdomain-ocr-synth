@@ -118,6 +118,52 @@ def test_absent_bounds_do_not_become_zero() -> None:
     assert page.to_dict()["image"] is None
 
 
+@pytest.mark.parametrize(
+    "source_path",
+    [
+        "",
+        "/projectID1/001.png",
+        "projectID1/./001.png",
+        "projectID1/../001.png",
+        "projectID1//001.png",
+        "projectID1/001.png/",
+        "projectID1\\001.png",
+        "projectID1/\x00.png",
+    ],
+)
+def test_page_measurement_rejects_noncanonical_source_paths(source_path: str) -> None:
+    with pytest.raises(ValueError, match="Source path"):
+        _ = replace(_page(), source_path=source_path)
+
+
+@pytest.mark.parametrize(
+    "source_path",
+    [
+        "",
+        "/projectID1/001.png",
+        "projectID1/./001.png",
+        "projectID1/../001.png",
+        "projectID1//001.png",
+        "projectID1/001.png/",
+        "projectID1\\001.png",
+        "projectID1/\x00.png",
+    ],
+)
+def test_profile_wire_rejects_noncanonical_source_paths(source_path: str) -> None:
+    payload = _report().to_dict()
+    payload["projects"][0]["pages"][0]["source_path"] = source_path
+
+    with pytest.raises(ValueError, match="source_path"):
+        _ = ProfileReportWire.model_validate(payload)
+
+
+def test_profile_schema_describes_the_source_path_format() -> None:
+    schema = json.loads(profile_schema_json())
+    source_path = schema["$defs"]["PageMeasurementWire"]["properties"]["source_path"]
+
+    assert source_path["format"] == "pgdp-corpus-relative-posix-path"
+
+
 def test_unavailable_foreground_measurements_remain_null() -> None:
     page = PageMeasurement(
         page_name="002.png",

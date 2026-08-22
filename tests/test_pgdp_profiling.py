@@ -5,8 +5,10 @@ from __future__ import annotations
 from hashlib import sha256
 from pathlib import Path
 
+import pytest
 from PIL import Image, ImageDraw
 
+from pdomain_ocr_synth.pgdp import profiling
 from pdomain_ocr_synth.pgdp.profile_input import (
     ProfileInput,
     ProfileInputPage,
@@ -122,6 +124,41 @@ def test_profile_selection_marks_unreadable_image_paths(tmp_path: Path) -> None:
     page = result[0].pages[0]
     assert page.sha256 is None
     assert tuple(diagnostic.code for diagnostic in page.diagnostics) == ("image_unreadable",)
+
+
+def test_profile_page_hashes_and_measures_one_captured_image_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    image_path = tmp_path / "changing.png"
+    Image.new("L", (8, 6), color=255).save(image_path)
+    captured_bytes = image_path.read_bytes()
+
+    replacement = Image.new("L", (8, 6), color=0)
+    replacement_path = tmp_path / "replacement.png"
+    replacement.save(replacement_path)
+    replacement_bytes = replacement_path.read_bytes()
+
+    original_read_snapshot = profiling.read_image_snapshot
+
+    def read_snapshot_then_replace(path: str | Path) -> bytes:
+        snapshot = original_read_snapshot(path)
+        Path(path).write_bytes(replacement_bytes)
+        return snapshot
+
+    monkeypatch.setattr(profiling, "read_image_snapshot", read_snapshot_then_replace)
+
+    page = profiling.profile_page(
+        "projectID1",
+        ProfileInputPage(
+            name="changing.png",
+            image_path=image_path,
+            source_path="projectID1/changing.png",
+        ),
+    )
+
+    assert page.sha256 == sha256(captured_bytes).hexdigest()
+    assert page.foreground_pixels == 0
+    assert page.sha256 != sha256(replacement_bytes).hexdigest()
 
 
 def test_pool_uses_median_mad_natural_evidence_and_metric_exclusions() -> None:

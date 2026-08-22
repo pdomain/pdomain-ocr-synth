@@ -537,6 +537,7 @@
           "type": "string"
         },
         "source_path": {
+          "format": "pgdp-corpus-relative-posix-path",
           "minLength": 1,
           "title": "Source Path",
           "type": "string"

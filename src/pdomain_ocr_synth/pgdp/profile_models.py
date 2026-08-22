@@ -21,6 +21,8 @@ from pydantic import (
     model_validator,
 )
 
+from pdomain_ocr_synth.pgdp.paths import UnsafePathError, require_canonical_relative_reference
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -61,6 +63,18 @@ def _require_sha256(value: object) -> None:
         or any(character not in hexadecimal_characters for character in value)
     ):
         raise ValueError("SHA-256 must contain exactly 64 hexadecimal characters.")
+
+
+def _require_corpus_relative_source_path(value: object) -> str:
+    if not isinstance(value, str):
+        raise TypeError("Source path must be a string.")
+    try:
+        _ = require_canonical_relative_reference(value=value, label="source path")
+    except UnsafePathError as error:
+        raise ValueError(
+            f"Source path must be a canonical corpus-relative POSIX path: {value!r}."
+        ) from error
+    return value
 
 
 def _deep_freeze_json_value(value: object) -> object:
@@ -275,8 +289,7 @@ class PageMeasurement:
     def __post_init__(self) -> None:
         if not self.page_name:
             raise ValueError("Page name must not be empty.")
-        if not self.source_path:
-            raise ValueError("Source path must not be empty.")
+        _ = _require_corpus_relative_source_path(self.source_path)
         self._validate_image_metadata()
         if self.grayscale_threshold is not None:
             _require_nonnegative_integer(self.grayscale_threshold, name="grayscale_threshold")
@@ -868,7 +881,10 @@ class PageMeasurementWire(_WireModel):
         },
     )
     page_name: str = Field(min_length=1)
-    source_path: str = Field(min_length=1)
+    source_path: str = Field(
+        min_length=1,
+        json_schema_extra={"format": "pgdp-corpus-relative-posix-path"},
+    )
     sha256: StrictStr | None = Field(
         ..., min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$"
     )
@@ -878,6 +894,11 @@ class PageMeasurementWire(_WireModel):
     derived_estimates: tuple[EstimateWire, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnosticWire, ...] = ()
+
+    @field_validator("source_path")
+    @classmethod
+    def _validate_source_path(cls, source_path: str) -> str:
+        return _require_corpus_relative_source_path(source_path)
 
     @field_validator("derived_estimates")
     @classmethod
