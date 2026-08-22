@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from pydantic import TypeAdapter, ValidationError
 
 from pdomain_ocr_synth.pgdp.models import Diagnostic
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
@@ -29,11 +30,6 @@ class _Control(StrEnum):
     CONTINUED_CLOSE = "#/"
 
 
-@dataclass(frozen=True, slots=True)
-class _JsonObject:
-    pairs: tuple[tuple[str, object], ...]
-
-
 _OPENING_KINDS: dict[_Control, _BlockKind] = {
     _Control.LOCAL_OPEN: _BlockKind.LOCAL,
     _Control.CONTINUED_OPEN: _BlockKind.CONTINUED,
@@ -42,6 +38,7 @@ _CLOSING_KINDS: dict[_Control, _BlockKind] = {
     _Control.LOCAL_CLOSE: _BlockKind.LOCAL,
     _Control.CONTINUED_CLOSE: _BlockKind.CONTINUED,
 }
+_F2_PAGES_ADAPTER = TypeAdapter(dict[str, str])
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,14 +75,11 @@ def load_f2(path: str | Path) -> F2ParseResult:
 
     source = Path(path)
     try:
-        decoded_payload: object = json.loads(
-            source.read_text(encoding="utf-8"), object_pairs_hook=_json_object
-        )
-        payload = _require_json_object(decoded_payload)
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        payload = _F2_PAGES_ADAPTER.validate_json(source.read_text(encoding="utf-8"), strict=True)
+    except (OSError, UnicodeDecodeError, ValidationError) as error:
         raise F2LoadError(f"Could not load F2 JSON from {source}.") from error
 
-    return parse_f2_pages(_validate_f2_mapping(payload))
+    return parse_f2_pages(payload)
 
 
 def parse_f2_pages(source_pages: Mapping[str, str]) -> F2ParseResult:
@@ -121,25 +115,6 @@ def parse_f2_pages(source_pages: Mapping[str, str]) -> F2ParseResult:
         for page_name in sorted(source_pages, key=natural_page_key)
     )
     return F2ParseResult(pages=pages, diagnostics=tuple(diagnostics))
-
-
-def _validate_f2_mapping(payload: _JsonObject) -> dict[str, str]:
-    pages: dict[str, str] = {}
-    for page_name, source_text in payload.pairs:
-        if not isinstance(source_text, str):
-            raise F2LoadError("F2 JSON must map string page names to string source text.")
-        pages[page_name] = source_text
-    return pages
-
-
-def _json_object(pairs: list[tuple[str, object]]) -> _JsonObject:
-    return _JsonObject(pairs=tuple(pairs))
-
-
-def _require_json_object(payload: object) -> _JsonObject:
-    if isinstance(payload, _JsonObject):
-        return payload
-    raise F2LoadError(f"F2 JSON root must be an object, got {type(payload).__name__}.")
 
 
 def _scan_page(
