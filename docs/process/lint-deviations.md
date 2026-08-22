@@ -6,8 +6,8 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-22
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-08-22
+- **Provenance:** agent-verified against the current suppression inventory
 - **Disposition:** Retained as current intent or process guidance.
 
 Standing lint-rule suppressions and per-file overrides in this repo. Each entry
@@ -258,11 +258,11 @@ marker, and inline safety rationale to appear here.
 | `tests/test_degradation.py:655` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
 | `tests/test_publish_orchestrator.py:486` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
 | `tests/test_publish_transport.py:149` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
-| `tests/test_spec_docs.py:527` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
-| `tests/test_spec_docs.py:605` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
-| `tests/test_spec_docs.py:730` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
-| `tests/test_spec_docs.py:838` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
-| `tests/test_spec_docs.py:1104` | `noqa: RUF003` | mathematical subset notation is intentional in this explanatory comment |
+| `tests/test_spec_docs.py:560` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:638` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:763` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:871` | `noqa: N802` | test name mirrors the exported uppercase contract constant |
+| `tests/test_spec_docs.py:1137` | `noqa: RUF003` | mathematical subset notation is intentional in this explanatory comment |
 | `tests/test_recipe_loader.py:85` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
 | `tests/test_tokenization.py:134` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |
 | `tests/test_tokenization.py:142` | `pyright: ignore[reportArgumentType]` | test intentionally supplies a value outside the annotated contract |

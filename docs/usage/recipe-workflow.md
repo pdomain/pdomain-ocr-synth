@@ -6,8 +6,8 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-07-14
-- **Provenance:** verified against the current CLI parser, recipe models, providers, validation, and bundled recipe
+- **Last verified:** 2026-08-22
+- **Provenance:** verified against the CLI, recipe system, bundled recipe, and PGDP ranking implementation
 - **Disposition:** Replaces the implemented CLI spec and stale recipe tutorial as current usage.
 - **Provenance note:** Promoted from the retired CLI and recipe-tutorial documents; see `docs/context/decisions.md`.
 
@@ -44,6 +44,27 @@ Use HarfBuzz rendering. Required fonts must exist and open successfully;
 optional missing fonts produce warnings. Font coverage remains a render-time
 boundary rather than a complete validation-time corpus scan. Use only registered
 degradation stages; validation reports known but unimplemented stages.
+
+## Rank a local PGDP corpus
+
+```bash
+pdomain-ocr-synth rank-pgdp /path/to/pgdp-corpus \
+  --output ./pgdp-ranking.json \
+  --project-limit 50 \
+  --pages-per-project 12
+```
+
+`rank-pgdp` reads projects from the local `corpus_root` positional argument. It
+does not use the network, an LLM, or a recipe. The command does not modify the
+corpus, and the report path must be outside the corpus root. `--project-limit`
+and `--pages-per-project` must be positive integers.
+
+The command writes deterministic JSON to `--output`, which defaults to
+`./pgdp-ranking.json`. The report contains schema and algorithm versions, the
+requested limits, corpus counts, stable diagnostics, ranked projects, selected
+pages, feature evidence, and score components. It does not contain absolute
+source paths. Re-running the command with the same corpus and limits produces
+the same report bytes.
 
 ## Validate and render
 
@@ -124,6 +145,7 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `publish <recipe>` | Upload rendered output to a Hugging Face dataset repo (see [10 — Publishing](../architecture/output-and-publishing.md)) |
 | `clean <recipe>` | Remove cached corpora (and optionally rendered output) |
 | `audit [output-dir]` | Read back the per-render audit JSONL log written by `render` (M10) |
+| `rank-pgdp <corpus_root>` | Rank local PGDP projects and select bounded review pages |
 
 ## Render-family options
 
@@ -237,6 +259,16 @@ The positional `output_dir` is required *unless* `--global` or
 | `--until ISO` | Only show entries with timestamp <= this ISO-8601 value (same parser as `--since`); applied before `--limit` |
 | `--recipe-sha PREFIX` | Only show entries whose `recipe_sha` starts with this hex prefix (case-insensitive); entries with a null sha are excluded |
 | `--summary` | Print aggregate statistics over the matched entries instead of the per-row table; combine with `--json` for a single JSON object |
+
+### `rank-pgdp <corpus_root>`
+
+The positional `corpus_root` is the local PGDP corpus directory.
+
+| Flag | Meaning |
+|------|---------|
+| `--output PATH` | Write the JSON report here (default: `./pgdp-ranking.json`); the path must be outside the corpus root |
+| `--project-limit N` | Limit the number of ranked projects in the report (default: 50; must be positive) |
+| `--pages-per-project N` | Limit selected review pages per reported project (default: 12; must be positive) |
 
 ## Audit log schema
 
