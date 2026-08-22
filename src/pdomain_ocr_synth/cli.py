@@ -22,6 +22,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -1567,8 +1568,7 @@ def _cmd_rank_pgdp(
 def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
     """Measure selected local PGDP scans and write a geometry profile."""
 
-    from pdomain_ocr_synth.pgdp.image_measurement import sha256_file
-    from pdomain_ocr_synth.pgdp.profile_input import load_profile_input
+    from pdomain_ocr_synth.pgdp.profile_input import load_profile_snapshot, read_profile_snapshot
     from pdomain_ocr_synth.pgdp.profile_models import ProfileReport
     from pdomain_ocr_synth.pgdp.profiling import profile_methods, profile_selection
     from pdomain_ocr_synth.pgdp.report import write_report
@@ -1594,9 +1594,10 @@ def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
         return DESTINATION_EXIT
 
     try:
-        selection = load_profile_input(ranking_path, corpus_root=root)
-        ranking_sha256 = sha256_file(ranking_path)
-    except (OSError, ValueError) as error:
+        ranking_snapshot = read_profile_snapshot(ranking_path)
+        selection = load_profile_snapshot(ranking_snapshot, corpus_root=root)
+        ranking_sha256 = sha256(ranking_snapshot).hexdigest()
+    except ValueError as error:
         print(f"error: {error}", file=sys.stderr)
         return USAGE_EXIT
 

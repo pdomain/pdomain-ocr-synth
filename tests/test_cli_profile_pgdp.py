@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -291,3 +292,41 @@ def test_profile_pgdp_is_byte_deterministic(
     assert first == second == 0
     assert output_a.read_bytes() == output_b.read_bytes()
     assert capsys.readouterr().err == ""
+
+
+def test_profile_pgdp_hashes_and_parses_one_ranking_snapshot(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus_root, ranking_path = _prepared_ranking(tmp_path)
+    output = tmp_path / "profile.json"
+    original_read_bytes = Path.read_bytes
+    snapshot = ranking_path.read_bytes()
+    reads = 0
+
+    def read_snapshot_then_mutate(path: Path) -> bytes:
+        nonlocal reads
+        if path == ranking_path:
+            reads += 1
+            result = original_read_bytes(path)
+            path.write_text("not JSON", encoding="utf-8")
+            return result
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", read_snapshot_then_mutate)
+
+    rc = main(
+        [
+            "profile-pgdp",
+            str(corpus_root),
+            "--ranking",
+            str(ranking_path),
+            "--output",
+            str(output),
+        ]
+    )
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert rc == 0
+    assert reads == 1
+    assert payload["source_ranking"]["sha256"] == hashlib.sha256(snapshot).hexdigest()
+    assert "pages measured: 1" in capsys.readouterr().out

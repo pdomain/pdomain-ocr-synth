@@ -59,7 +59,23 @@ class ProfileInput:
 def load_profile_input(ranking_path: str | Path, *, corpus_root: str | Path) -> ProfileInput:
     """Validate an M14 report and resolve its selected images safely."""
 
-    payload = _load_ranking_payload(Path(ranking_path))
+    ranking_snapshot = read_profile_snapshot(ranking_path)
+    return load_profile_snapshot(ranking_snapshot, corpus_root=corpus_root)
+
+
+def read_profile_snapshot(ranking_path: str | Path) -> bytes:
+    """Read one stable ranking-report byte snapshot."""
+
+    try:
+        return Path(ranking_path).read_bytes()
+    except OSError as error:
+        raise ValueError("Ranking report must be valid ranking JSON.") from error
+
+
+def load_profile_snapshot(ranking_snapshot: bytes, *, corpus_root: str | Path) -> ProfileInput:
+    """Validate one immutable M14 report snapshot and resolve its selected images safely."""
+
+    payload = _load_ranking_payload(ranking_snapshot)
     _validate_version(payload)
     root = Path(corpus_root)
     project_ids: set[str] = set()
@@ -88,10 +104,10 @@ def load_profile_input(ranking_path: str | Path, *, corpus_root: str | Path) -> 
     return ProfileInput(projects=tuple(projects))
 
 
-def _load_ranking_payload(path: Path) -> RankingReportData:
+def _load_ranking_payload(ranking_snapshot: bytes) -> RankingReportData:
     try:
-        return _RANKING_REPORT_ADAPTER.validate_json(path.read_text(encoding="utf-8"), strict=True)
-    except (OSError, UnicodeDecodeError, ValidationError) as error:
+        return _RANKING_REPORT_ADAPTER.validate_json(ranking_snapshot, strict=True)
+    except ValidationError as error:
         raise ValueError("Ranking report must be valid ranking JSON.") from error
 
 
