@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from pdomain_ocr_synth.pgdp.models import Diagnostic
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
@@ -78,12 +78,10 @@ def load_f2(path: str | Path) -> F2ParseResult:
 
     source = Path(path)
     try:
-        payload = _require_json_object(
-            cast(
-                "object",
-                json.loads(source.read_text(encoding="utf-8"), object_pairs_hook=_json_object),
-            )
+        decoded_payload: object = json.loads(
+            source.read_text(encoding="utf-8"), object_pairs_hook=_json_object
         )
+        payload = _require_json_object(decoded_payload)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise F2LoadError(f"Could not load F2 JSON from {source}.") from error
 
