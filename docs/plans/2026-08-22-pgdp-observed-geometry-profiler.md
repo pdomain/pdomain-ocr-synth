@@ -3,12 +3,13 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-22
 - **Last verified:** 2026-08-22
-- **Provenance:** derived from the approved PGDP typography design and shipped M14 ranker
-- **Disposition:** Implementation plan for the first M15 scan-measurement slice.
+- **Provenance:** derived from the approved PGDP typography design, the shipped M14 ranker, and
+  2026-08-22 corpus verification.
+- **Disposition:** Implemented first M15 scan-measurement slice.
 - **Read when:** implementing or reviewing PGDP scan measurement and book profiles.
 - **Search terms:** PGDP, M15, image measurement, ink bands, profile, Otsu, margins.
 
@@ -85,7 +86,7 @@ text alignment, font matching, style inference, and renderer settings.
 - Create: `tests/test_pgdp_profile_models.py`
 - Modify: `src/pdomain_ocr_synth/pgdp/__init__.py`
 
-- [ ] **Step 1: Write failing serialization and invariant tests**
+- [x] **Step 1: Write failing serialization and invariant tests**
 
 Require `CoordinateFrame`, `InkBand`, `Estimate`, `PageMeasurement`, `ProjectProfile`, and
 `ProfileReport`. Assert deterministic `to_dict()` output, tuple normalization, finite estimates,
@@ -97,11 +98,11 @@ def test_absent_bounds_do_not_become_zero() -> None:
     assert page.to_dict()["observations"]["foreground_bounds"] is None
 ```
 
-- [ ] **Step 2: Run `uv run pytest tests/test_pgdp_profile_models.py -q`**
+- [x] **Step 2: Run `uv run pytest tests/test_pgdp_profile_models.py -q`**
 
 Expected: fail because `pgdp.profile_models` does not exist.
 
-- [ ] **Step 3: Implement frozen, slotted records and serializers**
+- [x] **Step 3: Implement frozen, slotted records and serializers**
 
 Use schema `1`, algorithm `pgdp-profile/v1`, frame `source`, and truth classes `observed`, `derived`,
 and `pooled`. Reject non-finite values, negative counts, inverted bounds, duplicate evidence, and
@@ -115,13 +116,13 @@ Version 1 readers reject unknown major schema and algorithm versions. They accep
 version 1 fields and preserve their JSON values in the corresponding object's `extensions` mapping.
 Tests compare semantic values after canonical deterministic reserialization.
 
-- [ ] **Step 4: Run tests and strict checks**
+- [x] **Step 4: Run tests and strict checks**
 
 Run: `uv run pytest tests/test_pgdp_profile_models.py -q && make lint AI=1 && make typecheck AI=1`
 
 Expected: all commands pass.
 
-- [ ] **Step 5: Commit with `feat: define PGDP geometry profile records`**
+- [x] **Step 5: Commit with `feat: define PGDP geometry profile records`**
 
 ## Task 2: Validate input and resolve scans safely
 
@@ -133,7 +134,7 @@ Expected: all commands pass.
 - Create: `tests/test_pgdp_profile_input.py`
 - Modify: `tests/test_pgdp_ranking.py`
 
-- [ ] **Step 1: Write failing input and path tests**
+- [x] **Step 1: Write failing input and path tests**
 
 Cover valid M14 input, unknown versions, malformed JSON, duplicates, missing projects, absolute
 paths, traversal, NUL names, symlink escape, and duplicate root and `images/` files.
@@ -145,11 +146,11 @@ def test_profile_input_rejects_unknown_algorithm(tmp_path: Path) -> None:
         load_profile_input(tmp_path / "ranking.json")
 ```
 
-- [ ] **Step 2: Run `uv run pytest tests/test_pgdp_profile_input.py tests/test_pgdp_ranking.py -q`**
+- [x] **Step 2: Run `uv run pytest tests/test_pgdp_profile_input.py tests/test_pgdp_ranking.py -q`**
 
 Expected: fail because the loader and shared resolver do not exist.
 
-- [ ] **Step 3: Implement the strict boundary and resolver**
+- [x] **Step 3: Implement the strict boundary and resolver**
 
 Validate consumed JSON with Pydantic `TypeAdapter`. Accept only schema `1` and `pgdp-rank/v1`.
 Preserve report order. Move image resolution from `ranking.py` into `paths.py` without changing M14
@@ -160,9 +161,9 @@ uses the same candidate precedence and records the selected relative path. It do
 because another safe candidate has the same name. Add a golden M14 report fixture and assert that
 this refactor leaves its bytes unchanged.
 
-- [ ] **Step 4: Run the focused tests and expect all to pass**
+- [x] **Step 4: Run the focused tests and expect all to pass**
 
-- [ ] **Step 5: Commit with `feat: load PGDP profile inputs safely`**
+- [x] **Step 5: Commit with `feat: load PGDP profile inputs safely`**
 
 ## Task 3: Measure foreground geometry
 
@@ -171,7 +172,7 @@ this refactor leaves its bytes unchanged.
 - Create: `src/pdomain_ocr_synth/pgdp/image_measurement.py`
 - Create: `tests/test_pgdp_image_measurement.py`
 
-- [ ] **Step 1: Write failing synthetic-image tests**
+- [x] **Step 1: Write failing synthetic-image tests**
 
 Cover blank, solid, grayscale, RGB, RGBA, palette, and separated rectangles. Hash original bytes.
 Composite alpha over white. Use 256-bin integer Otsu with the lowest maximizing threshold as its
@@ -183,11 +184,11 @@ def test_two_rectangles_report_source_bounds(tmp_path: Path) -> None:
     assert result.foreground_bounds == (5, 4, 35, 26)
 ```
 
-- [ ] **Step 2: Run `uv run pytest tests/test_pgdp_image_measurement.py -q`**
+- [x] **Step 2: Run `uv run pytest tests/test_pgdp_image_measurement.py -q`**
 
 Expected: fail because `measure_image` does not exist.
 
-- [ ] **Step 3: Implement deterministic streaming measurement**
+- [x] **Step 3: Implement deterministic streaming measurement**
 
 Hash in chunks and reject Pillow decompression bombs. Measure decoded pixels without applying EXIF
 orientation. This keeps `source` as the stored raster coordinate frame. Record raw dimensions, mode,
@@ -196,9 +197,9 @@ and the EXIF orientation tag as metadata only. Convert to 8-bit grayscale and ca
 Blank pages have zero foreground pixels and `None` bounds. Release each image array before the next
 page. Add an oriented-image overlay test that proves coordinates remain in raw raster space.
 
-- [ ] **Step 4: Run the image tests, lint, and type checks**
+- [x] **Step 4: Run the image tests, lint, and type checks**
 
-- [ ] **Step 5: Commit with `feat: measure PGDP scan foreground geometry`**
+- [x] **Step 5: Commit with `feat: measure PGDP scan foreground geometry`**
 
 ## Task 4: Extract ink bands and page estimates
 
@@ -207,7 +208,7 @@ page. Add an oriented-image overlay test that proves coordinates remain in raw r
 - Modify: `src/pdomain_ocr_synth/pgdp/image_measurement.py`
 - Modify: `tests/test_pgdp_image_measurement.py`
 
-- [ ] **Step 1: Write failing band and noise tests**
+- [x] **Step 1: Write failing band and noise tests**
 
 A row is active at `max(2, ceil(print_width * 0.005))` foreground pixels. Join active runs separated
 by at most one inactive row. Drop joined runs shorter than two rows. Cover specks, gaps, borders,
@@ -218,9 +219,9 @@ def test_ink_bands_join_one_row_gap() -> None:
     assert band_ranges(extract_ink_bands(band_mask(((3, 5), (7, 9))))) == [(3, 10)]
 ```
 
-- [ ] **Step 2: Run the image tests and confirm failure**
+- [x] **Step 2: Run the image tests and confirm failure**
 
-- [ ] **Step 3: Implement bands, margins, and estimates**
+- [x] **Step 3: Implement bands, margins, and estimates**
 
 Store raw bands, median band height, and median successive band-top pitch when two bands exist.
 Emit diagnostics for blank, one-band, border-dominated, and over-60-percent foreground pages.
@@ -236,9 +237,9 @@ A page is border-dominated when foreground fills at least 50 percent of both opp
 on either axis. Each strip is the outer `max(1, ceil(dimension * 0.01))` rows or columns. Tests cover
 horizontal borders, vertical borders, a single dark edge, and ordinary text near an edge.
 
-- [ ] **Step 4: Run the image tests and expect all to pass**
+- [x] **Step 4: Run the image tests and expect all to pass**
 
-- [ ] **Step 5: Commit with `feat: extract PGDP horizontal ink bands`**
+- [x] **Step 5: Commit with `feat: extract PGDP horizontal ink bands`**
 
 ## Task 5: Build and pool project profiles
 
@@ -247,7 +248,7 @@ horizontal borders, vertical borders, a single dark edge, and ordinary text near
 - Create: `src/pdomain_ocr_synth/pgdp/profiling.py`
 - Create: `tests/test_pgdp_profiling.py`
 
-- [ ] **Step 1: Write failing orchestration and pooling tests**
+- [x] **Step 1: Write failing orchestration and pooling tests**
 
 Use measured, blank, missing, and corrupt pages. Continue after failures. Pool each numeric estimate
 with median and median absolute deviation. Evidence contains contributing pages in natural order.
@@ -260,19 +261,19 @@ def test_pool_records_evidence_and_exclusions() -> None:
     assert result.exclusions == ("p002.png:blank_page",)
 ```
 
-- [ ] **Step 2: Run `uv run pytest tests/test_pgdp_profiling.py -q`**
+- [x] **Step 2: Run `uv run pytest tests/test_pgdp_profiling.py -q`**
 
 Expected: fail because profiling and pooling do not exist.
 
-- [ ] **Step 3: Implement orchestration and robust pooling**
+- [x] **Step 3: Implement orchestration and robust pooling**
 
 Catch file, decode, and measurement failures at the page boundary. Retain failed records with
 `None` observations and stable diagnostics. Use median and median absolute deviation without
 outlier removal. Record `otsu-256/v1`, `row-ink-bands/v1`, and `median-mad/v1`.
 
-- [ ] **Step 4: Run `uv run pytest tests/test_pgdp_*.py -q` and expect all to pass**
+- [x] **Step 4: Run `uv run pytest tests/test_pgdp_*.py -q` and expect all to pass**
 
-- [ ] **Step 5: Commit with `feat: pool PGDP observed geometry profiles`**
+- [x] **Step 5: Commit with `feat: pool PGDP observed geometry profiles`**
 
 ## Task 6: Add deterministic output and CLI
 
@@ -285,7 +286,7 @@ outlier removal. Record `otsu-256/v1`, `row-ink-bands/v1`, and `median-mad/v1`.
 - Modify: `tests/test_spec_docs.py`
 - Modify: `docs/usage/recipe-workflow.md`
 
-- [ ] **Step 1: Write failing CLI, atomicity, and determinism tests**
+- [x] **Step 1: Write failing CLI, atomicity, and determinism tests**
 
 Cover missing input, output inside corpus, output equal to ranking input, output directory, malformed
 scan, interrupted replacement, and two byte-identical runs.
@@ -295,22 +296,22 @@ def test_profile_pgdp_is_byte_deterministic(tmp_path: Path) -> None:
     assert run_profile(tmp_path, "a.json").read_bytes() == run_profile(tmp_path, "b.json").read_bytes()
 ```
 
-- [ ] **Step 2: Run `uv run pytest tests/test_cli_profile_pgdp.py tests/test_spec_docs.py -q`**
+- [x] **Step 2: Run `uv run pytest tests/test_cli_profile_pgdp.py tests/test_spec_docs.py -q`**
 
 Expected: fail because `profile-pgdp` is absent.
 
-- [ ] **Step 3: Implement `profile-pgdp CORPUS_ROOT --ranking PATH --output PATH`**
+- [x] **Step 3: Implement `profile-pgdp CORPUS_ROOT --ranking PATH --output PATH`**
 
 Require both options. Reject unsafe output. Reuse atomic same-directory replacement and stable JSON.
 Use exit 2 for input errors, 0 for completed measurement with diagnostics, and 6 for output errors.
 
-- [ ] **Step 4: Run CLI, documentation, and PGDP tests**
+- [x] **Step 4: Run CLI, documentation, and PGDP tests**
 
 Run: `uv run pytest tests/test_cli_profile_pgdp.py tests/test_spec_docs.py tests/test_pgdp_*.py -q`
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit with `feat: add PGDP observed geometry profiler`**
+- [x] **Step 5: Commit with `feat: add PGDP observed geometry profiler`**
 
 ## Task 7: Verify the corpus and record results
 
@@ -320,13 +321,13 @@ Expected: all tests pass.
 - Modify: `docs/plans/README.md`
 - Modify: `docs/plans/2026-08-22-pgdp-observed-geometry-profiler.md`
 
-- [ ] **Step 1: Rank five projects with twelve pages each**
+- [x] **Step 1: Rank five projects with twelve pages each**
 
 ```bash
 uv run pdomain-ocr-synth rank-pgdp /workspaces/pdomain-data/pgdp-corpus --output /tmp/pgdp-m15a-ranking.json --project-limit 5 --pages-per-project 12
 ```
 
-- [ ] **Step 2: Profile twice and compare bytes**
+- [x] **Step 2: Profile twice and compare bytes**
 
 ```bash
 uv run pdomain-ocr-synth profile-pgdp /workspaces/pdomain-data/pgdp-corpus --ranking /tmp/pgdp-m15a-ranking.json --output /tmp/pgdp-m15a-a.json
@@ -334,12 +335,12 @@ uv run pdomain-ocr-synth profile-pgdp /workspaces/pdomain-data/pgdp-corpus --ran
 cmp /tmp/pgdp-m15a-a.json /tmp/pgdp-m15a-b.json
 ```
 
-- [ ] **Step 3: Inspect ten temporary overlays**
+- [x] **Step 3: Inspect ten temporary overlays**
 
 Draw stored bounds and bands for the first two pages of each project. Inspect all ten. Record false
 merges, false splits, borders, blank pages, and corrupt pages. Do not commit scans or overlays.
 
-- [ ] **Step 4: Add reviewed geometry fixtures and error gates**
+- [x] **Step 4: Add reviewed geometry fixtures and error gates**
 
 Commit five small redistributable synthetic scan fixtures with reviewed source-frame foreground
 bounds and ink-band intervals. Include clean text-like rows, noise, a border, an EXIF orientation
@@ -349,12 +350,12 @@ clean and oriented fixtures, mean matched-band intersection-over-union of at lea
 expected exclusion code for the border and blank fixtures. Store expected measurements in reviewed
 JSON. Generate overlays only in a temporary directory.
 
-- [ ] **Step 5: Update state without claiming excluded measurements**
+- [x] **Step 5: Update state without claiming excluded measurements**
 
 Mark this plan implemented. Record counts, exclusions, diagnostics, overlay findings, commands, and
 commits. Do not claim rectification, alignment, baselines, columns, semantics, or fonts.
 
-- [ ] **Step 6: Run final gates**
+- [x] **Step 6: Run final gates**
 
 ```bash
 make ci AI=1
@@ -363,7 +364,40 @@ docgraph check --strict
 git diff --check
 ```
 
-- [ ] **Step 7: Commit with `docs: record PGDP geometry profiler results`**
+- [x] **Step 7: Commit with `docs: record PGDP geometry profiler results`**
+
+## Corpus verification record
+
+The 2026-08-22 local run ranked five projects with twelve selected pages each. It measured all 60
+pages and excluded none from measurement. The two profile reports were byte-identical. The profile
+used `pgdp-rank/v1` input hash `6f4ca5f025f8a57a77a67b2fcb62f97f53191bc2c029b2daf356b8460ee1f476`.
+It emitted `pgdp-profile/v1` with `otsu-256/v1`, `row-ink-bands/v1`, and `median-mad/v1` methods.
+
+Three pages in `projectID63161caf7eafa` had the `one_ink_band` diagnostic: `w0030.png`,
+`w0050.png`, and `w0110.png`. They remain measured but are excluded only from the pooled band-pitch
+estimate. The run had no blank, corrupt, border-dominated, or high-foreground-ratio selected pages.
+
+Ten temporary overlays covered the first two selected pages from each project. They were reviewed in
+`/tmp/pgdp-m15a-overlays.zlSH4u`. Red bounds cover the observed foreground. Green bands follow text
+rows on ordinary pages. On tabular pages, they also follow horizontal rules and table rows. They
+therefore remain ink bands, not baselines. The review found no false bounds merge or split in these
+ten pages and no reviewed blank or corrupt page.
+
+The five redistributable fixtures contain clean text-like rows, isolated noise, opposing borders, an
+EXIF orientation tag, and a blank page. Their reviewed JSON expects zero source-bounds edge error
+for the clean and oriented images, a mean matched-band IoU of 1.0, `border_dominated` exclusion for
+the border, and `blank_page` exclusion for the blank image.
+
+Commands used:
+
+```bash
+UV_PROJECT_ENVIRONMENT=.venv uv run pdomain-ocr-synth rank-pgdp /workspaces/pdomain-data/pgdp-corpus --output /tmp/pgdp-m15a-ranking.json --project-limit 5 --pages-per-project 12
+UV_PROJECT_ENVIRONMENT=.venv uv run pdomain-ocr-synth profile-pgdp /workspaces/pdomain-data/pgdp-corpus --ranking /tmp/pgdp-m15a-ranking.json --output /tmp/pgdp-m15a-a.json
+UV_PROJECT_ENVIRONMENT=.venv uv run pdomain-ocr-synth profile-pgdp /workspaces/pdomain-data/pgdp-corpus --ranking /tmp/pgdp-m15a-ranking.json --output /tmp/pgdp-m15a-b.json
+cmp /tmp/pgdp-m15a-a.json /tmp/pgdp-m15a-b.json
+```
+
+The implementation ends at `a7e5565`. The reviewed fixture gate is `f182774`.
 
 ## Acceptance criteria preserve the evidence boundary
 

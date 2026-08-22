@@ -6,9 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
+- **Last verified:** 2026-08-22
 - **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
-- **Disposition:** Retained as current intent or process guidance.
+  and the 2026-08-22 PGDP geometry verification.
+- **Disposition:** Retained as the current roadmap, including shipped PGDP milestones.
 
 ## Goal
 
@@ -57,7 +58,7 @@ Archived plans are indexed from this roadmap when they remain useful.
 | [11](11-preview-ui.md) | Preview UI | partial prerequisites (NiceGUI extra and backend preview primitives exist; UI unbuilt) | NiceGUI for visual recipe tuning | `pdomain-ocr-synth-preview --recipe gaelic` works |
 | [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
 | [14](2026-08-22-pgdp-ranking-review-queue.md) | PGDP discovery and review queue | first runnable slice shipped | Rank scan projects and pages from F2 evidence | Deterministic bounded multimodal review queue |
-| [15a](2026-08-22-pgdp-observed-geometry-profiler.md) | PGDP observed geometry profiler | active | Measure source-frame ink geometry from ranked scans | Versioned page and book observations |
+| [15a](2026-08-22-pgdp-observed-geometry-profiler.md) | PGDP observed geometry profiler | implemented | Measure source-frame ink geometry from ranked scans | Versioned page and book observations |
 
 ## NiceGUI surface — preview first, explicit save
 

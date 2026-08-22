@@ -7,7 +7,8 @@
 - **Owner:** CT
 - **Created:** 2026-07-14
 - **Last verified:** 2026-08-22
-- **Provenance:** authored from repository evidence, the 2026-08-22 local PGDP corpus ranking, tests, plans, and CI
+- **Provenance:** authored from repository evidence, the 2026-08-22 local PGDP ranking and
+  geometry-profile corpus runs, tests, plans, and CI
 - **Disposition:** Injected operational ground truth.
 
 M00-M10 are substantially shipped. The repository supports recipe discovery and
@@ -20,6 +21,11 @@ M14's first runnable slice is also shipped. The local-only `rank-pgdp` command
 reads PGDP project metadata and F2 text, ranks projects, and writes a bounded
 JSON review queue. It does not measure typography from page images or synthesize
 training data.
+
+M15's first runnable slice is shipped. The local-only `profile-pgdp` command
+reads an M14 review queue and measures source-frame foreground bounds, margins,
+horizontal ink bands, and pooled pixel estimates. It does not rectify scans or
+claim alignment, baselines, columns, semantics, or fonts.
 
 ## PGDP ranking verification
 
@@ -59,6 +65,23 @@ groups, so report order is not a simple descending page-score sort.
 The verification commands were two identical `rank-pgdp` invocations followed
 by `cmp`, focused PGDP and CLI tests, the spec-doc drift test, Markdown lint,
 strict docgraph checks, and the full CI and build gates.
+
+## PGDP observed-geometry verification
+
+Two `profile-pgdp` runs used the five-project, 60-page ranking report at
+`/tmp/pgdp-m15a-ranking.json`. The profile reports were byte-identical. Every
+selected page was measured. Three pages in `projectID63161caf7eafa` retained
+one ink band. They were excluded only from pooled band-pitch estimates.
+
+Ten temporary overlays in `/tmp/pgdp-m15a-overlays.zlSH4u` covered the first two
+selected pages from each project. Their red bounds covered the observed
+foreground. Green ink bands followed text rows and horizontal table rules.
+Version 1 must not call them baselines.
+
+The reviewed fixture suite covers clean text-like rows, noise, borders, EXIF
+orientation, and blank pages. Clean and oriented source bounds have zero edge
+error. Matched ink bands have mean one-dimensional IoU 1.0. Border and blank
+fixtures retain the expected `border_dominated` and `blank_page` exclusions.
 
 ## Current architecture
 
