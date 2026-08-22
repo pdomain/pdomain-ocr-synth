@@ -13,6 +13,7 @@ from pdomain_ocr_synth.pgdp.models import (
 )
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.ranking import rank_corpus
+from pdomain_ocr_synth.pgdp.report import write_report
 
 __all__ = [
     "CorpusSummary",
@@ -27,4 +28,5 @@ __all__ = [
     "natural_page_key",
     "rank_corpus",
     "score_page",
+    "write_report",
 ]

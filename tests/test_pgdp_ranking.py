@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from pdomain_ocr_synth.pgdp import RankingReport, natural_page_key, rank_corpus
+from pdomain_ocr_synth.pgdp import (
+    Diagnostic,
+    RankingReport,
+    natural_page_key,
+    rank_corpus,
+    write_report,
+)
 
 
 def _project(
@@ -54,6 +61,81 @@ def test_ranking_report_serializes_without_runtime_paths() -> None:
         "diagnostics": [],
         "projects": [],
     }
+
+
+def test_write_report_is_byte_stable_and_ends_with_one_newline(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    report = RankingReport.empty()
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.json"
+
+    write_report(report, first, corpus_root)
+    write_report(report, second, corpus_root)
+
+    assert first.read_bytes() == second.read_bytes()
+    assert first.read_bytes().endswith(b"\n")
+    assert not first.read_bytes().endswith(b"\n\n")
+
+
+def test_write_report_preserves_unicode_characters(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    report = replace(
+        RankingReport.empty(),
+        diagnostics=(Diagnostic(code="unicode", message="S\u00e9adna"),),
+    )
+    output = tmp_path / "report.json"
+
+    write_report(report, output, corpus_root)
+
+    assert "S\u00e9adna" in output.read_text(encoding="utf-8")
+    assert b"\\u00e9" not in output.read_bytes()
+
+
+@pytest.mark.parametrize(
+    "output_name",
+    [".", "inside.json", "nested/../traversal.json"],
+)
+def test_write_report_refuses_output_equal_to_or_inside_corpus(
+    tmp_path: Path, output_name: str
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    output = corpus_root / output_name
+
+    with pytest.raises(ValueError, match="corpus root"):
+        write_report(RankingReport.empty(), output, corpus_root)
+
+
+def test_write_report_allows_a_sibling_of_the_corpus(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    output = tmp_path / "report.json"
+
+    write_report(RankingReport.empty(), output, corpus_root)
+
+    assert output.is_file()
+
+
+def test_write_report_removes_temporary_file_and_preserves_output_on_replace_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    output = tmp_path / "report.json"
+    output.write_text("previous report\n", encoding="utf-8")
+
+    def _raise_replace(self: Path, target: str | Path) -> Path:
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(Path, "replace", _raise_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        write_report(RankingReport.empty(), output, corpus_root)
+
+    assert output.read_text(encoding="utf-8") == "previous report\n"
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["corpus", "report.json"]
 
 
 def test_natural_page_key_orders_numeric_runs_by_value_then_width() -> None:
