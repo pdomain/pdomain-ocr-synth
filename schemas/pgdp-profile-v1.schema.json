@@ -1,0 +1,521 @@
+{
+  "$defs": {
+    "CoordinateFrameWire": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "const": "source",
+          "default": "source",
+          "title": "Name",
+          "type": "string"
+        },
+        "width": {
+          "minimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "minimum": 0,
+          "title": "Height",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "title": "CoordinateFrameWire",
+      "type": "object"
+    },
+    "EstimateWire": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "truth_class": {
+          "enum": [
+            "observed",
+            "derived",
+            "pooled"
+          ],
+          "title": "Truth Class",
+          "type": "string"
+        },
+        "frame": {
+          "const": "source",
+          "default": "source",
+          "title": "Frame",
+          "type": "string"
+        },
+        "method": {
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        },
+        "sample_count": {
+          "minimum": 0,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "evidence_pages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Pages",
+          "type": "array"
+        },
+        "exclusions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclusions",
+          "type": "array"
+        },
+        "confidence": {
+          "default": null,
+          "title": "Confidence",
+          "type": "null"
+        },
+        "confidence_kind": {
+          "const": "uncalibrated",
+          "default": "uncalibrated",
+          "title": "Confidence Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "unit",
+        "truth_class",
+        "method",
+        "sample_count"
+      ],
+      "title": "EstimateWire",
+      "type": "object"
+    },
+    "ImageMetadataWire": {
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "minLength": 1,
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "ImageMetadataWire",
+      "type": "object"
+    },
+    "InkBandWire": {
+      "additionalProperties": true,
+      "properties": {
+        "y_start": {
+          "minimum": 0,
+          "title": "Y Start",
+          "type": "integer"
+        },
+        "y_end": {
+          "minimum": 0,
+          "title": "Y End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "y_start",
+        "y_end"
+      ],
+      "title": "InkBandWire",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "MarginsWire": {
+      "additionalProperties": true,
+      "properties": {
+        "left": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left"
+        },
+        "top": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top"
+        },
+        "right": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right"
+        },
+        "bottom": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bottom"
+        }
+      },
+      "title": "MarginsWire",
+      "type": "object"
+    },
+    "ObservationsWire": {
+      "additionalProperties": true,
+      "properties": {
+        "grayscale_threshold": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grayscale Threshold"
+        },
+        "foreground_pixels": {
+          "minimum": 0,
+          "title": "Foreground Pixels",
+          "type": "integer"
+        },
+        "foreground_bounds": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Foreground Bounds"
+        },
+        "margins": {
+          "$ref": "#/$defs/MarginsWire"
+        },
+        "ink_bands": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InkBandWire"
+          },
+          "title": "Ink Bands",
+          "type": "array"
+        }
+      },
+      "required": [
+        "foreground_pixels",
+        "margins"
+      ],
+      "title": "ObservationsWire",
+      "type": "object"
+    },
+    "PageMeasurementWire": {
+      "additionalProperties": true,
+      "properties": {
+        "page_name": {
+          "minLength": 1,
+          "title": "Page Name",
+          "type": "string"
+        },
+        "source_path": {
+          "minLength": 1,
+          "title": "Source Path",
+          "type": "string"
+        },
+        "sha256": {
+          "minLength": 1,
+          "title": "Sha256",
+          "type": "string"
+        },
+        "source_frame": {
+          "$ref": "#/$defs/CoordinateFrameWire"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageMetadataWire"
+        },
+        "observations": {
+          "$ref": "#/$defs/ObservationsWire"
+        },
+        "derived_estimates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EstimateWire"
+          },
+          "title": "Derived Estimates",
+          "type": "array"
+        },
+        "exclusions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclusions",
+          "type": "array"
+        },
+        "diagnostics": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ProfileDiagnosticWire"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        }
+      },
+      "required": [
+        "page_name",
+        "source_path",
+        "sha256",
+        "source_frame",
+        "image",
+        "observations"
+      ],
+      "title": "PageMeasurementWire",
+      "type": "object"
+    },
+    "ProfileDiagnosticWire": {
+      "additionalProperties": true,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "project_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Project Id"
+        },
+        "page_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Name"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ProfileDiagnosticWire",
+      "type": "object"
+    },
+    "ProjectProfileWire": {
+      "additionalProperties": true,
+      "properties": {
+        "project_id": {
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "genre": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Genre"
+        },
+        "pages": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PageMeasurementWire"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "pooled_estimates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EstimateWire"
+          },
+          "title": "Pooled Estimates",
+          "type": "array"
+        },
+        "exclusions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclusions",
+          "type": "array"
+        },
+        "diagnostics": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ProfileDiagnosticWire"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        }
+      },
+      "required": [
+        "project_id"
+      ],
+      "title": "ProjectProfileWire",
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "algorithm_version": {
+      "default": "pgdp-profile/v1",
+      "title": "Algorithm Version",
+      "type": "string"
+    },
+    "source_ranking": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Source Ranking",
+      "type": "object"
+    },
+    "methods": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Methods",
+      "type": "object"
+    },
+    "projects": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ProjectProfileWire"
+      },
+      "title": "Projects",
+      "type": "array"
+    },
+    "diagnostics": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ProfileDiagnosticWire"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_ranking",
+    "methods"
+  ],
+  "title": "ProfileReportWire",
+  "type": "object"
+}
