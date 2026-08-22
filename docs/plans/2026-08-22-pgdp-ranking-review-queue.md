@@ -78,7 +78,7 @@ as ground truth.
 - Create: `src/pdomain_ocr_synth/pgdp/ordering.py`
 - Test: `tests/test_pgdp_ranking.py`
 
-- [ ] **Step 1: Write the failing serialization test**
+- [x] **Step 1: Write the failing serialization test**
 
 ```python
 def test_ranking_report_serializes_without_runtime_paths() -> None:
@@ -94,7 +94,7 @@ def test_ranking_report_serializes_without_runtime_paths() -> None:
     }
 ```
 
-- [ ] **Step 2: Run the test and confirm the missing package failure**
+- [x] **Step 2: Run the test and confirm the missing package failure**
 
 Run:
 
@@ -104,7 +104,7 @@ uv run pytest tests/test_pgdp_ranking.py::test_ranking_report_serializes_without
 
 Expected: fail because `pdomain_ocr_synth.pgdp` does not exist.
 
-- [ ] **Step 3: Add frozen typed records**
+- [x] **Step 3: Add frozen typed records**
 
 Define `Diagnostic`, `PageFeatures`, `RankedPage`, `RankedProject`, `CorpusSummary`,
 `RankingLimits`, and `RankingReport` as frozen, slotted dataclasses. Give each record an explicit
@@ -132,7 +132,7 @@ Add `natural_page_key(name)` in `ordering.py`. Build keys from alternating case-
 integer digit runs. Compare equal integers by original digit-run length. Then use the original full
 name. The F2 parser and project ranker both import this function.
 
-- [ ] **Step 4: Run the record test**
+- [x] **Step 4: Run the record test**
 
 Run:
 
@@ -142,7 +142,7 @@ uv run pytest tests/test_pgdp_ranking.py::test_ranking_report_serializes_without
 
 Expected: pass.
 
-- [ ] **Step 5: Commit the records**
+- [x] **Step 5: Commit the records**
 
 ```bash
 git add src/pdomain_ocr_synth/pgdp tests/test_pgdp_ranking.py
@@ -156,7 +156,7 @@ git commit -m "feat: define PGDP ranking report records"
 - Create: `src/pdomain_ocr_synth/pgdp/f2.py`
 - Create: `tests/test_pgdp_f2.py`
 
-- [ ] **Step 1: Write tests for local and continued blocks**
+- [x] **Step 1: Write tests for local and continued blocks**
 
 ```python
 def test_parse_local_block_preserves_text() -> None:
@@ -186,7 +186,7 @@ Add a cross-page fixture with italic tags and aligned rows on pages inside one c
 Assert that each parsed page exposes only its own valid continued-block body. In Task 3, reuse this
 fixture to assert per-page tag counts and structural features.
 
-- [ ] **Step 2: Run the parser tests and confirm failure**
+- [x] **Step 2: Run the parser tests and confirm failure**
 
 Run:
 
@@ -196,7 +196,7 @@ uv run pytest tests/test_pgdp_f2.py -q
 
 Expected: fail because `parse_f2_pages` does not exist.
 
-- [ ] **Step 3: Implement the state machine**
+- [x] **Step 3: Implement the state machine**
 
 Load UTF-8 JSON through `load_f2(path)`. Reject any root other than `dict[str, str]` with
 `F2LoadError`. Sort pages with `natural_page_key` from Task 1.
@@ -206,7 +206,7 @@ UTF-8 decoding. Store valid block bodies and page-level continued-format members
 diagnostics for nested, overlapping, and unmatched controls. Exclude invalid block bodies from later
 feature predicates.
 
-- [ ] **Step 4: Run all parser tests**
+- [x] **Step 4: Run all parser tests**
 
 Run:
 
@@ -216,7 +216,7 @@ uv run pytest tests/test_pgdp_f2.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit the parser**
+- [x] **Step 5: Commit the parser**
 
 ```bash
 git add src/pdomain_ocr_synth/pgdp/f2.py tests/test_pgdp_f2.py
@@ -230,7 +230,7 @@ git commit -m "feat: parse PGDP F2 formatting controls"
 - Create: `src/pdomain_ocr_synth/pgdp/features.py`
 - Create: `tests/test_pgdp_features.py`
 
-- [ ] **Step 1: Write one focused test per predicate**
+- [x] **Step 1: Write one focused test per predicate**
 
 Use parameterized tests for case-insensitive `<i>`, `<b>`, and `<sc>` opening tags with attributes.
 Add separate tests for dot leaders, two aligned-field rows, and three table-like rows. Also test
@@ -274,7 +274,7 @@ def test_page_score_exposes_every_component() -> None:
     }
 ```
 
-- [ ] **Step 2: Run the feature tests and confirm failure**
+- [x] **Step 2: Run the feature tests and confirm failure**
 
 Run:
 
@@ -284,7 +284,7 @@ uv run pytest tests/test_pgdp_features.py -q
 
 Expected: fail because the feature extractor does not exist.
 
-- [ ] **Step 3: Implement exact design predicates**
+- [x] **Step 3: Implement exact design predicates**
 
 Count style tags across all valid F2 page text, including tags outside a special block. Apply dot
 leader, aligned-field, table, poetry, and quotation predicates only to valid local or continued
@@ -311,7 +311,7 @@ total = (
 )
 ```
 
-- [ ] **Step 4: Run all feature tests**
+- [x] **Step 4: Run all feature tests**
 
 Run:
 
@@ -321,7 +321,7 @@ uv run pytest tests/test_pgdp_features.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit feature extraction**
+- [x] **Step 5: Commit feature extraction**
 
 ```bash
 git add src/pdomain_ocr_synth/pgdp/features.py tests/test_pgdp_features.py
@@ -336,7 +336,7 @@ git commit -m "feat: score PGDP typography and structure features"
 - Modify: `src/pdomain_ocr_synth/pgdp/__init__.py`
 - Modify: `tests/test_pgdp_ranking.py`
 
-- [ ] **Step 1: Write ranking and selection tests**
+- [x] **Step 1: Write ranking and selection tests**
 
 Create project fixtures under `tmp_path` with `project.json`, `rounds/F2.json`, and selected image
 placeholders. Test these rules:
@@ -354,7 +354,7 @@ placeholders. Test these rules:
 - project and page caps keep only the highest-ranked entries;
 - repeated runs return equal report objects.
 
-- [ ] **Step 2: Run ranking tests and confirm failure**
+- [x] **Step 2: Run ranking tests and confirm failure**
 
 Run:
 
@@ -364,7 +364,7 @@ uv run pytest tests/test_pgdp_ranking.py -q
 
 Expected: fail because `rank_corpus` does not exist.
 
-- [ ] **Step 3: Implement project discovery and natural ordering**
+- [x] **Step 3: Implement project discovery and natural ordering**
 
 Discover only immediate directories named `projectID*`. Read `project.json` fields `projectid`,
 `title`, `author`, `genre`, `pages_total`, and `pg_ebook_number` when correctly typed. Preserve
@@ -377,7 +377,7 @@ without excluding the project.
 Build natural keys from alternating case-folded text and integer digit runs. Compare equal integers
 by original digit-run length. Then use the original full name.
 
-- [ ] **Step 4: Implement project scores and review selection**
+- [x] **Step 4: Implement project scores and review selection**
 
 Define target groups as:
 
@@ -396,7 +396,7 @@ selected pages, and sorted diagnostics.
 After sorting, keep only the first `project_limit` projects. Within each project, stop review
 selection at `pages_per_project`. Report counts before and after truncation.
 
-- [ ] **Step 5: Run ranking tests**
+- [x] **Step 5: Run ranking tests**
 
 Run:
 
@@ -406,7 +406,7 @@ uv run pytest tests/test_pgdp_ranking.py -q
 
 Expected: pass.
 
-- [ ] **Step 6: Commit ranking**
+- [x] **Step 6: Commit ranking**
 
 ```bash
 git add src/pdomain_ocr_synth/pgdp tests/test_pgdp_ranking.py
@@ -420,7 +420,7 @@ git commit -m "feat: rank PGDP projects and review pages"
 - Create: `src/pdomain_ocr_synth/pgdp/report.py`
 - Modify: `tests/test_pgdp_ranking.py`
 
-- [ ] **Step 1: Write output tests**
+- [x] **Step 1: Write output tests**
 
 ```python
 def test_write_report_is_byte_stable(tmp_path: Path) -> None:
@@ -438,7 +438,7 @@ def test_write_report_is_byte_stable(tmp_path: Path) -> None:
 Also test refusal when the output resolves inside the source corpus and cleanup when replacement
 fails.
 
-- [ ] **Step 2: Run output tests and confirm failure**
+- [x] **Step 2: Run output tests and confirm failure**
 
 Run:
 
@@ -448,13 +448,13 @@ uv run pytest tests/test_pgdp_ranking.py -k "write_report or output_inside" -q
 
 Expected: fail because `write_report` does not exist.
 
-- [ ] **Step 3: Implement stable atomic output**
+- [x] **Step 3: Implement stable atomic output**
 
 Serialize with `ensure_ascii=False`, `indent=2`, and `sort_keys=True`, followed by one newline.
 Write a sibling temporary file, flush it, then use `Path.replace()`. Remove the temporary file after
 an error. Reject output equal to or below the resolved corpus root.
 
-- [ ] **Step 4: Run output tests**
+- [x] **Step 4: Run output tests**
 
 Run:
 
@@ -464,7 +464,7 @@ uv run pytest tests/test_pgdp_ranking.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit output writing**
+- [x] **Step 5: Commit output writing**
 
 ```bash
 git add src/pdomain_ocr_synth/pgdp/report.py tests/test_pgdp_ranking.py
@@ -479,7 +479,7 @@ git commit -m "feat: write deterministic PGDP ranking reports"
 - Modify: `tests/test_cli.py`
 - Create: `tests/test_cli_rank_pgdp.py`
 
-- [ ] **Step 1: Write parser and end-to-end CLI tests**
+- [x] **Step 1: Write parser and end-to-end CLI tests**
 
 Add `rank-pgdp` to `ALL_SUBCOMMANDS`. Pin this interface:
 
@@ -494,7 +494,7 @@ Test successful output, missing corpus root, non-directory root, nonpositive lim
 placement, malformed projects with a successful partial report, and an output summary containing
 projects seen, ranked, diagnostics, and selected pages.
 
-- [ ] **Step 2: Run CLI tests and confirm failure**
+- [x] **Step 2: Run CLI tests and confirm failure**
 
 Run:
 
@@ -504,7 +504,7 @@ uv run pytest tests/test_cli.py tests/test_cli_rank_pgdp.py -q
 
 Expected: fail because the parser does not know `rank-pgdp`.
 
-- [ ] **Step 3: Add parser and dispatch wiring**
+- [x] **Step 3: Add parser and dispatch wiring**
 
 Add the four arguments exactly as shown. Use defaults of 50 and 12. Make `--output` default to
 `./pgdp-ranking.json`.
@@ -512,7 +512,7 @@ Add the four arguments exactly as shown. Use defaults of 50 and 12. Make `--outp
 Convert expected input, validation, and safety errors into concise stderr messages and exit code 2.
 Unexpected errors must still surface rather than being silently converted.
 
-- [ ] **Step 4: Run CLI tests**
+- [x] **Step 4: Run CLI tests**
 
 Run:
 
@@ -522,7 +522,7 @@ uv run pytest tests/test_cli.py tests/test_cli_rank_pgdp.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit CLI wiring**
+- [x] **Step 5: Commit CLI wiring**
 
 ```bash
 git add src/pdomain_ocr_synth/cli.py tests/test_cli.py tests/test_cli_rank_pgdp.py
@@ -537,7 +537,7 @@ git commit -m "feat: add PGDP ranking CLI"
 - Modify: `docs/context/current-state.md`
 - Modify: `docs/usage/recipe-workflow.md`
 
-- [ ] **Step 1: Run the focused Python gate**
+- [x] **Step 1: Run the focused Python gate**
 
 Run:
 
@@ -549,7 +549,7 @@ uv run pytest tests/test_pgdp_f2.py tests/test_pgdp_features.py tests/test_pgdp_
 
 Expected: all commands pass.
 
-- [ ] **Step 2: Run the ranker on the local corpus**
+- [x] **Step 2: Run the ranker on the local corpus**
 
 Run from outside the corpus:
 
@@ -563,7 +563,7 @@ uv run pdomain-ocr-synth rank-pgdp /workspaces/pdomain-data/pgdp-corpus \
 Expected: exit 0, 285 projects seen, a nonempty ranked-project list, and a bounded review queue.
 Inspect the top five projects and twelve selected pages for the top project.
 
-- [ ] **Step 3: Prove byte determinism**
+- [x] **Step 3: Prove byte determinism**
 
 Run the same command with `/tmp/pgdp-ranking-2.json`, then compare:
 
@@ -573,7 +573,7 @@ cmp /tmp/pgdp-ranking.json /tmp/pgdp-ranking-2.json
 
 Expected: exit 0 with no output.
 
-- [ ] **Step 4: Run full CI**
+- [x] **Step 4: Run full CI**
 
 Run:
 
@@ -583,7 +583,7 @@ make ci AI=1
 
 Expected: pass.
 
-- [ ] **Step 5: Update roadmap and current state with measured results**
+- [x] **Step 5: Update roadmap and current state with measured results**
 
 Add M14 to `docs/plans/README.md`. Document `rank-pgdp`, all four arguments, its local-only
 behavior, and its JSON output in `docs/usage/recipe-workflow.md`.
@@ -592,7 +592,7 @@ Record the actual project count, top-ranked project IDs, selected-page count, co
 verification result in `docs/context/current-state.md`. Do not claim typography measurement or
 synthesis shipped.
 
-- [ ] **Step 6: Run docgraph completion checks**
+- [x] **Step 6: Run docgraph completion checks**
 
 Run:
 
@@ -603,7 +603,7 @@ docgraph check --strict
 
 Expected: zero blocking issues. Surface existing advisories separately from new issues.
 
-- [ ] **Step 7: Commit the verified slice**
+- [x] **Step 7: Commit the verified slice**
 
 ```bash
 git add docs/plans/README.md docs/context/current-state.md docs/usage/recipe-workflow.md

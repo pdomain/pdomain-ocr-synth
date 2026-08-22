@@ -28,6 +28,20 @@ and a per-project page limit of 12. Both reports were byte-identical. The corpus
 contained 286 projects; 285 were rankable. The report contained 1,777 stable
 diagnostics and selected 600 pages across the 50 reported projects.
 
+The first report used this exact command:
+
+```bash
+UV_PROJECT_ENVIRONMENT=.venv uv run pdomain-ocr-synth rank-pgdp \
+  /workspaces/pdomain-data/pgdp-corpus \
+  --output /tmp/pgdp-ranking-task7-a.json \
+  --project-limit 50 \
+  --pages-per-project 12
+```
+
+The second run changed only the output to
+`/tmp/pgdp-ranking-task7-b.json`; `cmp` confirmed that the files were
+byte-identical.
+
 The top five projects were:
 
 1. `projectID64a479f51ce5b`, *The royal mint*, score 487.
