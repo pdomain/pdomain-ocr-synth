@@ -19,6 +19,7 @@ from pdomain_ocr_synth.pgdp.models import (
     RankingReport,
 )
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
+from pdomain_ocr_synth.pgdp.paths import UnsafePathError, resolve_image_candidate
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -307,14 +308,15 @@ def _page_candidate(
 def _image_available(
     *, project_directory: Path, page_name: str, project_id: str, diagnostics: list[Diagnostic]
 ) -> bool:
+    page_path = Path(page_name)
+    if not page_name or page_path.is_absolute() or ".." in page_path.parts:
+        return False
     try:
-        page_path = Path(page_name)
-        if page_path.is_absolute() or ".." in page_path.parts:
-            return False
-        return _is_file_within(project_directory, page_path) or _is_file_within(
-            project_directory / "images", page_path
+        resolution = resolve_image_candidate(
+            project_directory=project_directory,
+            page_name=page_name,
         )
-    except (OSError, ValueError):
+    except (OSError, UnsafePathError):
         diagnostics.append(
             Diagnostic(
                 code="unresolvable_image_path",
@@ -324,12 +326,8 @@ def _image_available(
             )
         )
         return False
-
-
-def _is_file_within(allowed_root: Path, relative_path: Path) -> bool:
-    resolved_root = allowed_root.resolve()
-    resolved_path = (allowed_root / relative_path).resolve()
-    return resolved_path.is_relative_to(resolved_root) and resolved_path.is_file()
+    else:
+        return resolution.image_path is not None
 
 
 def _matched_groups(features: PageFeatures) -> tuple[str, ...]:

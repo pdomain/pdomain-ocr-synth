@@ -393,18 +393,106 @@ def test_rank_corpus_finds_nested_images_in_each_allowed_location(tmp_path: Path
     assert all(page.image_available for page in report.projects[0].pages)
 
 
+def test_rank_corpus_keeps_report_bytes_for_root_and_images_candidates(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    corpus_root.mkdir()
+    _project(
+        corpus_root,
+        "projectIDone",
+        pages={"p1.png": "plain"},
+        transcriptions={},
+        images=("p1.png", "images/p1.png"),
+    )
+    output = tmp_path / "report.json"
+
+    write_report(
+        rank_corpus(corpus_root, project_limit=1, pages_per_project=1), output, corpus_root
+    )
+
+    assert output.read_bytes() == (
+        b"{\n"
+        b'  "algorithm_version": "pgdp-rank/v1",\n'
+        b'  "corpus": {\n'
+        b'    "projects_ranked": 1,\n'
+        b'    "projects_seen": 1\n'
+        b"  },\n"
+        b'  "diagnostics": [],\n'
+        b'  "limits": {\n'
+        b'    "pages_per_project": 1,\n'
+        b'    "projects": 1\n'
+        b"  },\n"
+        b'  "projects": [\n'
+        b"    {\n"
+        b'      "author": "Author",\n'
+        b'      "genre": "Fiction",\n'
+        b'      "pages": [\n'
+        b"        {\n"
+        b'          "features": {\n'
+        b'            "aligned_fields": false,\n'
+        b'            "bold_tags": 0,\n'
+        b'            "dot_leaders": false,\n'
+        b'            "illustration_or_ornament": false,\n'
+        b'            "italic_tags": 0,\n'
+        b'            "multipart_name": false,\n'
+        b'            "poetry_like": false,\n'
+        b'            "quotation_like": false,\n'
+        b'            "small_caps_tags": 0,\n'
+        b'            "special_format": false,\n'
+        b'            "table_like": false,\n'
+        b'            "uncertainty_note": false\n'
+        b"          },\n"
+        b'          "image_available": true,\n'
+        b'          "matched_groups": [],\n'
+        b'          "name": "p1.png",\n'
+        b'          "score": {\n'
+        b'            "components": {\n'
+        b'              "bold_tags": 0,\n'
+        b'              "illustration_or_ornament": 0,\n'
+        b'              "italic_tags": 0,\n'
+        b'              "leaders_or_fields": 0,\n'
+        b'              "multipart_name": 0,\n'
+        b'              "poetry_like": 0,\n'
+        b'              "quotation_like": 0,\n'
+        b'              "small_caps_tags": 0,\n'
+        b'              "special_format": 0,\n'
+        b'              "table_like": 0,\n'
+        b'              "uncertainty_note": 0\n'
+        b"            },\n"
+        b'            "total": 0\n'
+        b"          },\n"
+        b'          "transcription_available": false\n'
+        b"        }\n"
+        b"      ],\n"
+        b'      "pages_total": 12,\n'
+        b'      "pg_ebook_number": 99,\n'
+        b'      "project_id": "projectIDone",\n'
+        b'      "score": 0,\n'
+        b'      "score_components": {\n'
+        b'        "group_bonus": 0,\n'
+        b'        "top_ten_page_scores": 0\n'
+        b"      },\n"
+        b'      "title": "Title projectIDone"\n'
+        b"    }\n"
+        b"  ],\n"
+        b'  "schema_version": 1\n'
+        b"}\n"
+    )
+
+
 @pytest.mark.parametrize("page_name", ["../p1.png", "/outside/p1.png", "nested/../p1.png"])
 def test_rank_corpus_rejects_unsafe_image_page_paths(tmp_path: Path, page_name: str) -> None:
     _project(
         tmp_path,
         "projectIDone",
         pages={page_name: "/* <i>text</i> */"},
+        transcriptions={},
         images=("p1.png",),
     )
 
     report = rank_corpus(tmp_path)
 
     assert report.projects[0].pages[0].image_available is False
+    assert report.diagnostics == ()
 
 
 def test_rank_corpus_reports_unresolvable_image_page_paths(tmp_path: Path) -> None:
