@@ -244,6 +244,36 @@ def test_rank_corpus_marks_missing_image_unavailable_without_dropping_page(tmp_p
     assert report.projects[0].pages[0].image_available is False
 
 
+def test_rank_corpus_finds_nested_images_in_each_allowed_location(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        "projectIDone",
+        pages={
+            "nested/root.png": "/* <i>root</i> */",
+            "nested/image.png": "/* <i>image</i> */",
+        },
+        images=("nested/root.png", "images/nested/image.png"),
+    )
+
+    report = rank_corpus(tmp_path, pages_per_project=2)
+
+    assert all(page.image_available for page in report.projects[0].pages)
+
+
+@pytest.mark.parametrize("page_name", ["../p1.png", "/outside/p1.png", "nested/../p1.png"])
+def test_rank_corpus_rejects_unsafe_image_page_paths(tmp_path: Path, page_name: str) -> None:
+    _project(
+        tmp_path,
+        "projectIDone",
+        pages={page_name: "/* <i>text</i> */"},
+        images=("p1.png",),
+    )
+
+    report = rank_corpus(tmp_path)
+
+    assert report.projects[0].pages[0].image_available is False
+
+
 @pytest.mark.parametrize(("project_limit", "pages_per_project"), [(0, 1), (1, 0), (-1, 1)])
 def test_rank_corpus_requires_positive_limits(
     tmp_path: Path, project_limit: int, pages_per_project: int

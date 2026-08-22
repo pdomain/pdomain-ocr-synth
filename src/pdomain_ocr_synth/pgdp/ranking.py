@@ -292,10 +292,18 @@ def _page_candidate(
 
 
 def _image_available(project_directory: Path, page_name: str) -> bool:
-    basename = Path(page_name).name
-    return (project_directory / basename).is_file() or (
-        project_directory / "images" / basename
-    ).is_file()
+    page_path = Path(page_name)
+    if page_path.is_absolute() or ".." in page_path.parts:
+        return False
+    return _is_file_within(project_directory, page_path) or _is_file_within(
+        project_directory / "images", page_path
+    )
+
+
+def _is_file_within(allowed_root: Path, relative_path: Path) -> bool:
+    resolved_root = allowed_root.resolve()
+    resolved_path = (allowed_root / relative_path).resolve()
+    return resolved_path.is_relative_to(resolved_root) and resolved_path.is_file()
 
 
 def _matched_groups(features: PageFeatures) -> tuple[str, ...]:
