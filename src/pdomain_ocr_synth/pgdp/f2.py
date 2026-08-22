@@ -43,10 +43,11 @@ _F2_PAGES_ADAPTER = TypeAdapter(dict[str, str])
 
 @dataclass(frozen=True, slots=True)
 class ParsedF2Page:
-    """Lossless source text and valid formatting bodies for one F2 page."""
+    """Lossless source text and valid formatting content for one F2 page."""
 
     name: str
     source_text: str
+    feature_text: str
     special_blocks: tuple[str, ...]
     has_special_format: bool
 
@@ -86,6 +87,7 @@ def parse_f2_pages(source_pages: Mapping[str, str]) -> F2ParseResult:
     """Parse valid local and continued formatting blocks without changing source text."""
 
     page_blocks: dict[str, list[str]] = {name: [] for name in source_pages}
+    feature_text_parts: dict[str, list[str]] = {name: [] for name in source_pages}
     diagnostics: list[Diagnostic] = []
     active_block: _OpenBlock | None = None
 
@@ -96,6 +98,7 @@ def parse_f2_pages(source_pages: Mapping[str, str]) -> F2ParseResult:
             page_name=page_name,
             active_block=active_block,
             page_blocks=page_blocks,
+            feature_text_parts=feature_text_parts,
             diagnostics=diagnostics,
         )
         if active_block is not None and active_block.kind is _BlockKind.LOCAL:
@@ -109,6 +112,7 @@ def parse_f2_pages(source_pages: Mapping[str, str]) -> F2ParseResult:
         ParsedF2Page(
             name=page_name,
             source_text=source_pages[page_name],
+            feature_text="".join(feature_text_parts[page_name]),
             special_blocks=tuple(page_blocks[page_name]),
             has_special_format=bool(page_blocks[page_name]),
         )
@@ -123,6 +127,7 @@ def _scan_page(
     page_name: str,
     active_block: _OpenBlock | None,
     page_blocks: dict[str, list[str]],
+    feature_text_parts: dict[str, list[str]],
     diagnostics: list[Diagnostic],
 ) -> _OpenBlock | None:
     position = 0
@@ -130,6 +135,8 @@ def _scan_page(
         control_position, control = next_control
         if active_block is not None:
             active_block.append(page_name=page_name, text=source_text[position:control_position])
+        else:
+            feature_text_parts[page_name].append(source_text[position:control_position])
 
         if control in _OPENING_KINDS:
             active_block = _handle_opener(
@@ -144,12 +151,15 @@ def _scan_page(
                 page_name=page_name,
                 active_block=active_block,
                 page_blocks=page_blocks,
+                feature_text_parts=feature_text_parts,
                 diagnostics=diagnostics,
             )
         position = control_position + len(control)
 
     if active_block is not None:
         active_block.append(page_name=page_name, text=source_text[position:])
+    else:
+        feature_text_parts[page_name].append(source_text[position:])
     return active_block
 
 
@@ -195,6 +205,7 @@ def _handle_closer(
     page_name: str,
     active_block: _OpenBlock | None,
     page_blocks: dict[str, list[str]],
+    feature_text_parts: dict[str, list[str]],
     diagnostics: list[Diagnostic],
 ) -> _OpenBlock | None:
     kind = _CLOSING_KINDS[control]
@@ -220,7 +231,9 @@ def _handle_closer(
 
     if active_block.is_valid:
         for block_page_name, parts in active_block.bodies.items():
-            page_blocks[block_page_name].append("".join(parts))
+            body = "".join(parts)
+            page_blocks[block_page_name].append(body)
+            feature_text_parts[block_page_name].append(body)
     return None
 
 

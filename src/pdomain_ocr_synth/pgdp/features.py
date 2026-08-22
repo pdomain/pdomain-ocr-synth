@@ -35,9 +35,9 @@ def extract_page_features(page: ParsedF2Page) -> PageFeatures:
     )
     return PageFeatures(
         special_format=page.has_special_format,
-        italic_tags=len(_OPENING_TAG_PATTERNS["italic"].findall(page.source_text)),
-        bold_tags=len(_OPENING_TAG_PATTERNS["bold"].findall(page.source_text)),
-        small_caps_tags=len(_OPENING_TAG_PATTERNS["small_caps"].findall(page.source_text)),
+        italic_tags=len(_OPENING_TAG_PATTERNS["italic"].findall(page.feature_text)),
+        bold_tags=len(_OPENING_TAG_PATTERNS["bold"].findall(page.feature_text)),
+        small_caps_tags=len(_OPENING_TAG_PATTERNS["small_caps"].findall(page.feature_text)),
         dot_leaders=any(
             _DOT_LEADERS_PATTERN.search(body) is not None for body in page.special_blocks
         ),

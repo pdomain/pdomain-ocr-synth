@@ -160,7 +160,9 @@ def _rank_project(
     candidates = _rank_pages(
         parsed_pages=parsed_f2.pages,
         project_directory=project_directory,
+        project_id=metadata.project_id,
         transcriptions=transcriptions,
+        diagnostics=diagnostics,
     )
     top_ten_page_scores = sum(candidate.score.total for candidate in candidates[:10])
     group_bonus = 20 * len(
@@ -258,13 +260,17 @@ def _rank_pages(
     *,
     parsed_pages: tuple[ParsedF2Page, ...],
     project_directory: Path,
+    project_id: str,
     transcriptions: dict[str, str],
+    diagnostics: list[Diagnostic],
 ) -> list[_PageCandidate]:
     candidates = [
         _page_candidate(
             page=page,
             project_directory=project_directory,
+            project_id=project_id,
             transcriptions=transcriptions,
+            diagnostics=diagnostics,
         )
         for page in parsed_pages
     ]
@@ -278,26 +284,46 @@ def _page_candidate(
     *,
     page: ParsedF2Page,
     project_directory: Path,
+    project_id: str,
     transcriptions: dict[str, str],
+    diagnostics: list[Diagnostic],
 ) -> _PageCandidate:
     features = extract_page_features(page)
     return _PageCandidate(
         name=page.name,
         transcription_available=page.name in transcriptions,
-        image_available=_image_available(project_directory, page.name),
+        image_available=_image_available(
+            project_directory=project_directory,
+            page_name=page.name,
+            project_id=project_id,
+            diagnostics=diagnostics,
+        ),
         features=features,
         score=score_page(features),
         matched_groups=_matched_groups(features),
     )
 
 
-def _image_available(project_directory: Path, page_name: str) -> bool:
-    page_path = Path(page_name)
-    if page_path.is_absolute() or ".." in page_path.parts:
+def _image_available(
+    *, project_directory: Path, page_name: str, project_id: str, diagnostics: list[Diagnostic]
+) -> bool:
+    try:
+        page_path = Path(page_name)
+        if page_path.is_absolute() or ".." in page_path.parts:
+            return False
+        return _is_file_within(project_directory, page_path) or _is_file_within(
+            project_directory / "images", page_path
+        )
+    except (OSError, ValueError):
+        diagnostics.append(
+            Diagnostic(
+                code="unresolvable_image_path",
+                message="Could not resolve page image path.",
+                project_id=project_id,
+                page_name=page_name,
+            )
+        )
         return False
-    return _is_file_within(project_directory, page_path) or _is_file_within(
-        project_directory / "images", page_path
-    )
 
 
 def _is_file_within(allowed_root: Path, relative_path: Path) -> bool:

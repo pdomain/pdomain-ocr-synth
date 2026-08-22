@@ -407,6 +407,24 @@ def test_rank_corpus_rejects_unsafe_image_page_paths(tmp_path: Path, page_name: 
     assert report.projects[0].pages[0].image_available is False
 
 
+def test_rank_corpus_reports_unresolvable_image_page_paths(tmp_path: Path) -> None:
+    page_name = "p1\x00.png"
+    _project(
+        tmp_path,
+        "projectIDone",
+        pages={page_name: "/* <i>text</i> */"},
+        transcriptions={},
+    )
+
+    report = rank_corpus(tmp_path)
+
+    assert report.projects[0].pages[0].image_available is False
+    assert [
+        (diagnostic.code, diagnostic.project_id, diagnostic.page_name)
+        for diagnostic in report.diagnostics
+    ] == [("unresolvable_image_path", "projectIDone", page_name)]
+
+
 @pytest.mark.parametrize(("project_limit", "pages_per_project"), [(0, 1), (1, 0), (-1, 1)])
 def test_rank_corpus_requires_positive_limits(
     tmp_path: Path, project_limit: int, pages_per_project: int

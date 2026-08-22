@@ -203,6 +203,19 @@ def test_extract_page_features_excludes_invalid_blocks_from_structural_predicate
     assert features.aligned_fields is False
 
 
+def test_extract_page_features_excludes_typography_tags_in_unmatched_blocks() -> None:
+    from pdomain_ocr_synth.pgdp.features import extract_page_features, score_page
+
+    features = extract_page_features(
+        _page("p1.png", "<i>valid</i> /* <b>invalid</b><sc>invalid</sc>")
+    )
+
+    assert features.italic_tags == 1
+    assert features.bold_tags == 0
+    assert features.small_caps_tags == 0
+    assert score_page(features).total == 1
+
+
 def test_page_score_exposes_every_component() -> None:
     from pdomain_ocr_synth.pgdp.features import score_page
 
