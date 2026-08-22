@@ -12,6 +12,7 @@ from pdomain_ocr_synth.pgdp.models import (
     RankingReport,
 )
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
+from pdomain_ocr_synth.pgdp.ranking import rank_corpus
 
 __all__ = [
     "CorpusSummary",
@@ -24,5 +25,6 @@ __all__ = [
     "RankingReport",
     "extract_page_features",
     "natural_page_key",
+    "rank_corpus",
     "score_page",
 ]
