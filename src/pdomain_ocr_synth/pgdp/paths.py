@@ -83,6 +83,8 @@ def require_canonical_relative_reference(
 def _validate_relative_reference(*, value: str, label: str, direct_child: bool = False) -> Path:
     if not value or "\x00" in value:
         raise UnsafePathError(f"Unsafe {label}: {value!r}.")
+    if "\\" in value or "." in value.split("/"):
+        raise UnsafePathError(f"Unsafe {label}: {value!r}.")
     reference = Path(value)
     if reference.is_absolute() or ".." in reference.parts:
         raise UnsafePathError(f"Unsafe {label}: {value!r}.")

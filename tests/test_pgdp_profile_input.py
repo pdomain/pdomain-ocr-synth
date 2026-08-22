@@ -92,15 +92,15 @@ def _diagnostic() -> dict[str, object]:
 
 
 def _remove_path(payload: dict[str, object], path: str) -> None:
-    current: object = payload
+    current: dict[str, object] | list[object] = payload
     parts = path.split(".")
     for part in parts[:-1]:
-        if isinstance(current, list):
-            current = current[int(part)]
-        else:
-            assert isinstance(current, dict)
-            current = current[part]
-    assert isinstance(current, dict)
+        child = current[int(part)] if isinstance(current, list) else current[part]
+        if not isinstance(child, (dict, list)):
+            raise AssertionError(f"Expected a JSON container at {part!r}.")
+        current = child
+    if not isinstance(current, dict):
+        raise AssertionError(f"Expected an object before {parts[-1]!r}.")
     del current[parts[-1]]
 
 
@@ -288,7 +288,7 @@ def test_profile_input_rejects_noncanonical_project_aliases(
         ),
     )
 
-    with pytest.raises(ValueError, match=r"(?i)canonical"):
+    with pytest.raises(ValueError, match=r"(?i)(canonical|unsafe)"):
         _ = load_profile_input(ranking_path, corpus_root=corpus_root)
 
 
@@ -317,7 +317,10 @@ def test_profile_input_rejects_a_missing_project_directory(tmp_path: Path) -> No
         _ = load_profile_input(ranking_path, corpus_root=corpus_root)
 
 
-@pytest.mark.parametrize("project_id", ["/absolute", "../traversal", "projectID\x00bad"])
+@pytest.mark.parametrize(
+    "project_id",
+    ["/absolute", "../traversal", "projectID\x00bad", "projectIDone\\alias"],
+)
 def test_profile_input_rejects_unsafe_project_references(tmp_path: Path, project_id: str) -> None:
     corpus_root = tmp_path / "corpus"
     corpus_root.mkdir()
@@ -328,7 +331,10 @@ def test_profile_input_rejects_unsafe_project_references(tmp_path: Path, project
         _ = load_profile_input(ranking_path, corpus_root=corpus_root)
 
 
-@pytest.mark.parametrize("page_name", ["/absolute.png", "../traversal.png", "p1\x00.png"])
+@pytest.mark.parametrize(
+    "page_name",
+    ["/absolute.png", "../traversal.png", "p1\x00.png", ".", "nested\\p1.png"],
+)
 def test_profile_input_rejects_unsafe_page_references(tmp_path: Path, page_name: str) -> None:
     corpus_root = tmp_path / "corpus"
     _make_project(corpus_root, "projectIDone")

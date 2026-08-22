@@ -314,7 +314,7 @@ def _image_available(
     try:
         resolution = resolve_image_candidate(
             project_directory=project_directory,
-            page_name=page_name,
+            page_name=page_path.as_posix(),
         )
     except (OSError, UnsafePathError):
         diagnostics.append(
