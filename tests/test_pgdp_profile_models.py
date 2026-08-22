@@ -197,6 +197,35 @@ def test_unavailable_foreground_measurements_reject_partial_geometry(
 
 
 @pytest.mark.parametrize(
+    ("foreground_bounds", "margins", "message"),
+    [
+        ((10, 20, 10, 180), (10, 20, 90, 20), "nonempty"),
+        ((10, 20, 90, 20), (10, 20, 10, 180), "nonempty"),
+        ((10, 20, 90, 180), (10, 20, None, 20), "numeric"),
+        ((10, 20, 90, 180), (9, 20, 10, 20), "match"),
+    ],
+)
+def test_positive_foreground_requires_nonempty_bounds_and_matching_margins(
+    foreground_bounds: tuple[int, int, int, int],
+    margins: tuple[int | None, int | None, int | None, int | None],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        _ = PageMeasurement(
+            page_name="positive.png",
+            source_path="projectID1/positive.png",
+            sha256="f" * 64,
+            source_frame=CoordinateFrame(width=100, height=200),
+            image_mode="L",
+            grayscale_threshold=127,
+            foreground_pixels=1,
+            foreground_bounds=foreground_bounds,
+            margins=margins,
+            ink_bands=(),
+        )
+
+
+@pytest.mark.parametrize(
     ("factory", "message"),
     [
         (lambda: CoordinateFrame(width=-1, height=2), "nonnegative"),
