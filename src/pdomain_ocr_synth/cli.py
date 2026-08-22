@@ -12,6 +12,7 @@ Subcommands wired to date:
   ``validate``; see ``docs/roadmap/10-stretch.md``).
 - M10: ``audit`` (read back the per-render JSONL log written by
   ``render``; see ``docs/roadmap/10-stretch.md``).
+- M14: ``rank-pgdp`` (rank a local PGDP corpus and write a review report).
 """
 
 from __future__ import annotations
@@ -284,6 +285,29 @@ def build_parser() -> argparse.ArgumentParser:
     p_clean.add_argument(
         "--cache-dir",
         help="cache root (default: $PD_OCR_SYNTH_CACHE or ~/.cache/pdomain-ocr-synth)",
+    )
+
+    p_rank_pgdp = subparsers.add_parser(
+        "rank-pgdp",
+        help="rank local PGDP projects and select review pages",
+    )
+    _ = p_rank_pgdp.add_argument("corpus_root", help="local PGDP corpus root directory")
+    _ = p_rank_pgdp.add_argument(
+        "--output",
+        default="./pgdp-ranking.json",
+        help="report path (default: ./pgdp-ranking.json)",
+    )
+    _ = p_rank_pgdp.add_argument(
+        "--project-limit",
+        type=int,
+        default=50,
+        help="maximum ranked projects to report (default: 50)",
+    )
+    _ = p_rank_pgdp.add_argument(
+        "--pages-per-project",
+        type=int,
+        default=12,
+        help="maximum selected review pages per project (default: 12)",
     )
 
     return parser
@@ -1470,6 +1494,56 @@ def _cmd_schema(output: str | None) -> int:
     return 0
 
 
+def _cmd_rank_pgdp(
+    corpus_root: str,
+    *,
+    output: str,
+    project_limit: int,
+    pages_per_project: int,
+) -> int:
+    """Rank a local PGDP corpus and write its review report."""
+
+    from pdomain_ocr_synth.pgdp import rank_corpus, write_report
+
+    root = Path(corpus_root).expanduser()
+    if not root.exists():
+        print(f"error: corpus root does not exist: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if not root.is_dir():
+        print(f"error: corpus root is not a directory: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if project_limit <= 0:
+        print("error: --project-limit must be positive", file=sys.stderr)
+        return USAGE_EXIT
+    if pages_per_project <= 0:
+        print("error: --pages-per-project must be positive", file=sys.stderr)
+        return USAGE_EXIT
+
+    output_path = Path(output).expanduser()
+    if output_path.resolve().is_relative_to(root.resolve()):
+        print("error: report output must be outside the corpus root", file=sys.stderr)
+        return USAGE_EXIT
+
+    report = rank_corpus(
+        root,
+        project_limit=project_limit,
+        pages_per_project=pages_per_project,
+    )
+    try:
+        write_report(report, output_path, root)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return USAGE_EXIT
+
+    selected_pages = sum(len(project.pages) for project in report.projects)
+    print(f"report: {output_path}")
+    print(f"projects seen: {report.corpus.projects_seen}")
+    print(f"projects ranked: {report.corpus.projects_ranked}")
+    print(f"diagnostics: {len(report.diagnostics)}")
+    print(f"selected pages: {selected_pages}")
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -1541,6 +1615,12 @@ _IMPLEMENTED_DISPATCH = {
         summary=args.summary,
         audit_file=args.audit_file,
         global_audit=args.global_audit,
+    ),
+    "rank-pgdp": lambda args: _cmd_rank_pgdp(
+        args.corpus_root,
+        output=args.output,
+        project_limit=args.project_limit,
+        pages_per_project=args.pages_per_project,
     ),
 }
 
