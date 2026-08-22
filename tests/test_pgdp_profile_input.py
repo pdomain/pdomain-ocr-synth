@@ -95,13 +95,19 @@ def _remove_path(payload: dict[str, object], path: str) -> None:
     current: dict[str, object] | list[object] = payload
     parts = path.split(".")
     for part in parts[:-1]:
-        child = current[int(part)] if isinstance(current, list) else current[part]
+        child = _container_child(current, part)
         if not isinstance(child, (dict, list)):
             raise AssertionError(f"Expected a JSON container at {part!r}.")
         current = child
     if not isinstance(current, dict):
         raise AssertionError(f"Expected an object before {parts[-1]!r}.")
     del current[parts[-1]]
+
+
+def _container_child(container: dict[str, object] | list[object], part: str) -> object:
+    if isinstance(container, dict):
+        return container[part]
+    return container[int(part)]
 
 
 def _make_project(corpus_root: Path, project_id: str) -> Path:
