@@ -10,7 +10,7 @@ from itertools import pairwise
 from pathlib import Path
 from statistics import median
 from tempfile import TemporaryFile
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, BinaryIO, Literal, override
 
 import numpy as np
 from PIL import Image
@@ -19,7 +19,6 @@ from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
-    from typing import BinaryIO
 
 _EXIF_ORIENTATION_TAG = 274
 _HASH_CHUNK_SIZE = 64 * 1024
@@ -36,6 +35,46 @@ class SnapshotSpoolError(RuntimeError):
 
 class _SourceImageReadError(OSError):
     """Reading the original image file failed while it was being copied."""
+
+
+class _SnapshotReplayFile(BinaryIO):
+    """Translate temporary snapshot I/O failures during Pillow replay."""
+
+    def __init__(self, source_file: BinaryIO) -> None:
+        self._source_file = source_file
+
+    @override
+    def readable(self) -> bool:
+        return True
+
+    @override
+    def seekable(self) -> bool:
+        return True
+
+    @override
+    def read(self, size: int | None = -1) -> bytes:
+        try:
+            if size is None:
+                return self._source_file.read()
+            return self._source_file.read(size)
+        except OSError as error:
+            raise SnapshotSpoolError("Could not read a temporary scan snapshot.") from error
+
+    @override
+    def seek(self, offset: int, whence: int = 0) -> int:
+        try:
+            return self._source_file.seek(offset, whence)
+        except OSError as error:
+            raise SnapshotSpoolError("Could not seek a temporary scan snapshot.") from error
+
+    @override
+    def tell(self) -> int:
+        try:
+            return self._source_file.tell()
+        except OSError as error:
+            raise SnapshotSpoolError(
+                "Could not tell the temporary scan snapshot position."
+            ) from error
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +144,7 @@ def measure_image(image_path: str | Path) -> ImageMeasurement:
 def measure_image_snapshot(snapshot: ImageSnapshot) -> ImageMeasurement:
     """Measure one seekable temporary copy of original scan bytes."""
 
-    source_file = snapshot.source_file
+    source_file = _SnapshotReplayFile(snapshot.source_file)
     source_file.seek(0)
     try:
         with warnings.catch_warnings():

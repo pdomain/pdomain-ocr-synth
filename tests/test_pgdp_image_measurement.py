@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import pytest
 from PIL import Image, ImageDraw
@@ -54,6 +55,18 @@ class _WriteFailingSnapshot:
 
     def write(self, _data: bytes) -> int:
         raise OSError("No space left on device")
+
+
+class _ReplayReadFailingSnapshot(BytesIO):
+    @override
+    def read(self, _size: int = -1) -> bytes:
+        raise OSError("Input/output error")
+
+
+class _ReplaySeekFailingSnapshot(BytesIO):
+    @override
+    def seek(self, _offset: int, _whence: int = 0) -> int:
+        raise OSError("Input/output error")
 
 
 def _record_temporary_file_then_stop(
@@ -132,6 +145,26 @@ def test_open_image_snapshot_raises_for_a_temporary_snapshot_write_failure(
         image_measurement.open_image_snapshot(image_path),
     ):
         pass
+
+
+def test_measure_image_snapshot_raises_for_a_temporary_snapshot_read_failure() -> None:
+    snapshot = image_measurement.ImageSnapshot(
+        sha256="a" * 64,
+        source_file=_ReplayReadFailingSnapshot(b"source"),
+    )
+
+    with pytest.raises(image_measurement.SnapshotSpoolError, match="temporary scan snapshot"):
+        _ = image_measurement.measure_image_snapshot(snapshot)
+
+
+def test_measure_image_snapshot_raises_for_a_temporary_snapshot_seek_failure() -> None:
+    snapshot = image_measurement.ImageSnapshot(
+        sha256="a" * 64,
+        source_file=_ReplaySeekFailingSnapshot(b"source"),
+    )
+
+    with pytest.raises(image_measurement.SnapshotSpoolError, match="temporary scan snapshot"):
+        _ = image_measurement.measure_image_snapshot(snapshot)
 
 
 def test_blank_white_image_has_no_foreground_geometry(tmp_path: Path) -> None:
