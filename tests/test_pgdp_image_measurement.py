@@ -4,12 +4,99 @@ from __future__ import annotations
 
 from hashlib import sha256
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from PIL import Image, ImageDraw
 
 from pdomain_ocr_synth.pgdp import image_measurement
 from pdomain_ocr_synth.pgdp.image_measurement import measure_image, sha256_file
+
+if TYPE_CHECKING:
+    from typing import BinaryIO, NoReturn
+
+    from pdomain_ocr_synth.pgdp.image_measurement import ImageSnapshot
+
+
+class _ChunkLimitedSource:
+    def __init__(self, data: bytes, *, maximum_chunk_size: int) -> None:
+        self._data = data
+        self._maximum_chunk_size = maximum_chunk_size
+        self._offset = 0
+        self.requests: list[int] = []
+
+    def __enter__(self) -> _ChunkLimitedSource:
+        return self
+
+    def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+        return None
+
+    def read(self, size: int = -1) -> bytes:
+        assert 0 < size <= self._maximum_chunk_size
+        self.requests.append(size)
+        chunk = self._data[self._offset : self._offset + size]
+        self._offset += len(chunk)
+        return chunk
+
+
+def _record_temporary_file_then_stop(
+    snapshot: ImageSnapshot, source_files: list[BinaryIO]
+) -> NoReturn:
+    source_files.append(snapshot.source_file)
+    raise RuntimeError("stop")
+
+
+def test_open_image_snapshot_copies_source_in_bounded_chunks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    image_path = tmp_path / "source.bin"
+    payload = b"x" * (image_measurement._HASH_CHUNK_SIZE * 2 + 1)
+    source = _ChunkLimitedSource(
+        payload,
+        maximum_chunk_size=image_measurement._HASH_CHUNK_SIZE,
+    )
+
+    def open_source(path: Path, *_args: object, **_kwargs: object) -> _ChunkLimitedSource:
+        assert path == image_path
+        return source
+
+    monkeypatch.setattr(Path, "open", open_source)
+
+    with image_measurement.open_image_snapshot(image_path) as snapshot:
+        assert snapshot.source_file.read() == payload
+        assert snapshot.sha256 == sha256(payload).hexdigest()
+
+    assert source.requests == [
+        image_measurement._HASH_CHUNK_SIZE,
+        image_measurement._HASH_CHUNK_SIZE,
+        image_measurement._HASH_CHUNK_SIZE,
+        image_measurement._HASH_CHUNK_SIZE,
+    ]
+
+
+def test_open_image_snapshot_closes_its_temporary_file(tmp_path: Path) -> None:
+    image_path = tmp_path / "source.bin"
+    image_path.write_bytes(b"source")
+
+    with image_measurement.open_image_snapshot(image_path) as snapshot:
+        source_file = snapshot.source_file
+        assert not source_file.closed
+
+    assert source_file.closed
+
+
+def test_open_image_snapshot_closes_its_temporary_file_after_an_error(tmp_path: Path) -> None:
+    image_path = tmp_path / "source.bin"
+    image_path.write_bytes(b"source")
+    source_files: list[BinaryIO] = []
+
+    with (
+        pytest.raises(RuntimeError, match="stop"),
+        image_measurement.open_image_snapshot(image_path) as snapshot,
+    ):
+        _record_temporary_file_then_stop(snapshot, source_files)
+
+    assert source_files[0].closed
 
 
 def test_blank_white_image_has_no_foreground_geometry(tmp_path: Path) -> None:

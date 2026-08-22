@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from hashlib import sha256
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from PIL import Image, ImageDraw
@@ -22,6 +25,9 @@ from pdomain_ocr_synth.pgdp.profile_models import (
     ProfileDiagnostic,
 )
 from pdomain_ocr_synth.pgdp.profiling import pool_estimate, profile_methods, profile_selection
+
+if TYPE_CHECKING:
+    from pdomain_ocr_synth.pgdp.image_measurement import ImageSnapshot
 
 
 def test_profile_selection_keeps_page_order_and_unavailable_page_records(tmp_path: Path) -> None:
@@ -138,14 +144,15 @@ def test_profile_page_hashes_and_measures_one_captured_image_snapshot(
     replacement.save(replacement_path)
     replacement_bytes = replacement_path.read_bytes()
 
-    original_read_snapshot = profiling.read_image_snapshot
+    original_open_snapshot = profiling.open_image_snapshot
 
-    def read_snapshot_then_replace(path: str | Path) -> bytes:
-        snapshot = original_read_snapshot(path)
-        Path(path).write_bytes(replacement_bytes)
-        return snapshot
+    @contextmanager
+    def open_snapshot_then_replace(path: str | Path) -> Iterator[ImageSnapshot]:
+        with original_open_snapshot(path) as snapshot:
+            Path(path).write_bytes(replacement_bytes)
+            yield snapshot
 
-    monkeypatch.setattr(profiling, "read_image_snapshot", read_snapshot_then_replace)
+    monkeypatch.setattr(profiling, "open_image_snapshot", open_snapshot_then_replace)
 
     page = profiling.profile_page(
         "projectID1",

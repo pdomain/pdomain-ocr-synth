@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import warnings
+from contextlib import contextmanager
 from dataclasses import dataclass
-from io import BytesIO
 from itertools import pairwise
 from pathlib import Path
 from statistics import median
+from tempfile import TemporaryFile
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -17,7 +18,8 @@ from PIL import Image
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
+    from typing import BinaryIO
 
 _EXIF_ORIENTATION_TAG = 274
 _HASH_CHUNK_SIZE = 64 * 1024
@@ -77,21 +79,30 @@ class ImageMeasurement:
     diagnostics: tuple[ImageMeasurementDiagnostic, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class ImageSnapshot:
+    """One seekable temporary copy of original scan bytes."""
+
+    sha256: str
+    source_file: BinaryIO
+
+
 def measure_image(image_path: str | Path) -> ImageMeasurement:
     """Measure one stored raster without applying its EXIF orientation."""
 
-    snapshot = read_image_snapshot(image_path)
-    return measure_image_snapshot(snapshot)
+    with open_image_snapshot(image_path) as snapshot:
+        return measure_image_snapshot(snapshot)
 
 
-def measure_image_snapshot(image_snapshot: bytes) -> ImageMeasurement:
-    """Measure one immutable stored-raster byte snapshot."""
+def measure_image_snapshot(snapshot: ImageSnapshot) -> ImageMeasurement:
+    """Measure one seekable temporary copy of original scan bytes."""
 
-    file_sha256 = sha256_bytes(image_snapshot)
+    source_file = snapshot.source_file
+    source_file.seek(0)
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with BytesIO(image_snapshot) as source_file, Image.open(source_file) as image:
+            with Image.open(source_file) as image:
                 source_frame = CoordinateFrame(width=image.width, height=image.height)
                 image_mode = image.mode
                 exif_orientation = _exif_orientation(image)
@@ -115,7 +126,7 @@ def measure_image_snapshot(image_snapshot: bytes) -> ImageMeasurement:
     except (Image.DecompressionBombError, Image.DecompressionBombWarning) as error:
         raise ValueError("Image rejected as a decompression bomb.") from error
     return ImageMeasurement(
-        sha256=file_sha256,
+        sha256=snapshot.sha256,
         source_frame=source_frame,
         image_mode=image_mode,
         exif_orientation=exif_orientation,
@@ -130,22 +141,18 @@ def measure_image_snapshot(image_snapshot: bytes) -> ImageMeasurement:
     )
 
 
-def read_image_snapshot(image_path: str | Path) -> bytes:
-    """Read one immutable byte snapshot of a stored raster."""
+@contextmanager
+def open_image_snapshot(image_path: str | Path) -> Iterator[ImageSnapshot]:
+    """Copy one scan to a seekable temporary file while hashing bounded chunks."""
 
     path = Path(image_path)
-    with path.open("rb") as source_file:
-        return source_file.read()
-
-
-def sha256_bytes(image_snapshot: bytes) -> str:
-    """Return the SHA-256 digest of one immutable byte snapshot."""
-
     digest = hashlib.sha256()
-    source_view = memoryview(image_snapshot)
-    for offset in range(0, len(source_view), _HASH_CHUNK_SIZE):
-        digest.update(source_view[offset : offset + _HASH_CHUNK_SIZE])
-    return digest.hexdigest()
+    with path.open("rb") as source_file, TemporaryFile(mode="w+b") as snapshot_file:
+        while chunk := source_file.read(_HASH_CHUNK_SIZE):
+            digest.update(chunk)
+            _ = snapshot_file.write(chunk)
+        _ = snapshot_file.seek(0)
+        yield ImageSnapshot(sha256=digest.hexdigest(), source_file=snapshot_file)
 
 
 def sha256_file(image_path: str | Path) -> str:
