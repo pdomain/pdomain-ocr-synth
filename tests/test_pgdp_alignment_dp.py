@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from unittest.mock import patch
 
 import pytest
 
+from pdomain_ocr_synth.pgdp import alignment_dp
 from pdomain_ocr_synth.pgdp.alignment_dp import (
     AlignmentResult,
     assess_alignment,
@@ -184,6 +186,86 @@ def test_dp_reconstructs_known_equal_cost_complete_paths() -> None:
     ]
 
 
+def test_equal_cost_paths_with_unequal_depths_preserve_tuple_order() -> None:
+    page = tokenize_f2_pages({"001": "a" * 1000 + "\n" + "a" * 1000 + "\n\n\n\n         b"}).pages[
+        0
+    ]
+    candidates = (
+        _candidate(0, width=1000),
+        _candidate(1, x0=4222, width=1000),
+        _candidate(2, width=1000),
+    )
+
+    result = align_sequences(
+        page.lines,
+        candidates,
+        foreground_bounds=(0, 0, 1000, 40),
+        source_page=page,
+    )
+
+    assert result.second_best is not None
+    assert result.best.total_cost == result.second_best.total_cost == 2.0
+    assert [operation.kind for operation in result.best.operations] == [
+        "match",
+        "match",
+        "match",
+    ]
+    assert [operation.kind for operation in result.second_best.operations] == [
+        "match",
+        "skip_image",
+        "match",
+        "skip_text",
+    ]
+
+
+def test_equal_cost_paths_support_sparse_source_ordinals() -> None:
+    original = tokenize_f2_pages({"001": "         a\n         a\nb\n         a"}).pages[0]
+    sparse_ordinals = (7, 19, 43, 97)
+    page = replace(
+        original,
+        lines=tuple(
+            replace(line, ordinal=ordinal)
+            for line, ordinal in zip(original.lines, sparse_ordinals, strict=True)
+        ),
+    )
+    candidates = (
+        _candidate(0, x0=10, width=10),
+        _candidate(1, x0=0, width=1),
+        _candidate(2, x0=10, width=10),
+        _candidate(3, x0=0, width=1),
+    )
+
+    result = align_sequences(
+        page.lines,
+        candidates,
+        foreground_bounds=(0, 0, 10, 50),
+        source_page=page,
+    )
+
+    assert result.second_best is not None
+    assert result.best.total_cost == result.second_best.total_cost == 2.0
+    assert [
+        (operation.kind, operation.source_ordinal, operation.candidate_ordinal)
+        for operation in result.best.operations
+    ] == [
+        ("match", 7, 0),
+        ("skip_image", None, 1),
+        ("match", 19, 2),
+        ("match", 43, 3),
+        ("skip_text", 97, None),
+    ]
+    assert [
+        (operation.kind, operation.source_ordinal, operation.candidate_ordinal)
+        for operation in result.second_best.operations
+    ] == [
+        ("match", 7, 0),
+        ("skip_text", 19, None),
+        ("match", 43, 1),
+        ("match", 97, 2),
+        ("skip_image", None, 3),
+    ]
+
+
 def test_equal_cost_complete_paths_prefer_match_before_skip_image() -> None:
     result = align_sequences(
         (_line(0, "abcdefghij"),),
@@ -333,6 +415,21 @@ def test_80_by_80_alignment_retains_two_reconstructed_paths() -> None:
     assert result.second_best is not None
     assert result.second_best.total_cost == 2.0
     assert len(result.second_best.operations) == 81
+
+
+def test_dp_reconstructs_operations_only_for_final_paths() -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(4))
+    candidates = tuple(_candidate(index) for index in range(4))
+
+    with patch.object(
+        alignment_dp,
+        "operations_from_node",
+        wraps=alignment_dp.operations_from_node,
+    ) as operations_from_node:
+        result = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
+
+    assert result.second_best is not None
+    assert operations_from_node.call_count == 2
 
 
 def test_persistent_gutter_excludes_a_page() -> None:

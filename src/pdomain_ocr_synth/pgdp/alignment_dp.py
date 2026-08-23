@@ -134,6 +134,8 @@ class _PathNode:
 
     parent: _PathNode | None
     operation: AlignmentOperation | None
+    lexical_rank: int
+    rank_depth: int
     total_cost: float
 
 
@@ -457,10 +459,19 @@ def _align(
 ) -> tuple[AlignmentPath, AlignmentPath | None]:
     rows = len(source_lines)
     columns = len(candidates)
+    rank_radix, rank_bits = _rank_encoding(source_lines, candidates)
     cells: list[list[tuple[_PathNode, ...]]] = [
         [() for _ in range(columns + 1)] for _ in range(rows + 1)
     ]
-    cells[0][0] = (_PathNode(parent=None, operation=None, total_cost=0.0),)
+    cells[0][0] = (
+        _PathNode(
+            parent=None,
+            operation=None,
+            lexical_rank=0,
+            rank_depth=0,
+            total_cost=0.0,
+        ),
+    )
     for source_index in range(rows + 1):
         for candidate_index in range(columns + 1):
             if source_index == 0 and candidate_index == 0:
@@ -478,6 +489,8 @@ def _align(
                             cost=cost.total,
                             match_cost=cost,
                         ),
+                        rank_radix=rank_radix,
+                        rank_bits=rank_bits,
                     )
                     for path in cells[source_index - 1][candidate_index - 1]
                 )
@@ -491,6 +504,8 @@ def _align(
                             candidate_ordinal=candidate_index - 1,
                             cost=SKIP_COST,
                         ),
+                        rank_radix=rank_radix,
+                        rank_bits=rank_bits,
                     )
                     for path in cells[source_index][candidate_index - 1]
                 )
@@ -504,26 +519,37 @@ def _align(
                             candidate_ordinal=None,
                             cost=SKIP_COST,
                         ),
+                        rank_radix=rank_radix,
+                        rank_bits=rank_bits,
                     )
                     for path in cells[source_index - 1][candidate_index]
                 )
-            cells[source_index][candidate_index] = _best_two(options)
+            cells[source_index][candidate_index] = _best_two(options, rank_bits=rank_bits)
     paths = cells[rows][columns]
     best = _to_alignment_path(paths[0])
     second_best = _to_alignment_path(paths[1]) if len(paths) > 1 else None
     return best, second_best
 
 
-def _append_operation(path: _PathNode, operation: AlignmentOperation) -> _PathNode:
+def _append_operation(
+    path: _PathNode,
+    operation: AlignmentOperation,
+    *,
+    rank_radix: int,
+    rank_bits: int,
+) -> _PathNode:
     return _PathNode(
         parent=path,
         operation=operation,
+        lexical_rank=(path.lexical_rank << rank_bits)
+        | _operation_rank_code(operation, rank_radix=rank_radix),
+        rank_depth=path.rank_depth + 1,
         total_cost=path.total_cost + operation.cost,
     )
 
 
-def _best_two(paths: Sequence[_PathNode]) -> tuple[_PathNode, ...]:
-    """Retain two distinct lowest-cost nodes without copying full paths per cell."""
+def _best_two(paths: Sequence[_PathNode], *, rank_bits: int) -> tuple[_PathNode, ...]:
+    """Retain two distinct lowest-cost nodes without reconstructing paths per cell."""
 
     distinct: list[_PathNode] = []
     ordered = sorted(paths, key=lambda path: path.total_cost)
@@ -532,8 +558,19 @@ def _best_two(paths: Sequence[_PathNode]) -> tuple[_PathNode, ...]:
         end = start + 1
         while end < len(ordered) and ordered[end].total_cost == ordered[start].total_cost:
             end += 1
-        for path in sorted(ordered[start:end], key=_node_tie_key):
-            if not any(_same_operation_sequence(path, retained) for retained in distinct):
+        equal_cost_paths = ordered[start:end]
+        greatest_rank_depth = max(path.rank_depth for path in equal_cost_paths)
+        for path in sorted(
+            equal_cost_paths,
+            key=lambda node: (
+                node.lexical_rank << (rank_bits * (greatest_rank_depth - node.rank_depth))
+            ),
+        ):
+            if not any(
+                path.lexical_rank == retained.lexical_rank
+                and path.rank_depth == retained.rank_depth
+                for retained in distinct
+            ):
                 distinct.append(path)
             if len(distinct) == 2:
                 break
@@ -541,53 +578,16 @@ def _best_two(paths: Sequence[_PathNode]) -> tuple[_PathNode, ...]:
     return tuple(distinct)
 
 
-def _same_operation_sequence(first: _PathNode, second: _PathNode) -> bool:
-    """Return whether two nodes encode the same operation-and-ordinal sequence."""
-
-    left = first
-    right = second
-    while left.operation is not None and right.operation is not None:
-        left_operation = left.operation
-        right_operation = right.operation
-        if (
-            left_operation.kind,
-            left_operation.source_ordinal,
-            left_operation.candidate_ordinal,
-        ) != (
-            right_operation.kind,
-            right_operation.source_ordinal,
-            right_operation.candidate_ordinal,
-        ):
-            return False
-        left_parent = left.parent
-        right_parent = right.parent
-        if left_parent is None or right_parent is None:
-            raise RuntimeError("Alignment path operation lacks a predecessor.")
-        left = left_parent
-        right = right_parent
-    return left.operation is None and right.operation is None
-
-
-def _node_tie_key(node: _PathNode) -> tuple[tuple[int, int, int], ...]:
-    reverse_key: list[tuple[int, int, int]] = []
-    current = node
-    while current.operation is not None:
-        operation = current.operation
-        reverse_key.append(
-            (
-                TIE_PRIORITY[operation.kind],
-                -1 if operation.source_ordinal is None else operation.source_ordinal,
-                -1 if operation.candidate_ordinal is None else operation.candidate_ordinal,
-            )
-        )
-        parent = current.parent
-        if parent is None:
-            raise RuntimeError("Alignment path operation lacks a predecessor.")
-        current = parent
-    return tuple(reversed(reverse_key))
-
-
 def _to_alignment_path(node: _PathNode) -> AlignmentPath:
+    return AlignmentPath(
+        operations=operations_from_node(node),
+        total_cost=node.total_cost,
+    )
+
+
+def operations_from_node(node: _PathNode) -> tuple[AlignmentOperation, ...]:
+    """Reconstruct one final alignment path from its retained backpointers."""
+
     reverse_operations: list[AlignmentOperation] = []
     current = node
     while current.operation is not None:
@@ -596,7 +596,35 @@ def _to_alignment_path(node: _PathNode) -> AlignmentPath:
         if parent is None:
             raise RuntimeError("Alignment path operation lacks a predecessor.")
         current = parent
-    return AlignmentPath(operations=tuple(reversed(reverse_operations)), total_cost=node.total_cost)
+    return tuple(reversed(reverse_operations))
+
+
+def _rank_encoding(
+    source_lines: tuple[EligibleSourceLine, ...], candidates: tuple[LineCandidate, ...]
+) -> tuple[int, int]:
+    """Return the radix and digit width for exact operation-sequence ordering."""
+
+    maximum_ordinal = max(
+        max((source.line.ordinal for source in source_lines), default=-1),
+        len(candidates) - 1,
+    )
+    rank_radix = maximum_ordinal + 2
+    maximum_code = 3 * rank_radix * rank_radix
+    return (rank_radix, maximum_code.bit_length())
+
+
+def _operation_rank_code(operation: AlignmentOperation, *, rank_radix: int) -> int:
+    """Encode one operation tuple as a positive digit in the page-local rank radix."""
+
+    source_ordinal = 0 if operation.source_ordinal is None else operation.source_ordinal + 1
+    candidate_ordinal = (
+        0 if operation.candidate_ordinal is None else operation.candidate_ordinal + 1
+    )
+    return (
+        (TIE_PRIORITY[operation.kind] * rank_radix + source_ordinal) * rank_radix
+        + candidate_ordinal
+        + 1
+    )
 
 
 def _candidate_gaps(candidates: tuple[LineCandidate, ...]) -> tuple[int, ...]:
