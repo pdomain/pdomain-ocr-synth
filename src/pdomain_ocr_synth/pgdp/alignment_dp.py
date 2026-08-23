@@ -129,10 +129,11 @@ class AlignmentResult:
 
 
 @dataclass(frozen=True, slots=True)
-class _PathDraft:
-    """An internal path used while retaining two alternatives per DP cell."""
+class _PathNode:
+    """One retained dynamic-programming path step linked to its predecessor."""
 
-    operations: tuple[AlignmentOperation, ...]
+    parent: _PathNode | None
+    operation: AlignmentOperation | None
     total_cost: float
 
 
@@ -456,15 +457,15 @@ def _align(
 ) -> tuple[AlignmentPath, AlignmentPath | None]:
     rows = len(source_lines)
     columns = len(candidates)
-    cells: list[list[tuple[_PathDraft, ...]]] = [
+    cells: list[list[tuple[_PathNode, ...]]] = [
         [() for _ in range(columns + 1)] for _ in range(rows + 1)
     ]
-    cells[0][0] = (_PathDraft((), 0.0),)
+    cells[0][0] = (_PathNode(parent=None, operation=None, total_cost=0.0),)
     for source_index in range(rows + 1):
         for candidate_index in range(columns + 1):
             if source_index == 0 and candidate_index == 0:
                 continue
-            options: list[_PathDraft] = []
+            options: list[_PathNode] = []
             if source_index and candidate_index:
                 cost = costs[source_index - 1][candidate_index - 1]
                 options.extend(
@@ -513,44 +514,89 @@ def _align(
     return best, second_best
 
 
-def _append_operation(path: _PathDraft, operation: AlignmentOperation) -> _PathDraft:
-    return _PathDraft((*path.operations, operation), path.total_cost + operation.cost)
+def _append_operation(path: _PathNode, operation: AlignmentOperation) -> _PathNode:
+    return _PathNode(
+        parent=path,
+        operation=operation,
+        total_cost=path.total_cost + operation.cost,
+    )
 
 
-def _best_two(paths: Sequence[_PathDraft]) -> tuple[_PathDraft, ...]:
-    distinct: list[_PathDraft] = []
-    seen: set[tuple[tuple[str, int | None, int | None], ...]] = set()
-    for path in sorted(paths, key=_path_sort_key):
-        signature = tuple(
-            (operation.kind, operation.source_ordinal, operation.candidate_ordinal)
-            for operation in path.operations
-        )
-        if signature not in seen:
-            distinct.append(path)
-            seen.add(signature)
-        if len(distinct) == 2:
-            break
+def _best_two(paths: Sequence[_PathNode]) -> tuple[_PathNode, ...]:
+    """Retain two distinct lowest-cost nodes without copying full paths per cell."""
+
+    distinct: list[_PathNode] = []
+    ordered = sorted(paths, key=lambda path: path.total_cost)
+    start = 0
+    while start < len(ordered) and len(distinct) < 2:
+        end = start + 1
+        while end < len(ordered) and ordered[end].total_cost == ordered[start].total_cost:
+            end += 1
+        for path in sorted(ordered[start:end], key=_node_tie_key):
+            if not any(_same_operation_sequence(path, retained) for retained in distinct):
+                distinct.append(path)
+            if len(distinct) == 2:
+                break
+        start = end
     return tuple(distinct)
 
 
-def _path_sort_key(
-    path: _PathDraft,
-) -> tuple[float, tuple[tuple[int, int, int], ...]]:
-    return (
-        path.total_cost,
-        tuple(
+def _same_operation_sequence(first: _PathNode, second: _PathNode) -> bool:
+    """Return whether two nodes encode the same operation-and-ordinal sequence."""
+
+    left = first
+    right = second
+    while left.operation is not None and right.operation is not None:
+        left_operation = left.operation
+        right_operation = right.operation
+        if (
+            left_operation.kind,
+            left_operation.source_ordinal,
+            left_operation.candidate_ordinal,
+        ) != (
+            right_operation.kind,
+            right_operation.source_ordinal,
+            right_operation.candidate_ordinal,
+        ):
+            return False
+        left_parent = left.parent
+        right_parent = right.parent
+        if left_parent is None or right_parent is None:
+            raise RuntimeError("Alignment path operation lacks a predecessor.")
+        left = left_parent
+        right = right_parent
+    return left.operation is None and right.operation is None
+
+
+def _node_tie_key(node: _PathNode) -> tuple[tuple[int, int, int], ...]:
+    reverse_key: list[tuple[int, int, int]] = []
+    current = node
+    while current.operation is not None:
+        operation = current.operation
+        reverse_key.append(
             (
                 TIE_PRIORITY[operation.kind],
                 -1 if operation.source_ordinal is None else operation.source_ordinal,
                 -1 if operation.candidate_ordinal is None else operation.candidate_ordinal,
             )
-            for operation in path.operations
-        ),
-    )
+        )
+        parent = current.parent
+        if parent is None:
+            raise RuntimeError("Alignment path operation lacks a predecessor.")
+        current = parent
+    return tuple(reversed(reverse_key))
 
 
-def _to_alignment_path(path: _PathDraft) -> AlignmentPath:
-    return AlignmentPath(operations=path.operations, total_cost=path.total_cost)
+def _to_alignment_path(node: _PathNode) -> AlignmentPath:
+    reverse_operations: list[AlignmentOperation] = []
+    current = node
+    while current.operation is not None:
+        reverse_operations.append(current.operation)
+        parent = current.parent
+        if parent is None:
+            raise RuntimeError("Alignment path operation lacks a predecessor.")
+        current = parent
+    return AlignmentPath(operations=tuple(reversed(reverse_operations)), total_cost=node.total_cost)
 
 
 def _candidate_gaps(candidates: tuple[LineCandidate, ...]) -> tuple[int, ...]:

@@ -134,6 +134,54 @@ def test_equal_cost_transitions_prefer_match_then_skip_image_then_skip_text() ->
         "match",
         "skip_text",
     ]
+    assert [operation.kind for operation in result.second_best.operations] == [
+        "match",
+        "skip_text",
+        "match",
+        "match",
+        "skip_image",
+    ]
+
+
+def test_dp_reconstructs_known_equal_cost_complete_paths() -> None:
+    source = (
+        _line(0, "         a"),
+        _line(1, "         a"),
+        _line(2, "b"),
+        _line(3, "         a"),
+    )
+    candidates = (
+        _candidate(0, x0=10, width=10),
+        _candidate(1, x0=0, width=1),
+        _candidate(2, x0=10, width=10),
+        _candidate(3, x0=0, width=1),
+    )
+
+    result = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
+
+    assert result.best.total_cost == 2.0
+    assert result.second_best is not None
+    assert result.second_best.total_cost == result.best.total_cost
+    assert [
+        (operation.kind, operation.source_ordinal, operation.candidate_ordinal)
+        for operation in result.best.operations
+    ] == [
+        ("match", 0, 0),
+        ("skip_image", None, 1),
+        ("match", 1, 2),
+        ("match", 2, 3),
+        ("skip_text", 3, None),
+    ]
+    assert [
+        (operation.kind, operation.source_ordinal, operation.candidate_ordinal)
+        for operation in result.second_best.operations
+    ] == [
+        ("match", 0, 0),
+        ("skip_text", 1, None),
+        ("match", 2, 1),
+        ("match", 3, 2),
+        ("skip_image", None, 3),
+    ]
 
 
 def test_equal_cost_complete_paths_prefer_match_before_skip_image() -> None:
@@ -271,6 +319,20 @@ def test_line_count_boundaries_are_inclusive(
 
     assert result.state == expected_state
     assert (expected_exclusion in result.exclusions) is (expected_exclusion is not None)
+
+
+def test_80_by_80_alignment_retains_two_reconstructed_paths() -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(80))
+    candidates = tuple(_candidate(index) for index in range(80))
+
+    result = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 810))
+
+    assert result.state == "accepted"
+    assert result.total_cost == 0.0
+    assert len(result.best.operations) == 80
+    assert result.second_best is not None
+    assert result.second_best.total_cost == 2.0
+    assert len(result.second_best.operations) == 81
 
 
 def test_persistent_gutter_excludes_a_page() -> None:
