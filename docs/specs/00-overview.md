@@ -92,6 +92,10 @@ The active [PGDP typography and page-structure design](2026-08-22-pgdp-typograph
 extends the original recognition-first scope. It defines a measurement-first program for learning
 book styles from PGDP scans and generating structured pages with mixed typography.
 
+The active [PGDP source-line alignment design](2026-08-23-pgdp-source-line-alignment-design.md)
+defines M15b. It conservatively aligns byte-preserved F2 lines with source-frame image candidates
+on eligible single-column pages. Rectification remains a separate M15c milestone.
+
 ## Open questions
 
 These are flagged here so the spec doesn't pretend they're settled.
