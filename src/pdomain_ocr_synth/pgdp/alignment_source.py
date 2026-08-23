@@ -101,9 +101,45 @@ class _OpenStyle:
 
 @dataclass(frozen=True, slots=True)
 class _ControlParseResult:
-    deleted_starts: frozenset[int]
+    deleted_starts: tuple[int, ...]
     diagnostics: tuple[SourceDiagnostic, ...]
     invalid_byte_ranges: tuple[tuple[int, int], ...]
+
+
+@dataclass(slots=True)
+class _ControlCursor:
+    starts: tuple[int, ...]
+    index: int = 0
+
+    def take_within(self, character_start: int, character_end: int) -> tuple[int, ...]:
+        while self.index < len(self.starts) and self.starts[self.index] < character_start:
+            self.index += 1
+        first = self.index
+        while self.index < len(self.starts) and self.starts[self.index] + 2 <= character_end:
+            self.index += 1
+        return self.starts[first : self.index]
+
+
+@dataclass(slots=True)
+class _RangeCursor:
+    ranges: tuple[tuple[int, int], ...]
+    index: int = 0
+
+    def overlaps(self, byte_start: int, byte_end: int) -> bool:
+        while self.index < len(self.ranges):
+            range_start, range_end = self.ranges[self.index]
+            if (range_start == range_end and range_start < byte_start) or (
+                range_start != range_end and range_end <= byte_start
+            ):
+                self.index += 1
+            else:
+                break
+        if self.index == len(self.ranges):
+            return False
+        range_start, range_end = self.ranges[self.index]
+        if range_start == range_end:
+            return range_start <= byte_end
+        return range_start < byte_end
 
 
 def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePage:
@@ -123,11 +159,15 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
     style_runs: list[StyleRun] = []
     matching_ineligible_ranges = list(control_result.invalid_byte_ranges)
     style_ineligible_ranges = list(matching_ineligible_ranges)
+    control_cursor = _ControlCursor(control_result.deleted_starts)
     open_styles: list[_OpenStyle] = []
     visible_length = 0
     position = 0
 
     for lexeme in lexemes:
+        enclosed_control_starts = control_cursor.take_within(
+            lexeme.character_start, lexeme.character_end
+        )
         if position < lexeme.character_start:
             output = source_text[position : lexeme.character_start]
             operation = _copy_operation(byte_offsets, position, lexeme.character_start, output)
@@ -147,11 +187,11 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                 byte_offsets=byte_offsets,
                 lexeme=lexeme,
                 outer_kind="delete_note",
-                deleted_control_starts=control_result.deleted_starts,
+                control_starts=enclosed_control_starts,
                 operations=operations,
             )
         elif lexeme.kind == "control":
-            if lexeme.character_start in control_result.deleted_starts:
+            if enclosed_control_starts:
                 operations.append(
                     NormalizationOperation("delete_control", byte_start, byte_end, "")
                 )
@@ -171,7 +211,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                     byte_offsets=byte_offsets,
                     lexeme=lexeme,
                     outer_kind="delete_tag",
-                    deleted_control_starts=control_result.deleted_starts,
+                    control_starts=enclosed_control_starts,
                     operations=operations,
                 )
                 if tag_name == "tb":
@@ -198,7 +238,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                     byte_offsets=byte_offsets,
                     lexeme=lexeme,
                     outer_kind="copy",
-                    deleted_control_starts=control_result.deleted_starts,
+                    control_starts=enclosed_control_starts,
                     operations=operations,
                 )
                 diagnostic = _diagnostic(
@@ -467,7 +507,7 @@ def _valid_controls(
             )
         )
     return _ControlParseResult(
-        deleted_starts=frozenset(deleted),
+        deleted_starts=tuple(sorted(deleted)),
         diagnostics=tuple(diagnostics),
         invalid_byte_ranges=tuple(invalid_byte_ranges),
     )
@@ -487,16 +527,11 @@ def _append_fragmented_operation(
     byte_offsets: tuple[int, ...],
     lexeme: _Lexeme,
     outer_kind: NormalizationKind,
-    deleted_control_starts: frozenset[int],
+    control_starts: tuple[int, ...],
     operations: list[NormalizationOperation],
 ) -> int:
     visible_length = 0
     position = lexeme.character_start
-    control_starts = tuple(
-        control_start
-        for control_start in sorted(deleted_control_starts)
-        if lexeme.character_start <= control_start and control_start + 2 <= lexeme.character_end
-    )
     for control_start in control_starts:
         visible_length += _append_outer_operation(
             source_text=source_text,
@@ -594,45 +629,48 @@ def _source_lines(
     style_ineligible_ranges: list[tuple[int, int]],
 ) -> tuple[SourceLine, ...]:
     lines: list[SourceLine] = []
+    matching_ranges = _RangeCursor(tuple(sorted(matching_ineligible_ranges)))
+    style_ranges = _RangeCursor(tuple(sorted(style_ineligible_ranges)))
     content_start = 0
     ordinal = 0
+    operation_start = 0
     position = 0
     while position < len(source_text):
         newline_end = _newline_end(source_text, position)
         if newline_end is None:
             position += 1
             continue
-        lines.append(
-            _make_line(
-                page_name=page_name,
-                ordinal=ordinal,
-                source_text=source_text,
-                byte_offsets=byte_offsets,
-                content_start=content_start,
-                content_end=position,
-                separator_end=newline_end,
-                operations=operations,
-                matching_ineligible_ranges=matching_ineligible_ranges,
-                style_ineligible_ranges=style_ineligible_ranges,
-            )
-        )
-        ordinal += 1
-        content_start = newline_end
-        position = newline_end
-    lines.append(
-        _make_line(
+        line, operation_start = _make_line(
             page_name=page_name,
             ordinal=ordinal,
             source_text=source_text,
             byte_offsets=byte_offsets,
             content_start=content_start,
-            content_end=len(source_text),
-            separator_end=len(source_text),
+            content_end=position,
+            separator_end=newline_end,
             operations=operations,
-            matching_ineligible_ranges=matching_ineligible_ranges,
-            style_ineligible_ranges=style_ineligible_ranges,
+            operation_start=operation_start,
+            matching_ranges=matching_ranges,
+            style_ranges=style_ranges,
         )
+        lines.append(line)
+        ordinal += 1
+        content_start = newline_end
+        position = newline_end
+    final_line, _ = _make_line(
+        page_name=page_name,
+        ordinal=ordinal,
+        source_text=source_text,
+        byte_offsets=byte_offsets,
+        content_start=content_start,
+        content_end=len(source_text),
+        separator_end=len(source_text),
+        operations=operations,
+        operation_start=operation_start,
+        matching_ranges=matching_ranges,
+        style_ranges=style_ranges,
     )
+    lines.append(final_line)
     return tuple(lines)
 
 
@@ -646,44 +684,43 @@ def _make_line(
     content_end: int,
     separator_end: int,
     operations: list[NormalizationOperation],
-    matching_ineligible_ranges: list[tuple[int, int]],
-    style_ineligible_ranges: list[tuple[int, int]],
-) -> SourceLine:
+    operation_start: int,
+    matching_ranges: _RangeCursor,
+    style_ranges: _RangeCursor,
+) -> tuple[SourceLine, int]:
     byte_start = byte_offsets[content_start]
     content_byte_end = byte_offsets[content_end]
     byte_end = byte_offsets[separator_end]
-    operation_ordinals = tuple(
-        ordinal
-        for ordinal, operation in enumerate(operations)
-        if operation.byte_start >= byte_start and operation.byte_end <= byte_end
-    )
+    operation_end = operation_start
+    while operation_end < len(operations) and operations[operation_end].byte_end <= byte_end:
+        operation_end += 1
+    operation_ordinals = tuple(range(operation_start, operation_end))
     visible_text = "".join(
         operations[index].output
         for index in operation_ordinals
         if operations[index].byte_end <= content_byte_end
     )
-    matching_eligible = not _overlaps_ranges(
-        byte_start, content_byte_end, matching_ineligible_ranges
-    )
-    style_fitting_eligible = not _overlaps_ranges(
-        byte_start, content_byte_end, style_ineligible_ranges
-    )
-    return SourceLine(
-        page_name=page_name,
-        ordinal=ordinal,
-        byte_start=byte_start,
-        byte_end=byte_end,
-        content_byte_start=byte_start,
-        content_byte_end=content_byte_end,
-        separator_byte_start=content_byte_end,
-        separator_byte_end=byte_end,
-        original_text=source_text[content_start:content_end],
-        visible_text=visible_text,
-        operation_ordinals=operation_ordinals,
-        formatting_span_ids=(),
-        continued_block_ids=(),
-        matching_eligible=matching_eligible,
-        style_fitting_eligible=style_fitting_eligible,
+    matching_eligible = not matching_ranges.overlaps(byte_start, content_byte_end)
+    style_fitting_eligible = not style_ranges.overlaps(byte_start, content_byte_end)
+    return (
+        SourceLine(
+            page_name=page_name,
+            ordinal=ordinal,
+            byte_start=byte_start,
+            byte_end=byte_end,
+            content_byte_start=byte_start,
+            content_byte_end=content_byte_end,
+            separator_byte_start=content_byte_end,
+            separator_byte_end=byte_end,
+            original_text=source_text[content_start:content_end],
+            visible_text=visible_text,
+            operation_ordinals=operation_ordinals,
+            formatting_span_ids=(),
+            continued_block_ids=(),
+            matching_eligible=matching_eligible,
+            style_fitting_eligible=style_fitting_eligible,
+        ),
+        operation_end,
     )
 
 
@@ -691,11 +728,3 @@ def _diagnostic(
     code: str, message: str, page_name: str, byte_start: int, byte_end: int
 ) -> SourceDiagnostic:
     return SourceDiagnostic(code, message, page_name, byte_start, byte_end)
-
-
-def _overlaps_ranges(byte_start: int, byte_end: int, ranges: list[tuple[int, int]]) -> bool:
-    return any(
-        (start < byte_end and byte_start < end)
-        or (start == end and byte_start <= start <= byte_end)
-        for start, end in ranges
-    )

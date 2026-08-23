@@ -197,6 +197,18 @@ def test_tokenize_source_splits_proof_notes_around_valid_raw_controls() -> None:
     ]
 
 
+def test_tokenize_source_handles_a_large_control_rich_page_losslessly() -> None:
+    source = "\n".join(f'<u data="/*">line {ordinal}*/</u>' for ordinal in range(256))
+
+    tokenized = tokenize_source_page("001.png", source)
+
+    assert len(tokenized.lines) == 256
+    assert all(line.matching_eligible for line in tokenized.lines)
+    assert all(not line.style_fitting_eligible for line in tokenized.lines)
+    assert len(tokenized.operations) == 7 * 256 - 1
+    assert "".join(operation.output for operation in tokenized.operations) == tokenized.visible_text
+
+
 @pytest.mark.parametrize(
     "source",
     [
