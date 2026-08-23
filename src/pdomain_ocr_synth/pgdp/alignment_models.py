@@ -610,8 +610,16 @@ class PageAlignment:
     def _validate_operations(self) -> None:
         last_source = -1
         last_candidate = -1
-        source_ordinals = {line.ordinal for line in self.source_lines}
+        source_lines = {line.ordinal: line for line in self.source_lines}
+        source_ordinals = set(source_lines)
         candidate_ordinals = {candidate.ordinal for candidate in self.candidates}
+        required_source_ordinals = {
+            line.ordinal
+            for line in self.source_lines
+            if line.matching_eligible and line.visible_text != ""
+        }
+        observed_source_ordinals: set[int] = set()
+        observed_candidate_ordinals: set[int] = set()
         for operation in self.operations:
             if operation.source_ordinal is not None:
                 if (
@@ -621,7 +629,14 @@ class PageAlignment:
                     raise ValueError(
                         "Alignment operations must use increasing known source ordinals."
                     )
+                source_line = source_lines[operation.source_ordinal]
+                if not source_line.matching_eligible or source_line.visible_text == "":
+                    raise ValueError(
+                        "Alignment operations may reference only matching-eligible nonblank "
+                        + "source lines."
+                    )
                 last_source = operation.source_ordinal
+                observed_source_ordinals.add(operation.source_ordinal)
             if operation.candidate_ordinal is not None:
                 if (
                     operation.candidate_ordinal not in candidate_ordinals
@@ -631,6 +646,16 @@ class PageAlignment:
                         "Alignment operations must use increasing known candidate ordinals."
                     )
                 last_candidate = operation.candidate_ordinal
+                observed_candidate_ordinals.add(operation.candidate_ordinal)
+        if observed_candidate_ordinals != candidate_ordinals:
+            raise ValueError(
+                "Alignment operations must cover every candidate ordinal exactly once."
+            )
+        if observed_source_ordinals != required_source_ordinals:
+            raise ValueError(
+                "Alignment operations must cover every matching-eligible nonblank source "
+                + "line ordinal exactly once."
+            )
 
     def _validate_source_line_continuity(self) -> None:
         previous_end = 0

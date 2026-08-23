@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -477,6 +478,79 @@ def test_direct_report_output_round_trips_through_strict_reader() -> None:
     report = make_report()
 
     assert AlignmentReport.from_dict(report.to_dict()).to_dict() == report.to_dict()
+
+
+def test_page_rejects_omitted_candidate_from_operation_path() -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match="candidate"):
+        _ = replace(
+            page,
+            operations=(
+                AlignmentOperation(
+                    kind="skip_text", source_ordinal=0, candidate_ordinal=None, cost=0.1
+                ),
+            ),
+            matched_count=0,
+        )
+
+
+def test_page_rejects_omitted_matching_eligible_source_line_from_operation_path() -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match="matching-eligible nonblank"):
+        _ = replace(
+            page,
+            operations=(
+                AlignmentOperation(
+                    kind="skip_image", source_ordinal=None, candidate_ordinal=0, cost=0.1
+                ),
+            ),
+            matched_count=0,
+        )
+
+
+@pytest.mark.parametrize(
+    "source_line",
+    [
+        replace(make_report().projects[0].pages[0].source_lines[0], matching_eligible=False),
+        replace(make_report().projects[0].pages[0].source_lines[0], visible_text=""),
+    ],
+)
+def test_page_rejects_operation_for_noneligible_or_blank_source_line(
+    source_line: WireSourceLine,
+) -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match="matching-eligible nonblank"):
+        _ = replace(page, source_lines=(source_line,))
+
+
+@pytest.mark.parametrize(
+    ("operations", "message"),
+    [
+        (
+            (
+                AlignmentOperation(kind="match", source_ordinal=0, candidate_ordinal=0, cost=0.1),
+                AlignmentOperation(
+                    kind="skip_image", source_ordinal=None, candidate_ordinal=0, cost=0.1
+                ),
+            ),
+            "increasing known candidate",
+        ),
+        (
+            (AlignmentOperation(kind="match", source_ordinal=1, candidate_ordinal=0, cost=0.1),),
+            "increasing known source",
+        ),
+    ],
+)
+def test_page_rejects_duplicate_or_unknown_operation_references(
+    operations: tuple[AlignmentOperation, ...], message: str
+) -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match=message):
+        _ = replace(page, operations=operations)
 
 
 def test_wire_source_line_rejects_inverted_utf8_span() -> None:
