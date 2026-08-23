@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from pdomain_ocr_synth.pgdp.alignment_models import (
+    ALIGNMENT_ALGORITHM_VERSION,
+    ALIGNMENT_SCHEMA_VERSION,
+    AlignmentOperation,
+    AlignmentReport,
+    PageAlignment,
+    ProjectAlignment,
+    WireFormattingSpan,
+    WireLineCandidate,
+    WireSourceLine,
+)
+from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame
+
+
+def _sha256() -> str:
+    return "a" * 64
+
+
+def make_report() -> AlignmentReport:
+    page = PageAlignment(
+        page_name="p2.png",
+        f2_sha256=_sha256(),
+        scan_sha256=_sha256(),
+        source_frame=CoordinateFrame(width=100, height=200),
+        source_lines=(
+            WireSourceLine(
+                ordinal=0,
+                byte_start=0,
+                byte_end=5,
+                visible_text="\u00c9ire",
+                matching_eligible=True,
+                style_fitting_eligible=True,
+                formatting_span_ids=("local:p2.png:0:p2.png:5",),
+                continued_block_ids=(),
+            ),
+        ),
+        formatting_spans=(
+            WireFormattingSpan(
+                opening_id="local:p2.png:0",
+                block_id="local:p2.png:0:p2.png:5",
+                kind="local",
+                byte_start=0,
+                byte_end=5,
+                closed=True,
+            ),
+        ),
+        candidates=(
+            WireLineCandidate(
+                ordinal=0,
+                box=(1, 2, 90, 12),
+                width=89,
+                height=10,
+                fill_ratio=0.25,
+                component_count=2,
+                foreground_pixels=100,
+            ),
+        ),
+        operations=(
+            AlignmentOperation(kind="match", source_ordinal=0, candidate_ordinal=0, cost=0.1),
+        ),
+        total_cost=0.1,
+        second_best_cost=0.4,
+        normalized_cost=0.1,
+        matched_count=1,
+        matched_ratio=1.0,
+        uniqueness_margin=0.3,
+        mean_width_residual=0.1,
+        mean_indentation_residual=0.0,
+        state="accepted",
+        accepted=True,
+        exclusions=(),
+    )
+    project = ProjectAlignment(project_id="book", pages=(page,))
+    return AlignmentReport(
+        tool_version="0.1.0",
+        profile_label="profile.json",
+        profile_sha256=_sha256(),
+        methods={"z": "last", "a": "first"},
+        thresholds={"max_cost": 0.22},
+        projects=(project,),
+    )
+
+
+def test_alignment_report_keeps_uncalibrated_confidence_and_sorted_mappings() -> None:
+    payload = make_report().to_dict()
+
+    page = payload["projects"][0]["pages"][0]
+    assert page["confidence"] is None
+    assert page["confidence_kind"] == "uncalibrated"
+    assert payload["schema_version"] == ALIGNMENT_SCHEMA_VERSION == 1
+    assert payload["algorithm_version"] == ALIGNMENT_ALGORITHM_VERSION == "pgdp-alignment/v1"
+    assert list(payload["methods"]) == ["a", "z"]
+    assert page["source_frame"] == {"name": "source", "width": 100, "height": 200}
+
+
+def test_alignment_report_round_trips_additive_v1_values_without_inventing_defaults() -> None:
+    payload = make_report().to_dict()
+    payload["future_report"] = {"array": [1, {"nested": True}]}
+    payload["projects"][0]["future_project"] = {"value": None}
+    payload["projects"][0]["pages"][0]["future_page"] = ["kept", {"also": "kept"}]
+
+    rewritten = AlignmentReport.from_dict(payload).to_dict()
+
+    assert rewritten["future_report"] == payload["future_report"]
+    assert rewritten["projects"][0]["future_project"] == payload["projects"][0]["future_project"]
+    assert (
+        rewritten["projects"][0]["pages"][0]["future_page"]
+        == payload["projects"][0]["pages"][0]["future_page"]
+    )
+    assert json.dumps(rewritten, ensure_ascii=False, sort_keys=True) == json.dumps(
+        AlignmentReport.from_json(json.dumps(payload)).to_dict(), ensure_ascii=False, sort_keys=True
+    )
+
+
+@pytest.mark.parametrize(
+    ("payload_update", "message"),
+    [
+        ({"schema_version": 2}, "schema_version"),
+        ({"algorithm_version": "pgdp-alignment/v2"}, "algorithm_version"),
+        ({"profile_label": "../profile.json"}, "profile_label"),
+    ],
+)
+def test_alignment_report_rejects_unknown_versions_and_unsafe_profile_labels(
+    payload_update: dict[str, object], message: str
+) -> None:
+    payload = make_report().to_dict()
+    payload.update(payload_update)
+
+    with pytest.raises(ValueError, match=message):
+        _ = AlignmentReport.from_dict(payload)
+
+
+def test_wire_source_line_rejects_inverted_utf8_span() -> None:
+    with pytest.raises(ValueError):
+        _ = WireSourceLine(
+            ordinal=0,
+            byte_start=2,
+            byte_end=1,
+            visible_text="bad",
+            matching_eligible=True,
+            style_fitting_eligible=True,
+        )
+
+
+def test_wire_candidate_rejects_inverted_source_frame_box() -> None:
+    with pytest.raises(ValueError):
+        _ = WireLineCandidate(
+            ordinal=0,
+            box=(1, 1, 0, 2),
+            width=-1,
+            height=1,
+            fill_ratio=0.2,
+            component_count=1,
+            foreground_pixels=1,
+        )
+
+
+def test_alignment_operation_rejects_incomplete_match() -> None:
+    with pytest.raises(ValueError):
+        _ = AlignmentOperation(kind="match", source_ordinal=None, candidate_ordinal=0, cost=0.0)
+
+
+def test_schema_is_generated_from_alignment_report_input() -> None:
+    schema_path = Path("schemas/pgdp-alignment-v1.schema.json")
+    assert schema_path.read_text(encoding="utf-8") == AlignmentReport.json_schema()
