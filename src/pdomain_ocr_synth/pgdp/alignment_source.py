@@ -251,11 +251,14 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                 diagnostics.append(diagnostic)
                 style_ineligible_ranges.append((byte_start, byte_end))
         else:
-            output = source_text[lexeme.character_start : lexeme.character_end]
-            operations.append(
-                _copy_operation(byte_offsets, lexeme.character_start, lexeme.character_end, output)
+            visible_length += _append_fragmented_operation(
+                source_text=source_text,
+                byte_offsets=byte_offsets,
+                lexeme=lexeme,
+                outer_kind="copy",
+                control_starts=enclosed_control_starts,
+                operations=operations,
             )
-            visible_length += len(output)
             diagnostic = _diagnostic(
                 "malformed_markup",
                 "Malformed F2 markup remains visible.",
@@ -331,11 +334,13 @@ def _style_kind(name: str | None) -> StyleKind | None:
 def _lex(source_text: str) -> tuple[_Lexeme, ...]:
     lexemes: list[_Lexeme] = []
     position = 0
+    line_end = _line_end(source_text, position)
     while position < len(source_text):
         newline_end = _newline_end(source_text, position)
         if newline_end is not None:
             lexemes.append(_Lexeme("newline", position, newline_end))
             position = newline_end
+            line_end = _line_end(source_text, position)
             continue
         control = source_text[position : position + 2]
         if control in _CONTROL_PAIRS or control in _CONTROL_CLOSERS:
@@ -343,16 +348,16 @@ def _lex(source_text: str) -> tuple[_Lexeme, ...]:
             position += 2
             continue
         if source_text.startswith("[**", position):
-            note_end = _proof_note_end(source_text, position)
+            note_end = _proof_note_end(source_text, position, line_end)
             if note_end is None:
-                lexemes.append(_Lexeme("malformed", position, _line_end(source_text, position)))
-                position = _line_end(source_text, position)
+                lexemes.append(_Lexeme("malformed", position, line_end))
+                position = line_end
             else:
                 lexemes.append(_Lexeme("note", position, note_end))
                 position = note_end
             continue
         if source_text[position] == "<":
-            tag = _tag_lexeme(source_text, position)
+            tag = _tag_lexeme(source_text, position, line_end)
             if tag is not None:
                 lexemes.append(tag)
                 position = tag.character_end
@@ -383,8 +388,7 @@ def _newline_end(source_text: str, position: int) -> int | None:
     return None
 
 
-def _proof_note_end(source_text: str, position: int) -> int | None:
-    line_end = _line_end(source_text, position)
+def _proof_note_end(source_text: str, position: int, line_end: int) -> int | None:
     closing = source_text.find("]", position + 3, line_end)
     return None if closing == -1 else closing + 1
 
@@ -398,8 +402,7 @@ def _line_end(source_text: str, position: int) -> int:
     return min(candidates) if candidates else len(source_text)
 
 
-def _tag_lexeme(source_text: str, position: int) -> _Lexeme | None:
-    line_end = _line_end(source_text, position)
+def _tag_lexeme(source_text: str, position: int, line_end: int) -> _Lexeme | None:
     closing_bracket = source_text.find(">", position + 1, line_end)
     if closing_bracket == -1:
         remainder = source_text[position + 1 : line_end].lstrip()

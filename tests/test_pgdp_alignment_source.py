@@ -197,6 +197,20 @@ def test_tokenize_source_splits_proof_notes_around_valid_raw_controls() -> None:
     ]
 
 
+def test_tokenize_source_splits_malformed_markup_around_valid_raw_controls() -> None:
+    tokenized = tokenize_source_page("001.png", "<i broken /* body */")
+
+    assert tokenized.visible_text == "<i broken  body "
+    assert [operation.kind for operation in tokenized.operations] == [
+        "copy",
+        "delete_control",
+        "copy",
+        "delete_control",
+    ]
+    assert tokenized.lines[0].matching_eligible is True
+    assert tokenized.lines[0].style_fitting_eligible is False
+
+
 def test_tokenize_source_handles_a_large_control_rich_page_losslessly() -> None:
     source = "\n".join(f'<u data="/*">line {ordinal}*/</u>' for ordinal in range(256))
 
@@ -207,6 +221,17 @@ def test_tokenize_source_handles_a_large_control_rich_page_losslessly() -> None:
     assert all(not line.style_fitting_eligible for line in tokenized.lines)
     assert len(tokenized.operations) == 7 * 256 - 1
     assert "".join(operation.output for operation in tokenized.operations) == tokenized.visible_text
+
+
+def test_tokenize_source_handles_tag_dense_single_line_input() -> None:
+    source = "".join(f"<u data='{ordinal}'>" for ordinal in range(512))
+
+    tokenized = tokenize_source_page("001.png", source)
+
+    assert tokenized.visible_text == source
+    assert len(tokenized.lines) == 1
+    assert len(tokenized.operations) == 512
+    assert len(tokenized.diagnostics) == 512
 
 
 @pytest.mark.parametrize(
