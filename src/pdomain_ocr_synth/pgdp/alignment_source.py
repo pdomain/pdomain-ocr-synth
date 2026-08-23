@@ -65,6 +65,7 @@ class SourceLine:
     operation_ordinals: tuple[int, ...]
     formatting_span_ids: tuple[str, ...]
     continued_block_ids: tuple[str, ...]
+    matching_eligible: bool
     style_fitting_eligible: bool
 
 
@@ -88,6 +89,7 @@ class _Lexeme:
     character_end: int
     name: str | None = None
     closing: bool = False
+    self_closing: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,15 +108,16 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
     diagnostics: list[SourceDiagnostic] = []
     deleted_controls, control_diagnostics = _valid_controls(
         page_name=page_name,
-        lexemes=lexemes,
+        raw_controls=_raw_controls(source_text),
         byte_offsets=byte_offsets,
     )
     diagnostics.extend(control_diagnostics)
     operations: list[NormalizationOperation] = []
     style_runs: list[StyleRun] = []
-    ineligible_ranges: list[tuple[int, int]] = [
+    matching_ineligible_ranges: list[tuple[int, int]] = [
         (diagnostic.byte_start, diagnostic.byte_end) for diagnostic in diagnostics
     ]
+    style_ineligible_ranges = list(matching_ineligible_ranges)
     open_styles: list[_OpenStyle] = []
     visible_length = 0
     position = 0
@@ -165,10 +168,10 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                         open_styles=open_styles,
                         style_runs=style_runs,
                         diagnostics=diagnostics,
-                        ineligible_ranges=ineligible_ranges,
+                        style_ineligible_ranges=style_ineligible_ranges,
                         normalized_end=visible_length,
                     )
-                else:
+                elif not lexeme.self_closing:
                     open_styles.append(_OpenStyle(tag_name, byte_end, visible_length))
             else:
                 output = source_text[lexeme.character_start : lexeme.character_end]
@@ -186,7 +189,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                     byte_end,
                 )
                 diagnostics.append(diagnostic)
-                ineligible_ranges.append((byte_start, byte_end))
+                style_ineligible_ranges.append((byte_start, byte_end))
         else:
             output = source_text[lexeme.character_start : lexeme.character_end]
             operations.append(
@@ -201,7 +204,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                 byte_end,
             )
             diagnostics.append(diagnostic)
-            ineligible_ranges.append((byte_start, byte_end))
+            style_ineligible_ranges.append((byte_start, byte_end))
         position = lexeme.character_end
 
     if position < len(source_text):
@@ -218,7 +221,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
             open_style.byte_start,
         )
         diagnostics.append(diagnostic)
-        ineligible_ranges.append((open_style.byte_start, open_style.byte_start))
+        style_ineligible_ranges.append((open_style.byte_start, open_style.byte_start))
 
     visible_text = "".join(operation.output for operation in operations)
     lines = _source_lines(
@@ -226,7 +229,8 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
         source_text=source_text,
         byte_offsets=byte_offsets,
         operations=operations,
-        ineligible_ranges=ineligible_ranges,
+        matching_ineligible_ranges=matching_ineligible_ranges,
+        style_ineligible_ranges=style_ineligible_ranges,
     )
     return TokenizedSourcePage(
         page_name=page_name,
@@ -297,6 +301,19 @@ def _lex(source_text: str) -> tuple[_Lexeme, ...]:
     return tuple(lexemes)
 
 
+def _raw_controls(source_text: str) -> tuple[_Lexeme, ...]:
+    controls: list[_Lexeme] = []
+    position = 0
+    while position < len(source_text):
+        control = source_text[position : position + 2]
+        if control in _CONTROL_PAIRS or control in _CONTROL_CLOSERS:
+            controls.append(_Lexeme("control", position, position + 2, control))
+            position += 2
+        else:
+            position += 1
+    return tuple(controls)
+
+
 def _newline_end(source_text: str, position: int) -> int | None:
     character = source_text[position]
     if character == "\n":
@@ -342,28 +359,38 @@ def _tag_lexeme(source_text: str, position: int) -> _Lexeme | None:
         name_end += 1
     name = body[:name_end]
     attribute_text = body[name_end:]
+    self_closing = not closing and attribute_text.rstrip().endswith("/")
+    if self_closing:
+        attribute_text = attribute_text.rstrip()[:-1]
     if attribute_text and not attribute_text[0].isspace():
         return _Lexeme("malformed", position, closing_bracket + 1)
-    return _Lexeme("tag", position, closing_bracket + 1, name.lower(), closing)
+    return _Lexeme(
+        "tag",
+        position,
+        closing_bracket + 1,
+        name.lower(),
+        closing,
+        self_closing,
+    )
 
 
 def _valid_controls(
     *,
     page_name: str,
-    lexemes: tuple[_Lexeme, ...],
+    raw_controls: tuple[_Lexeme, ...],
     byte_offsets: tuple[int, ...],
 ) -> tuple[frozenset[int], tuple[SourceDiagnostic, ...]]:
     deleted: set[int] = set()
     diagnostics: list[SourceDiagnostic] = []
     open_control: _Lexeme | None = None
     open_control_is_valid = True
-    for lexeme in lexemes:
-        if lexeme.kind != "control" or lexeme.name is None:
+    for control_lexeme in raw_controls:
+        if control_lexeme.name is None:
             continue
-        control = lexeme.name
+        control = control_lexeme.name
         if control in _CONTROL_PAIRS:
             if open_control is None:
-                open_control = lexeme
+                open_control = control_lexeme
                 open_control_is_valid = True
             else:
                 open_control_is_valid = False
@@ -372,14 +399,14 @@ def _valid_controls(
                         "malformed_control",
                         f"Nested or overlapping formatting control '{control}'.",
                         page_name,
-                        byte_offsets[lexeme.character_start],
-                        byte_offsets[lexeme.character_end],
+                        byte_offsets[control_lexeme.character_start],
+                        byte_offsets[control_lexeme.character_end],
                     )
                 )
         elif open_control is not None and _CONTROL_PAIRS[open_control.name or ""] == control:
             if open_control_is_valid:
                 deleted.add(open_control.character_start)
-                deleted.add(lexeme.character_start)
+                deleted.add(control_lexeme.character_start)
             open_control = None
         else:
             if open_control is not None:
@@ -389,8 +416,8 @@ def _valid_controls(
                     "malformed_control",
                     f"Unmatched formatting control '{control}'.",
                     page_name,
-                    byte_offsets[lexeme.character_start],
-                    byte_offsets[lexeme.character_end],
+                    byte_offsets[control_lexeme.character_start],
+                    byte_offsets[control_lexeme.character_end],
                 )
             )
     if open_control is not None:
@@ -423,7 +450,7 @@ def _close_style(
     open_styles: list[_OpenStyle],
     style_runs: list[StyleRun],
     diagnostics: list[SourceDiagnostic],
-    ineligible_ranges: list[tuple[int, int]],
+    style_ineligible_ranges: list[tuple[int, int]],
     normalized_end: int,
 ) -> None:
     if open_styles and open_styles[-1].kind == tag_name:
@@ -446,7 +473,7 @@ def _close_style(
         byte_end,
     )
     diagnostics.append(diagnostic)
-    ineligible_ranges.append((byte_start, byte_end))
+    style_ineligible_ranges.append((byte_start, byte_end))
 
 
 def _source_lines(
@@ -455,7 +482,8 @@ def _source_lines(
     source_text: str,
     byte_offsets: tuple[int, ...],
     operations: list[NormalizationOperation],
-    ineligible_ranges: list[tuple[int, int]],
+    matching_ineligible_ranges: list[tuple[int, int]],
+    style_ineligible_ranges: list[tuple[int, int]],
 ) -> tuple[SourceLine, ...]:
     lines: list[SourceLine] = []
     content_start = 0
@@ -476,7 +504,8 @@ def _source_lines(
                 content_end=position,
                 separator_end=newline_end,
                 operations=operations,
-                ineligible_ranges=ineligible_ranges,
+                matching_ineligible_ranges=matching_ineligible_ranges,
+                style_ineligible_ranges=style_ineligible_ranges,
             )
         )
         ordinal += 1
@@ -492,7 +521,8 @@ def _source_lines(
             content_end=len(source_text),
             separator_end=len(source_text),
             operations=operations,
-            ineligible_ranges=ineligible_ranges,
+            matching_ineligible_ranges=matching_ineligible_ranges,
+            style_ineligible_ranges=style_ineligible_ranges,
         )
     )
     return tuple(lines)
@@ -508,7 +538,8 @@ def _make_line(
     content_end: int,
     separator_end: int,
     operations: list[NormalizationOperation],
-    ineligible_ranges: list[tuple[int, int]],
+    matching_ineligible_ranges: list[tuple[int, int]],
+    style_ineligible_ranges: list[tuple[int, int]],
 ) -> SourceLine:
     byte_start = byte_offsets[content_start]
     content_byte_end = byte_offsets[content_end]
@@ -523,8 +554,11 @@ def _make_line(
         for index in operation_ordinals
         if operations[index].byte_end <= content_byte_end
     )
-    style_fitting_eligible = not any(
-        start <= content_byte_end and end >= byte_start for start, end in ineligible_ranges
+    matching_eligible = not _overlaps_ranges(
+        byte_start, content_byte_end, matching_ineligible_ranges
+    )
+    style_fitting_eligible = not _overlaps_ranges(
+        byte_start, content_byte_end, style_ineligible_ranges
     )
     return SourceLine(
         page_name=page_name,
@@ -540,6 +574,7 @@ def _make_line(
         operation_ordinals=operation_ordinals,
         formatting_span_ids=(),
         continued_block_ids=(),
+        matching_eligible=matching_eligible,
         style_fitting_eligible=style_fitting_eligible,
     )
 
@@ -548,3 +583,11 @@ def _diagnostic(
     code: str, message: str, page_name: str, byte_start: int, byte_end: int
 ) -> SourceDiagnostic:
     return SourceDiagnostic(code, message, page_name, byte_start, byte_end)
+
+
+def _overlaps_ranges(byte_start: int, byte_end: int, ranges: list[tuple[int, int]]) -> bool:
+    return any(
+        (start < byte_end and byte_start < end)
+        or (start == end and byte_start <= start <= byte_end)
+        for start, end in ranges
+    )

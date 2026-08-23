@@ -116,6 +116,16 @@ def test_tokenize_source_records_standalone_tb_as_zero_width_style_run() -> None
     assert tokenized.lines[0].style_fitting_eligible is True
 
 
+def test_tokenize_source_deletes_known_self_closing_tags() -> None:
+    tokenized = tokenize_source_page("001.png", "<i/>visible<tb/> <u/>")
+
+    assert tokenized.visible_text == "visible <u/>"
+    assert [
+        (run.kind, run.normalized_start, run.normalized_end) for run in tokenized.style_runs
+    ] == [("tb", 7, 7)]
+    assert [diagnostic.code for diagnostic in tokenized.diagnostics] == ["unknown_tag"]
+
+
 def test_tokenize_source_keeps_unknown_tag_visible_and_marks_line_ineligible() -> None:
     tokenized = tokenize_source_page("001.png", "before <u>under</u> after")
 
@@ -124,6 +134,22 @@ def test_tokenize_source_keeps_unknown_tag_visible_and_marks_line_ineligible() -
         "unknown_tag",
         "unknown_tag",
     ]
+    assert tokenized.lines[0].matching_eligible is True
+    assert tokenized.lines[0].style_fitting_eligible is False
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "[** note with /* unclosed control]",
+        "<i data='/*'>visible</i>",
+    ],
+)
+def test_tokenize_source_marks_raw_control_errors_ineligible_for_matching(source: str) -> None:
+    tokenized = tokenize_source_page("001.png", source)
+
+    assert "malformed_control" in [diagnostic.code for diagnostic in tokenized.diagnostics]
+    assert tokenized.lines[0].matching_eligible is False
     assert tokenized.lines[0].style_fitting_eligible is False
 
 
