@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import pytest
 from PIL import Image, ImageDraw
 
-from pdomain_ocr_synth.pgdp.image_measurement import open_image_snapshot
+from pdomain_ocr_synth.pgdp import alignment_image
+from pdomain_ocr_synth.pgdp.image_measurement import (
+    ImageMeasurement,
+    ImageSnapshot,
+    SnapshotSpoolError,
+    open_image_snapshot,
+)
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame, InkBand, ProfileDiagnostic
 
 if TYPE_CHECKING:
@@ -25,6 +32,18 @@ _ROW_BANDS = (
 )
 
 
+class _CandidateReplayReadFailingSnapshot(BytesIO):
+    @override
+    def read(self, _size: int | None = -1) -> bytes:
+        raise OSError("Input/output error")
+
+
+class _CandidateReplaySeekFailingSnapshot(BytesIO):
+    @override
+    def seek(self, _offset: int, _whence: int = 0) -> int:
+        raise OSError("Input/output error")
+
+
 def _extract(
     image_path: Path, *, diagnostics: tuple[ProfileDiagnostic, ...] = ()
 ) -> CandidateExtraction:
@@ -38,6 +57,23 @@ def _extract(
             ink_bands=_ROW_BANDS,
             diagnostics=diagnostics,
         )
+
+
+def _measured_source_frame(_snapshot: ImageSnapshot) -> ImageMeasurement:
+    return ImageMeasurement(
+        sha256="a" * 64,
+        source_frame=_SOURCE_FRAME,
+        image_mode="L",
+        exif_orientation=None,
+        grayscale_threshold=0,
+        foreground_pixels=1,
+        foreground_bounds=(20, 20, 21, 21),
+        margins=(20, 20, 79, 59),
+        ink_bands=(),
+        median_ink_band_height=None,
+        median_ink_band_top_pitch=None,
+        diagnostics=(),
+    )
 
 
 def _page_with_rows(*, border: bool = False, rule: bool = False) -> Image.Image:
@@ -339,6 +375,42 @@ def test_extract_candidates_uses_snapshot_bytes_after_live_image_mutates(tmp_pat
     ]
 
 
+def test_extract_candidates_translates_snapshot_replay_read_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(alignment_image, "measure_image_snapshot", _measured_source_frame)
+    snapshot = ImageSnapshot(
+        sha256="a" * 64,
+        source_file=_CandidateReplayReadFailingSnapshot(b"source"),
+    )
+
+    with pytest.raises(SnapshotSpoolError, match="temporary scan snapshot"):
+        _ = alignment_image.extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=_FOREGROUND_BOUNDS,
+            ink_bands=_ROW_BANDS,
+        )
+
+
+def test_extract_candidates_translates_snapshot_replay_seek_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(alignment_image, "measure_image_snapshot", _measured_source_frame)
+    snapshot = ImageSnapshot(
+        sha256="a" * 64,
+        source_file=_CandidateReplaySeekFailingSnapshot(b"source"),
+    )
+
+    with pytest.raises(SnapshotSpoolError, match="temporary scan snapshot"):
+        _ = alignment_image.extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=_FOREGROUND_BOUNDS,
+            ink_bands=_ROW_BANDS,
+        )
+
+
 def test_extract_candidates_accepts_additive_source_frame_evidence(tmp_path: Path) -> None:
     image_path = tmp_path / "rows.png"
     _page_with_rows().save(image_path)
@@ -376,6 +448,178 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
         "gutter_minimum_width_ratio": 0.03,
         "gutter_minimum_vertical_coverage_ratio": 0.6,
     }
+
+
+def test_extract_candidates_accepts_exactly_two_ink_bands(tmp_path: Path) -> None:
+    image_path = tmp_path / "two-bands.png"
+    _page_with_rows().save(image_path)
+
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=_FOREGROUND_BOUNDS,
+            ink_bands=_ROW_BANDS[:2],
+        )
+
+    assert len(result.candidates) == 2
+    assert result.exclusions == ()
+
+
+@pytest.mark.parametrize(
+    ("vertical_extent", "expected_page_border"),
+    [(41, False), (80, True)],
+    ids=("two_edges_retain", "three_edges_remove"),
+)
+def test_page_border_threshold_requires_exactly_three_source_edges(
+    tmp_path: Path,
+    vertical_extent: int,
+    expected_page_border: bool,
+) -> None:
+    image_path = tmp_path / f"border-{vertical_extent}.png"
+    image = _page_with_rows()
+    draw = ImageDraw.Draw(image)
+    draw.line((0, 0, 0, vertical_extent - 1), fill=0)
+    draw.line((0, 0, 50, 0), fill=0)
+    image.save(image_path)
+
+    result = _extract(image_path)
+
+    assert any(item.reason == "page_border" for item in result.rejected) is expected_page_border
+
+
+@pytest.mark.parametrize(
+    ("line_box", "expected_long_rule"),
+    [
+        ((10, 20, 89, 20), False),
+        ((10, 20, 90, 20), True),
+        ((10, 20, 90, 21), False),
+    ],
+    ids=(
+        "width_eighty_percent_retain",
+        "width_over_eighty_percent_remove",
+        "height_two_percent_retain",
+    ),
+)
+def test_long_rule_thresholds_are_strict(
+    tmp_path: Path,
+    line_box: tuple[int, int, int, int],
+    expected_long_rule: bool,
+) -> None:
+    image_path = tmp_path / "rule.png"
+    image = Image.new("L", (100, 100), color=255)
+    ImageDraw.Draw(image).rectangle(line_box, fill=0)
+    image.save(image_path)
+
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=CoordinateFrame(width=100, height=100),
+            foreground_bounds=(0, 0, 100, 100),
+            ink_bands=(InkBand(y_start=20, y_end=25), InkBand(y_start=40, y_end=45)),
+        )
+
+    assert (
+        any(item.reason == "long_horizontal_rule" for item in result.rejected) is expected_long_rule
+    )
+
+
+@pytest.mark.parametrize(
+    ("right_box", "expected_cluster_count"),
+    [
+        ((20, 6, 30, 26), 1),
+        ((20, 7, 30, 27), 2),
+        ((20, 6, 30, 16), 1),
+        ((20, 7, 30, 17), 2),
+        ((15, 0, 20, 5), 1),
+        ((16, 0, 21, 5), 2),
+    ],
+    ids=(
+        "vertical_overlap_forty_percent_accept",
+        "vertical_overlap_below_forty_percent_reject",
+        "center_distance_sixty_percent_accept",
+        "center_distance_over_sixty_percent_reject",
+        "median_height_gap_two_times_accept",
+        "median_height_gap_over_two_times_reject",
+    ),
+)
+def test_component_join_threshold_boundaries(
+    right_box: tuple[int, int, int, int], expected_cluster_count: int
+) -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import Component, join_components
+
+    left = Component(ordinal=0, label=0, box=(0, 0, 10, 10), foreground_pixels=100)
+    if right_box[3] - right_box[1] == 5:
+        left = Component(ordinal=0, label=0, box=(0, 0, 5, 5), foreground_pixels=25)
+    right = Component(ordinal=1, label=1, box=right_box, foreground_pixels=50)
+
+    assert len(join_components((left, right))) == expected_cluster_count
+
+
+def test_extract_candidates_connects_diagonal_foreground_pixels_with_eight_connectivity(
+    tmp_path: Path,
+) -> None:
+    image_path = tmp_path / "diagonal.png"
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    for y_start in (20, 35, 50):
+        draw.point((20, y_start), fill=0)
+        draw.point((21, y_start + 1), fill=0)
+    image.save(image_path)
+
+    result = _extract(image_path)
+
+    assert [candidate.component_count for candidate in result.candidates] == [1, 1, 1]
+    assert [candidate.foreground_pixels for candidate in result.candidates] == [2, 2, 2]
+
+
+def _gutter_image(*, width: int, center_ink_rows: tuple[int, ...]) -> Image.Image:
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    right_start = 39 + width
+    for y_start, y_end in ((20, 24), (35, 39), (50, 54)):
+        draw.rectangle((10, y_start, 38, y_end), fill=0)
+        draw.rectangle((right_start, y_start, 89, y_end), fill=0)
+    for y_index in center_ink_rows:
+        draw.point((40, y_index), fill=0)
+    return image
+
+
+@pytest.mark.parametrize(
+    ("width", "expected_gutter"),
+    [(2, False), (3, True)],
+    ids=("width_under_three_percent_reject", "width_at_three_percent_accept"),
+)
+def test_gutter_minimum_width_threshold(tmp_path: Path, width: int, expected_gutter: bool) -> None:
+    image_path = tmp_path / f"gutter-width-{width}.png"
+    _gutter_image(width=width, center_ink_rows=()).save(image_path)
+
+    result = _extract(image_path)
+
+    assert (result.gutter is not None) is expected_gutter
+
+
+@pytest.mark.parametrize(
+    ("center_ink_rows", "expected_gutter"),
+    [
+        ((20, 22, 35, 37, 50, 52), True),
+        ((20, 21, 22, 35, 36, 50, 51), False),
+    ],
+    ids=("empty_coverage_sixty_percent_accept", "empty_coverage_below_sixty_percent_reject"),
+)
+def test_gutter_vertical_coverage_threshold(
+    tmp_path: Path, center_ink_rows: tuple[int, ...], expected_gutter: bool
+) -> None:
+    image_path = tmp_path / "gutter-coverage.png"
+    _gutter_image(width=3, center_ink_rows=center_ink_rows).save(image_path)
+
+    result = _extract(image_path)
+
+    assert (result.gutter is not None) is expected_gutter
 
 
 def test_component_join_uses_the_band_median_height_for_horizontal_gaps(tmp_path: Path) -> None:

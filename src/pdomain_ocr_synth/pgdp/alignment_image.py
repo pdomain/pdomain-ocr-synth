@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 from PIL import Image
 
-from pdomain_ocr_synth.pgdp.image_measurement import measure_image_snapshot
+from pdomain_ocr_synth.pgdp.image_measurement import SnapshotReplayFile, measure_image_snapshot
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -346,7 +346,7 @@ def _foreground_mask(
         or measured.source_frame.height != source_frame.height
     ):
         raise ValueError("Snapshot dimensions do not match the M15a source frame.")
-    source_file = snapshot.source_file
+    source_file = SnapshotReplayFile(snapshot.source_file)
     _ = source_file.seek(0)
     try:
         with warnings.catch_warnings():
@@ -657,9 +657,7 @@ def _label_components(
         row_runs: list[_Run] = []
         run_start: int | None = None
         for x_index in range(foreground.shape[1] + 1):
-            is_foreground = x_index < foreground.shape[1] and bool(
-                np.count_nonzero(foreground[y_index : y_index + 1, x_index : x_index + 1])
-            )
+            is_foreground = x_index < foreground.shape[1] and bool(foreground[y_index, x_index])
             if is_foreground and run_start is None:
                 run_start = x_index
                 continue
@@ -667,14 +665,22 @@ def _label_components(
                 continue
             label = labels.add()
             run = _Run(y=y_index, x_start=run_start, x_end=x_index, label=label)
-            for previous in previous_runs:
-                if previous.x_end < run_start:
-                    continue
-                if previous.x_start > x_index:
-                    break
-                labels.union(label, previous.label)
             row_runs.append(run)
             run_start = None
+        previous_index = 0
+        for run in row_runs:
+            while (
+                previous_index < len(previous_runs)
+                and previous_runs[previous_index].x_end < run.x_start
+            ):
+                previous_index += 1
+            overlap_index = previous_index
+            while (
+                overlap_index < len(previous_runs)
+                and previous_runs[overlap_index].x_start <= run.x_end
+            ):
+                labels.union(run.label, previous_runs[overlap_index].label)
+                overlap_index += 1
         runs.extend(row_runs)
         previous_runs = row_runs
     grouped: dict[int, list[_Run]] = {}

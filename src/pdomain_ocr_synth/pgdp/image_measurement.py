@@ -37,8 +37,10 @@ class _SourceImageReadError(OSError):
     """Reading the original image file failed while it was being copied."""
 
 
-class _SnapshotReplayFile(BinaryIO):
+class SnapshotReplayFile(BinaryIO):
     """Translate temporary snapshot I/O failures during Pillow replay."""
+
+    _source_file: BinaryIO
 
     def __init__(self, source_file: BinaryIO) -> None:
         self._source_file = source_file
@@ -144,7 +146,7 @@ def measure_image(image_path: str | Path) -> ImageMeasurement:
 def measure_image_snapshot(snapshot: ImageSnapshot) -> ImageMeasurement:
     """Measure one seekable temporary copy of original scan bytes."""
 
-    source_file = _SnapshotReplayFile(snapshot.source_file)
+    source_file = SnapshotReplayFile(snapshot.source_file)
     source_file.seek(0)
     try:
         with warnings.catch_warnings():
