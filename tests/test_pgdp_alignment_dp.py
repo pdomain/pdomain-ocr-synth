@@ -5,7 +5,6 @@ from dataclasses import replace
 import pytest
 
 from pdomain_ocr_synth.pgdp.alignment_dp import (
-    TIE_PRIORITY,
     AlignmentResult,
     assess_alignment,
     derive_source_feature_exclusions,
@@ -112,11 +111,27 @@ def test_exact_lines_match_with_zero_cost() -> None:
 
 
 def test_equal_cost_transitions_prefer_match_then_skip_image_then_skip_text() -> None:
-    operations = ("skip_text", "skip_image", "match")
+    source = (
+        _line(0, "         a"),
+        _line(1, "         a"),
+        _line(2, "b"),
+        _line(3, "         a"),
+    )
+    candidates = (
+        _candidate(0, x0=10, width=10),
+        _candidate(1, x0=0, width=1),
+        _candidate(2, x0=10, width=10),
+        _candidate(3, x0=0, width=1),
+    )
+    result = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
 
-    assert sorted(operations, key=TIE_PRIORITY.__getitem__) == [
+    assert result.second_best is not None
+    assert result.best.total_cost == result.second_best.total_cost
+    assert [operation.kind for operation in result.operations] == [
         "match",
         "skip_image",
+        "match",
+        "match",
         "skip_text",
     ]
 
