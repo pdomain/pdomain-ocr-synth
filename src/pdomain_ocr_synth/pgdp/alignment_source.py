@@ -99,6 +99,13 @@ class _OpenStyle:
     normalized_start: int
 
 
+@dataclass(frozen=True, slots=True)
+class _ControlParseResult:
+    deleted_starts: frozenset[int]
+    diagnostics: tuple[SourceDiagnostic, ...]
+    invalid_byte_ranges: tuple[tuple[int, int], ...]
+
+
 def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePage:
     """Tokenize one F2 page without changing its source bytes."""
 
@@ -106,17 +113,15 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
     byte_offsets = _utf8_offsets(source_text)
     lexemes = _lex(source_text)
     diagnostics: list[SourceDiagnostic] = []
-    deleted_controls, control_diagnostics = _valid_controls(
+    control_result = _valid_controls(
         page_name=page_name,
         raw_controls=_raw_controls(source_text),
         byte_offsets=byte_offsets,
     )
-    diagnostics.extend(control_diagnostics)
+    diagnostics.extend(control_result.diagnostics)
     operations: list[NormalizationOperation] = []
     style_runs: list[StyleRun] = []
-    matching_ineligible_ranges: list[tuple[int, int]] = [
-        (diagnostic.byte_start, diagnostic.byte_end) for diagnostic in diagnostics
-    ]
+    matching_ineligible_ranges = list(control_result.invalid_byte_ranges)
     style_ineligible_ranges = list(matching_ineligible_ranges)
     open_styles: list[_OpenStyle] = []
     visible_length = 0
@@ -137,9 +142,16 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
             )
             visible_length += 1
         elif lexeme.kind == "note":
-            operations.append(NormalizationOperation("delete_note", byte_start, byte_end, ""))
+            visible_length += _append_fragmented_operation(
+                source_text=source_text,
+                byte_offsets=byte_offsets,
+                lexeme=lexeme,
+                outer_kind="delete_note",
+                deleted_control_starts=control_result.deleted_starts,
+                operations=operations,
+            )
         elif lexeme.kind == "control":
-            if lexeme.character_start in deleted_controls:
+            if lexeme.character_start in control_result.deleted_starts:
                 operations.append(
                     NormalizationOperation("delete_control", byte_start, byte_end, "")
                 )
@@ -154,7 +166,14 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
         elif lexeme.kind == "tag":
             tag_name = _style_kind(lexeme.name)
             if tag_name is not None:
-                operations.append(NormalizationOperation("delete_tag", byte_start, byte_end, ""))
+                visible_length += _append_fragmented_operation(
+                    source_text=source_text,
+                    byte_offsets=byte_offsets,
+                    lexeme=lexeme,
+                    outer_kind="delete_tag",
+                    deleted_control_starts=control_result.deleted_starts,
+                    operations=operations,
+                )
                 if tag_name == "tb":
                     style_runs.append(
                         StyleRun("tb", visible_length, visible_length, byte_end, byte_end)
@@ -174,13 +193,14 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
                 elif not lexeme.self_closing:
                     open_styles.append(_OpenStyle(tag_name, byte_end, visible_length))
             else:
-                output = source_text[lexeme.character_start : lexeme.character_end]
-                operations.append(
-                    _copy_operation(
-                        byte_offsets, lexeme.character_start, lexeme.character_end, output
-                    )
+                visible_length += _append_fragmented_operation(
+                    source_text=source_text,
+                    byte_offsets=byte_offsets,
+                    lexeme=lexeme,
+                    outer_kind="copy",
+                    deleted_control_starts=control_result.deleted_starts,
+                    operations=operations,
                 )
-                visible_length += len(output)
                 diagnostic = _diagnostic(
                     "unknown_tag",
                     f"Unknown F2 tag '{lexeme.name}'.",
@@ -379,9 +399,10 @@ def _valid_controls(
     page_name: str,
     raw_controls: tuple[_Lexeme, ...],
     byte_offsets: tuple[int, ...],
-) -> tuple[frozenset[int], tuple[SourceDiagnostic, ...]]:
+) -> _ControlParseResult:
     deleted: set[int] = set()
     diagnostics: list[SourceDiagnostic] = []
+    invalid_byte_ranges: list[tuple[int, int]] = []
     open_control: _Lexeme | None = None
     open_control_is_valid = True
     for control_lexeme in raw_controls:
@@ -407,10 +428,24 @@ def _valid_controls(
             if open_control_is_valid:
                 deleted.add(open_control.character_start)
                 deleted.add(control_lexeme.character_start)
+            else:
+                invalid_byte_ranges.append(
+                    (
+                        byte_offsets[open_control.character_start],
+                        byte_offsets[control_lexeme.character_end],
+                    )
+                )
             open_control = None
         else:
             if open_control is not None:
                 open_control_is_valid = False
+            else:
+                invalid_byte_ranges.append(
+                    (
+                        byte_offsets[control_lexeme.character_start],
+                        byte_offsets[control_lexeme.character_end],
+                    )
+                )
             diagnostics.append(
                 _diagnostic(
                     "malformed_control",
@@ -421,6 +456,7 @@ def _valid_controls(
                 )
             )
     if open_control is not None:
+        invalid_byte_ranges.append((byte_offsets[open_control.character_start], byte_offsets[-1]))
         diagnostics.append(
             _diagnostic(
                 "malformed_control",
@@ -430,7 +466,11 @@ def _valid_controls(
                 byte_offsets[open_control.character_end],
             )
         )
-    return frozenset(deleted), tuple(diagnostics)
+    return _ControlParseResult(
+        deleted_starts=frozenset(deleted),
+        diagnostics=tuple(diagnostics),
+        invalid_byte_ranges=tuple(invalid_byte_ranges),
+    )
 
 
 def _copy_operation(
@@ -439,6 +479,74 @@ def _copy_operation(
     return NormalizationOperation(
         "copy", byte_offsets[character_start], byte_offsets[character_end], output
     )
+
+
+def _append_fragmented_operation(
+    *,
+    source_text: str,
+    byte_offsets: tuple[int, ...],
+    lexeme: _Lexeme,
+    outer_kind: NormalizationKind,
+    deleted_control_starts: frozenset[int],
+    operations: list[NormalizationOperation],
+) -> int:
+    visible_length = 0
+    position = lexeme.character_start
+    control_starts = tuple(
+        control_start
+        for control_start in sorted(deleted_control_starts)
+        if lexeme.character_start <= control_start and control_start + 2 <= lexeme.character_end
+    )
+    for control_start in control_starts:
+        visible_length += _append_outer_operation(
+            source_text=source_text,
+            byte_offsets=byte_offsets,
+            character_start=position,
+            character_end=control_start,
+            kind=outer_kind,
+            operations=operations,
+        )
+        operations.append(
+            NormalizationOperation(
+                "delete_control",
+                byte_offsets[control_start],
+                byte_offsets[control_start + 2],
+                "",
+            )
+        )
+        position = control_start + 2
+    visible_length += _append_outer_operation(
+        source_text=source_text,
+        byte_offsets=byte_offsets,
+        character_start=position,
+        character_end=lexeme.character_end,
+        kind=outer_kind,
+        operations=operations,
+    )
+    return visible_length
+
+
+def _append_outer_operation(
+    *,
+    source_text: str,
+    byte_offsets: tuple[int, ...],
+    character_start: int,
+    character_end: int,
+    kind: NormalizationKind,
+    operations: list[NormalizationOperation],
+) -> int:
+    if character_start == character_end:
+        return 0
+    output = source_text[character_start:character_end] if kind == "copy" else ""
+    operations.append(
+        NormalizationOperation(
+            kind,
+            byte_offsets[character_start],
+            byte_offsets[character_end],
+            output,
+        )
+    )
+    return len(output)
 
 
 def _close_style(

@@ -153,6 +153,50 @@ def test_tokenize_source_marks_raw_control_errors_ineligible_for_matching(source
     assert tokenized.lines[0].style_fitting_eligible is False
 
 
+def test_tokenize_source_marks_every_line_in_an_invalid_control_block_ineligible() -> None:
+    source = "start /* outer\nmiddle /# nested\nend */ tail\noutside"
+
+    tokenized = tokenize_source_page("001.png", source)
+
+    assert [line.matching_eligible for line in tokenized.lines] == [False, False, False, True]
+    assert [line.style_fitting_eligible for line in tokenized.lines] == [False, False, False, True]
+
+
+def test_tokenize_source_marks_unclosed_control_through_page_end_ineligible() -> None:
+    tokenized = tokenize_source_page("001.png", "start /# continued\nstill active\n")
+
+    assert [line.matching_eligible for line in tokenized.lines[:2]] == [False, False]
+
+
+def test_tokenize_source_splits_unknown_tags_around_valid_raw_controls() -> None:
+    tokenized = tokenize_source_page("001.png", '<u data="/*">body*/</u>')
+
+    assert tokenized.visible_text == '<u data="">body</u>'
+    assert [operation.kind for operation in tokenized.operations] == [
+        "copy",
+        "delete_control",
+        "copy",
+        "copy",
+        "delete_control",
+        "copy",
+    ]
+    assert tokenized.lines[0].matching_eligible is True
+    assert tokenized.lines[0].style_fitting_eligible is False
+
+
+def test_tokenize_source_splits_proof_notes_around_valid_raw_controls() -> None:
+    tokenized = tokenize_source_page("001.png", "[** note /* hidden */ text]")
+
+    assert tokenized.visible_text == ""
+    assert [operation.kind for operation in tokenized.operations] == [
+        "delete_note",
+        "delete_control",
+        "delete_note",
+        "delete_control",
+        "delete_note",
+    ]
+
+
 @pytest.mark.parametrize(
     "source",
     [
