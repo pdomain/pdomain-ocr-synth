@@ -162,7 +162,7 @@ class _Run:
 
 
 @dataclass(frozen=True, slots=True)
-class _Component:
+class Component:
     """A labeled connected component backed by source-mask runs."""
 
     ordinal: int
@@ -183,7 +183,7 @@ class _Component:
 class _LabeledComponents:
     """Components and the source runs needed to clear selected labels."""
 
-    components: tuple[_Component, ...]
+    components: tuple[Component, ...]
     runs: tuple[_Run, ...]
 
 
@@ -269,6 +269,13 @@ def extract_line_candidates(
         )
 
     foreground = _foreground_mask(snapshot, source_frame)
+    if not bool(foreground.any()):
+        return _empty_extraction(
+            snapshot=snapshot,
+            source_frame=source_frame,
+            exclusions=("blank_page",),
+            inherited_diagnostics=inherited_diagnostics,
+        )
     rejected: list[RejectedComponent] = []
     _remove_page_borders(foreground, rejected)
     _remove_long_rules(foreground, foreground_bounds, rejected)
@@ -453,7 +460,7 @@ def _extract_band_candidates(
             )
             continue
         components = tuple(
-            _Component(
+            Component(
                 ordinal=component.ordinal,
                 label=component.label,
                 box=(
@@ -466,7 +473,7 @@ def _extract_band_candidates(
             )
             for component in labeled.components
         )
-        clusters = _join_components(components)
+        clusters = join_components(components)
         all_clusters.extend(clusters)
         if len(clusters) != 1:
             rejected.extend(
@@ -508,7 +515,7 @@ def _extract_band_candidates(
     return candidates, rejected, tuple(all_clusters)
 
 
-def _join_components(components: Sequence[_Component]) -> tuple[_Cluster, ...]:
+def join_components(components: Sequence[Component]) -> tuple[_Cluster, ...]:
     if not components:
         return ()
     ordered = tuple(sorted(components, key=lambda item: (item.box, item.ordinal)))
@@ -523,14 +530,14 @@ def _join_components(components: Sequence[_Component]) -> tuple[_Cluster, ...]:
                 break
             if _components_are_joinable(component, later, maximum_gap=maximum_gap):
                 joined.union(labels[index], labels[later_index])
-    grouped: dict[int, list[_Component]] = {}
+    grouped: dict[int, list[Component]] = {}
     for label, component in zip(labels, ordered, strict=True):
         grouped.setdefault(joined.find(label), []).append(component)
     clusters = tuple(_cluster(group) for _, group in sorted(grouped.items()))
     return tuple(sorted(clusters, key=lambda item: (item.box, item.component_ordinal)))
 
 
-def _components_are_joinable(left: _Component, right: _Component, *, maximum_gap: float) -> bool:
+def _components_are_joinable(left: Component, right: Component, *, maximum_gap: float) -> bool:
     vertical_overlap = max(0, min(left.box[3], right.box[3]) - max(left.box[1], right.box[1]))
     smaller_height = min(left.height, right.height)
     if vertical_overlap * 100 < smaller_height * _JOIN_MINIMUM_VERTICAL_OVERLAP_PERCENT:
@@ -545,7 +552,7 @@ def _components_are_joinable(left: _Component, right: _Component, *, maximum_gap
     return horizontal_gap <= maximum_gap
 
 
-def _cluster(components: Sequence[_Component]) -> _Cluster:
+def _cluster(components: Sequence[Component]) -> _Cluster:
     return _Cluster(
         box=(
             min(component.box[0] for component in components),
@@ -689,7 +696,7 @@ def _label_components(
     unordered.sort(key=lambda item: (item[1], item[0]))
     return _LabeledComponents(
         components=tuple(
-            _Component(
+            Component(
                 ordinal=ordinal,
                 label=label,
                 box=box,

@@ -13,7 +13,7 @@ from pdomain_ocr_synth.pgdp.image_measurement import open_image_snapshot
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame, InkBand, ProfileDiagnostic
 
 if TYPE_CHECKING:
-    from pdomain_ocr_synth.pgdp.alignment_candidates import CandidateExtraction
+    from pdomain_ocr_synth.pgdp.alignment_image import CandidateExtraction
 
 
 _SOURCE_FRAME = CoordinateFrame(width=100, height=80)
@@ -28,7 +28,7 @@ _ROW_BANDS = (
 def _extract(
     image_path: Path, *, diagnostics: tuple[ProfileDiagnostic, ...] = ()
 ) -> CandidateExtraction:
-    from pdomain_ocr_synth.pgdp.alignment_candidates import extract_line_candidates
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
 
     with open_image_snapshot(image_path) as snapshot:
         return extract_line_candidates(
@@ -78,6 +78,38 @@ def test_extract_candidates_removes_border_and_long_rule(tmp_path: Path) -> None
     assert result.exclusions == ()
 
 
+def test_extract_candidates_removes_one_border_across_five_prose_bands(tmp_path: Path) -> None:
+    image_path = tmp_path / "five-rows.png"
+    image = Image.new("L", (100, 120), color=255)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, 99, 119), outline=0, width=1)
+    bands = tuple(InkBand(y_start=y_start, y_end=y_start + 5) for y_start in range(20, 95, 15))
+    for band in bands:
+        draw.rectangle((20, band.y_start, 60, band.y_end - 1), fill=0)
+    image.save(image_path)
+
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=CoordinateFrame(width=100, height=120),
+            foreground_bounds=(0, 0, 100, 120),
+            ink_bands=bands,
+        )
+
+    assert [candidate.box for candidate in result.candidates] == [
+        (20, 20, 61, 25),
+        (20, 35, 61, 40),
+        (20, 50, 61, 55),
+        (20, 65, 61, 70),
+        (20, 80, 61, 85),
+    ]
+    assert [(item.reason, item.box) for item in result.rejected] == [
+        ("page_border", (0, 0, 100, 120)),
+    ]
+
+
 def test_candidate_records_component_measurements_and_normalized_profile(tmp_path: Path) -> None:
     image_path = tmp_path / "rows.png"
     _page_with_rows().save(image_path)
@@ -110,6 +142,84 @@ def test_extract_candidates_excludes_fragmented_band_in_stable_order(tmp_path: P
         ("fragmented_band", 1, (20, 35, 59, 40)),
         ("fragmented_band", 1, (70, 35, 79, 40)),
     ]
+
+
+def test_extract_candidates_sorts_three_fragmented_clusters_by_box(tmp_path: Path) -> None:
+    image_path = tmp_path / "three-fragments.png"
+    image = _page_with_rows()
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 35, 99, 39), fill=255)
+    draw.rectangle((20, 35, 28, 39), fill=0)
+    draw.rectangle((50, 35, 55, 39), fill=0)
+    draw.rectangle((75, 35, 80, 39), fill=0)
+    image.save(image_path)
+
+    result = _extract(image_path)
+
+    assert result.candidates == ()
+    assert result.exclusions == ("fragmented_band", "probable_multi_column")
+    assert [(item.band_ordinal, item.box) for item in result.rejected] == [
+        (1, (20, 35, 29, 40)),
+        (1, (50, 35, 56, 40)),
+        (1, (75, 35, 81, 40)),
+    ]
+
+
+def test_extract_candidates_keeps_fragmented_evidence_sorted_when_geometry_is_drawn_reversed(
+    tmp_path: Path,
+) -> None:
+    image_path = tmp_path / "reversed-fragments.png"
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    for y_start, y_end in ((20, 24), (35, 39), (50, 54)):
+        draw.rectangle((70, y_start, 78, y_end), fill=0)
+        draw.rectangle((45, y_start, 53, y_end), fill=0)
+        draw.rectangle((20, y_start, 28, y_end), fill=0)
+    image.save(image_path)
+
+    result = _extract(image_path)
+
+    assert result.candidates == ()
+    assert result.exclusions == ("fragmented_band", "probable_multi_column")
+    assert [(item.band_ordinal, item.box) for item in result.rejected] == [
+        (0, (20, 20, 29, 25)),
+        (0, (45, 20, 54, 25)),
+        (0, (70, 20, 79, 25)),
+        (1, (20, 35, 29, 40)),
+        (1, (45, 35, 54, 40)),
+        (1, (70, 35, 79, 40)),
+        (2, (20, 50, 29, 55)),
+        (2, (45, 50, 54, 55)),
+        (2, (70, 50, 79, 55)),
+    ]
+
+
+def test_join_components_is_stable_when_component_input_order_reverses() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import Component, join_components
+
+    components = (
+        Component(ordinal=0, label=0, box=(20, 35, 29, 40), foreground_pixels=45),
+        Component(ordinal=1, label=1, box=(50, 35, 56, 40), foreground_pixels=30),
+        Component(ordinal=2, label=2, box=(75, 35, 81, 40), foreground_pixels=30),
+    )
+
+    expected_boxes = ((20, 35, 29, 40), (50, 35, 56, 40), (75, 35, 81, 40))
+
+    assert tuple(cluster.box for cluster in join_components(components)) == expected_boxes
+    assert tuple(cluster.box for cluster in join_components(tuple(reversed(components)))) == (
+        expected_boxes
+    )
+
+
+def test_extract_candidates_excludes_an_unexpected_blank_snapshot(tmp_path: Path) -> None:
+    image_path = tmp_path / "blank.png"
+    Image.new("L", (100, 80), color=255).save(image_path)
+
+    result = _extract(image_path)
+
+    assert result.candidates == ()
+    assert result.rejected == ()
+    assert result.exclusions == ("blank_page",)
 
 
 def test_extract_candidates_detects_persistent_vertical_gutter(tmp_path: Path) -> None:
@@ -163,7 +273,7 @@ def test_extract_candidates_excludes_missing_bounds_or_insufficient_bands(tmp_pa
     image_path = tmp_path / "rows.png"
     _page_with_rows().save(image_path)
 
-    from pdomain_ocr_synth.pgdp.alignment_candidates import extract_line_candidates
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
 
     with open_image_snapshot(image_path) as snapshot:
         no_bounds = extract_line_candidates(
@@ -187,7 +297,7 @@ def test_extract_candidates_excludes_negative_foreground_bounds(tmp_path: Path) 
     image_path = tmp_path / "rows.png"
     _page_with_rows().save(image_path)
 
-    from pdomain_ocr_synth.pgdp.alignment_candidates import extract_line_candidates
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
 
     with open_image_snapshot(image_path) as snapshot:
         result = extract_line_candidates(
@@ -209,7 +319,7 @@ def test_extract_candidates_uses_snapshot_bytes_after_live_image_mutates(tmp_pat
     replacement_path = tmp_path / "replacement.png"
     replacement.save(replacement_path)
 
-    from pdomain_ocr_synth.pgdp.alignment_candidates import extract_line_candidates
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
 
     _ = image_path.write_bytes(original_bytes)
     with open_image_snapshot(image_path) as snapshot:
@@ -233,7 +343,7 @@ def test_extract_candidates_accepts_additive_source_frame_evidence(tmp_path: Pat
     image_path = tmp_path / "rows.png"
     _page_with_rows().save(image_path)
 
-    from pdomain_ocr_synth.pgdp.alignment_candidates import extract_line_candidates
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
 
     with open_image_snapshot(image_path) as snapshot:
         result = extract_line_candidates(
@@ -251,7 +361,7 @@ def test_extract_candidates_accepts_additive_source_frame_evidence(tmp_path: Pat
 
 
 def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
-    from pdomain_ocr_synth.pgdp.alignment_candidates import ALIGNMENT_IMAGE_METHODS
+    from pdomain_ocr_synth.pgdp.alignment_image import ALIGNMENT_IMAGE_METHODS
 
     assert ALIGNMENT_IMAGE_METHODS == {
         "algorithm": "source-frame-components/v1",
@@ -278,7 +388,7 @@ def test_component_join_uses_the_band_median_height_for_horizontal_gaps(tmp_path
     draw.rectangle((20, 40, 49, 44), fill=0)
     image.save(image_path)
 
-    from pdomain_ocr_synth.pgdp.alignment_candidates import extract_line_candidates
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
 
     with open_image_snapshot(image_path) as snapshot:
         result = extract_line_candidates(
