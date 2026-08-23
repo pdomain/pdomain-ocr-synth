@@ -5,6 +5,7 @@ from dataclasses import replace
 import pytest
 
 from pdomain_ocr_synth.pgdp.alignment_dp import (
+    TIE_PRIORITY,
     AlignmentResult,
     assess_alignment,
     derive_source_feature_exclusions,
@@ -111,6 +112,16 @@ def test_exact_lines_match_with_zero_cost() -> None:
 
 
 def test_equal_cost_transitions_prefer_match_then_skip_image_then_skip_text() -> None:
+    operations = ("skip_text", "skip_image", "match")
+
+    assert sorted(operations, key=TIE_PRIORITY.__getitem__) == [
+        "match",
+        "skip_image",
+        "skip_text",
+    ]
+
+
+def test_equal_cost_complete_paths_prefer_match_before_skip_image() -> None:
     result = align_sequences(
         (_line(0, "abcdefghij"),),
         (_candidate(0), _candidate(1)),
@@ -304,14 +315,44 @@ def test_source_feature_exclusions_have_verified_source_ordinals() -> None:
     ]
 
 
-def test_assessment_accepts_exact_cost_and_margin_boundaries() -> None:
+def test_assessment_accepts_actual_dp_cost_boundary() -> None:
     source = tuple(_line(index, "abcdefghij") for index in range(4))
-    candidates = tuple(_candidate(index) for index in range(4))
-    initial = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
+    candidates = (
+        _candidate(0, x0=2, width=2, y0=0),
+        _candidate(1, x0=2, width=2, y0=10),
+        _candidate(2, x0=1, width=2, y0=27),
+        _candidate(3, x0=0, width=2, y0=47),
+    )
 
-    result = assess_alignment(replace(initial, normalized_cost=0.22, uniqueness_margin=0.15))
+    result = align_sequences(source, candidates, foreground_bounds=(0, 0, 2, 60))
 
+    assert result.total_cost == 0.88
+    assert max(len(result.eligible_source_lines), len(result.candidates)) == 4
+    assert result.normalized_cost == 0.22
+    assert result.state == "accepted"
     assert result.accepted is True
+
+
+def test_assessment_accepts_actual_dp_margin_boundary() -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(4))
+    candidates = (
+        _candidate(0, width=7, y0=0),
+        _candidate(1, width=7, y0=10),
+        _candidate(2, width=7, y0=20),
+        _candidate(3, x0=2, width=7, y0=30),
+        _candidate(4, x0=4, width=6, y0=40),
+    )
+
+    result = align_sequences(source, candidates, foreground_bounds=(0, 0, 7, 50))
+
+    assert result.second_best is not None
+    assert max(len(result.eligible_source_lines), len(result.candidates)) == 5
+    # Accepted paths with a real ambiguity have a total cost of at least one
+    # skip.  Binary64 subtraction at that magnitude cannot equal float(0.15),
+    # so this is the nearest passing result without rounding production data.
+    assert result.uniqueness_margin == pytest.approx(0.15)
+    assert result.uniqueness_margin >= 0.15
+    assert result.state == "accepted"
 
 
 def test_assessment_proposes_low_match_ratio() -> None:
