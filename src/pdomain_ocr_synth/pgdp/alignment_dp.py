@@ -160,6 +160,18 @@ def align_sequences(
         raise ValueError("source_page lines must be the exact source sequence used for alignment.")
     feature_exclusions = derive_source_feature_exclusions(source_page)
     eligible = _eligible_lines(source, source_page.style_runs)
+    malformed_control = any(not line.matching_eligible for line in source)
+    count_exclusions = _pre_dp_count_exclusions(len(eligible), len(image_candidates))
+    if count_exclusions:
+        return _excluded_without_dp(
+            eligible,
+            image_candidates,
+            exclusion_evidence=feature_exclusions,
+            count_exclusions=count_exclusions,
+            inherited_exclusions=inherited_exclusions,
+            probable_multi_column=probable_multi_column,
+            malformed_control=malformed_control,
+        )
     foreground_x0, foreground_width = _foreground_geometry(foreground_bounds)
     costs = _match_costs(eligible, image_candidates, foreground_x0, foreground_width)
     best, second_best = _align(eligible, image_candidates, costs)
@@ -205,7 +217,7 @@ def align_sequences(
         preliminary,
         inherited_exclusions=inherited_exclusions,
         probable_multi_column=probable_multi_column,
-        malformed_control=any(not line.matching_eligible for line in source),
+        malformed_control=malformed_control,
     )
 
 
@@ -259,6 +271,87 @@ def assess_alignment(
             exclusions=tuple(dict.fromkeys(exclusions)),
         )
     return replace(result, state="accepted", accepted=True)
+
+
+def _pre_dp_count_exclusions(source_count: int, candidate_count: int) -> tuple[str, ...]:
+    """Return count exclusions that make DP allocation unnecessary."""
+
+    exclusions: list[str] = []
+    if not MINIMUM_SOURCE_LINES <= source_count <= MAXIMUM_SOURCE_LINES:
+        exclusions.append("line_count_out_of_range")
+    maximum_count_difference = max(2, math.ceil(0.10 * source_count))
+    if abs(source_count - candidate_count) > maximum_count_difference:
+        exclusions.append("line_count_difference_exceeds_maximum")
+    return tuple(exclusions)
+
+
+def _excluded_without_dp(
+    source_lines: tuple[EligibleSourceLine, ...],
+    candidates: tuple[LineCandidate, ...],
+    *,
+    exclusion_evidence: tuple[SourceFeatureExclusion, ...],
+    count_exclusions: tuple[str, ...],
+    inherited_exclusions: Iterable[str],
+    probable_multi_column: bool,
+    malformed_control: bool,
+) -> AlignmentResult:
+    """Return complete deterministic skip evidence without building a DP grid."""
+
+    operations = _skip_operations(source_lines, candidates)
+    total_cost = sum(operation.cost for operation in operations)
+    best = AlignmentPath(operations=operations, total_cost=total_cost)
+    exclusions = list(dict.fromkeys(inherited_exclusions))
+    if probable_multi_column:
+        exclusions.append("persistent_gutter")
+    exclusions.extend(evidence.code for evidence in exclusion_evidence)
+    if malformed_control:
+        exclusions.append("malformed_control")
+    exclusions.extend(count_exclusions)
+    return AlignmentResult(
+        eligible_source_lines=source_lines,
+        candidates=candidates,
+        operations=operations,
+        best=best,
+        second_best=None,
+        total_cost=total_cost,
+        normalized_cost=total_cost / max(len(source_lines), len(candidates), 1),
+        matched_count=0,
+        matched_ratio=0.0,
+        uniqueness_margin=0.0,
+        mean_width_residual=None,
+        mean_indentation_residual=None,
+        state="excluded",
+        accepted=False,
+        exclusions=tuple(dict.fromkeys(exclusions)),
+        exclusion_evidence=exclusion_evidence,
+    )
+
+
+def _skip_operations(
+    source_lines: tuple[EligibleSourceLine, ...], candidates: tuple[LineCandidate, ...]
+) -> tuple[AlignmentOperation, ...]:
+    """Return the deterministic complete skip path for an unaligned page."""
+
+    return (
+        *(
+            AlignmentOperation(
+                kind="skip_image",
+                source_ordinal=None,
+                candidate_ordinal=candidate_index,
+                cost=SKIP_COST,
+            )
+            for candidate_index in range(len(candidates))
+        ),
+        *(
+            AlignmentOperation(
+                kind="skip_text",
+                source_ordinal=source.line.ordinal,
+                candidate_ordinal=None,
+                cost=SKIP_COST,
+            )
+            for source in source_lines
+        ),
+    )
 
 
 def derive_source_feature_exclusions(

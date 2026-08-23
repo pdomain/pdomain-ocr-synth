@@ -101,12 +101,12 @@ def test_alignment_requires_an_immutable_tokenized_source_page() -> None:
 
 def test_exact_lines_match_with_zero_cost() -> None:
     result = align_sequences(
-        (_line(0, "abcdefghij"), _line(1, "abcdefghij")),
-        (_candidate(0), _candidate(1)),
-        foreground_bounds=(0, 0, 10, 40),
+        tuple(_line(index, "abcdefghij") for index in range(4)),
+        tuple(_candidate(index) for index in range(4)),
+        foreground_bounds=(0, 0, 10, 60),
     )
 
-    assert [operation.kind for operation in result.operations] == ["match", "match"]
+    assert [operation.kind for operation in result.operations] == ["match"] * 4
     assert result.total_cost == 0.0
     assert result.normalized_cost == 0.0
     assert result.matched_ratio == 1.0
@@ -187,13 +187,14 @@ def test_dp_reconstructs_known_equal_cost_complete_paths() -> None:
 
 
 def test_equal_cost_paths_with_unequal_depths_preserve_tuple_order() -> None:
-    page = tokenize_f2_pages({"001": "a" * 1000 + "\n" + "a" * 1000 + "\n\n\n\n         b"}).pages[
-        0
-    ]
+    page = tokenize_f2_pages(
+        {"001": "a" * 1000 + "\n" + "a" * 1000 + "\n\n\n\n         b\nc"}
+    ).pages[0]
     candidates = (
         _candidate(0, width=1000),
         _candidate(1, x0=4222, width=1000),
         _candidate(2, width=1000),
+        _candidate(3, width=1000),
     )
 
     result = align_sequences(
@@ -204,8 +205,9 @@ def test_equal_cost_paths_with_unequal_depths_preserve_tuple_order() -> None:
     )
 
     assert result.second_best is not None
-    assert result.best.total_cost == result.second_best.total_cost == 2.0
+    assert result.best.total_cost == result.second_best.total_cost
     assert [operation.kind for operation in result.best.operations] == [
+        "match",
         "match",
         "match",
         "match",
@@ -215,6 +217,7 @@ def test_equal_cost_paths_with_unequal_depths_preserve_tuple_order() -> None:
         "skip_image",
         "match",
         "skip_text",
+        "match",
     ]
 
 
@@ -268,14 +271,23 @@ def test_equal_cost_paths_support_sparse_source_ordinals() -> None:
 
 def test_equal_cost_complete_paths_prefer_match_before_skip_image() -> None:
     result = align_sequences(
-        (_line(0, "abcdefghij"),),
-        (_candidate(0), _candidate(1)),
-        foreground_bounds=(0, 0, 10, 20),
+        tuple(_line(index, "abcdefghij") for index in range(4)),
+        tuple(_candidate(index) for index in range(5)),
+        foreground_bounds=(0, 0, 10, 60),
     )
 
-    assert [operation.kind for operation in result.operations] == ["match", "skip_image"]
+    assert [operation.kind for operation in result.operations] == [
+        "match",
+        "match",
+        "match",
+        "match",
+        "skip_image",
+    ]
     assert result.second_best is not None
     assert [operation.kind for operation in result.second_best.operations] == [
+        "match",
+        "match",
+        "match",
         "skip_image",
         "match",
     ]
@@ -283,26 +295,37 @@ def test_equal_cost_complete_paths_prefer_match_before_skip_image() -> None:
 
 def test_missing_source_line_records_skip_text() -> None:
     result = align_sequences(
-        (_line(0, "abcdefghij"), _line(1, "abcdefghij")),
-        (_candidate(0),),
-        foreground_bounds=(0, 0, 10, 20),
+        tuple(_line(index, "abcdefghij") for index in range(4)),
+        tuple(_candidate(index) for index in range(3)),
+        foreground_bounds=(0, 0, 10, 50),
     )
 
-    assert [operation.kind for operation in result.operations] == ["match", "skip_text"]
-    assert result.operations[-1].source_ordinal == 1
+    assert [operation.kind for operation in result.operations] == [
+        "match",
+        "match",
+        "match",
+        "skip_text",
+    ]
+    assert result.operations[-1].source_ordinal == 3
     assert result.operations[-1].candidate_ordinal is None
 
 
 def test_extra_image_row_records_skip_image() -> None:
     result = align_sequences(
-        (_line(0, "abcdefghij"),),
-        (_candidate(0), _candidate(1)),
-        foreground_bounds=(0, 0, 10, 40),
+        tuple(_line(index, "abcdefghij") for index in range(4)),
+        tuple(_candidate(index) for index in range(5)),
+        foreground_bounds=(0, 0, 10, 60),
     )
 
-    assert [operation.kind for operation in result.operations] == ["match", "skip_image"]
+    assert [operation.kind for operation in result.operations] == [
+        "match",
+        "match",
+        "match",
+        "match",
+        "skip_image",
+    ]
     assert result.operations[-1].source_ordinal is None
-    assert result.operations[-1].candidate_ordinal == 1
+    assert result.operations[-1].candidate_ordinal == 4
 
 
 def test_blank_source_lines_drive_gap_cost_and_clamp_after_three() -> None:
@@ -313,11 +336,13 @@ def test_blank_source_lines_drive_gap_cost_and_clamp_after_three() -> None:
         _line(3, ""),
         _line(4, ""),
         _line(5, "abcdefghij"),
+        _line(6, "abcdefghij"),
+        _line(7, "abcdefghij"),
     )
     result = align_sequences(
         source,
-        (_candidate(0, y0=0), _candidate(1, y0=40)),
-        foreground_bounds=(0, 0, 10, 60),
+        tuple(_candidate(index, y0=index * 40) for index in range(4)),
+        foreground_bounds=(0, 0, 10, 150),
     )
 
     assert result.operations[1].match_cost is not None
@@ -330,11 +355,18 @@ def test_proof_note_only_normalized_blank_counts_as_source_gap() -> None:
         _line(0, "abcdefghij"),
         _line(1, ""),
         _line(2, "abcdefghij"),
+        _line(3, "abcdefghij"),
+        _line(4, "abcdefghij"),
     )
     result = align_sequences(
         source,
-        (_candidate(0, y0=0), _candidate(1, y0=30)),
-        foreground_bounds=(0, 0, 10, 50),
+        (
+            _candidate(0, y0=0),
+            _candidate(1, y0=30),
+            _candidate(2, y0=40),
+            _candidate(3, y0=50),
+        ),
+        foreground_bounds=(0, 0, 10, 60),
     )
 
     assert result.eligible_source_lines[1].blank_lines_before == 1
@@ -343,11 +375,13 @@ def test_proof_note_only_normalized_blank_counts_as_source_gap() -> None:
 
 
 def test_style_run_changes_the_weak_style_cost() -> None:
-    page = tokenize_f2_pages({"001": "<i>abcdefghij</i>"}).pages[0]
+    page = tokenize_f2_pages(
+        {"001": "<i>abcdefghij</i>\nabcdefghij\nabcdefghij\nabcdefghij"}
+    ).pages[0]
     result = align_sequences(
         page.lines,
-        (_candidate(0),),
-        foreground_bounds=(0, 0, 10, 20),
+        tuple(_candidate(index) for index in range(4)),
+        foreground_bounds=(0, 0, 10, 50),
         source_page=page,
     )
 
@@ -357,9 +391,9 @@ def test_style_run_changes_the_weak_style_cost() -> None:
 
 def test_indent_cost_measures_candidate_offset_from_foreground_origin() -> None:
     result = align_sequences(
-        (_line(0, "abcdefghij"),),
-        (_candidate(0, x0=5),),
-        foreground_bounds=(5, 0, 15, 20),
+        tuple(_line(index, "abcdefghij") for index in range(4)),
+        tuple(_candidate(index, x0=5) for index in range(4)),
+        foreground_bounds=(5, 0, 15, 50),
     )
 
     assert result.operations[0].match_cost is not None
@@ -401,6 +435,85 @@ def test_line_count_boundaries_are_inclusive(
 
     assert result.state == expected_state
     assert (expected_exclusion in result.exclusions) is (expected_exclusion is not None)
+
+
+@pytest.mark.parametrize(
+    ("source_count", "candidate_count", "expected_exclusion"),
+    [
+        (3, 3, "line_count_out_of_range"),
+        (81, 81, "line_count_out_of_range"),
+        (4, 7, "line_count_difference_exceeds_maximum"),
+    ],
+)
+def test_pre_dp_count_exclusions_skip_cost_matrix_and_alignment(
+    source_count: int, candidate_count: int, expected_exclusion: str
+) -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(source_count))
+    candidates = tuple(_candidate(index) for index in range(candidate_count))
+
+    with (
+        patch.object(
+            alignment_dp,
+            "_match_costs",
+            side_effect=AssertionError("pre-DP exclusion calculated match costs"),
+        ) as match_costs,
+        patch.object(
+            alignment_dp,
+            "_align",
+            side_effect=AssertionError("pre-DP exclusion invoked the DP"),
+        ) as align,
+    ):
+        result = align_sequences(
+            source,
+            candidates,
+            foreground_bounds=(0, 0, 10, max(source_count, candidate_count) * 10),
+        )
+
+    assert match_costs.call_count == 0
+    assert align.call_count == 0
+    assert result.state == "excluded"
+    assert result.accepted is False
+    assert result.exclusions == (expected_exclusion,)
+    assert [operation.kind for operation in result.operations] == [
+        *["skip_image"] * candidate_count,
+        *["skip_text"] * source_count,
+    ]
+    assert [
+        operation.candidate_ordinal for operation in result.operations[:candidate_count]
+    ] == list(range(candidate_count))
+    assert [operation.source_ordinal for operation in result.operations[candidate_count:]] == list(
+        range(source_count)
+    )
+
+
+def test_pre_dp_exclusion_retains_derived_source_evidence() -> None:
+    page = tokenize_f2_pages({"001": "[Illustration: a plate]\n" + "abcdefghij\n" * 80}).pages[0]
+
+    result = align_sequences(
+        page.lines,
+        tuple(_candidate(index) for index in range(81)),
+        foreground_bounds=(0, 0, 10, 820),
+        source_page=page,
+    )
+
+    assert result.state == "excluded"
+    assert result.exclusions == ("illustration_marker", "line_count_out_of_range")
+    assert result.exclusion_evidence == (
+        alignment_dp.SourceFeatureExclusion("illustration_marker", "pgdp-rank/v1", (0,)),
+    )
+    assert result.operations == result.best.operations
+    assert result.operations[0] == alignment_dp.AlignmentOperation(
+        kind="skip_image",
+        source_ordinal=None,
+        candidate_ordinal=0,
+        cost=1.0,
+    )
+    assert result.operations[-1] == alignment_dp.AlignmentOperation(
+        kind="skip_text",
+        source_ordinal=80,
+        candidate_ordinal=None,
+        cost=1.0,
+    )
 
 
 def test_80_by_80_alignment_retains_two_reconstructed_paths() -> None:
