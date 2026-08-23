@@ -39,6 +39,14 @@ AlignmentOperationKind = Literal["match", "skip_image", "skip_text"]
 AlignmentState = Literal["accepted", "proposed", "excluded"]
 BlockKind = Literal["local", "continued"]
 StyleKind = Literal["i", "b", "sc", "f", "g", "tb"]
+WireStyleKind = Literal[
+    "bold",
+    "italic",
+    "small_caps",
+    "gesperrt",
+    "subscript",
+    "superscript",
+]
 Bounds = tuple[int, int, int, int] | list[int]
 
 _JSON_OBJECT_ADAPTER = TypeAdapter(dict[str, JsonValue])
@@ -208,6 +216,7 @@ class WireSourceLine:
     separator_byte_start: int
     separator_byte_end: int
     original_text: str
+    separator_text: str
     visible_text: str
     matching_eligible: bool
     style_fitting_eligible: bool
@@ -249,11 +258,14 @@ class WireSourceLine:
         ):
             raise ValueError("Source-line spans must partition the line UTF-8 range.")
         _ = _require_string(self.original_text, name="Source-line original_text")
+        _ = _require_string(self.separator_text, name="Source-line separator_text")
         _ = _require_string(self.visible_text, name="Source-line visible_text")
         _ = _require_bool(self.matching_eligible, name="matching_eligible")
         _ = _require_bool(self.style_fitting_eligible, name="style_fitting_eligible")
         if len(self.original_text.encode("utf-8")) != content_end - content_start:
             raise ValueError("Source-line original_text must exactly fill its content UTF-8 span.")
+        if len(self.separator_text.encode("utf-8")) != separator_end - separator_start:
+            raise ValueError("Source-line separator_text must exactly fill its UTF-8 span.")
         object.__setattr__(self, "operation_ordinals", tuple(self.operation_ordinals))
         object.__setattr__(self, "formatting_span_ids", tuple(self.formatting_span_ids))
         object.__setattr__(self, "continued_block_ids", tuple(self.continued_block_ids))
@@ -278,6 +290,7 @@ class WireSourceLine:
                 "separator_byte_start": self.separator_byte_start,
                 "separator_byte_end": self.separator_byte_end,
                 "original_text": self.original_text,
+                "separator_text": self.separator_text,
                 "visible_text": self.visible_text,
                 "operation_ordinals": list(self.operation_ordinals),
                 "formatting_span_ids": list(self.formatting_span_ids),
@@ -327,6 +340,49 @@ class WireFormattingSpan:
                 "byte_start": self.byte_start,
                 "byte_end": self.byte_end,
                 "closed": self.closed,
+            },
+            self.extensions,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class WireStyleRun:
+    """One typed source style run with normalized and UTF-8 byte evidence."""
+
+    kind: WireStyleKind
+    normalized_start: int
+    normalized_end: int
+    byte_start: int
+    byte_end: int
+    extensions: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _ = _require_string(self.kind, name="Style-run kind")
+        if self.kind not in {
+            "bold",
+            "italic",
+            "small_caps",
+            "gesperrt",
+            "subscript",
+            "superscript",
+        }:
+            raise ValueError("Style-run kind is unsupported.")
+        for name in ("normalized_start", "normalized_end", "byte_start", "byte_end"):
+            _require_nonnegative_integer(getattr(self, name), name=name)
+        if self.normalized_end < self.normalized_start:
+            raise ValueError("Style-run normalized span must be half-open and non-inverted.")
+        if self.byte_end < self.byte_start:
+            raise ValueError("Style-run UTF-8 span must be half-open and non-inverted.")
+        object.__setattr__(self, "extensions", _normalized_mapping(self.extensions))
+
+    def to_dict(self) -> dict[str, JsonValue]:
+        return _merge_payload(
+            {
+                "kind": self.kind,
+                "normalized_start": self.normalized_start,
+                "normalized_end": self.normalized_end,
+                "byte_start": self.byte_start,
+                "byte_end": self.byte_end,
             },
             self.extensions,
         )
@@ -479,7 +535,7 @@ class PageAlignment:
     accepted: bool
     exclusions: tuple[str, ...]
     diagnostics: tuple[AlignmentDiagnostic, ...] = ()
-    style_runs: tuple[Mapping[str, object], ...] = ()
+    style_runs: tuple[WireStyleRun, ...] = ()
     exclusion_evidence: tuple[Mapping[str, object], ...] = ()
     confidence: None = None
     confidence_kind: Literal["uncalibrated"] = CONFIDENCE_KIND
@@ -499,9 +555,7 @@ class PageAlignment:
         object.__setattr__(self, "candidates", tuple(self.candidates))
         object.__setattr__(self, "operations", tuple(self.operations))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
-        object.__setattr__(
-            self, "style_runs", tuple(_normalized_mapping(item) for item in self.style_runs)
-        )
+        object.__setattr__(self, "style_runs", tuple(self.style_runs))
         object.__setattr__(
             self,
             "exclusion_evidence",
@@ -518,12 +572,16 @@ class PageAlignment:
             raise TypeError("operations must contain AlignmentOperation records.")
         if any(not isinstance(diagnostic, AlignmentDiagnostic) for diagnostic in self.diagnostics):
             raise TypeError("diagnostics must contain AlignmentDiagnostic records.")
+        if any(not isinstance(style_run, WireStyleRun) for style_run in self.style_runs):
+            raise TypeError("style_runs must contain WireStyleRun records.")
         if any(not isinstance(exclusion, str) for exclusion in self.exclusions):
             raise TypeError("exclusions must contain strings.")
         if self.source_frame is not None:
             for candidate in self.candidates:
                 _ = _normalize_box(candidate.box, name="Candidate box", frame=self.source_frame)
         self._validate_ordinals()
+        self._validate_source_line_continuity()
+        self._validate_style_runs()
         self._validate_operations()
         for name in ("total_cost", "normalized_cost", "matched_ratio", "uniqueness_margin"):
             _require_finite(getattr(self, name), name=name)
@@ -581,6 +639,32 @@ class PageAlignment:
                     )
                 last_candidate = operation.candidate_ordinal
 
+    def _validate_source_line_continuity(self) -> None:
+        previous_end = 0
+        for source_line in self.source_lines:
+            if source_line.byte_start != previous_end:
+                raise ValueError("Source-line UTF-8 evidence must be contiguous from byte zero.")
+            previous_end = source_line.byte_end
+
+    def _validate_style_runs(self) -> None:
+        source_end = self.source_lines[-1].byte_end if self.source_lines else 0
+        ordered_runs = tuple(
+            sorted(
+                self.style_runs,
+                key=lambda run: (
+                    run.normalized_start,
+                    run.normalized_end,
+                    run.byte_start,
+                    run.byte_end,
+                    run.kind,
+                ),
+            )
+        )
+        if self.style_runs != ordered_runs:
+            raise ValueError("Style runs must use deterministic normalized and source-byte order.")
+        if any(style_run.byte_end > source_end for style_run in self.style_runs):
+            raise ValueError("Style-run UTF-8 spans must stay inside page source evidence.")
+
     def to_dict(self) -> dict[str, JsonValue]:
         source_frame = None if self.source_frame is None else self.source_frame.to_dict()
         return _merge_payload(
@@ -591,7 +675,7 @@ class PageAlignment:
                 "source_frame": source_frame,
                 "source_lines": [line.to_dict() for line in self.source_lines],
                 "formatting_spans": [span.to_dict() for span in self.formatting_spans],
-                "style_runs": [_mapping_dict(run) for run in self.style_runs],
+                "style_runs": [style_run.to_dict() for style_run in self.style_runs],
                 "candidates": [candidate.to_dict() for candidate in self.candidates],
                 "operations": [operation.to_dict() for operation in self.operations],
                 "total_cost": self.total_cost,
@@ -793,6 +877,7 @@ class WireSourceLineInput(_WireModel):
     separator_byte_start: StrictInt = Field(ge=0)
     separator_byte_end: StrictInt = Field(ge=0)
     original_text: StrictStr
+    separator_text: StrictStr
     visible_text: StrictStr
     matching_eligible: StrictBool
     style_fitting_eligible: StrictBool
@@ -817,6 +902,7 @@ class WireSourceLineInput(_WireModel):
             separator_byte_start=self.separator_byte_start,
             separator_byte_end=self.separator_byte_end,
             original_text=self.original_text,
+            separator_text=self.separator_text,
             visible_text=self.visible_text,
             matching_eligible=self.matching_eligible,
             style_fitting_eligible=self.style_fitting_eligible,
@@ -845,6 +931,31 @@ class WireFormattingSpanInput(_WireModel):
             byte_start=self.byte_start,
             byte_end=self.byte_end,
             closed=self.closed,
+            extensions=_wire_extensions(self),
+        )
+
+
+class WireStyleRunInput(_WireModel):
+    kind: Literal[
+        "bold",
+        "italic",
+        "small_caps",
+        "gesperrt",
+        "subscript",
+        "superscript",
+    ]
+    normalized_start: StrictInt = Field(ge=0)
+    normalized_end: StrictInt = Field(ge=0)
+    byte_start: StrictInt = Field(ge=0)
+    byte_end: StrictInt = Field(ge=0)
+
+    def to_domain(self) -> WireStyleRun:
+        return WireStyleRun(
+            kind=self.kind,
+            normalized_start=self.normalized_start,
+            normalized_end=self.normalized_end,
+            byte_start=self.byte_start,
+            byte_end=self.byte_end,
             extensions=_wire_extensions(self),
         )
 
@@ -924,7 +1035,7 @@ class PageAlignmentInput(_WireModel):
     source_frame: CoordinateFrameInput | None = None
     source_lines: tuple[WireSourceLineInput, ...]
     formatting_spans: tuple[WireFormattingSpanInput, ...]
-    style_runs: tuple[dict[str, JsonValue], ...] = ()
+    style_runs: tuple[WireStyleRunInput, ...] = ()
     candidates: tuple[WireLineCandidateInput, ...]
     operations: tuple[AlignmentOperationInput, ...]
     total_cost: StrictFloat
@@ -968,7 +1079,7 @@ class PageAlignmentInput(_WireModel):
             source_frame=None if self.source_frame is None else self.source_frame.to_domain(),
             source_lines=tuple(line.to_domain() for line in self.source_lines),
             formatting_spans=tuple(span.to_domain() for span in self.formatting_spans),
-            style_runs=self.style_runs,
+            style_runs=tuple(style_run.to_domain() for style_run in self.style_runs),
             candidates=tuple(candidate.to_domain() for candidate in self.candidates),
             operations=tuple(operation.to_domain() for operation in self.operations),
             total_cost=self.total_cost,

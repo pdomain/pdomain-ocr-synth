@@ -16,6 +16,7 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
     WireFormattingSpan,
     WireLineCandidate,
     WireSourceLine,
+    WireStyleRun,
 )
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame
 
@@ -40,6 +41,7 @@ def make_report() -> AlignmentReport:
                 separator_byte_start=5,
                 separator_byte_end=5,
                 original_text="\u00c9ire",
+                separator_text="",
                 visible_text="\u00c9ire",
                 matching_eligible=True,
                 style_fitting_eligible=True,
@@ -167,6 +169,7 @@ def test_direct_construction_rejects_coercible_primitive_values() -> None:
             separator_byte_start=5,
             separator_byte_end=5,
             original_text="\u00c9ire",
+            separator_text="",
             visible_text=1,
             matching_eligible=True,
             style_fitting_eligible=True,
@@ -214,12 +217,194 @@ def test_wire_source_line_keeps_content_and_separator_byte_partition() -> None:
         separator_byte_start=5,
         separator_byte_end=6,
         original_text="\u00c9ire",
+        separator_text="\r",
         visible_text="\u00c9ire",
         matching_eligible=True,
         style_fitting_eligible=True,
     )
 
     assert line.to_dict()["separator_byte_end"] == 6
+
+
+def test_wire_style_run_has_closed_kind_and_complete_spans() -> None:
+    style_run = WireStyleRun(
+        kind="italic",
+        normalized_start=0,
+        normalized_end=4,
+        byte_start=0,
+        byte_end=4,
+    )
+
+    assert style_run.to_dict() == {
+        "kind": "italic",
+        "normalized_start": 0,
+        "normalized_end": 4,
+        "byte_start": 0,
+        "byte_end": 4,
+    }
+
+
+@pytest.mark.parametrize(
+    ("kind", "normalized_start", "normalized_end", "byte_start", "byte_end"),
+    [
+        ("underline", 0, 1, 0, 1),
+        ("bold", 2, 1, 0, 1),
+        ("bold", 0, 1, 2, 1),
+    ],
+)
+def test_wire_style_run_rejects_unknown_or_inverted_spans(
+    kind: str,
+    normalized_start: int,
+    normalized_end: int,
+    byte_start: int,
+    byte_end: int,
+) -> None:
+    with pytest.raises(ValueError):
+        _ = WireStyleRun(
+            kind=kind,
+            normalized_start=normalized_start,
+            normalized_end=normalized_end,
+            byte_start=byte_start,
+            byte_end=byte_end,
+        )
+
+
+def test_wire_read_rejects_unknown_style_run_kind_and_missing_separator_text() -> None:
+    payload = make_report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["style_runs"] = [
+        {
+            "kind": "underline",
+            "normalized_start": 0,
+            "normalized_end": 1,
+            "byte_start": 0,
+            "byte_end": 1,
+        }
+    ]
+
+    with pytest.raises(ValueError, match="style_runs"):
+        _ = AlignmentReport.from_dict(payload)
+
+    page["style_runs"] = []
+    page["source_lines"][0].pop("separator_text")
+    with pytest.raises(ValueError, match="separator_text"):
+        _ = AlignmentReport.from_dict(payload)
+
+
+@pytest.mark.parametrize("separator_text", ["\r", "\n", "\r\n"])
+def test_source_line_preserves_exact_separator_text(separator_text: str) -> None:
+    content = "a"
+    separator_end = len(content.encode("utf-8")) + len(separator_text.encode("utf-8"))
+    line = WireSourceLine(
+        ordinal=0,
+        byte_start=0,
+        byte_end=separator_end,
+        content_byte_start=0,
+        content_byte_end=1,
+        separator_byte_start=1,
+        separator_byte_end=separator_end,
+        original_text=content,
+        separator_text=separator_text,
+        visible_text=content,
+        matching_eligible=True,
+        style_fitting_eligible=True,
+    )
+
+    assert line.to_dict()["separator_text"] == separator_text
+
+
+def test_page_rejects_noncontiguous_source_line_byte_evidence() -> None:
+    first = WireSourceLine(
+        ordinal=0,
+        byte_start=0,
+        byte_end=2,
+        content_byte_start=0,
+        content_byte_end=1,
+        separator_byte_start=1,
+        separator_byte_end=2,
+        original_text="a",
+        separator_text="\n",
+        visible_text="a",
+        matching_eligible=True,
+        style_fitting_eligible=True,
+    )
+    second = WireSourceLine(
+        ordinal=1,
+        byte_start=3,
+        byte_end=4,
+        content_byte_start=3,
+        content_byte_end=4,
+        separator_byte_start=4,
+        separator_byte_end=4,
+        original_text="b",
+        separator_text="",
+        visible_text="b",
+        matching_eligible=True,
+        style_fitting_eligible=True,
+    )
+
+    with pytest.raises(ValueError, match="contiguous"):
+        _ = PageAlignment(
+            page_name="p2.png",
+            f2_sha256=_sha256(),
+            scan_sha256=None,
+            source_frame=None,
+            source_lines=(first, second),
+            formatting_spans=(),
+            candidates=(),
+            operations=(),
+            total_cost=0.0,
+            second_best_cost=None,
+            normalized_cost=0.0,
+            matched_count=0,
+            matched_ratio=0.0,
+            uniqueness_margin=0.0,
+            mean_width_residual=None,
+            mean_indentation_residual=None,
+            state="proposed",
+            accepted=False,
+            exclusions=(),
+        )
+
+
+def test_page_rejects_source_line_evidence_not_starting_at_zero() -> None:
+    line = WireSourceLine(
+        ordinal=0,
+        byte_start=1,
+        byte_end=2,
+        content_byte_start=1,
+        content_byte_end=2,
+        separator_byte_start=2,
+        separator_byte_end=2,
+        original_text="a",
+        separator_text="",
+        visible_text="a",
+        matching_eligible=True,
+        style_fitting_eligible=True,
+    )
+
+    with pytest.raises(ValueError, match="contiguous"):
+        _ = PageAlignment(
+            page_name="p2.png",
+            f2_sha256=_sha256(),
+            scan_sha256=None,
+            source_frame=None,
+            source_lines=(line,),
+            formatting_spans=(),
+            candidates=(),
+            operations=(),
+            total_cost=0.0,
+            second_best_cost=None,
+            normalized_cost=0.0,
+            matched_count=0,
+            matched_ratio=0.0,
+            uniqueness_margin=0.0,
+            mean_width_residual=None,
+            mean_indentation_residual=None,
+            state="proposed",
+            accepted=False,
+            exclusions=(),
+        )
 
 
 def test_direct_report_output_round_trips_through_strict_reader() -> None:
@@ -239,6 +424,7 @@ def test_wire_source_line_rejects_inverted_utf8_span() -> None:
             separator_byte_start=1,
             separator_byte_end=1,
             original_text="",
+            separator_text="",
             visible_text="bad",
             matching_eligible=True,
             style_fitting_eligible=True,

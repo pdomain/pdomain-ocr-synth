@@ -223,10 +223,7 @@
         "style_runs": {
           "default": [],
           "items": {
-            "additionalProperties": {
-              "$ref": "#/$defs/JsonValue"
-            },
-            "type": "object"
+            "$ref": "#/$defs/WireStyleRunInput"
           },
           "title": "Style Runs",
           "type": "array"
@@ -647,6 +644,10 @@
           "title": "Original Text",
           "type": "string"
         },
+        "separator_text": {
+          "title": "Separator Text",
+          "type": "string"
+        },
         "visible_text": {
           "title": "Visible Text",
           "type": "string"
@@ -693,11 +694,58 @@
         "separator_byte_start",
         "separator_byte_end",
         "original_text",
+        "separator_text",
         "visible_text",
         "matching_eligible",
         "style_fitting_eligible"
       ],
       "title": "WireSourceLineInput",
+      "type": "object"
+    },
+    "WireStyleRunInput": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "enum": [
+            "bold",
+            "italic",
+            "small_caps",
+            "gesperrt",
+            "subscript",
+            "superscript"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "normalized_start": {
+          "minimum": 0,
+          "title": "Normalized Start",
+          "type": "integer"
+        },
+        "normalized_end": {
+          "minimum": 0,
+          "title": "Normalized End",
+          "type": "integer"
+        },
+        "byte_start": {
+          "minimum": 0,
+          "title": "Byte Start",
+          "type": "integer"
+        },
+        "byte_end": {
+          "minimum": 0,
+          "title": "Byte End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "normalized_start",
+        "normalized_end",
+        "byte_start",
+        "byte_end"
+      ],
+      "title": "WireStyleRunInput",
       "type": "object"
     }
   },

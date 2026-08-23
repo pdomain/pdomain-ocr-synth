@@ -12,6 +12,7 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
     WireFormattingSpan,
     WireLineCandidate,
     WireSourceLine,
+    WireStyleRun,
 )
 from pdomain_ocr_synth.pgdp.features import extract_page_features, score_page
 from pdomain_ocr_synth.pgdp.models import (
@@ -64,6 +65,7 @@ __all__ = [
     "WireFormattingSpan",
     "WireLineCandidate",
     "WireSourceLine",
+    "WireStyleRun",
     "extract_page_features",
     "natural_page_key",
     "rank_corpus",
