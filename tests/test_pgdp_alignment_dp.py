@@ -1,10 +1,24 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
-from pdomain_ocr_synth.pgdp.alignment_dp import align_sequences, to_feature_page
+from pdomain_ocr_synth.pgdp.alignment_dp import (
+    AlignmentResult,
+    assess_alignment,
+    derive_source_feature_exclusions,
+    to_feature_page,
+)
+from pdomain_ocr_synth.pgdp.alignment_dp import (
+    align_sequences as strict_align_sequences,
+)
 from pdomain_ocr_synth.pgdp.alignment_image import LineCandidate
-from pdomain_ocr_synth.pgdp.alignment_source import SourceLine, StyleRun, tokenize_f2_pages
+from pdomain_ocr_synth.pgdp.alignment_source import (
+    SourceLine,
+    TokenizedSourcePage,
+    tokenize_f2_pages,
+)
 from pdomain_ocr_synth.pgdp.f2 import parse_f2_pages
 
 
@@ -48,6 +62,39 @@ def _candidate(
         fill_ratio=0.5,
         horizontal_ink_profile=tuple(1.0 / width for _ in range(width)),
     )
+
+
+def _synthetic_page(source_lines: tuple[SourceLine, ...]) -> TokenizedSourcePage:
+    return tokenize_f2_pages({"001": "\n".join(line.original_text for line in source_lines)}).pages[
+        0
+    ]
+
+
+def align_sequences(
+    source_lines: tuple[SourceLine, ...],
+    candidates: tuple[LineCandidate, ...],
+    *,
+    foreground_bounds: tuple[int, int, int, int],
+    inherited_exclusions: tuple[str, ...] = (),
+    probable_multi_column: bool = False,
+    source_page: TokenizedSourcePage | None = None,
+) -> AlignmentResult:
+    page = _synthetic_page(source_lines) if source_page is None else source_page
+    return strict_align_sequences(
+        page.lines,
+        candidates,
+        foreground_bounds=foreground_bounds,
+        inherited_exclusions=inherited_exclusions,
+        probable_multi_column=probable_multi_column,
+        source_page=page,
+    )
+
+
+def test_alignment_requires_an_immutable_tokenized_source_page() -> None:
+    keyword_defaults = strict_align_sequences.__kwdefaults__
+
+    assert keyword_defaults is not None
+    assert "source_page" not in keyword_defaults
 
 
 def test_exact_lines_match_with_zero_cost() -> None:
@@ -140,12 +187,12 @@ def test_proof_note_only_normalized_blank_counts_as_source_gap() -> None:
 
 
 def test_style_run_changes_the_weak_style_cost() -> None:
-    source = (_line(0, "abcdefghij"),)
+    page = tokenize_f2_pages({"001": "<i>abcdefghij</i>"}).pages[0]
     result = align_sequences(
-        source,
+        page.lines,
         (_candidate(0),),
         foreground_bounds=(0, 0, 10, 20),
-        style_runs=(StyleRun("i", 0, 10, 0, 10),),
+        source_page=page,
     )
 
     assert result.operations[0].match_cost is not None
@@ -213,15 +260,82 @@ def test_persistent_gutter_excludes_a_page() -> None:
 
 
 def test_table_evidence_excludes_a_page() -> None:
+    page = tokenize_f2_pages({"001": "/*left   right\nsecond   field\nthird   value*/"}).pages[0]
     result = align_sequences(
-        tuple(_line(index, "abcdefghij") for index in range(4)),
-        tuple(_candidate(index) for index in range(4)),
+        page.lines,
+        tuple(_candidate(index) for index in range(3)),
         foreground_bounds=(0, 0, 10, 50),
-        table_like=True,
+        source_page=page,
     )
 
     assert result.state == "excluded"
     assert "table_like" in result.exclusions
+    evidence = next(item for item in result.exclusion_evidence if item.code == "table_like")
+    assert evidence.predicate_method == "pgdp-rank/v1"
+    assert evidence.source_ordinals == (0, 1, 2)
+
+
+def test_illustration_evidence_excludes_a_page() -> None:
+    page = tokenize_f2_pages({"001": "first\n[Illustration: a plate]\nsecond\nthird"}).pages[0]
+    result = align_sequences(
+        page.lines,
+        tuple(_candidate(index) for index in range(4)),
+        foreground_bounds=(0, 0, 10, 50),
+        source_page=page,
+    )
+
+    assert result.state == "excluded"
+    evidence = next(
+        item for item in result.exclusion_evidence if item.code == "illustration_marker"
+    )
+    assert evidence.source_ordinals == (1,)
+
+
+def test_source_feature_exclusions_have_verified_source_ordinals() -> None:
+    page = tokenize_f2_pages(
+        {"001": "/*left   right\nsecond   field\nthird   value*/\n[Decoration]"}
+    ).pages[0]
+
+    evidence = derive_source_feature_exclusions(page)
+
+    assert [(item.code, item.source_ordinals) for item in evidence] == [
+        ("table_like", (0, 1, 2)),
+        ("illustration_marker", (3,)),
+    ]
+
+
+def test_assessment_accepts_exact_cost_and_margin_boundaries() -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(4))
+    candidates = tuple(_candidate(index) for index in range(4))
+    initial = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
+
+    result = assess_alignment(replace(initial, normalized_cost=0.22, uniqueness_margin=0.15))
+
+    assert result.accepted is True
+
+
+def test_assessment_proposes_low_match_ratio() -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(4))
+    candidates = tuple(_candidate(index) for index in range(4))
+    initial = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
+
+    result = assess_alignment(replace(initial, matched_ratio=0.89))
+
+    assert result.state == "proposed"
+    assert "matched_ratio_below_minimum" in result.exclusions
+
+
+def test_assessment_proposes_excessive_count_difference() -> None:
+    source = tuple(_line(index, "abcdefghij") for index in range(4))
+    candidates = tuple(_candidate(index) for index in range(4))
+    initial = align_sequences(source, candidates, foreground_bounds=(0, 0, 10, 50))
+
+    result = assess_alignment(
+        replace(initial, candidates=initial.candidates + initial.candidates[:3])
+    )
+
+    assert result.state == "proposed"
+    assert "line_count_difference_exceeds_maximum" in result.exclusions
 
 
 def test_excludes_too_few_lines_and_inherited_page_exclusion() -> None:
@@ -238,11 +352,12 @@ def test_excludes_too_few_lines_and_inherited_page_exclusion() -> None:
 
 
 def test_excludes_a_source_page_with_malformed_control_line() -> None:
-    source = tuple(_line(index, "abcdefghij", matching_eligible=index != 3) for index in range(4))
+    page = tokenize_f2_pages({"001": "first\n/* broken\nthird\nfourth"}).pages[0]
     result = align_sequences(
-        source,
+        page.lines,
         tuple(_candidate(index) for index in range(4)),
         foreground_bounds=(0, 0, 10, 50),
+        source_page=page,
     )
 
     assert result.state == "excluded"

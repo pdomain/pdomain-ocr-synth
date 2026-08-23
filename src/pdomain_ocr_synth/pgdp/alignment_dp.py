@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, replace
 from statistics import median
 from typing import TYPE_CHECKING, Final, Literal
 
 from pdomain_ocr_synth.pgdp.f2 import ParsedF2Page
+from pdomain_ocr_synth.pgdp.features import extract_page_features
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -35,6 +37,11 @@ MAXIMUM_SOURCE_LINES: Final = 80
 MINIMUM_MATCHED_RATIO: Final = 0.90
 MAXIMUM_NORMALIZED_COST: Final = 0.22
 MINIMUM_UNIQUENESS_MARGIN: Final = 0.15
+_RANK_FEATURE_METHOD: Final = "pgdp-rank/v1"
+_ALIGNED_FIELDS_PATTERN: Final = re.compile(r"\S(?:.*?\S)? {3,}\S(?:.*\S)?$")
+_ILLUSTRATION_OR_ORNAMENT_PATTERN: Final = re.compile(
+    r"\[(?:illustration|decoration)\b[^\]]*\]", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +90,21 @@ class AlignmentPath:
 
 
 @dataclass(frozen=True, slots=True)
+class SourceFeatureExclusion:
+    """Verified source evidence for a ranking-feature page exclusion."""
+
+    code: Literal["table_like", "illustration_marker"]
+    predicate_method: Literal["pgdp-rank/v1"]
+    source_ordinals: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        if not self.source_ordinals:
+            raise ValueError("Feature exclusions require verified source ordinals.")
+        if tuple(sorted(set(self.source_ordinals))) != self.source_ordinals:
+            raise ValueError("Feature exclusion source ordinals must be sorted and unique.")
+
+
+@dataclass(frozen=True, slots=True)
 class AlignmentResult:
     """A best and second-best path plus conservative page-level assessment."""
 
@@ -101,6 +123,7 @@ class AlignmentResult:
     state: AlignmentState
     accepted: bool
     exclusions: tuple[str, ...]
+    exclusion_evidence: tuple[SourceFeatureExclusion, ...]
     confidence: None = None
     confidence_kind: Literal["uncalibrated"] = "uncalibrated"
 
@@ -118,11 +141,9 @@ def align_sequences(
     candidates: Sequence[LineCandidate],
     *,
     foreground_bounds: Bounds,
-    style_runs: Sequence[StyleRun] = (),
     inherited_exclusions: Iterable[str] = (),
     probable_multi_column: bool = False,
-    table_like: bool = False,
-    illustration_or_ornament: bool = False,
+    source_page: TokenizedSourcePage,
 ) -> AlignmentResult:
     """Return deterministic monotone source-to-candidate alignment evidence.
 
@@ -132,7 +153,10 @@ def align_sequences(
 
     source = tuple(source_lines)
     image_candidates = tuple(candidates)
-    eligible = _eligible_lines(source, style_runs)
+    if source != source_page.lines:
+        raise ValueError("source_page lines must be the exact source sequence used for alignment.")
+    feature_exclusions = derive_source_feature_exclusions(source_page)
+    eligible = _eligible_lines(source, source_page.style_runs)
     foreground_x0, foreground_width = _foreground_geometry(foreground_bounds)
     costs = _match_costs(eligible, image_candidates, foreground_x0, foreground_width)
     best, second_best = _align(eligible, image_candidates, costs)
@@ -172,13 +196,12 @@ def align_sequences(
         state="proposed",
         accepted=False,
         exclusions=(),
+        exclusion_evidence=feature_exclusions,
     )
     return assess_alignment(
         preliminary,
         inherited_exclusions=inherited_exclusions,
         probable_multi_column=probable_multi_column,
-        table_like=table_like,
-        illustration_or_ornament=illustration_or_ornament,
         malformed_control=any(not line.matching_eligible for line in source),
     )
 
@@ -188,8 +211,6 @@ def assess_alignment(
     *,
     inherited_exclusions: Iterable[str] = (),
     probable_multi_column: bool = False,
-    table_like: bool = False,
-    illustration_or_ornament: bool = False,
     malformed_control: bool = False,
 ) -> AlignmentResult:
     """Classify one DP result using the fixed precision-first eligibility gate."""
@@ -201,12 +222,9 @@ def assess_alignment(
     if probable_multi_column:
         exclusions.append("persistent_gutter")
         pre_alignment_codes.add("persistent_gutter")
-    if table_like:
-        exclusions.append("table_like")
-        pre_alignment_codes.add("table_like")
-    if illustration_or_ornament:
-        exclusions.append("illustration_marker")
-        pre_alignment_codes.add("illustration_marker")
+    for evidence in result.exclusion_evidence:
+        exclusions.append(evidence.code)
+        pre_alignment_codes.add(evidence.code)
     if malformed_control:
         exclusions.append("malformed_control")
         pre_alignment_codes.add("malformed_control")
@@ -238,6 +256,32 @@ def assess_alignment(
             exclusions=tuple(dict.fromkeys(exclusions)),
         )
     return replace(result, state="accepted", accepted=True)
+
+
+def derive_source_feature_exclusions(
+    page: TokenizedSourcePage,
+) -> tuple[SourceFeatureExclusion, ...]:
+    """Return ranking-feature exclusions with immutable source-line evidence."""
+
+    features = extract_page_features(to_feature_page(page))
+    evidence: list[SourceFeatureExclusion] = []
+    if features.table_like:
+        ordinals = _table_source_ordinals(page)
+        if len(ordinals) < 3:
+            raise ValueError("Table-like feature evidence lacks three matching source lines.")
+        evidence.append(SourceFeatureExclusion("table_like", _RANK_FEATURE_METHOD, ordinals))
+    if features.illustration_or_ornament:
+        ordinals = tuple(
+            line.ordinal
+            for line in page.lines
+            if _ILLUSTRATION_OR_ORNAMENT_PATTERN.search(line.original_text) is not None
+        )
+        if not ordinals:
+            raise ValueError("Illustration feature evidence lacks a matching source line.")
+        evidence.append(
+            SourceFeatureExclusion("illustration_marker", _RANK_FEATURE_METHOD, ordinals)
+        )
+    return tuple(evidence)
 
 
 def to_feature_page(page: TokenizedSourcePage) -> ParsedF2Page:
@@ -291,6 +335,23 @@ def _eligible_lines(
         )
         previous_eligible_index = index
     return tuple(eligible)
+
+
+def _table_source_ordinals(page: TokenizedSourcePage) -> tuple[int, ...]:
+    valid_spans = tuple(span for span in page.formatting_spans if span.closed)
+    return tuple(
+        line.ordinal
+        for line in page.lines
+        if _line_overlaps_a_span(line, valid_spans)
+        and _ALIGNED_FIELDS_PATTERN.fullmatch(line.original_text.strip()) is not None
+    )
+
+
+def _line_overlaps_a_span(line: SourceLine, spans: Sequence[FormattingSpan]) -> bool:
+    return any(
+        span.byte_start < line.content_byte_end and line.content_byte_start < span.byte_end
+        for span in spans
+    )
 
 
 def _formatting_control_ranges(
