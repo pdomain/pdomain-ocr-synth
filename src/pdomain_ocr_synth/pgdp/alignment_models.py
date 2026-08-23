@@ -665,7 +665,6 @@ class PageAlignment:
             previous_end = source_line.byte_end
 
     def _validate_style_runs(self) -> None:
-        source_end = self.source_lines[-1].byte_end if self.source_lines else 0
         ordered_runs = tuple(
             sorted(
                 self.style_runs,
@@ -680,21 +679,43 @@ class PageAlignment:
         )
         if self.style_runs != ordered_runs:
             raise ValueError("Style runs must use deterministic normalized and source-byte order.")
-        if any(style_run.byte_end > source_end for style_run in self.style_runs):
-            raise ValueError("Style-run UTF-8 spans must stay inside page source evidence.")
+        source_boundaries = self._source_utf8_boundaries()
+        if any(
+            style_run.byte_start not in source_boundaries
+            or style_run.byte_end not in source_boundaries
+            for style_run in self.style_runs
+        ):
+            raise ValueError(
+                "Style-run spans must use UTF-8 codepoint boundary offsets in source evidence."
+            )
 
     def _validate_formatting_spans(self) -> None:
-        source_end = self.source_lines[-1].byte_end if self.source_lines else 0
+        source_boundaries = self._source_utf8_boundaries()
         for formatting_span in self.formatting_spans:
-            if formatting_span.byte_end > source_end:
+            if (
+                formatting_span.byte_start not in source_boundaries
+                or formatting_span.byte_end not in source_boundaries
+            ):
                 raise ValueError(
-                    "Formatting span UTF-8 bounds must stay inside page source evidence."
+                    "Formatting span endpoints must use UTF-8 codepoint boundary offsets."
                 )
             if (
                 formatting_span.page_name is not None
                 and formatting_span.page_name != self.page_name
             ):
                 raise ValueError("Formatting span page_name must match its page alignment.")
+
+    def _source_utf8_boundaries(self) -> frozenset[int]:
+        source_text = "".join(
+            source_line.original_text + source_line.separator_text
+            for source_line in self.source_lines
+        )
+        byte_offset = 0
+        boundaries = {byte_offset}
+        for character in source_text:
+            byte_offset += len(character.encode("utf-8"))
+            boundaries.add(byte_offset)
+        return frozenset(boundaries)
 
     def to_dict(self) -> dict[str, JsonValue]:
         source_frame = None if self.source_frame is None else self.source_frame.to_dict()

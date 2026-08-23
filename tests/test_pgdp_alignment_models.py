@@ -474,6 +474,28 @@ def test_page_rejects_out_of_range_or_foreign_formatting_span(
         )
 
 
+def test_page_rejects_formatting_span_inside_multibyte_character() -> None:
+    page = make_report().projects[0].pages[0]
+    formatting_span = replace(page.formatting_spans[0], byte_end=1)
+
+    with pytest.raises(ValueError, match="UTF-8 codepoint boundary"):
+        _ = replace(page, formatting_spans=(formatting_span,))
+
+
+def test_page_rejects_style_run_inside_multibyte_character() -> None:
+    page = make_report().projects[0].pages[0]
+    style_run = WireStyleRun(
+        kind="i",
+        normalized_start=0,
+        normalized_end=1,
+        byte_start=0,
+        byte_end=1,
+    )
+
+    with pytest.raises(ValueError, match="UTF-8 codepoint boundary"):
+        _ = replace(page, style_runs=(style_run,))
+
+
 def test_direct_report_output_round_trips_through_strict_reader() -> None:
     report = make_report()
 
