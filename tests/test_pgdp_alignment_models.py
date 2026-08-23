@@ -8,6 +8,7 @@ import pytest
 from pdomain_ocr_synth.pgdp.alignment_models import (
     ALIGNMENT_ALGORITHM_VERSION,
     ALIGNMENT_SCHEMA_VERSION,
+    AlignmentDiagnostic,
     AlignmentOperation,
     AlignmentReport,
     PageAlignment,
@@ -34,6 +35,11 @@ def make_report() -> AlignmentReport:
                 ordinal=0,
                 byte_start=0,
                 byte_end=5,
+                content_byte_start=0,
+                content_byte_end=5,
+                separator_byte_start=5,
+                separator_byte_end=5,
+                original_text="\u00c9ire",
                 visible_text="\u00c9ire",
                 matching_eligible=True,
                 style_fitting_eligible=True,
@@ -137,12 +143,102 @@ def test_alignment_report_rejects_unknown_versions_and_unsafe_profile_labels(
         _ = AlignmentReport.from_dict(payload)
 
 
+@pytest.mark.parametrize("invalid_version", [True, 1.0])
+def test_alignment_report_rejects_boolean_and_float_schema_versions(
+    invalid_version: bool | float,
+) -> None:
+    payload = make_report().to_dict()
+    payload["schema_version"] = invalid_version
+
+    with pytest.raises(ValueError, match="schema_version"):
+        _ = AlignmentReport.from_dict(payload)
+
+
+def test_direct_construction_rejects_coercible_primitive_values() -> None:
+    with pytest.raises(TypeError):
+        _ = AlignmentDiagnostic(code=True, message="diagnostic")
+    with pytest.raises(TypeError):
+        _ = WireSourceLine(
+            ordinal=0,
+            byte_start=0,
+            byte_end=5,
+            content_byte_start=0,
+            content_byte_end=5,
+            separator_byte_start=5,
+            separator_byte_end=5,
+            original_text="\u00c9ire",
+            visible_text=1,
+            matching_eligible=True,
+            style_fitting_eligible=True,
+        )
+    with pytest.raises(TypeError):
+        _ = PageAlignment(
+            page_name="p2.png",
+            f2_sha256=_sha256(),
+            scan_sha256=_sha256(),
+            source_frame=CoordinateFrame(width=100, height=200),
+            source_lines=(),
+            formatting_spans=(),
+            candidates=(),
+            operations=(),
+            total_cost=0.0,
+            second_best_cost=None,
+            normalized_cost=0.0,
+            matched_count=0,
+            matched_ratio=0.0,
+            uniqueness_margin=0.0,
+            mean_width_residual=None,
+            mean_indentation_residual=None,
+            state="proposed",
+            accepted=0,
+            exclusions=(),
+        )
+
+
+def test_wire_source_line_requires_complete_utf8_span_evidence() -> None:
+    payload = make_report().to_dict()
+    source_line = payload["projects"][0]["pages"][0]["source_lines"][0]
+    source_line.pop("original_text")
+
+    with pytest.raises(ValueError, match="original_text"):
+        _ = AlignmentReport.from_dict(payload)
+
+
+def test_wire_source_line_keeps_content_and_separator_byte_partition() -> None:
+    line = WireSourceLine(
+        ordinal=0,
+        byte_start=0,
+        byte_end=6,
+        content_byte_start=0,
+        content_byte_end=5,
+        separator_byte_start=5,
+        separator_byte_end=6,
+        original_text="\u00c9ire",
+        visible_text="\u00c9ire",
+        matching_eligible=True,
+        style_fitting_eligible=True,
+    )
+
+    assert line.to_dict()["separator_byte_end"] == 6
+
+
+def test_direct_report_output_round_trips_through_strict_reader() -> None:
+    report = make_report()
+
+    assert AlignmentReport.from_dict(report.to_dict()).to_dict() == report.to_dict()
+
+
 def test_wire_source_line_rejects_inverted_utf8_span() -> None:
     with pytest.raises(ValueError):
         _ = WireSourceLine(
             ordinal=0,
             byte_start=2,
             byte_end=1,
+            content_byte_start=2,
+            content_byte_end=1,
+            separator_byte_start=1,
+            separator_byte_end=1,
+            original_text="",
             visible_text="bad",
             matching_eligible=True,
             style_fitting_eligible=True,

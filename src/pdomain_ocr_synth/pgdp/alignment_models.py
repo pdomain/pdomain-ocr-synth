@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Mapping as RuntimeMapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
@@ -43,21 +44,39 @@ Bounds = tuple[int, int, int, int] | list[int]
 _JSON_OBJECT_ADAPTER = TypeAdapter(dict[str, JsonValue])
 
 
-def _require_nonnegative_integer(value: int, *, name: str) -> None:
+def _require_nonnegative_integer(value: object, *, name: str) -> None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise ValueError(f"{name} must be a nonnegative integer.")
 
 
-def _require_finite(value: float, *, name: str) -> None:
+def _require_string(value: object, *, name: str, nonempty: bool = False) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string.")
+    if nonempty and not value:
+        raise ValueError(f"{name} must not be empty.")
+    return value
+
+
+def _require_bool(value: object, *, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{name} must be a boolean.")
+    return value
+
+
+def _require_finite(value: object, *, name: str) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{name} must be a number.")
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite.")
 
 
-def _require_sha256(value: str, *, name: str) -> None:
+def _require_sha256(value: object, *, name: str) -> None:
     hexadecimal_characters = "0123456789abcdefABCDEF"
-    if len(value) != 64 or any(character not in hexadecimal_characters for character in value):
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in hexadecimal_characters for character in value)
+    ):
         raise ValueError(f"{name} must contain exactly 64 hexadecimal characters.")
 
 
@@ -113,6 +132,8 @@ def _thaw_json_value(value: object) -> JsonValue:
 
 
 def _normalized_mapping(values: Mapping[str, object]) -> Mapping[str, object]:
+    if not isinstance(values, RuntimeMapping):
+        raise TypeError("JSON object values must be mappings.")
     validated = _JSON_OBJECT_ADAPTER.validate_python(dict(values))
     return MappingProxyType(
         {key: _deep_freeze_json_value(value) for key, value in sorted(validated.items())}
@@ -155,10 +176,12 @@ class AlignmentDiagnostic:
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.code:
-            raise ValueError("Alignment diagnostic code must not be empty.")
-        if not self.message:
-            raise ValueError("Alignment diagnostic message must not be empty.")
+        _ = _require_string(self.code, name="Alignment diagnostic code", nonempty=True)
+        _ = _require_string(self.message, name="Alignment diagnostic message", nonempty=True)
+        if self.project_id is not None:
+            _ = _require_string(self.project_id, name="project_id")
+        if self.page_name is not None:
+            _ = _require_string(self.page_name, name="page_name")
         object.__setattr__(self, "extensions", _normalized_mapping(self.extensions))
 
     def to_dict(self) -> dict[str, JsonValue]:
@@ -180,14 +203,14 @@ class WireSourceLine:
     ordinal: int
     byte_start: int
     byte_end: int
+    content_byte_start: int
+    content_byte_end: int
+    separator_byte_start: int
+    separator_byte_end: int
+    original_text: str
     visible_text: str
     matching_eligible: bool
     style_fitting_eligible: bool
-    content_byte_start: int | None = None
-    content_byte_end: int | None = None
-    separator_byte_start: int | None = None
-    separator_byte_end: int | None = None
-    original_text: str | None = None
     operation_ordinals: tuple[int, ...] = ()
     formatting_span_ids: tuple[str, ...] = ()
     continued_block_ids: tuple[str, ...] = ()
@@ -198,55 +221,50 @@ class WireSourceLine:
             _require_nonnegative_integer(getattr(self, name), name=name)
         if self.byte_end < self.byte_start:
             raise ValueError("Source-line UTF-8 span must be half-open and non-inverted.")
-        boundaries = (
+        boundaries: tuple[int, int, int, int] = (
             self.content_byte_start,
             self.content_byte_end,
             self.separator_byte_start,
             self.separator_byte_end,
         )
-        if any(boundary is not None for boundary in boundaries):
-            if any(boundary is None for boundary in boundaries):
-                raise ValueError(
-                    "Source-line content and separator spans must be complete together."
-                )
-            content_start, content_end, separator_start, separator_end = boundaries
-            if (
-                content_start is None
-                or content_end is None
-                or separator_start is None
-                or separator_end is None
-            ):
-                raise ValueError("Source-line spans must be complete.")
-            for name, value in zip(
-                (
-                    "content_byte_start",
-                    "content_byte_end",
-                    "separator_byte_start",
-                    "separator_byte_end",
-                ),
-                (content_start, content_end, separator_start, separator_end),
-                strict=True,
-            ):
-                _require_nonnegative_integer(value, name=name)
-            if not (
-                self.byte_start
-                == content_start
-                <= content_end
-                == separator_start
-                <= separator_end
-                == self.byte_end
-            ):
-                raise ValueError("Source-line spans must partition the line UTF-8 range.")
-        if (
-            self.original_text is not None
-            and len(self.original_text.encode("utf-8")) != self.byte_end - self.byte_start
+        for name, value in zip(
+            (
+                "content_byte_start",
+                "content_byte_end",
+                "separator_byte_start",
+                "separator_byte_end",
+            ),
+            boundaries,
+            strict=True,
         ):
-            raise ValueError("Source-line original_text must exactly fill its UTF-8 span.")
+            _require_nonnegative_integer(value, name=name)
+        content_start, content_end, separator_start, separator_end = boundaries
+        if not (
+            self.byte_start
+            == content_start
+            <= content_end
+            == separator_start
+            <= separator_end
+            == self.byte_end
+        ):
+            raise ValueError("Source-line spans must partition the line UTF-8 range.")
+        _ = _require_string(self.original_text, name="Source-line original_text")
+        _ = _require_string(self.visible_text, name="Source-line visible_text")
+        _ = _require_bool(self.matching_eligible, name="matching_eligible")
+        _ = _require_bool(self.style_fitting_eligible, name="style_fitting_eligible")
+        if len(self.original_text.encode("utf-8")) != content_end - content_start:
+            raise ValueError("Source-line original_text must exactly fill its content UTF-8 span.")
         object.__setattr__(self, "operation_ordinals", tuple(self.operation_ordinals))
         object.__setattr__(self, "formatting_span_ids", tuple(self.formatting_span_ids))
         object.__setattr__(self, "continued_block_ids", tuple(self.continued_block_ids))
+        for operation_ordinal in self.operation_ordinals:
+            _require_nonnegative_integer(operation_ordinal, name="operation_ordinal")
         if tuple(sorted(set(self.operation_ordinals))) != self.operation_ordinals:
             raise ValueError("Source-line operation ordinals must be sorted and unique.")
+        if any(not isinstance(span_id, str) for span_id in self.formatting_span_ids):
+            raise TypeError("Source-line formatting span IDs must be strings.")
+        if any(not isinstance(block_id, str) for block_id in self.continued_block_ids):
+            raise TypeError("Source-line continued block IDs must be strings.")
         object.__setattr__(self, "extensions", _normalized_mapping(self.extensions))
 
     def to_dict(self) -> dict[str, JsonValue]:
@@ -285,10 +303,14 @@ class WireFormattingSpan:
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.opening_id or not self.block_id:
-            raise ValueError("Formatting span identifiers must not be empty.")
+        _ = _require_string(self.kind, name="Formatting span kind")
+        _ = _require_string(self.opening_id, name="opening_id", nonempty=True)
+        _ = _require_string(self.block_id, name="block_id", nonempty=True)
         if self.kind not in {"local", "continued"}:
             raise ValueError("Formatting span kind is unsupported.")
+        if self.page_name is not None:
+            _ = _require_string(self.page_name, name="page_name")
+        _ = _require_bool(self.closed, name="closed")
         _require_nonnegative_integer(self.byte_start, name="byte_start")
         _require_nonnegative_integer(self.byte_end, name="byte_end")
         if self.byte_end < self.byte_start:
@@ -351,6 +373,11 @@ class WireLineCandidate:
         object.__setattr__(self, "horizontal_ink_profile", tuple(self.horizontal_ink_profile))
         if self.horizontal_ink_profile and len(self.horizontal_ink_profile) != self.width:
             raise ValueError("Candidate horizontal profile must match its width.")
+        if any(
+            isinstance(value, bool) or not isinstance(value, (int, float))
+            for value in self.horizontal_ink_profile
+        ):
+            raise TypeError("Candidate horizontal profile values must be numbers.")
         if any(not math.isfinite(value) or value < 0.0 for value in self.horizontal_ink_profile):
             raise ValueError("Candidate horizontal profile values must be finite and nonnegative.")
         object.__setattr__(self, "extensions", _normalized_mapping(self.extensions))
@@ -388,6 +415,7 @@ class AlignmentOperation:
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        _ = _require_string(self.kind, name="Alignment operation kind")
         if self.kind not in {"match", "skip_image", "skip_text"}:
             raise ValueError("Alignment operation kind is unsupported.")
         if self.kind == "match" and (self.source_ordinal is None or self.candidate_ordinal is None):
@@ -458,11 +486,12 @@ class PageAlignment:
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.page_name:
-            raise ValueError("Page name must not be empty.")
+        _ = _require_string(self.page_name, name="Page name", nonempty=True)
         _require_sha256(self.f2_sha256, name="f2_sha256")
         if self.scan_sha256 is not None:
             _require_sha256(self.scan_sha256, name="scan_sha256")
+        if self.source_frame is not None and not isinstance(self.source_frame, CoordinateFrame):
+            raise TypeError("source_frame must be a CoordinateFrame or null.")
         if self.source_frame is None and (self.candidates or self.scan_sha256 is not None):
             raise ValueError("Candidate or scan evidence requires a source frame.")
         object.__setattr__(self, "source_lines", tuple(self.source_lines))
@@ -479,6 +508,18 @@ class PageAlignment:
             tuple(_normalized_mapping(item) for item in self.exclusion_evidence),
         )
         object.__setattr__(self, "exclusions", tuple(self.exclusions))
+        if any(not isinstance(line, WireSourceLine) for line in self.source_lines):
+            raise TypeError("source_lines must contain WireSourceLine records.")
+        if any(not isinstance(span, WireFormattingSpan) for span in self.formatting_spans):
+            raise TypeError("formatting_spans must contain WireFormattingSpan records.")
+        if any(not isinstance(candidate, WireLineCandidate) for candidate in self.candidates):
+            raise TypeError("candidates must contain WireLineCandidate records.")
+        if any(not isinstance(operation, AlignmentOperation) for operation in self.operations):
+            raise TypeError("operations must contain AlignmentOperation records.")
+        if any(not isinstance(diagnostic, AlignmentDiagnostic) for diagnostic in self.diagnostics):
+            raise TypeError("diagnostics must contain AlignmentDiagnostic records.")
+        if any(not isinstance(exclusion, str) for exclusion in self.exclusions):
+            raise TypeError("exclusions must contain strings.")
         if self.source_frame is not None:
             for candidate in self.candidates:
                 _ = _normalize_box(candidate.box, name="Candidate box", frame=self.source_frame)
@@ -497,8 +538,10 @@ class PageAlignment:
             raise ValueError("uniqueness_margin must be nonnegative.")
         if self.matched_count != sum(operation.kind == "match" for operation in self.operations):
             raise ValueError("matched_count must equal the number of match operations.")
+        _ = _require_string(self.state, name="Alignment state")
         if self.state not in {"accepted", "proposed", "excluded"}:
             raise ValueError("Alignment state is unsupported.")
+        _ = _require_bool(self.accepted, name="accepted")
         if self.accepted != (self.state == "accepted"):
             raise ValueError("accepted must exactly match the accepted state.")
         if self.confidence is not None or self.confidence_kind != CONFIDENCE_KIND:
@@ -585,11 +628,19 @@ class ProjectAlignment:
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.project_id:
-            raise ValueError("Project ID must not be empty.")
+        _ = _require_string(self.project_id, name="Project ID", nonempty=True)
         object.__setattr__(self, "pages", tuple(self.pages))
         object.__setattr__(self, "exclusions", tuple(self.exclusions))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
+        for name, value in (("title", self.title), ("author", self.author), ("genre", self.genre)):
+            if value is not None:
+                _ = _require_string(value, name=name)
+        if any(not isinstance(page, PageAlignment) for page in self.pages):
+            raise TypeError("pages must contain PageAlignment records.")
+        if any(not isinstance(exclusion, str) for exclusion in self.exclusions):
+            raise TypeError("exclusions must contain strings.")
+        if any(not isinstance(diagnostic, AlignmentDiagnostic) for diagnostic in self.diagnostics):
+            raise TypeError("diagnostics must contain AlignmentDiagnostic records.")
         page_names = tuple(page.page_name for page in self.pages)
         if len(set(page_names)) != len(page_names):
             raise ValueError("Project alignment contains duplicate page names.")
@@ -628,12 +679,17 @@ class AlignmentReport:
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.schema_version != ALIGNMENT_SCHEMA_VERSION or isinstance(self.schema_version, bool):
+        if (
+            isinstance(self.schema_version, bool)
+            or not isinstance(self.schema_version, int)
+            or self.schema_version != ALIGNMENT_SCHEMA_VERSION
+        ):
             raise ValueError(f"Unsupported schema_version {self.schema_version!r}.")
         if self.algorithm_version != ALIGNMENT_ALGORITHM_VERSION:
             raise ValueError(f"Unsupported algorithm_version {self.algorithm_version!r}.")
-        if not self.tool_version:
-            raise ValueError("tool_version must not be empty.")
+        _ = _require_string(self.algorithm_version, name="algorithm_version")
+        _ = _require_string(self.tool_version, name="tool_version", nonempty=True)
+        _ = _require_string(self.profile_label, name="profile_label", nonempty=True)
         if (
             not self.profile_label
             or self.profile_label in {".", ".."}
@@ -645,6 +701,10 @@ class AlignmentReport:
         object.__setattr__(self, "thresholds", _normalized_mapping(self.thresholds))
         object.__setattr__(self, "projects", tuple(self.projects))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
+        if any(not isinstance(project, ProjectAlignment) for project in self.projects):
+            raise TypeError("projects must contain ProjectAlignment records.")
+        if any(not isinstance(diagnostic, AlignmentDiagnostic) for diagnostic in self.diagnostics):
+            raise TypeError("diagnostics must contain AlignmentDiagnostic records.")
         project_ids = tuple(project.project_id for project in self.projects)
         if len(set(project_ids)) != len(project_ids):
             raise ValueError("Alignment report contains duplicate project IDs.")
@@ -681,14 +741,14 @@ class AlignmentReport:
     def from_dict(cls, payload: object) -> AlignmentReport:
         try:
             return AlignmentReportInput.model_validate(payload).to_domain()
-        except ValidationError as error:
+        except (TypeError, ValidationError) as error:
             raise ValueError(f"Invalid PGDP alignment report: {error}") from error
 
     @classmethod
     def from_json(cls, payload: str | bytes | bytearray) -> AlignmentReport:
         try:
             return AlignmentReportInput.model_validate_json(payload).to_domain()
-        except ValidationError as error:
+        except (TypeError, ValidationError) as error:
             raise ValueError(f"Invalid PGDP alignment report: {error}") from error
 
     @classmethod
@@ -728,14 +788,14 @@ class WireSourceLineInput(_WireModel):
     ordinal: StrictInt = Field(ge=0)
     byte_start: StrictInt = Field(ge=0)
     byte_end: StrictInt = Field(ge=0)
+    content_byte_start: StrictInt = Field(ge=0)
+    content_byte_end: StrictInt = Field(ge=0)
+    separator_byte_start: StrictInt = Field(ge=0)
+    separator_byte_end: StrictInt = Field(ge=0)
+    original_text: StrictStr
     visible_text: StrictStr
     matching_eligible: StrictBool
     style_fitting_eligible: StrictBool
-    content_byte_start: StrictInt | None = Field(default=None, ge=0)
-    content_byte_end: StrictInt | None = Field(default=None, ge=0)
-    separator_byte_start: StrictInt | None = Field(default=None, ge=0)
-    separator_byte_end: StrictInt | None = Field(default=None, ge=0)
-    original_text: StrictStr | None = None
     operation_ordinals: tuple[StrictInt, ...] = ()
     formatting_span_ids: tuple[StrictStr, ...] = ()
     continued_block_ids: tuple[StrictStr, ...] = ()
@@ -752,14 +812,14 @@ class WireSourceLineInput(_WireModel):
             ordinal=self.ordinal,
             byte_start=self.byte_start,
             byte_end=self.byte_end,
-            visible_text=self.visible_text,
-            matching_eligible=self.matching_eligible,
-            style_fitting_eligible=self.style_fitting_eligible,
             content_byte_start=self.content_byte_start,
             content_byte_end=self.content_byte_end,
             separator_byte_start=self.separator_byte_start,
             separator_byte_end=self.separator_byte_end,
             original_text=self.original_text,
+            visible_text=self.visible_text,
+            matching_eligible=self.matching_eligible,
+            style_fitting_eligible=self.style_fitting_eligible,
             operation_ordinals=self.operation_ordinals,
             formatting_span_ids=self.formatting_span_ids,
             continued_block_ids=self.continued_block_ids,
@@ -971,7 +1031,13 @@ class AlignmentReportInput(_WireModel):
     @model_validator(mode="before")
     @classmethod
     def _normalize_sequences(cls, payload: object) -> object:
-        return _normalize_tuple_fields(payload, ("projects", "diagnostics"))
+        normalized = _normalize_tuple_fields(payload, ("projects", "diagnostics"))
+        if not isinstance(normalized, dict):
+            return normalized
+        schema_version = normalized.get("schema_version")
+        if isinstance(schema_version, bool) or not isinstance(schema_version, int):
+            raise TypeError("schema_version must be the exact integer 1.")
+        return normalized
 
     @model_validator(mode="after")
     def _validate_profile_label(self) -> AlignmentReportInput:

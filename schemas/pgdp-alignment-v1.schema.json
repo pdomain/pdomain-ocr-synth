@@ -623,6 +623,30 @@
           "title": "Byte End",
           "type": "integer"
         },
+        "content_byte_start": {
+          "minimum": 0,
+          "title": "Content Byte Start",
+          "type": "integer"
+        },
+        "content_byte_end": {
+          "minimum": 0,
+          "title": "Content Byte End",
+          "type": "integer"
+        },
+        "separator_byte_start": {
+          "minimum": 0,
+          "title": "Separator Byte Start",
+          "type": "integer"
+        },
+        "separator_byte_end": {
+          "minimum": 0,
+          "title": "Separator Byte End",
+          "type": "integer"
+        },
+        "original_text": {
+          "title": "Original Text",
+          "type": "string"
+        },
         "visible_text": {
           "title": "Visible Text",
           "type": "string"
@@ -634,70 +658,6 @@
         "style_fitting_eligible": {
           "title": "Style Fitting Eligible",
           "type": "boolean"
-        },
-        "content_byte_start": {
-          "anyOf": [
-            {
-              "minimum": 0,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Content Byte Start"
-        },
-        "content_byte_end": {
-          "anyOf": [
-            {
-              "minimum": 0,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Content Byte End"
-        },
-        "separator_byte_start": {
-          "anyOf": [
-            {
-              "minimum": 0,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Separator Byte Start"
-        },
-        "separator_byte_end": {
-          "anyOf": [
-            {
-              "minimum": 0,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Separator Byte End"
-        },
-        "original_text": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Original Text"
         },
         "operation_ordinals": {
           "default": [],
@@ -728,6 +688,11 @@
         "ordinal",
         "byte_start",
         "byte_end",
+        "content_byte_start",
+        "content_byte_end",
+        "separator_byte_start",
+        "separator_byte_end",
+        "original_text",
         "visible_text",
         "matching_eligible",
         "style_fitting_eligible"
