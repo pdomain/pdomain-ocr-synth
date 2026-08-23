@@ -38,14 +38,13 @@ CONFIDENCE_KIND: Final = "uncalibrated"
 AlignmentOperationKind = Literal["match", "skip_image", "skip_text"]
 AlignmentState = Literal["accepted", "proposed", "excluded"]
 BlockKind = Literal["local", "continued"]
-StyleKind = Literal["i", "b", "sc", "f", "g", "tb"]
 WireStyleKind = Literal[
-    "bold",
-    "italic",
-    "small_caps",
-    "gesperrt",
-    "subscript",
-    "superscript",
+    "i",
+    "b",
+    "sc",
+    "f",
+    "g",
+    "tb",
 ]
 Bounds = tuple[int, int, int, int] | list[int]
 
@@ -358,14 +357,7 @@ class WireStyleRun:
 
     def __post_init__(self) -> None:
         _ = _require_string(self.kind, name="Style-run kind")
-        if self.kind not in {
-            "bold",
-            "italic",
-            "small_caps",
-            "gesperrt",
-            "subscript",
-            "superscript",
-        }:
+        if self.kind not in {"i", "b", "sc", "f", "g", "tb"}:
             raise ValueError("Style-run kind is unsupported.")
         for name in ("normalized_start", "normalized_end", "byte_start", "byte_end"):
             _require_nonnegative_integer(getattr(self, name), name=name)
@@ -581,6 +573,7 @@ class PageAlignment:
                 _ = _normalize_box(candidate.box, name="Candidate box", frame=self.source_frame)
         self._validate_ordinals()
         self._validate_source_line_continuity()
+        self._validate_formatting_spans()
         self._validate_style_runs()
         self._validate_operations()
         for name in ("total_cost", "normalized_cost", "matched_ratio", "uniqueness_margin"):
@@ -664,6 +657,19 @@ class PageAlignment:
             raise ValueError("Style runs must use deterministic normalized and source-byte order.")
         if any(style_run.byte_end > source_end for style_run in self.style_runs):
             raise ValueError("Style-run UTF-8 spans must stay inside page source evidence.")
+
+    def _validate_formatting_spans(self) -> None:
+        source_end = self.source_lines[-1].byte_end if self.source_lines else 0
+        for formatting_span in self.formatting_spans:
+            if formatting_span.byte_end > source_end:
+                raise ValueError(
+                    "Formatting span UTF-8 bounds must stay inside page source evidence."
+                )
+            if (
+                formatting_span.page_name is not None
+                and formatting_span.page_name != self.page_name
+            ):
+                raise ValueError("Formatting span page_name must match its page alignment.")
 
     def to_dict(self) -> dict[str, JsonValue]:
         source_frame = None if self.source_frame is None else self.source_frame.to_dict()
@@ -937,12 +943,12 @@ class WireFormattingSpanInput(_WireModel):
 
 class WireStyleRunInput(_WireModel):
     kind: Literal[
-        "bold",
-        "italic",
-        "small_caps",
-        "gesperrt",
-        "subscript",
-        "superscript",
+        "i",
+        "b",
+        "sc",
+        "f",
+        "g",
+        "tb",
     ]
     normalized_start: StrictInt = Field(ge=0)
     normalized_end: StrictInt = Field(ge=0)

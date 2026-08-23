@@ -707,12 +707,12 @@
       "properties": {
         "kind": {
           "enum": [
-            "bold",
-            "italic",
-            "small_caps",
-            "gesperrt",
-            "subscript",
-            "superscript"
+            "i",
+            "b",
+            "sc",
+            "f",
+            "g",
+            "tb"
           ],
           "title": "Kind",
           "type": "string"

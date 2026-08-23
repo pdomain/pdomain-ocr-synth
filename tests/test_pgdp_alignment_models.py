@@ -226,9 +226,10 @@ def test_wire_source_line_keeps_content_and_separator_byte_partition() -> None:
     assert line.to_dict()["separator_byte_end"] == 6
 
 
-def test_wire_style_run_has_closed_kind_and_complete_spans() -> None:
+@pytest.mark.parametrize("kind", ["i", "b", "sc", "f", "g", "tb"])
+def test_wire_style_run_preserves_each_tokenizer_kind(kind: str) -> None:
     style_run = WireStyleRun(
-        kind="italic",
+        kind=kind,
         normalized_start=0,
         normalized_end=4,
         byte_start=0,
@@ -236,7 +237,7 @@ def test_wire_style_run_has_closed_kind_and_complete_spans() -> None:
     )
 
     assert style_run.to_dict() == {
-        "kind": "italic",
+        "kind": kind,
         "normalized_start": 0,
         "normalized_end": 4,
         "byte_start": 0,
@@ -248,8 +249,8 @@ def test_wire_style_run_has_closed_kind_and_complete_spans() -> None:
     ("kind", "normalized_start", "normalized_end", "byte_start", "byte_end"),
     [
         ("underline", 0, 1, 0, 1),
-        ("bold", 2, 1, 0, 1),
-        ("bold", 0, 1, 2, 1),
+        ("i", 2, 1, 0, 1),
+        ("i", 0, 1, 2, 1),
     ],
 )
 def test_wire_style_run_rejects_unknown_or_inverted_spans(
@@ -391,6 +392,71 @@ def test_page_rejects_source_line_evidence_not_starting_at_zero() -> None:
             source_frame=None,
             source_lines=(line,),
             formatting_spans=(),
+            candidates=(),
+            operations=(),
+            total_cost=0.0,
+            second_best_cost=None,
+            normalized_cost=0.0,
+            matched_count=0,
+            matched_ratio=0.0,
+            uniqueness_margin=0.0,
+            mean_width_residual=None,
+            mean_indentation_residual=None,
+            state="proposed",
+            accepted=False,
+            exclusions=(),
+        )
+
+
+@pytest.mark.parametrize(
+    "formatting_span",
+    [
+        WireFormattingSpan(
+            opening_id="local:p2.png:0",
+            block_id="local:p2.png:0:p2.png:3",
+            kind="local",
+            page_name="p2.png",
+            byte_start=0,
+            byte_end=3,
+            closed=True,
+        ),
+        WireFormattingSpan(
+            opening_id="local:other.png:0",
+            block_id="local:other.png:0:other.png:1",
+            kind="local",
+            page_name="other.png",
+            byte_start=0,
+            byte_end=1,
+            closed=True,
+        ),
+    ],
+)
+def test_page_rejects_out_of_range_or_foreign_formatting_span(
+    formatting_span: WireFormattingSpan,
+) -> None:
+    line = WireSourceLine(
+        ordinal=0,
+        byte_start=0,
+        byte_end=1,
+        content_byte_start=0,
+        content_byte_end=1,
+        separator_byte_start=1,
+        separator_byte_end=1,
+        original_text="a",
+        separator_text="",
+        visible_text="a",
+        matching_eligible=True,
+        style_fitting_eligible=True,
+    )
+
+    with pytest.raises(ValueError, match="Formatting span"):
+        _ = PageAlignment(
+            page_name="p2.png",
+            f2_sha256=_sha256(),
+            scan_sha256=None,
+            source_frame=None,
+            source_lines=(line,),
+            formatting_spans=(formatting_span,),
             candidates=(),
             operations=(),
             total_cost=0.0,
