@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal
+
+from pdomain_ocr_synth.pgdp.ordering import natural_page_key
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 NormalizationKind = Literal[
     "copy",
@@ -11,6 +16,7 @@ NormalizationKind = Literal[
     "normalize_newline",
 ]
 StyleKind = Literal["i", "b", "sc", "f", "g", "tb"]
+BlockKind = Literal["local", "continued"]
 
 _CONTROL_PAIRS = {"/*": "*/", "/#": "#/"}
 _CONTROL_CLOSERS = frozenset(_CONTROL_PAIRS.values())
@@ -49,6 +55,19 @@ class SourceDiagnostic:
 
 
 @dataclass(frozen=True, slots=True)
+class FormattingSpan:
+    """One page-local segment of an F2 formatting block."""
+
+    opening_id: str
+    block_id: str
+    kind: BlockKind
+    page_name: str
+    byte_start: int
+    byte_end: int
+    closed: bool
+
+
+@dataclass(frozen=True, slots=True)
 class SourceLine:
     """One original source line and its visible normalized form."""
 
@@ -80,6 +99,15 @@ class TokenizedSourcePage:
     operations: tuple[NormalizationOperation, ...]
     style_runs: tuple[StyleRun, ...]
     diagnostics: tuple[SourceDiagnostic, ...]
+    formatting_spans: tuple[FormattingSpan, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class TokenizedF2:
+    """Naturally ordered F2 source pages and cross-page control evidence."""
+
+    pages: tuple[TokenizedSourcePage, ...]
+    diagnostics: tuple[SourceDiagnostic, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +132,31 @@ class _ControlParseResult:
     deleted_starts: tuple[int, ...]
     diagnostics: tuple[SourceDiagnostic, ...]
     invalid_byte_ranges: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _SpanDraft:
+    page_name: str
+    byte_start: int
+    byte_end: int
+
+
+@dataclass(slots=True)
+class _OpenFormattingBlock:
+    kind: BlockKind
+    opening_page_name: str
+    opening_byte_start: int
+    opening_character_start: int
+    segment_byte_start: int
+    is_valid: bool = True
+    segments: list[_SpanDraft] = field(default_factory=list)
+
+    @property
+    def opening_id(self) -> str:
+        return f"{self.kind}:{self.opening_page_name}:{self.opening_byte_start}"
+
+    def append_segment(self, *, page_name: str, byte_end: int) -> None:
+        self.segments.append(_SpanDraft(page_name, self.segment_byte_start, byte_end))
 
 
 @dataclass(slots=True)
@@ -147,13 +200,52 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
 
     source_utf8 = source_text.encode("utf-8")
     byte_offsets = _utf8_offsets(source_text)
-    lexemes = _lex(source_text)
-    diagnostics: list[SourceDiagnostic] = []
     control_result = _valid_controls(
         page_name=page_name,
         raw_controls=_raw_controls(source_text),
         byte_offsets=byte_offsets,
     )
+    return _tokenize_source_page(
+        page_name=page_name,
+        source_text=source_text,
+        source_utf8=source_utf8,
+        byte_offsets=byte_offsets,
+        control_result=control_result,
+        formatting_spans=(),
+    )
+
+
+def tokenize_f2_pages(source_pages: Mapping[str, str]) -> TokenizedF2:
+    """Tokenize naturally ordered F2 pages with cross-page control spans."""
+
+    ordered_page_names = tuple(sorted(source_pages, key=natural_page_key))
+    control_results, formatting_spans = _scan_f2_controls(source_pages, ordered_page_names)
+    pages = tuple(
+        _tokenize_source_page(
+            page_name=page_name,
+            source_text=source_pages[page_name],
+            source_utf8=source_pages[page_name].encode("utf-8"),
+            byte_offsets=_utf8_offsets(source_pages[page_name]),
+            control_result=control_results[page_name],
+            formatting_spans=formatting_spans[page_name],
+        )
+        for page_name in ordered_page_names
+    )
+    diagnostics = tuple(diagnostic for page in pages for diagnostic in page.diagnostics)
+    return TokenizedF2(pages=pages, diagnostics=diagnostics)
+
+
+def _tokenize_source_page(
+    *,
+    page_name: str,
+    source_text: str,
+    source_utf8: bytes,
+    byte_offsets: tuple[int, ...],
+    control_result: _ControlParseResult,
+    formatting_spans: tuple[FormattingSpan, ...],
+) -> TokenizedSourcePage:
+    lexemes = _lex(source_text)
+    diagnostics: list[SourceDiagnostic] = []
     diagnostics.extend(control_result.diagnostics)
     operations: list[NormalizationOperation] = []
     style_runs: list[StyleRun] = []
@@ -294,6 +386,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
         operations=operations,
         matching_ineligible_ranges=matching_ineligible_ranges,
         style_ineligible_ranges=style_ineligible_ranges,
+        formatting_spans=formatting_spans,
     )
     return TokenizedSourcePage(
         page_name=page_name,
@@ -303,6 +396,7 @@ def tokenize_source_page(page_name: str, source_text: str) -> TokenizedSourcePag
         operations=tuple(operations),
         style_runs=tuple(style_runs),
         diagnostics=tuple(diagnostics),
+        formatting_spans=formatting_spans,
     )
 
 
@@ -516,6 +610,266 @@ def _valid_controls(
     )
 
 
+def _scan_f2_controls(
+    source_pages: Mapping[str, str], ordered_page_names: tuple[str, ...]
+) -> tuple[dict[str, _ControlParseResult], dict[str, tuple[FormattingSpan, ...]]]:
+    deleted_starts: dict[str, set[int]] = {page_name: set() for page_name in ordered_page_names}
+    diagnostics: dict[str, list[SourceDiagnostic]] = {
+        page_name: [] for page_name in ordered_page_names
+    }
+    invalid_ranges: dict[str, list[tuple[int, int]]] = {
+        page_name: [] for page_name in ordered_page_names
+    }
+    page_spans: dict[str, list[FormattingSpan]] = {
+        page_name: [] for page_name in ordered_page_names
+    }
+    active_block: _OpenFormattingBlock | None = None
+
+    for page_name in ordered_page_names:
+        source_text = source_pages[page_name]
+        byte_offsets = _utf8_offsets(source_text)
+        for control_lexeme in _raw_controls(source_text):
+            control = control_lexeme.name
+            if control is None:
+                continue
+            byte_start = byte_offsets[control_lexeme.character_start]
+            byte_end = byte_offsets[control_lexeme.character_end]
+            if control in _CONTROL_PAIRS:
+                active_block = _open_f2_control(
+                    control=control,
+                    page_name=page_name,
+                    byte_start=byte_start,
+                    byte_end=byte_end,
+                    character_start=control_lexeme.character_start,
+                    active_block=active_block,
+                    diagnostics=diagnostics,
+                )
+            else:
+                active_block = _close_f2_control(
+                    control=control,
+                    page_name=page_name,
+                    byte_start=byte_start,
+                    byte_end=byte_end,
+                    character_start=control_lexeme.character_start,
+                    active_block=active_block,
+                    source_pages=source_pages,
+                    ordered_page_names=ordered_page_names,
+                    deleted_starts=deleted_starts,
+                    diagnostics=diagnostics,
+                    invalid_ranges=invalid_ranges,
+                    page_spans=page_spans,
+                )
+
+        if active_block is not None and active_block.kind == "local":
+            active_block.append_segment(
+                page_name=page_name, byte_end=len(source_text.encode("utf-8"))
+            )
+            _finish_invalid_block(
+                active_block=active_block,
+                end_page_name=page_name,
+                end_byte=len(source_text.encode("utf-8")),
+                source_pages=source_pages,
+                ordered_page_names=ordered_page_names,
+                diagnostics=diagnostics,
+                invalid_ranges=invalid_ranges,
+                page_spans=page_spans,
+                reason="Unmatched formatting control opener '/*'.",
+            )
+            active_block = None
+        elif active_block is not None:
+            active_block.append_segment(
+                page_name=page_name, byte_end=len(source_text.encode("utf-8"))
+            )
+            active_block.segment_byte_start = 0
+
+    if active_block is not None:
+        end_page_name = ordered_page_names[-1]
+        _finish_invalid_block(
+            active_block=active_block,
+            end_page_name=end_page_name,
+            end_byte=len(source_pages[end_page_name].encode("utf-8")),
+            source_pages=source_pages,
+            ordered_page_names=ordered_page_names,
+            diagnostics=diagnostics,
+            invalid_ranges=invalid_ranges,
+            page_spans=page_spans,
+            reason="Unmatched formatting control opener '/#'.",
+        )
+
+    results = {
+        page_name: _ControlParseResult(
+            deleted_starts=tuple(sorted(deleted_starts[page_name])),
+            diagnostics=tuple(diagnostics[page_name]),
+            invalid_byte_ranges=tuple(invalid_ranges[page_name]),
+        )
+        for page_name in ordered_page_names
+    }
+    spans: dict[str, tuple[FormattingSpan, ...]] = {
+        page_name: tuple(page_spans[page_name]) for page_name in ordered_page_names
+    }
+    return results, spans
+
+
+def _open_f2_control(
+    *,
+    control: str,
+    page_name: str,
+    byte_start: int,
+    byte_end: int,
+    character_start: int,
+    active_block: _OpenFormattingBlock | None,
+    diagnostics: dict[str, list[SourceDiagnostic]],
+) -> _OpenFormattingBlock:
+    if active_block is None:
+        kind: BlockKind = "local" if control == "/*" else "continued"
+        return _OpenFormattingBlock(kind, page_name, byte_start, character_start, byte_end)
+
+    active_block.is_valid = False
+    diagnostics[page_name].append(
+        _diagnostic(
+            "malformed_control",
+            f"Nested or overlapping formatting control '{control}'.",
+            page_name,
+            byte_start,
+            byte_end,
+        )
+    )
+    return active_block
+
+
+def _close_f2_control(
+    *,
+    control: str,
+    page_name: str,
+    byte_start: int,
+    byte_end: int,
+    character_start: int,
+    active_block: _OpenFormattingBlock | None,
+    source_pages: Mapping[str, str],
+    ordered_page_names: tuple[str, ...],
+    deleted_starts: dict[str, set[int]],
+    diagnostics: dict[str, list[SourceDiagnostic]],
+    invalid_ranges: dict[str, list[tuple[int, int]]],
+    page_spans: dict[str, list[FormattingSpan]],
+) -> _OpenFormattingBlock | None:
+    if active_block is None:
+        kind: BlockKind = "local" if control == "*/" else "continued"
+        opening_id = f"{kind}:{page_name}:{byte_start}"
+        page_spans[page_name].append(
+            FormattingSpan(opening_id, opening_id, kind, page_name, byte_start, byte_end, False)
+        )
+        invalid_ranges[page_name].append((byte_start, byte_end))
+        diagnostics[page_name].append(
+            _diagnostic(
+                "malformed_control",
+                f"Unmatched formatting control '{control}'.",
+                page_name,
+                byte_start,
+                byte_end,
+            )
+        )
+        return None
+
+    expected_control = "*/" if active_block.kind == "local" else "#/"
+    if control != expected_control:
+        active_block.is_valid = False
+        diagnostics[page_name].append(
+            _diagnostic(
+                "malformed_control",
+                f"Overlapping formatting control '{control}'.",
+                page_name,
+                byte_start,
+                byte_end,
+            )
+        )
+        return active_block
+
+    active_block.append_segment(page_name=page_name, byte_end=byte_start)
+    if active_block.is_valid:
+        deleted_starts[active_block.opening_page_name].add(active_block.opening_character_start)
+        deleted_starts[page_name].add(character_start)
+        block_id = f"{active_block.opening_id}:{page_name}:{byte_end}"
+        _append_formatting_spans(
+            active_block=active_block,
+            block_id=block_id,
+            closed=True,
+            page_spans=page_spans,
+        )
+    else:
+        _finish_invalid_block(
+            active_block=active_block,
+            end_page_name=page_name,
+            end_byte=byte_end,
+            source_pages=source_pages,
+            ordered_page_names=ordered_page_names,
+            diagnostics=diagnostics,
+            invalid_ranges=invalid_ranges,
+            page_spans=page_spans,
+            reason=None,
+        )
+    return None
+
+
+def _finish_invalid_block(
+    *,
+    active_block: _OpenFormattingBlock,
+    end_page_name: str,
+    end_byte: int,
+    source_pages: Mapping[str, str],
+    ordered_page_names: tuple[str, ...],
+    diagnostics: dict[str, list[SourceDiagnostic]],
+    invalid_ranges: dict[str, list[tuple[int, int]]],
+    page_spans: dict[str, list[FormattingSpan]],
+    reason: str | None,
+) -> None:
+    _append_formatting_spans(
+        active_block=active_block,
+        block_id=active_block.opening_id,
+        closed=False,
+        page_spans=page_spans,
+    )
+    opening_index = ordered_page_names.index(active_block.opening_page_name)
+    ending_index = ordered_page_names.index(end_page_name)
+    for page_name in ordered_page_names[opening_index : ending_index + 1]:
+        page_length = len(source_pages[page_name].encode("utf-8"))
+        range_start = (
+            active_block.opening_byte_start if page_name == active_block.opening_page_name else 0
+        )
+        range_end = end_byte if page_name == end_page_name else page_length
+        invalid_ranges[page_name].append((range_start, range_end))
+    if reason is not None:
+        diagnostics[active_block.opening_page_name].append(
+            _diagnostic(
+                "malformed_control",
+                reason,
+                active_block.opening_page_name,
+                active_block.opening_byte_start,
+                active_block.opening_byte_start + 2,
+            )
+        )
+
+
+def _append_formatting_spans(
+    *,
+    active_block: _OpenFormattingBlock,
+    block_id: str,
+    closed: bool,
+    page_spans: dict[str, list[FormattingSpan]],
+) -> None:
+    for segment in active_block.segments:
+        page_spans[segment.page_name].append(
+            FormattingSpan(
+                active_block.opening_id,
+                block_id,
+                active_block.kind,
+                segment.page_name,
+                segment.byte_start,
+                segment.byte_end,
+                closed,
+            )
+        )
+
+
 def _copy_operation(
     byte_offsets: tuple[int, ...], character_start: int, character_end: int, output: str
 ) -> NormalizationOperation:
@@ -630,6 +984,7 @@ def _source_lines(
     operations: list[NormalizationOperation],
     matching_ineligible_ranges: list[tuple[int, int]],
     style_ineligible_ranges: list[tuple[int, int]],
+    formatting_spans: tuple[FormattingSpan, ...],
 ) -> tuple[SourceLine, ...]:
     lines: list[SourceLine] = []
     matching_ranges = _RangeCursor(tuple(sorted(matching_ineligible_ranges)))
@@ -655,6 +1010,7 @@ def _source_lines(
             operation_start=operation_start,
             matching_ranges=matching_ranges,
             style_ranges=style_ranges,
+            formatting_spans=formatting_spans,
         )
         lines.append(line)
         ordinal += 1
@@ -672,6 +1028,7 @@ def _source_lines(
         operation_start=operation_start,
         matching_ranges=matching_ranges,
         style_ranges=style_ranges,
+        formatting_spans=formatting_spans,
     )
     lines.append(final_line)
     return tuple(lines)
@@ -690,6 +1047,7 @@ def _make_line(
     operation_start: int,
     matching_ranges: _RangeCursor,
     style_ranges: _RangeCursor,
+    formatting_spans: tuple[FormattingSpan, ...],
 ) -> tuple[SourceLine, int]:
     byte_start = byte_offsets[content_start]
     content_byte_end = byte_offsets[content_end]
@@ -705,6 +1063,17 @@ def _make_line(
     )
     matching_eligible = not matching_ranges.overlaps(byte_start, content_byte_end)
     style_fitting_eligible = not style_ranges.overlaps(byte_start, content_byte_end)
+    line_span_ids = tuple(
+        span.block_id
+        for span in formatting_spans
+        if _ranges_overlap(byte_start, byte_end, span.byte_start, span.byte_end)
+    )
+    continued_block_ids = tuple(
+        span.opening_id
+        for span in formatting_spans
+        if span.kind == "continued"
+        and _ranges_overlap(byte_start, byte_end, span.byte_start, span.byte_end)
+    )
     return (
         SourceLine(
             page_name=page_name,
@@ -718,8 +1087,8 @@ def _make_line(
             original_text=source_text[content_start:content_end],
             visible_text=visible_text,
             operation_ordinals=operation_ordinals,
-            formatting_span_ids=(),
-            continued_block_ids=(),
+            formatting_span_ids=line_span_ids,
+            continued_block_ids=continued_block_ids,
             matching_eligible=matching_eligible,
             style_fitting_eligible=style_fitting_eligible,
         ),
@@ -731,3 +1100,11 @@ def _diagnostic(
     code: str, message: str, page_name: str, byte_start: int, byte_end: int
 ) -> SourceDiagnostic:
     return SourceDiagnostic(code, message, page_name, byte_start, byte_end)
+
+
+def _ranges_overlap(left_start: int, left_end: int, right_start: int, right_end: int) -> bool:
+    if left_start == left_end:
+        return right_start <= left_start <= right_end
+    if right_start == right_end:
+        return left_start <= right_start <= left_end
+    return left_start < right_end and right_start < left_end

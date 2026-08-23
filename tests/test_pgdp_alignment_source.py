@@ -5,7 +5,8 @@ from itertools import pairwise
 
 import pytest
 
-from pdomain_ocr_synth.pgdp.alignment_source import tokenize_source_page
+from pdomain_ocr_synth.pgdp.alignment_source import tokenize_f2_pages, tokenize_source_page
+from pdomain_ocr_synth.pgdp.f2 import parse_f2_pages
 
 
 @pytest.mark.parametrize(
@@ -305,3 +306,120 @@ def test_source_records_are_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         type(tokenized.lines[0]).__setattr__(tokenized.lines[0], "visible_text", "changed")
+
+
+def test_continued_span_id_uses_opening_page_and_utf8_byte() -> None:
+    result = tokenize_f2_pages({"p1.png": "\u00e9 /#alpha", "p2.png": "beta#/ tail"})
+
+    first = result.pages[0].formatting_spans[0]
+    second = result.pages[1].formatting_spans[0]
+    assert first.opening_id == second.opening_id == "continued:p1.png:3"
+    assert first.block_id == second.block_id == "continued:p1.png:3:p2.png:6"
+    assert first.byte_start == len("\u00e9 /#".encode("utf-8"))
+    assert second.byte_end == len(b"beta")
+    assert first.closed is True
+    assert second.closed is True
+
+
+def test_tokenize_f2_pages_deletes_local_controls_after_a_utf8_prefix() -> None:
+    result = tokenize_f2_pages({"p1.png": "\u00e9 /*local*/ tail"})
+
+    assert result.pages[0].visible_text == "\u00e9 local tail"
+
+
+def test_tokenize_f2_pages_deletes_continued_controls_after_a_utf8_prefix() -> None:
+    result = tokenize_f2_pages({"p1.png": "\u00e9 /#first", "p2.png": "last#/ tail"})
+
+    assert [page.visible_text for page in result.pages] == ["\u00e9 first", "last tail"]
+
+
+def test_tokenize_f2_pages_orders_spans_naturally_and_keeps_local_identity() -> None:
+    result = tokenize_f2_pages(
+        {
+            "p10.png": "z /*last*/",
+            "p2.png": "\u00e9 /*two*/",
+            "p1.png": "/*one*/",
+        }
+    )
+
+    assert [page.page_name for page in result.pages] == ["p1.png", "p2.png", "p10.png"]
+    assert [page.formatting_spans[0].opening_id for page in result.pages] == [
+        "local:p1.png:0",
+        "local:p2.png:3",
+        "local:p10.png:2",
+    ]
+    assert [page.formatting_spans[0].block_id for page in result.pages] == [
+        "local:p1.png:0:p1.png:7",
+        "local:p2.png:3:p2.png:10",
+        "local:p10.png:2:p10.png:10",
+    ]
+    assert all(page.lines[0].formatting_span_ids for page in result.pages)
+    assert all(not page.lines[0].continued_block_ids for page in result.pages)
+
+
+def test_continued_spans_retain_identity_for_intermediate_pages_without_joining_text() -> None:
+    result = tokenize_f2_pages(
+        {
+            "p3.png": "three",
+            "p1.png": "before /#one",
+            "p2.png": "two",
+            "p4.png": "four#/ after",
+        }
+    )
+
+    spans = [page.formatting_spans[0] for page in result.pages]
+    assert [(span.page_name, span.byte_start, span.byte_end) for span in spans] == [
+        ("p1.png", len(b"before /#"), len(b"before /#one")),
+        ("p2.png", 0, len(b"two")),
+        ("p3.png", 0, len(b"three")),
+        ("p4.png", 0, len(b"four")),
+    ]
+    assert {span.opening_id for span in spans} == {"continued:p1.png:7"}
+    assert {span.block_id for span in spans} == {"continued:p1.png:7:p4.png:6"}
+    assert [page.visible_text for page in result.pages] == [
+        "before one",
+        "two",
+        "three",
+        "four after",
+    ]
+    assert all(
+        page.lines[0].continued_block_ids == ("continued:p1.png:7",) for page in result.pages
+    )
+
+
+@pytest.mark.parametrize(
+    "source_pages",
+    [
+        {"p1.png": "bad */\nnext"},
+        {"p1.png": "/* outer\n/# nested\nend */"},
+        {"p1.png": "/* outer\nend #/"},
+        {"p1.png": "/# start", "p2.png": "still open"},
+    ],
+)
+def test_invalid_control_segments_keep_evidence_and_exclude_affected_lines(
+    source_pages: dict[str, str],
+) -> None:
+    result = tokenize_f2_pages(source_pages)
+
+    assert result.diagnostics
+    assert all(diagnostic.page_name in source_pages for diagnostic in result.diagnostics)
+    assert all(diagnostic.byte_end >= diagnostic.byte_start for diagnostic in result.diagnostics)
+    assert any(page.formatting_spans for page in result.pages)
+    assert any(not line.matching_eligible for page in result.pages for line in page.lines)
+
+
+def test_tokenize_f2_pages_preserves_valid_f2_feature_parser_output() -> None:
+    source_pages = {
+        "p2.png": "first /#<i>styled</i>",
+        "p10.png": "last #/ plain",
+    }
+    tokenized = tokenize_f2_pages(source_pages)
+
+    assert [page.visible_text for page in tokenized.pages] == ["first styled", "last  plain"]
+    assert [page.source_utf8.decode("utf-8") for page in tokenized.pages] == [
+        source_pages["p2.png"],
+        source_pages["p10.png"],
+    ]
+    parsed = parse_f2_pages(source_pages)
+    assert [page.feature_text for page in parsed.pages] == ["first <i>styled</i>", "last  plain"]
+    assert [page.special_blocks for page in parsed.pages] == [("<i>styled</i>",), ("last ",)]
