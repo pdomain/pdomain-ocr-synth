@@ -11,16 +11,22 @@ from PIL import Image
 from pdomain_ocr_synth import pgdp
 from pdomain_ocr_synth.pgdp.alignment_models import (
     AlignmentOperation,
+    AlignmentReport,
     PageAlignment,
+    ProjectAlignment,
     WireLineCandidate,
     WireSourceLine,
 )
 from pdomain_ocr_synth.pgdp.alignment_review import (
     ReviewCategory,
+    ReviewCounts,
     ReviewedLine,
+    ReviewGateFailure,
+    ReviewPage,
     classify_page,
     render_alignment_overlay,
     summarize_review,
+    validate_review_gate,
 )
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame
 
@@ -32,6 +38,7 @@ def _sha256() -> str:
 def test_review_helpers_are_public() -> None:
     assert pgdp.render_alignment_overlay is render_alignment_overlay
     assert pgdp.summarize_review is summarize_review
+    assert pgdp.validate_review_gate is validate_review_gate
 
 
 def _page(
@@ -73,6 +80,7 @@ def _page(
             style_fitting_eligible=True,
         ),
     )
+
     candidates = (
         WireLineCandidate(
             ordinal=0,
@@ -122,6 +130,35 @@ def _page(
         state=state,
         accepted=accepted,
         exclusions=exclusions,
+    )
+
+
+def _report(*pages: PageAlignment) -> AlignmentReport:
+    return AlignmentReport(
+        tool_version="0.1.0",
+        profile_label="profile.json",
+        profile_sha256=_sha256(),
+        methods={},
+        thresholds={},
+        projects=(
+            ProjectAlignment(
+                project_id="book", pages=tuple(sorted(pages, key=lambda page: page.page_name))
+            ),
+        ),
+    )
+
+
+def _two_match_page() -> PageAlignment:
+    return replace(
+        _page(),
+        operations=(
+            AlignmentOperation(kind="match", source_ordinal=0, candidate_ordinal=0, cost=0.1),
+            AlignmentOperation(kind="match", source_ordinal=1, candidate_ordinal=1, cost=0.1),
+        ),
+        total_cost=0.2,
+        second_best_cost=0.3,
+        matched_count=2,
+        matched_ratio=1.0,
     )
 
 
@@ -226,7 +263,13 @@ def test_classify_page_maps_each_known_exclusion_code(code: str, expected: Revie
     ("codes", "expected"),
     [
         (("source_changed", "blank_page"), ReviewCategory.SOURCE_CHANGED),
+        (("source_changed", "probable_multi_column"), ReviewCategory.SOURCE_CHANGED),
+        (("source_changed", "normalized_cost_exceeds_maximum"), ReviewCategory.SOURCE_CHANGED),
         (("blank_page", "probable_multi_column"), ReviewCategory.UNAVAILABLE_OR_MALFORMED),
+        (
+            ("blank_page", "normalized_cost_exceeds_maximum"),
+            ReviewCategory.UNAVAILABLE_OR_MALFORMED,
+        ),
         (
             ("probable_multi_column", "normalized_cost_exceeds_maximum"),
             ReviewCategory.DECLARED_COMPLEX,
@@ -242,6 +285,17 @@ def test_classify_page_applies_priority_to_multiple_exclusions(
 def test_classify_page_rejects_unknown_m15b_code() -> None:
     with pytest.raises(ValueError, match="Unknown M15b exclusion code"):
         _ = classify_page(_page(accepted=False, exclusions=("unrecognized",)))
+
+
+def test_review_counts_rejects_nonexhaustive_identity() -> None:
+    with pytest.raises(ValueError, match="selected_total"):
+        _ = ReviewCounts(
+            selected_total=4,
+            declared_complex=1,
+            unavailable_or_malformed=1,
+            source_changed=1,
+            eligible=0,
+        )
 
 
 def test_review_summary_counts_disjoint_categories_and_preserves_null_residuals() -> None:
@@ -267,7 +321,7 @@ def test_review_summary_counts_disjoint_categories_and_preserves_null_residuals(
             state="excluded",
             exclusions=("table_like",),
         ),
-        replace(_page(), page_name="accepted.png"),
+        replace(_two_match_page(), page_name="accepted.png"),
         replace(
             _page(),
             page_name="proposed.png",
@@ -281,12 +335,12 @@ def test_review_summary_counts_disjoint_categories_and_preserves_null_residuals(
         ),
     )
     reviewed_lines = (
-        ReviewedLine(0, 0, "match", "correct"),
-        ReviewedLine(1, 1, "match", "incorrect"),
-        ReviewedLine(2, None, "skip_text", "correct"),
+        ReviewedLine("book", "accepted.png", 0, 0, "match", 0, 0, "correct"),
+        ReviewedLine("book", "accepted.png", 0, 0, "match", 1, 1, "incorrect"),
+        ReviewedLine("book", "proposed.png", 1, None, "skip_text", 1, None, "correct"),
     )
 
-    summary = summarize_review(pages, reviewed_lines)
+    summary = summarize_review(_report(*pages), reviewed_lines)
 
     assert summary.counts.selected_total == 5
     assert summary.counts.source_changed == 1
@@ -296,15 +350,100 @@ def test_review_summary_counts_disjoint_categories_and_preserves_null_residuals(
     assert summary.accepted_line_precision == 0.5
     assert summary.eligible_page_coverage == 0.5
     assert summary.declared_complex_accepted == 0
-    assert summary.normalized_costs == (0.1, 0.1, 0.1, 0.1, 0.4)
-    assert summary.width_residuals == (0.1, 0.1, 0.1, 0.1, None)
-    assert summary.indentation_residuals == (0.2, 0.2, 0.2, 0.2, None)
-    assert summary.uniqueness_margins == (0.3, 0.3, 0.3, 0.3, 0.0)
+    assert summary.normalized_costs == (0.1, 0.1, 0.4, 0.1, 0.1)
+    assert summary.width_residuals == (0.1, 0.1, None, 0.1, 0.1)
+    assert summary.indentation_residuals == (0.2, 0.2, None, 0.2, 0.2)
+    assert summary.uniqueness_margins == (0.3, 0.3, 0.0, 0.3, 0.3)
 
 
 def test_review_summary_handles_no_reviewed_matches_without_inventing_precision() -> None:
-    summary = summarize_review((_page(),), ())
+    summary = summarize_review(_report(_page()), ())
 
     assert summary.accepted_line_precision is None
     assert summary.confidence is None
     assert summary.confidence_kind == "uncalibrated"
+
+
+def test_review_summary_uses_explicit_report_page_selection() -> None:
+    report = _report(_page(), replace(_page(), page_name="p2.png"))
+
+    summary = summarize_review(
+        report,
+        (),
+        selected_pages=(ReviewPage("book", "p2.png"),),
+    )
+
+    assert summary.counts.selected_total == 1
+    assert summary.normalized_costs == (0.1,)
+
+
+@pytest.mark.parametrize(
+    "reviewed_lines",
+    [
+        (ReviewedLine("book", "p1.png", 0, 0, "match", 0, 1, "correct"),),
+        (ReviewedLine("book", "absent.png", 0, 0, "match", 0, 0, "correct"),),
+        (
+            ReviewedLine("book", "p1.png", 0, 0, "match", 0, 0, "correct"),
+            ReviewedLine("book", "p1.png", 0, 0, "match", 0, 0, "correct"),
+        ),
+    ],
+)
+def test_review_summary_rejects_unidentified_or_duplicate_operations(
+    reviewed_lines: tuple[ReviewedLine, ...],
+) -> None:
+    with pytest.raises(ValueError):
+        _ = summarize_review(_report(_page()), reviewed_lines)
+
+
+def test_review_summary_rejects_match_on_a_proposed_page() -> None:
+    page = replace(
+        _page(),
+        accepted=False,
+        state="proposed",
+        exclusions=("normalized_cost_exceeds_maximum",),
+    )
+    reviewed_line = ReviewedLine("book", "p1.png", 0, 0, "match", 0, 0, "correct")
+
+    with pytest.raises(ValueError, match="accepted page"):
+        _ = summarize_review(_report(page), (reviewed_line,))
+
+
+@pytest.mark.parametrize(
+    ("precision", "coverage", "complex_accepted", "passed", "failures"),
+    [
+        (0.98, 0.70, 0, True, ()),
+        (0.979, 0.70, 0, False, (ReviewGateFailure.ACCEPTED_LINE_PRECISION,)),
+        (0.98, 0.699, 0, False, (ReviewGateFailure.ELIGIBLE_PAGE_COVERAGE,)),
+        (0.98, 0.70, 1, False, (ReviewGateFailure.DECLARED_COMPLEX_ACCEPTED,)),
+        (
+            None,
+            None,
+            1,
+            False,
+            (
+                ReviewGateFailure.ACCEPTED_LINE_PRECISION,
+                ReviewGateFailure.ELIGIBLE_PAGE_COVERAGE,
+                ReviewGateFailure.DECLARED_COMPLEX_ACCEPTED,
+            ),
+        ),
+    ],
+)
+def test_review_gate_enforces_exact_thresholds(
+    precision: float | None,
+    coverage: float | None,
+    complex_accepted: int,
+    passed: bool,
+    failures: tuple[ReviewGateFailure, ...],
+) -> None:
+    summary = summarize_review(_report(_page()), ())
+    threshold_summary = replace(
+        summary,
+        accepted_line_precision=precision,
+        eligible_page_coverage=coverage,
+        declared_complex_accepted=complex_accepted,
+    )
+
+    result = validate_review_gate(threshold_summary)
+
+    assert result.passed is passed
+    assert result.failures == failures

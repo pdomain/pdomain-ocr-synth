@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from pdomain_ocr_synth.pgdp.alignment_models import PageAlignment
+    from pdomain_ocr_synth.pgdp.alignment_models import AlignmentReport, PageAlignment
 
 
 class ReviewCategory(StrEnum):
@@ -24,6 +24,14 @@ class ReviewCategory(StrEnum):
     UNAVAILABLE_OR_MALFORMED = "unavailable_or_malformed"
     SOURCE_CHANGED = "source_changed"
     ELIGIBLE = "eligible"
+
+
+class ReviewGateFailure(StrEnum):
+    """One unmet bounded-review acceptance threshold."""
+
+    ACCEPTED_LINE_PRECISION = "accepted_line_precision"
+    ELIGIBLE_PAGE_COVERAGE = "eligible_page_coverage"
+    DECLARED_COMPLEX_ACCEPTED = "declared_complex_accepted"
 
 
 _DECLARED_COMPLEX_CODES = frozenset(
@@ -88,25 +96,45 @@ class PageClassification:
 
 
 @dataclass(frozen=True, slots=True)
+class ReviewPage:
+    """One report-identified page selected for visual review."""
+
+    project_id: str
+    page_name: str
+
+    def __post_init__(self) -> None:
+        _validate_identity(self.project_id, name="project_id")
+        _validate_identity(self.page_name, name="page_name")
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewedLine:
     """One human-reviewed expected mapping and observed operation."""
 
-    expected_source_ordinal: int | None
-    expected_candidate_ordinal: int | None
+    project_id: str
+    page_name: str
+    intended_source_ordinal: int | None
+    intended_candidate_ordinal: int | None
     observed_operation: ObservedOperation
+    observed_source_ordinal: int | None
+    observed_candidate_ordinal: int | None
     reviewer_decision: ReviewerDecision
 
     def __post_init__(self) -> None:
-        _validate_ordinal(self.expected_source_ordinal, name="expected_source_ordinal")
-        _validate_ordinal(self.expected_candidate_ordinal, name="expected_candidate_ordinal")
+        _validate_identity(self.project_id, name="project_id")
+        _validate_identity(self.page_name, name="page_name")
+        _validate_ordinal(self.intended_source_ordinal, name="intended_source_ordinal")
+        _validate_ordinal(self.intended_candidate_ordinal, name="intended_candidate_ordinal")
+        _validate_ordinal(self.observed_source_ordinal, name="observed_source_ordinal")
+        _validate_ordinal(self.observed_candidate_ordinal, name="observed_candidate_ordinal")
         if self.observed_operation == "match":
-            if self.expected_source_ordinal is None or self.expected_candidate_ordinal is None:
+            if self.observed_source_ordinal is None or self.observed_candidate_ordinal is None:
                 raise ValueError("Match review rows require source and candidate ordinals.")
         elif self.observed_operation == "skip_image":
-            if self.expected_source_ordinal is not None or self.expected_candidate_ordinal is None:
+            if self.observed_source_ordinal is not None or self.observed_candidate_ordinal is None:
                 raise ValueError("skip_image review rows require only a candidate ordinal.")
         elif self.observed_operation == "skip_text":
-            if self.expected_source_ordinal is None or self.expected_candidate_ordinal is not None:
+            if self.observed_source_ordinal is None or self.observed_candidate_ordinal is not None:
                 raise ValueError("skip_text review rows require only a source ordinal.")
         else:
             raise ValueError("Observed review operation is unsupported.")
@@ -144,20 +172,31 @@ class ReviewCounts:
 class ReviewLedger:
     """Typed page classifications and human-reviewed line decisions."""
 
+    pages: tuple[PageAlignment, ...]
+    references: tuple[ReviewPage, ...]
     classifications: tuple[PageClassification, ...]
     reviewed_lines: tuple[ReviewedLine, ...]
 
     @classmethod
-    def from_pages(
+    def from_report(
         cls,
-        pages: Sequence[PageAlignment],
+        report: AlignmentReport,
         reviewed_lines: Sequence[ReviewedLine] = (),
+        *,
+        selected_pages: Sequence[ReviewPage] | None = None,
     ) -> ReviewLedger:
-        """Build the complete ledger for selected alignment pages."""
+        """Build the complete ledger from report-backed selected pages."""
 
+        available = _report_pages(report)
+        references = _selected_references(available, selected_pages)
+        pages = tuple(available[reference] for reference in references)
+        rows = tuple(reviewed_lines)
+        _validate_reviewed_lines(rows, available, frozenset(references))
         return cls(
+            pages=pages,
+            references=references,
             classifications=tuple(classify_page(page) for page in pages),
-            reviewed_lines=tuple(reviewed_lines),
+            reviewed_lines=rows,
         )
 
     @property
@@ -229,16 +268,23 @@ def classify_page(page: PageAlignment) -> PageClassification:
 
 
 def summarize_review(
-    pages: Sequence[PageAlignment], reviewed_lines: Sequence[ReviewedLine] = ()
+    report: AlignmentReport,
+    reviewed_lines: Sequence[ReviewedLine] = (),
+    *,
+    selected_pages: Sequence[ReviewPage] | None = None,
 ) -> ReviewSummary:
     """Summarize a selected review set without collapsing null residuals."""
 
-    selected_pages = tuple(pages)
-    ledger = ReviewLedger.from_pages(selected_pages, reviewed_lines)
+    ledger = ReviewLedger.from_report(
+        report,
+        reviewed_lines,
+        selected_pages=selected_pages,
+    )
+    reviewed_pages = ledger.pages
     counts = ledger.counts
     eligible_pages = tuple(
         page
-        for page, classification in zip(selected_pages, ledger.classifications, strict=True)
+        for page, classification in zip(reviewed_pages, ledger.classifications, strict=True)
         if classification.category is ReviewCategory.ELIGIBLE
     )
     eligible_page_coverage = (
@@ -248,7 +294,7 @@ def summarize_review(
     )
     declared_complex_accepted = sum(
         page.accepted
-        for page, classification in zip(selected_pages, ledger.classifications, strict=True)
+        for page, classification in zip(reviewed_pages, ledger.classifications, strict=True)
         if classification.category is ReviewCategory.DECLARED_COMPLEX
     )
     return ReviewSummary(
@@ -256,11 +302,32 @@ def summarize_review(
         accepted_line_precision=ledger.accepted_line_precision,
         eligible_page_coverage=eligible_page_coverage,
         declared_complex_accepted=declared_complex_accepted,
-        normalized_costs=tuple(page.normalized_cost for page in selected_pages),
-        width_residuals=tuple(page.mean_width_residual for page in selected_pages),
-        indentation_residuals=tuple(page.mean_indentation_residual for page in selected_pages),
-        uniqueness_margins=tuple(page.uniqueness_margin for page in selected_pages),
+        normalized_costs=tuple(page.normalized_cost for page in reviewed_pages),
+        width_residuals=tuple(page.mean_width_residual for page in reviewed_pages),
+        indentation_residuals=tuple(page.mean_indentation_residual for page in reviewed_pages),
+        uniqueness_margins=tuple(page.uniqueness_margin for page in reviewed_pages),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewGateResult:
+    """Deterministic bounded-review acceptance result."""
+
+    passed: bool
+    failures: tuple[ReviewGateFailure, ...]
+
+
+def validate_review_gate(summary: ReviewSummary) -> ReviewGateResult:
+    """Evaluate the fixed M15b review thresholds without changing evidence."""
+
+    failures: list[ReviewGateFailure] = []
+    if summary.accepted_line_precision is None or summary.accepted_line_precision < 0.98:
+        failures.append(ReviewGateFailure.ACCEPTED_LINE_PRECISION)
+    if summary.eligible_page_coverage is None or summary.eligible_page_coverage < 0.70:
+        failures.append(ReviewGateFailure.ELIGIBLE_PAGE_COVERAGE)
+    if summary.declared_complex_accepted != 0:
+        failures.append(ReviewGateFailure.DECLARED_COMPLEX_ACCEPTED)
+    return ReviewGateResult(passed=not failures, failures=tuple(failures))
 
 
 def render_alignment_overlay(
@@ -305,6 +372,71 @@ def render_alignment_overlay(
 def _validate_ordinal(value: int | None, *, name: str) -> None:
     if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
         raise ValueError(f"{name} must be a nonnegative integer or null.")
+
+
+def _validate_identity(value: str, *, name: str) -> None:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a nonempty string.")
+
+
+def _report_pages(report: AlignmentReport) -> dict[ReviewPage, PageAlignment]:
+    pages: dict[ReviewPage, PageAlignment] = {}
+    for project in report.projects:
+        for page in project.pages:
+            reference = ReviewPage(project.project_id, page.page_name)
+            if reference in pages:
+                raise ValueError("Alignment report contains duplicate project/page identities.")
+            pages[reference] = page
+    return pages
+
+
+def _selected_references(
+    available: dict[ReviewPage, PageAlignment], selected_pages: Sequence[ReviewPage] | None
+) -> tuple[ReviewPage, ...]:
+    if selected_pages is None:
+        return tuple(available)
+    references = tuple(selected_pages)
+    if len(set(references)) != len(references):
+        raise ValueError("Selected review pages must not repeat a project/page identity.")
+    missing = tuple(reference for reference in references if reference not in available)
+    if missing:
+        raise ValueError("Selected review pages must exist in the alignment report.")
+    return references
+
+
+def _validate_reviewed_lines(
+    reviewed_lines: tuple[ReviewedLine, ...],
+    available: dict[ReviewPage, PageAlignment],
+    selected: frozenset[ReviewPage],
+) -> None:
+    observed_operations: set[tuple[ReviewPage, str, int | None, int | None]] = set()
+    for reviewed_line in reviewed_lines:
+        reference = ReviewPage(reviewed_line.project_id, reviewed_line.page_name)
+        if reference not in selected:
+            raise ValueError("Reviewed lines must identify a selected report page.")
+        page = available[reference]
+        identity = (
+            reference,
+            reviewed_line.observed_operation,
+            reviewed_line.observed_source_ordinal,
+            reviewed_line.observed_candidate_ordinal,
+        )
+        if identity in observed_operations:
+            raise ValueError("Reviewed lines must not repeat an observed report operation.")
+        observed_operations.add(identity)
+        actual_operations = {
+            (operation.kind, operation.source_ordinal, operation.candidate_ordinal)
+            for operation in page.operations
+        }
+        if identity[1:] not in actual_operations:
+            raise ValueError("Reviewed line must identify an actual report operation.")
+        if reviewed_line.observed_operation == "match" and not page.accepted:
+            raise ValueError("Reviewed match operations must come from an accepted page.")
+        if reviewed_line.reviewer_decision == "correct" and (
+            reviewed_line.intended_source_ordinal != reviewed_line.observed_source_ordinal
+            or reviewed_line.intended_candidate_ordinal != reviewed_line.observed_candidate_ordinal
+        ):
+            raise ValueError("Correct review rows must match their intended source-line mapping.")
 
 
 def _candidate_color(source_ordinal: int | None, *, accepted: bool) -> tuple[int, int, int]:

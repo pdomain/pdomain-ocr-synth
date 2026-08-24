@@ -19,11 +19,15 @@ from pdomain_ocr_synth.pgdp.alignment_review import (
     ReviewCategory,
     ReviewCounts,
     ReviewedLine,
+    ReviewGateFailure,
+    ReviewGateResult,
     ReviewLedger,
+    ReviewPage,
     ReviewSummary,
     classify_page,
     render_alignment_overlay,
     summarize_review,
+    validate_review_gate,
 )
 from pdomain_ocr_synth.pgdp.features import extract_page_features, score_page
 from pdomain_ocr_synth.pgdp.models import (
@@ -76,7 +80,10 @@ __all__ = [
     "RankingReport",
     "ReviewCategory",
     "ReviewCounts",
+    "ReviewGateFailure",
+    "ReviewGateResult",
     "ReviewLedger",
+    "ReviewPage",
     "ReviewSummary",
     "ReviewedLine",
     "WireFormattingSpan",
@@ -90,5 +97,6 @@ __all__ = [
     "render_alignment_overlay",
     "score_page",
     "summarize_review",
+    "validate_review_gate",
     "write_report",
 ]
