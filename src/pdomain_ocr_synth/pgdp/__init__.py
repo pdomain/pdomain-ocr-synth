@@ -14,6 +14,17 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
     WireSourceLine,
     WireStyleRun,
 )
+from pdomain_ocr_synth.pgdp.alignment_review import (
+    PageClassification,
+    ReviewCategory,
+    ReviewCounts,
+    ReviewedLine,
+    ReviewLedger,
+    ReviewSummary,
+    classify_page,
+    render_alignment_overlay,
+    summarize_review,
+)
 from pdomain_ocr_synth.pgdp.features import extract_page_features, score_page
 from pdomain_ocr_synth.pgdp.models import (
     CorpusSummary,
@@ -51,6 +62,7 @@ __all__ = [
     "Estimate",
     "InkBand",
     "PageAlignment",
+    "PageClassification",
     "PageFeatures",
     "PageMeasurement",
     "PageScore",
@@ -62,13 +74,21 @@ __all__ = [
     "RankedProject",
     "RankingLimits",
     "RankingReport",
+    "ReviewCategory",
+    "ReviewCounts",
+    "ReviewLedger",
+    "ReviewSummary",
+    "ReviewedLine",
     "WireFormattingSpan",
     "WireLineCandidate",
     "WireSourceLine",
     "WireStyleRun",
+    "classify_page",
     "extract_page_features",
     "natural_page_key",
     "rank_corpus",
+    "render_alignment_overlay",
     "score_page",
+    "summarize_review",
     "write_report",
 ]
