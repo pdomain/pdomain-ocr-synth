@@ -599,7 +599,7 @@ def _find_gutter(
         if not bool(is_empty) and run_start is not None:
             _append_gutter(
                 gutters,
-                occupied_rows,
+                interior,
                 x_start=x_start,
                 y_start=y_start,
                 y_end=y_end,
@@ -611,7 +611,7 @@ def _find_gutter(
     if run_start is not None:
         _append_gutter(
             gutters,
-            occupied_rows,
+            interior,
             x_start=x_start,
             y_start=y_start,
             y_end=y_end,

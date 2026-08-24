@@ -622,6 +622,17 @@ def test_gutter_vertical_coverage_threshold(
     assert (result.gutter is not None) is expected_gutter
 
 
+def test_gutter_coverage_uses_its_full_vertical_extent(tmp_path: Path) -> None:
+    image_path = tmp_path / "gutter-full-extent-coverage.png"
+    _gutter_image(width=3, center_ink_rows=(20, 22, 35, 37, 50, 52)).save(image_path)
+
+    result = _extract(image_path)
+
+    assert result.gutter is not None
+    assert result.gutter.vertical_coverage == pytest.approx(99 / 105)
+    assert result.gutter.vertical_coverage >= 0.6
+
+
 def test_component_join_uses_the_band_median_height_for_horizontal_gaps(tmp_path: Path) -> None:
     image_path = tmp_path / "median-gap.png"
     image = Image.new("L", (100, 80), color=255)
