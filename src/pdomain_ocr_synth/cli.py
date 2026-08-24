@@ -328,6 +328,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="write the source-geometry profile JSON here",
     )
 
+    p_align_pgdp = subparsers.add_parser(
+        "align-pgdp",
+        help="align local PGDP F2 source lines with measured scan geometry",
+    )
+    _ = p_align_pgdp.add_argument("corpus_root", help="local PGDP corpus root directory")
+    _ = p_align_pgdp.add_argument(
+        "--profile",
+        required=True,
+        help="M15a source-geometry profile JSON path",
+    )
+    _ = p_align_pgdp.add_argument(
+        "--output",
+        required=True,
+        help="write the source-line alignment JSON here",
+    )
+
     return parser
 
 
@@ -1632,6 +1648,40 @@ def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
     return 0
 
 
+def _cmd_align_pgdp(corpus_root: str, *, profile: str, output: str) -> int:
+    """Align local PGDP source lines and write a snapshot-safe report."""
+
+    from pdomain_ocr_synth.pgdp.alignment import build_alignment_report
+    from pdomain_ocr_synth.pgdp.report import write_report
+
+    root = Path(corpus_root).expanduser()
+    if not root.exists():
+        print(f"error: corpus root does not exist: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if not root.is_dir():
+        print(f"error: corpus root is not a directory: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    profile_path = Path(profile).expanduser()
+    output_path = Path(output).expanduser()
+    if output_path.resolve() == profile_path.resolve():
+        print("error: alignment output must differ from the profile input", file=sys.stderr)
+        return DESTINATION_EXIT
+    if output_path.exists() and not output_path.is_file():
+        print(f"error: alignment output is not a file: {output_path}", file=sys.stderr)
+        return DESTINATION_EXIT
+    try:
+        report = build_alignment_report(root, profile_path, tool_version=__version__)
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return VALIDATION_EXIT
+    try:
+        write_report(report, output_path, root)
+    except (OSError, ValueError, ExceptionGroup) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return DESTINATION_EXIT
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -1713,6 +1763,11 @@ _IMPLEMENTED_DISPATCH = {
     "profile-pgdp": lambda args: _cmd_profile_pgdp(
         args.corpus_root,
         ranking=args.ranking,
+        output=args.output,
+    ),
+    "align-pgdp": lambda args: _cmd_align_pgdp(
+        args.corpus_root,
+        profile=args.profile,
         output=args.output,
     ),
 }

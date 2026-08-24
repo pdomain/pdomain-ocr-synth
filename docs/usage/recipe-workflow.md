@@ -167,6 +167,7 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `audit [output-dir]` | Read back the per-render audit JSONL log written by `render` (M10) |
 | `rank-pgdp <corpus_root>` | Rank local PGDP projects and select bounded review pages |
 | `profile-pgdp <corpus_root>` | Measure selected local PGDP scan geometry |
+| `align-pgdp <corpus_root>` | Align PGDP F2 source lines with measured scan lines |
 
 ## Render-family options
 
@@ -299,6 +300,18 @@ profiles only the selected pages in the supplied M14 ranking report.
 |------|---------|
 | `--ranking PATH` | Read this required `pgdp-rank/v1` JSON report |
 | `--output PATH` | Write the required `pgdp-profile/v1` JSON report here; it must be outside the corpus root, differ from `--ranking`, and not name a directory |
+
+### `align-pgdp <corpus_root>`
+
+The `corpus_root` positional argument is the local PGDP corpus directory.
+The command aligns F2 source lines with candidates derived from the referenced
+corpus scans. Those scans must still be available and match the supplied M15a
+`profile-pgdp` report.
+
+| Flag | Meaning |
+|------|---------|
+| `--profile PATH` | Read this required `pgdp-profile/v1` JSON report |
+| `--output PATH` | Write the required `pgdp-alignment/v1` JSON report here; it must be outside the corpus root, differ from `--profile`, and not name a directory |
 
 ## Audit log schema
 
