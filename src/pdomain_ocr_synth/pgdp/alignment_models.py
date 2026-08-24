@@ -70,11 +70,17 @@ def _require_bool(value: object, *, name: str) -> bool:
     return value
 
 
-def _require_finite(value: object, *, name: str) -> None:
+def _require_finite(value: object, *, name: str) -> float | int:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{name} must be a number.")
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite.")
+    return value
+
+
+def _require_nonnegative_finite(value: object, *, name: str) -> None:
+    if _require_finite(value, name=name) < 0.0:
+        raise ValueError(f"{name} must be nonnegative.")
 
 
 def _require_sha256(value: object, *, name: str) -> None:
@@ -109,7 +115,7 @@ def _deep_freeze_json_value(value: object) -> object:
     if value is None or isinstance(value, (bool, int, str)):
         return value
     if isinstance(value, float):
-        _require_finite(value, name="JSON value")
+        _ = _require_finite(value, name="JSON value")
         return value
     if isinstance(value, list):
         return tuple(_deep_freeze_json_value(item) for item in value)
@@ -124,7 +130,7 @@ def _thaw_json_value(value: object) -> JsonValue:
     if value is None or isinstance(value, (bool, int, str)):
         return value
     if isinstance(value, float):
-        _require_finite(value, name="Stored JSON value")
+        _ = _require_finite(value, name="Stored JSON value")
         return value
     if isinstance(value, tuple):
         return [_thaw_json_value(item) for item in value]
@@ -407,7 +413,7 @@ class WireLineCandidate:
             or self.height != normalized_box[3] - normalized_box[1]
         ):
             raise ValueError("Candidate dimensions must match its source-frame box.")
-        _require_finite(self.fill_ratio, name="fill_ratio")
+        _ = _require_finite(self.fill_ratio, name="fill_ratio")
         if not 0.0 < self.fill_ratio <= 1.0:
             raise ValueError("Candidate fill_ratio must be in (0, 1].")
         _require_nonnegative_integer(self.component_count, name="component_count")
@@ -480,11 +486,11 @@ class AlignmentOperation:
             _require_nonnegative_integer(self.source_ordinal, name="source_ordinal")
         if self.candidate_ordinal is not None:
             _require_nonnegative_integer(self.candidate_ordinal, name="candidate_ordinal")
-        _require_finite(self.cost, name="Alignment operation cost")
+        _require_nonnegative_finite(self.cost, name="Alignment operation cost")
         for name in ("width_cost", "indentation_cost", "gaps_cost", "style_cost"):
             value = getattr(self, name)
             if value is not None:
-                _require_finite(value, name=name)
+                _require_nonnegative_finite(value, name=name)
         object.__setattr__(self, "extensions", _normalized_mapping(self.extensions))
 
     def to_dict(self) -> dict[str, JsonValue]:
@@ -574,19 +580,21 @@ class PageAlignment:
         self._validate_ordinals()
         self._validate_source_line_continuity()
         self._validate_formatting_spans()
+        self._validate_source_line_formatting_references()
         self._validate_style_runs()
         self._validate_operations()
-        for name in ("total_cost", "normalized_cost", "matched_ratio", "uniqueness_margin"):
-            _require_finite(getattr(self, name), name=name)
+        for name in ("total_cost", "normalized_cost", "uniqueness_margin"):
+            _require_nonnegative_finite(getattr(self, name), name=name)
+        _ = _require_finite(self.matched_ratio, name="matched_ratio")
         for name in ("second_best_cost", "mean_width_residual", "mean_indentation_residual"):
             value = getattr(self, name)
             if value is not None:
-                _require_finite(value, name=name)
+                _require_nonnegative_finite(value, name=name)
         _require_nonnegative_integer(self.matched_count, name="matched_count")
         if not 0.0 <= self.matched_ratio <= 1.0:
             raise ValueError("matched_ratio must be in [0, 1].")
-        if self.uniqueness_margin < 0.0:
-            raise ValueError("uniqueness_margin must be nonnegative.")
+        if self.second_best_cost is not None and self.second_best_cost < self.total_cost:
+            raise ValueError("second_best_cost must be greater than or equal to total_cost.")
         if self.matched_count != sum(operation.kind == "match" for operation in self.operations):
             raise ValueError("matched_count must equal the number of match operations.")
         _ = _require_string(self.state, name="Alignment state")
@@ -665,20 +673,13 @@ class PageAlignment:
             previous_end = source_line.byte_end
 
     def _validate_style_runs(self) -> None:
-        ordered_runs = tuple(
-            sorted(
-                self.style_runs,
-                key=lambda run: (
-                    run.normalized_start,
-                    run.normalized_end,
-                    run.byte_start,
-                    run.byte_end,
-                    run.kind,
-                ),
-            )
-        )
-        if self.style_runs != ordered_runs:
-            raise ValueError("Style runs must use deterministic normalized and source-byte order.")
+        normalized_visible_text_length = self._normalized_visible_text_length()
+        if any(
+            style_run.normalized_start > normalized_visible_text_length
+            or style_run.normalized_end > normalized_visible_text_length
+            for style_run in self.style_runs
+        ):
+            raise ValueError("Style-run spans must stay inside normalized visible text.")
         source_boundaries = self._source_utf8_boundaries()
         if any(
             style_run.byte_start not in source_boundaries
@@ -705,6 +706,25 @@ class PageAlignment:
             ):
                 raise ValueError("Formatting span page_name must match its page alignment.")
 
+    def _validate_source_line_formatting_references(self) -> None:
+        formatting_block_ids = {
+            formatting_span.block_id for formatting_span in self.formatting_spans
+        }
+        continued_opening_ids = {
+            formatting_span.opening_id
+            for formatting_span in self.formatting_spans
+            if formatting_span.kind == "continued"
+        }
+        for source_line in self.source_lines:
+            if not set(source_line.formatting_span_ids) <= formatting_block_ids:
+                raise ValueError(
+                    "Source-line formatting_span_ids must resolve to page formatting block IDs."
+                )
+            if not set(source_line.continued_block_ids) <= continued_opening_ids:
+                raise ValueError(
+                    "Source-line continued_block_ids must resolve to continued opening IDs."
+                )
+
     def _source_utf8_boundaries(self) -> frozenset[int]:
         source_text = "".join(
             source_line.original_text + source_line.separator_text
@@ -716,6 +736,13 @@ class PageAlignment:
             byte_offset += len(character.encode("utf-8"))
             boundaries.add(byte_offset)
         return frozenset(boundaries)
+
+    def _normalized_visible_text_length(self) -> int:
+        normalized_visible_text = "".join(
+            source_line.visible_text + ("\n" if source_line.separator_text else "")
+            for source_line in self.source_lines
+        )
+        return len(normalized_visible_text)
 
     def to_dict(self) -> dict[str, JsonValue]:
         source_frame = None if self.source_frame is None else self.source_frame.to_dict()
@@ -829,6 +856,8 @@ class AlignmentReport:
         if (
             not self.profile_label
             or self.profile_label in {".", ".."}
+            or "/" in self.profile_label
+            or "\\" in self.profile_label
             or Path(self.profile_label).name != self.profile_label
         ):
             raise ValueError("profile_label must be a nonempty file name without path components.")
@@ -1049,11 +1078,11 @@ class AlignmentOperationInput(_WireModel):
     kind: Literal["match", "skip_image", "skip_text"]
     source_ordinal: StrictInt | None = Field(default=None, ge=0)
     candidate_ordinal: StrictInt | None = Field(default=None, ge=0)
-    cost: StrictFloat
-    width_cost: StrictFloat | None = None
-    indentation_cost: StrictFloat | None = None
-    gaps_cost: StrictFloat | None = None
-    style_cost: StrictFloat | None = None
+    cost: StrictFloat = Field(ge=0)
+    width_cost: StrictFloat | None = Field(default=None, ge=0)
+    indentation_cost: StrictFloat | None = Field(default=None, ge=0)
+    gaps_cost: StrictFloat | None = Field(default=None, ge=0)
+    style_cost: StrictFloat | None = Field(default=None, ge=0)
 
     def to_domain(self) -> AlignmentOperation:
         return AlignmentOperation(
@@ -1090,14 +1119,14 @@ class PageAlignmentInput(_WireModel):
     style_runs: tuple[WireStyleRunInput, ...] = ()
     candidates: tuple[WireLineCandidateInput, ...]
     operations: tuple[AlignmentOperationInput, ...]
-    total_cost: StrictFloat
-    second_best_cost: StrictFloat | None = None
-    normalized_cost: StrictFloat
+    total_cost: StrictFloat = Field(ge=0)
+    second_best_cost: StrictFloat | None = Field(default=None, ge=0)
+    normalized_cost: StrictFloat = Field(ge=0)
     matched_count: StrictInt = Field(ge=0)
-    matched_ratio: StrictFloat
-    uniqueness_margin: StrictFloat
-    mean_width_residual: StrictFloat | None = None
-    mean_indentation_residual: StrictFloat | None = None
+    matched_ratio: StrictFloat = Field(ge=0, le=1)
+    uniqueness_margin: StrictFloat = Field(ge=0)
+    mean_width_residual: StrictFloat | None = Field(default=None, ge=0)
+    mean_indentation_residual: StrictFloat | None = Field(default=None, ge=0)
     state: Literal["accepted", "proposed", "excluded"]
     accepted: StrictBool
     exclusions: tuple[StrictStr, ...]
@@ -1184,7 +1213,7 @@ class AlignmentReportInput(_WireModel):
     schema_version: Literal[1]
     algorithm_version: Literal["pgdp-alignment/v1"]
     tool_version: StrictStr = Field(min_length=1)
-    profile_label: StrictStr = Field(min_length=1)
+    profile_label: StrictStr = Field(min_length=1, pattern=r"^[^/\\]+$")
     profile_sha256: StrictStr
     methods: dict[str, JsonValue]
     thresholds: dict[str, JsonValue]
@@ -1204,7 +1233,12 @@ class AlignmentReportInput(_WireModel):
 
     @model_validator(mode="after")
     def _validate_profile_label(self) -> AlignmentReportInput:
-        if self.profile_label in {".", ".."} or Path(self.profile_label).name != self.profile_label:
+        if (
+            self.profile_label in {".", ".."}
+            or "/" in self.profile_label
+            or "\\" in self.profile_label
+            or Path(self.profile_label).name != self.profile_label
+        ):
             raise ValueError("profile_label must be a nonempty file name without path components.")
         return self
 

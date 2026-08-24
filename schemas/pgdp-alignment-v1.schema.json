@@ -84,12 +84,14 @@
           "title": "Candidate Ordinal"
         },
         "cost": {
+          "minimum": 0,
           "title": "Cost",
           "type": "number"
         },
         "width_cost": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -102,6 +104,7 @@
         "indentation_cost": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -114,6 +117,7 @@
         "gaps_cost": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -126,6 +130,7 @@
         "style_cost": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -243,12 +248,14 @@
           "type": "array"
         },
         "total_cost": {
+          "minimum": 0,
           "title": "Total Cost",
           "type": "number"
         },
         "second_best_cost": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -259,6 +266,7 @@
           "title": "Second Best Cost"
         },
         "normalized_cost": {
+          "minimum": 0,
           "title": "Normalized Cost",
           "type": "number"
         },
@@ -268,16 +276,20 @@
           "type": "integer"
         },
         "matched_ratio": {
+          "maximum": 1,
+          "minimum": 0,
           "title": "Matched Ratio",
           "type": "number"
         },
         "uniqueness_margin": {
+          "minimum": 0,
           "title": "Uniqueness Margin",
           "type": "number"
         },
         "mean_width_residual": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -290,6 +302,7 @@
         "mean_indentation_residual": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -768,6 +781,7 @@
     },
     "profile_label": {
       "minLength": 1,
+      "pattern": "^[^/\\\\]+$",
       "title": "Profile Label",
       "type": "string"
     },

@@ -496,6 +496,129 @@ def test_page_rejects_style_run_inside_multibyte_character() -> None:
         _ = replace(page, style_runs=(style_run,))
 
 
+def test_page_preserves_nested_style_runs_in_tokenizer_close_order() -> None:
+    page = make_report().projects[0].pages[0]
+    inner_style = WireStyleRun(
+        kind="i",
+        normalized_start=1,
+        normalized_end=3,
+        byte_start=2,
+        byte_end=4,
+    )
+    outer_style = WireStyleRun(
+        kind="b",
+        normalized_start=0,
+        normalized_end=4,
+        byte_start=0,
+        byte_end=5,
+    )
+
+    rewritten = replace(page, style_runs=(inner_style, outer_style))
+
+    assert rewritten.to_dict()["style_runs"] == [inner_style.to_dict(), outer_style.to_dict()]
+
+
+def test_page_rejects_style_run_beyond_normalized_visible_text() -> None:
+    page = make_report().projects[0].pages[0]
+    style_run = WireStyleRun(
+        kind="i",
+        normalized_start=0,
+        normalized_end=5,
+        byte_start=0,
+        byte_end=5,
+    )
+
+    with pytest.raises(ValueError, match="normalized visible text"):
+        _ = replace(page, style_runs=(style_run,))
+
+
+def test_page_rejects_dangling_formatting_and_continued_block_ids() -> None:
+    page = make_report().projects[0].pages[0]
+    source_line = page.source_lines[0]
+
+    with pytest.raises(ValueError, match="formatting_span_ids"):
+        _ = replace(
+            page,
+            source_lines=(replace(source_line, formatting_span_ids=("missing-block",)),),
+        )
+
+    continued_span = WireFormattingSpan(
+        opening_id="continued:p2.png:0",
+        block_id="continued:p2.png:0:p2.png:5",
+        kind="continued",
+        page_name="p2.png",
+        byte_start=0,
+        byte_end=5,
+        closed=True,
+    )
+    with pytest.raises(ValueError, match="continued_block_ids"):
+        _ = replace(
+            page,
+            formatting_spans=(continued_span,),
+            source_lines=(
+                replace(
+                    source_line,
+                    formatting_span_ids=(continued_span.block_id,),
+                    continued_block_ids=("missing-opening",),
+                ),
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    ("cost", "style_cost"),
+    [
+        (-0.1, None),
+        (0.0, -0.1),
+    ],
+)
+def test_alignment_operation_rejects_negative_costs(cost: float, style_cost: float | None) -> None:
+    with pytest.raises(ValueError, match="nonnegative"):
+        _ = AlignmentOperation(
+            kind="skip_image",
+            source_ordinal=None,
+            candidate_ordinal=0,
+            cost=cost,
+            style_cost=style_cost,
+        )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("total_cost", -0.1),
+        ("second_best_cost", -0.1),
+        ("normalized_cost", -0.1),
+        ("mean_width_residual", -0.1),
+    ],
+)
+def test_page_rejects_negative_aggregate_cost_metrics(field_name: str, value: float) -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match="nonnegative"):
+        _ = replace(page, **{field_name: value})
+
+
+def test_page_rejects_second_best_cost_below_total_cost() -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match="second_best_cost"):
+        _ = replace(page, second_best_cost=0.05)
+
+
+@pytest.mark.parametrize("profile_label", ["profile/sub.json", r"C:\\profiles\\sub.json"])
+def test_report_rejects_path_separators_in_direct_and_pydantic_inputs(profile_label: str) -> None:
+    report = make_report()
+
+    with pytest.raises(ValueError, match="profile_label"):
+        _ = replace(report, profile_label=profile_label)
+
+    payload = report.to_dict()
+    payload["profile_label"] = profile_label
+    with pytest.raises(ValueError, match="profile_label"):
+        _ = AlignmentReport.from_dict(payload)
+
+
 def test_direct_report_output_round_trips_through_strict_reader() -> None:
     report = make_report()
 
