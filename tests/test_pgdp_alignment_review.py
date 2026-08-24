@@ -10,6 +10,7 @@ import pytest
 from PIL import Image
 
 from pdomain_ocr_synth import pgdp
+from pdomain_ocr_synth.pgdp import alignment_review
 from pdomain_ocr_synth.pgdp.alignment_models import (
     AlignmentOperation,
     AlignmentReport,
@@ -210,6 +211,33 @@ def test_overlay_rejects_same_sized_scan_hash_mismatch_without_writes(tmp_path: 
 
     assert scan_path.read_bytes() == scan_bytes
     assert output_path.read_bytes() == b"previous overlay"
+
+
+def test_overlay_decodes_the_immutable_bytes_whose_hash_was_verified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    scan_path = tmp_path / "scan.png"
+    output_path = tmp_path / "overlay.png"
+    Image.new("RGB", (80, 60), color="white").save(scan_path)
+    page = _with_scan_hash(_page(), scan_path)
+    expected_hash = page.scan_sha256
+    assert expected_hash is not None
+
+    class MutatingDigest:
+        def hexdigest(self) -> str:
+            Image.new("RGB", (80, 60), color="black").save(scan_path)
+            return expected_hash
+
+    def mutate_after_verified_hash(_scan_file: object, _algorithm: str) -> MutatingDigest:
+        return MutatingDigest()
+
+    monkeypatch.setattr(alignment_review, "file_digest", mutate_after_verified_hash)
+
+    overlay = render_alignment_overlay(scan_path, page, output_path)
+
+    assert overlay.getpixel((79, 59)) == (255, 255, 255)
+    with Image.open(output_path) as saved_overlay:
+        assert saved_overlay.getpixel((79, 59)) == (255, 255, 255)
 
 
 def test_overlay_rejects_scan_as_output_without_changing_source(tmp_path: Path) -> None:
