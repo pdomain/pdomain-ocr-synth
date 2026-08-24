@@ -1,17 +1,14 @@
 ---
-kind: handoff
-status: "active"
+kind: archive
+status: retired
+owner: "CT"
 created: "2026-08-24"
-created_at: "2026-08-24T13:06:47Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
-base_commit: cf07aee21f1dbeb9e55afbd1b2c85908688b9ad8
-supersedes: ""
+last_verified: "2026-08-24"
 ---
 
 # PGDP synthesis next steps
+
+> **Retired — superseded by `docs/handoff/2026-08-24-222343-pgdp-synthesis-version-decision.md`.**
 
 ## Goal
 
