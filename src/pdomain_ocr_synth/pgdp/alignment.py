@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 from pathlib import Path
+from stat import S_ISREG
 from typing import TYPE_CHECKING
 
 from pydantic import TypeAdapter, ValidationError
@@ -240,10 +241,15 @@ def _align_profile_page(
     if image_path is None:
         diagnostics = ()
         if path_diagnostic is not None:
+            message = (
+                "Could not resolve a permitted scan candidate for this page."
+                if path_diagnostic == "scan_resolution_failed"
+                else "Profile source_path is not a permitted scan candidate for this page."
+            )
             diagnostics = (
                 AlignmentDiagnostic(
                     path_diagnostic,
-                    "Profile source_path is not a permitted scan candidate for this page.",
+                    message,
                     project_id,
                     measurement.page_name,
                 ),
@@ -371,18 +377,30 @@ def _resolve_scan(
         reference = require_canonical_relative_reference(value=source_path, label="source_path")
     except ValueError:
         return None, "source_path_mismatch"
-    path = (root / reference).resolve()
-    if not path.is_file() or not path.is_relative_to(root):
+    try:
+        path = (root / reference).resolve()
+        path_status = path.stat()
+    except FileNotFoundError:
         return None, "source_path_mismatch"
-    project_directory = _project_directory(root, project_id)
-    resolution = resolve_image_candidate(
-        project_directory=project_directory,
-        page_name=page_name,
-        corpus_root=root,
-    )
+    except (OSError, RuntimeError):
+        return None, "scan_resolution_failed"
+    if not S_ISREG(path_status.st_mode) or not path.is_relative_to(root):
+        return None, "source_path_mismatch"
+    try:
+        project_directory = _project_directory(root, project_id)
+        resolution = resolve_image_candidate(
+            project_directory=project_directory,
+            page_name=page_name,
+            corpus_root=root,
+        )
+    except (OSError, RuntimeError, ValueError):
+        return None, "scan_resolution_failed"
     if resolution.image_path is None:
         return None, None
-    expected_path = corpus_relative_path(path=resolution.image_path, corpus_root=root)
+    try:
+        expected_path = corpus_relative_path(path=resolution.image_path, corpus_root=root)
+    except (OSError, RuntimeError, ValueError):
+        return None, "scan_resolution_failed"
     if source_path != expected_path:
         return None, "source_path_mismatch"
     return resolution.image_path, None

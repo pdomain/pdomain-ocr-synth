@@ -18,6 +18,11 @@ from pdomain_ocr_synth.cli import main
 from pdomain_ocr_synth.pgdp import alignment
 from pdomain_ocr_synth.pgdp.alignment import build_alignment_report
 from pdomain_ocr_synth.pgdp.image_measurement import open_image_snapshot
+from pdomain_ocr_synth.pgdp.paths import (
+    ImageResolution,
+    resolve_image_candidate,
+    resolve_project_directory,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -194,29 +199,83 @@ def test_build_alignment_report_rejects_profile_scan_paths_outside_page_candidat
 
 def test_build_alignment_report_sorts_unordered_profile_projects(tmp_path: Path) -> None:
     corpus_root, profile_path = build_alignment_fixture(tmp_path)
-    first_project = corpus_root / "projectIDone"
-    second_project = corpus_root / "projectIDtwo"
-    _ = copytree(first_project, second_project)
-    payload = _read_profile_payload(profile_path)
-    first = _profile_project(payload)
-    second = deepcopy(first)
-    second["project_id"] = "projectIDtwo"
-    second_pages = second.get("pages")
-    if not _is_json_list(second_pages):
-        raise AssertionError("Expected profile pages.")
-    for page in second_pages:
-        if not _is_json_object(page):
-            raise AssertionError("Expected profile page object.")
-        source_path = page.get("source_path")
-        if not isinstance(source_path, str):
-            raise AssertionError("Expected profile source_path.")
-        page["source_path"] = source_path.replace("projectIDone", "projectIDtwo")
-    payload["projects"] = [second, first]
-    _ = profile_path.write_text(json.dumps(payload), encoding="utf-8")
+    _add_second_project_to_profile(corpus_root, profile_path)
 
     report = build_alignment_report(corpus_root, profile_path, tool_version=__version__)
 
     assert [project.project_id for project in report.projects] == ["projectIDone", "projectIDtwo"]
+
+
+def test_build_alignment_report_continues_when_one_project_disappears_after_f2_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus_root, profile_path = build_alignment_fixture(tmp_path)
+    _add_second_project_to_profile(corpus_root, profile_path)
+    project_one_checks = 0
+
+    def project_directory_then_disappear(root: Path, project_id: str) -> Path:
+        nonlocal project_one_checks
+        if project_id == "projectIDone":
+            project_one_checks += 1
+            if project_one_checks > 1:
+                raise ValueError("Project directory disappeared after F2 snapshot.")
+        return resolve_project_directory(corpus_root=root, project_id=project_id)
+
+    monkeypatch.setattr(alignment, "_project_directory", project_directory_then_disappear)
+
+    report = build_alignment_report(corpus_root, profile_path, tool_version=__version__)
+
+    assert [project.project_id for project in report.projects] == ["projectIDone", "projectIDtwo"]
+    assert all(page.exclusions == ("image_missing",) for page in report.projects[0].pages)
+    assert all(page.exclusions != ("image_missing",) for page in report.projects[1].pages)
+    assert all(
+        page.diagnostics[0].code == "scan_resolution_failed" for page in report.projects[0].pages
+    )
+
+
+def test_build_alignment_report_excludes_candidate_that_moves_outside_corpus_during_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus_root, profile_path = build_alignment_fixture(tmp_path)
+    outside_scan = tmp_path / "outside.png"
+    _write_line_page(outside_scan)
+
+    def resolve_then_move_candidate(
+        *, project_directory: Path, page_name: str, corpus_root: Path
+    ) -> ImageResolution:
+        resolution = resolve_image_candidate(
+            project_directory=project_directory,
+            page_name=page_name,
+            corpus_root=corpus_root,
+        )
+        if page_name == "p2.png" and resolution.image_path is not None:
+            resolution.image_path.unlink()
+            _ = resolution.image_path.symlink_to(outside_scan)
+        return resolution
+
+    monkeypatch.setattr(alignment, "resolve_image_candidate", resolve_then_move_candidate)
+
+    report = build_alignment_report(corpus_root, profile_path, tool_version=__version__)
+
+    page = report.projects[0].pages[0]
+    assert page.exclusions == ("image_missing",)
+    assert page.diagnostics[0].code == "scan_resolution_failed"
+
+
+def test_build_alignment_report_continues_after_a_scan_symlink_loop(tmp_path: Path) -> None:
+    corpus_root, profile_path = build_alignment_fixture(tmp_path)
+    _add_second_project_to_profile(corpus_root, profile_path)
+    looping_scan = corpus_root / "projectIDone" / "p2.png"
+    looping_scan.unlink()
+    _ = looping_scan.symlink_to("p2.png")
+
+    report = build_alignment_report(corpus_root, profile_path, tool_version=__version__)
+
+    first_page = next(page for page in report.projects[0].pages if page.page_name == "p2.png")
+    second_page = next(page for page in report.projects[1].pages if page.page_name == "p2.png")
+    assert first_page.exclusions == ("image_missing",)
+    assert first_page.diagnostics[0].code == "scan_resolution_failed"
+    assert second_page.exclusions != ("image_missing",)
 
 
 def test_build_alignment_report_excludes_profile_pages_absent_from_f2(tmp_path: Path) -> None:
@@ -312,6 +371,28 @@ def _profile_project(payload: object) -> dict[str, object]:
 
 def _read_profile_payload(path: Path) -> dict[str, object]:
     return _PROFILE_PAYLOAD_ADAPTER.validate_json(path.read_bytes())
+
+
+def _add_second_project_to_profile(corpus_root: Path, profile_path: Path) -> None:
+    first_project = corpus_root / "projectIDone"
+    second_project = corpus_root / "projectIDtwo"
+    _ = copytree(first_project, second_project)
+    payload = _read_profile_payload(profile_path)
+    first = _profile_project(payload)
+    second = deepcopy(first)
+    second["project_id"] = "projectIDtwo"
+    second_pages = second.get("pages")
+    if not _is_json_list(second_pages):
+        raise AssertionError("Expected profile pages.")
+    for page in second_pages:
+        if not _is_json_object(page):
+            raise AssertionError("Expected profile page object.")
+        source_path = page.get("source_path")
+        if not isinstance(source_path, str):
+            raise AssertionError("Expected profile source_path.")
+        page["source_path"] = source_path.replace("projectIDone", "projectIDtwo")
+    payload["projects"] = [second, first]
+    _ = profile_path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
