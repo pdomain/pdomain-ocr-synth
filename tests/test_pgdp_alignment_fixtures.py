@@ -134,7 +134,7 @@ def run_alignment_case(case: AlignmentCase) -> AlignmentResult:
         raise ValueError(f"Fixture image path escapes the fixture root: {case.image_path}")
     fixture_bytes = image_path.read_bytes()
     fixture_sha256 = sha256(fixture_bytes).hexdigest()
-    if fixture_sha256 != case.fixture_sha256 or fixture_sha256 != case.source_sha256:
+    if fixture_sha256 != case.fixture_sha256:
         raise ValueError(f"Fixture hash mismatch: {case.case_id}")
     source_page = tokenize_f2_pages({case.page_name: case.f2_text}).pages[0]
     with open_image_snapshot(image_path) as snapshot:
@@ -149,6 +149,8 @@ def run_alignment_case(case: AlignmentCase) -> AlignmentResult:
                 InkBand(y_start=band.y_start, y_end=band.y_end) for band in measurement.ink_bands
             ),
         )
+    if extraction.source_sha256 != case.fixture_sha256:
+        raise ValueError(f"Fixture extraction hash mismatch: {case.case_id}")
     return align_sequences(
         source_page.lines,
         extraction.candidates,
@@ -187,6 +189,8 @@ def test_manifest_is_strict_and_reviewed_on_the_declared_date() -> None:
         "zeta-illustration",
     ]
     assert all(case.reviewed_on == "2026-08-24" for case in cases)
+    assert all(case.source_sha256 != case.fixture_sha256 for case in cases)
+    assert len({case.project_id for case in cases if case.accepted}) >= 3
     assert all(len(box) == 4 for case in cases for box in case.expected_candidates)
 
 
