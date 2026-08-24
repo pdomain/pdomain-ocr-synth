@@ -178,6 +178,41 @@
     "JsonValue": {},
     "PageAlignmentInput": {
       "additionalProperties": true,
+      "oneOf": [
+        {
+          "properties": {
+            "f2_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "f2_sha256"
+          ],
+          "title": "Available F2 source"
+        },
+        {
+          "properties": {
+            "f2_sha256": {
+              "type": "null"
+            },
+            "state": {
+              "const": "excluded"
+            },
+            "exclusions": {
+              "contains": {
+                "const": "f2_missing"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "f2_sha256",
+            "state",
+            "exclusions"
+          ],
+          "title": "Unavailable F2 source"
+        }
+      ],
       "properties": {
         "page_name": {
           "minLength": 1,

@@ -8,7 +8,7 @@ from collections.abc import Mapping as RuntimeMapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -604,6 +604,10 @@ class PageAlignment:
         _ = _require_bool(self.accepted, name="accepted")
         if self.accepted != (self.state == "accepted"):
             raise ValueError("accepted must exactly match the accepted state.")
+        if self.f2_sha256 is None and (
+            self.state != "excluded" or "f2_missing" not in self.exclusions
+        ):
+            raise ValueError("f2_sha256 can be null only for an excluded page with f2_missing.")
         if self.confidence is not None or self.confidence_kind != CONFIDENCE_KIND:
             raise ValueError("Alignment confidence must be null and uncalibrated in version 1.")
         object.__setattr__(self, "extensions", _normalized_mapping(self.extensions))
@@ -1111,6 +1115,29 @@ class CoordinateFrameInput(_WireModel):
 
 
 class PageAlignmentInput(_WireModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "oneOf": [
+                {
+                    "title": "Available F2 source",
+                    "properties": {"f2_sha256": {"type": "string"}},
+                    "required": ["f2_sha256"],
+                },
+                {
+                    "title": "Unavailable F2 source",
+                    "properties": {
+                        "f2_sha256": {"type": "null"},
+                        "state": {"const": "excluded"},
+                        "exclusions": {
+                            "type": "array",
+                            "contains": {"const": "f2_missing"},
+                        },
+                    },
+                    "required": ["f2_sha256", "state", "exclusions"],
+                },
+            ]
+        }
+    )
     page_name: StrictStr = Field(min_length=1)
     f2_sha256: StrictStr | None
     scan_sha256: StrictStr | None = None
@@ -1152,6 +1179,14 @@ class PageAlignmentInput(_WireModel):
                 "diagnostics",
             ),
         )
+
+    @model_validator(mode="after")
+    def _validate_unavailable_f2_hash(self) -> Self:
+        if self.f2_sha256 is None and (
+            self.state != "excluded" or "f2_missing" not in self.exclusions
+        ):
+            raise ValueError("f2_sha256 can be null only for an excluded page with f2_missing.")
+        return self
 
     def to_domain(self) -> PageAlignment:
         return PageAlignment(

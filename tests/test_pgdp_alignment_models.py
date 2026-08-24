@@ -113,11 +113,70 @@ def test_alignment_report_round_trips_a_null_unavailable_f2_hash() -> None:
     payload = make_report().to_dict()
     page = payload["projects"][0]["pages"][0]
     page["f2_sha256"] = None
+    page["state"] = "excluded"
+    page["accepted"] = False
+    page["exclusions"] = ["f2_missing"]
 
     report = AlignmentReport.from_dict(payload)
 
     assert report.projects[0].pages[0].f2_sha256 is None
     assert report.to_dict()["projects"][0]["pages"][0]["f2_sha256"] is None
+
+
+@pytest.mark.parametrize(
+    ("state", "accepted", "exclusions"),
+    [
+        ("accepted", True, ()),
+        ("proposed", False, ()),
+        ("excluded", False, ("image_missing",)),
+    ],
+)
+def test_page_rejects_null_f2_hash_without_an_unavailable_f2_exclusion(
+    state: str, accepted: bool, exclusions: tuple[str, ...]
+) -> None:
+    page = make_report().projects[0].pages[0]
+
+    with pytest.raises(ValueError, match="f2_sha256"):
+        _ = replace(
+            page,
+            f2_sha256=None,
+            state=state,
+            accepted=accepted,
+            exclusions=exclusions,
+        )
+
+
+def test_alignment_report_rejects_null_f2_hash_without_an_unavailable_f2_exclusion() -> None:
+    payload = make_report().to_dict()
+    payload["projects"][0]["pages"][0]["f2_sha256"] = None
+
+    with pytest.raises(ValueError, match="f2_sha256"):
+        _ = AlignmentReport.from_dict(payload)
+
+
+def test_alignment_schema_limits_null_f2_hash_to_excluded_f2_missing_pages() -> None:
+    schema = json.loads(AlignmentReport.json_schema())
+    page_schema = schema["$defs"]["PageAlignmentInput"]
+
+    assert page_schema["oneOf"] == [
+        {
+            "title": "Available F2 source",
+            "properties": {"f2_sha256": {"type": "string"}},
+            "required": ["f2_sha256"],
+        },
+        {
+            "title": "Unavailable F2 source",
+            "properties": {
+                "f2_sha256": {"type": "null"},
+                "state": {"const": "excluded"},
+                "exclusions": {
+                    "type": "array",
+                    "contains": {"const": "f2_missing"},
+                },
+            },
+            "required": ["f2_sha256", "state", "exclusions"],
+        },
+    ]
 
 
 def test_alignment_report_round_trips_additive_v1_values_without_inventing_defaults() -> None:
