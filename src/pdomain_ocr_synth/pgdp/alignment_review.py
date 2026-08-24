@@ -6,6 +6,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from enum import StrEnum
+from hashlib import file_digest
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -417,8 +418,13 @@ def render_alignment_overlay(
     output = _validated_output_path(output_path, corpus_root=corpus_root)
     if output == scan or (output.exists() and output.samefile(scan)):
         raise ValueError("Overlay output must not resolve to the scan path.")
-    with Image.open(scan) as source:
-        overlay = source.convert("RGB")
+    with scan.open("rb") as scan_file:
+        scan_digest = file_digest(scan_file, "sha256").hexdigest()
+        if page_alignment.scan_sha256 is None or scan_digest != page_alignment.scan_sha256:
+            raise ValueError("Overlay scan bytes must match page_alignment.scan_sha256.")
+        _ = scan_file.seek(0)
+        with Image.open(scan_file) as source:
+            overlay = source.convert("RGB")
     if page_alignment.source_frame is not None and overlay.size != (
         page_alignment.source_frame.width,
         page_alignment.source_frame.height,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from hashlib import sha256 as hashlib_sha256
 from pathlib import Path
 
 import pytest
@@ -163,10 +164,14 @@ def _two_match_page() -> PageAlignment:
     )
 
 
+def _with_scan_hash(page: PageAlignment, scan_path: Path) -> PageAlignment:
+    return replace(page, scan_sha256=hashlib_sha256(scan_path.read_bytes()).hexdigest())
+
+
 def test_overlay_is_source_sized_and_report_is_unchanged(tmp_path: Path) -> None:
     scan_path = tmp_path / "scan.png"
     Image.new("L", (80, 60), color=255).save(scan_path)
-    page = _page()
+    page = _with_scan_hash(_page(), scan_path)
     before = page.to_dict()
 
     overlay = render_alignment_overlay(scan_path, page, tmp_path / "overlay.png")
@@ -184,9 +189,27 @@ def test_overlay_marks_proposed_matches_amber(tmp_path: Path) -> None:
     scan_path = tmp_path / "scan.png"
     Image.new("RGB", (80, 60), color="white").save(scan_path)
 
-    overlay = render_alignment_overlay(scan_path, _page(accepted=False), tmp_path / "overlay.png")
+    overlay = render_alignment_overlay(
+        scan_path,
+        _with_scan_hash(_page(accepted=False), scan_path),
+        tmp_path / "overlay.png",
+    )
 
     assert overlay.getpixel((20, 10)) == (224, 160, 0)
+
+
+def test_overlay_rejects_same_sized_scan_hash_mismatch_without_writes(tmp_path: Path) -> None:
+    scan_path = tmp_path / "scan.png"
+    output_path = tmp_path / "overlay.png"
+    Image.new("RGB", (80, 60), color="white").save(scan_path)
+    scan_bytes = scan_path.read_bytes()
+    _ = output_path.write_bytes(b"previous overlay")
+
+    with pytest.raises(ValueError, match="scan_sha256"):
+        _ = render_alignment_overlay(scan_path, _page(), output_path)
+
+    assert scan_path.read_bytes() == scan_bytes
+    assert output_path.read_bytes() == b"previous overlay"
 
 
 def test_overlay_rejects_scan_as_output_without_changing_source(tmp_path: Path) -> None:
@@ -232,7 +255,7 @@ def test_overlay_keeps_existing_output_when_atomic_replace_fails(
     monkeypatch.setattr(Path, "replace", interrupted_replace)
 
     with pytest.raises(OSError, match="replace interrupted"):
-        _ = render_alignment_overlay(scan_path, _page(), output_path)
+        _ = render_alignment_overlay(scan_path, _with_scan_hash(_page(), scan_path), output_path)
 
     assert output_path.read_bytes() == b"previous overlay"
     assert tuple(tmp_path.glob(".overlay.png.*.png")) == ()
