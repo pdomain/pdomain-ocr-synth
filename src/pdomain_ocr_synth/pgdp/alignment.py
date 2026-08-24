@@ -56,6 +56,7 @@ if TYPE_CHECKING:
         SourceLine,
         StyleRun,
     )
+    from pdomain_ocr_synth.pgdp.profile_models import ProjectProfile
 
 
 _F2_PAGES_ADAPTER = TypeAdapter(dict[str, str])
@@ -91,16 +92,25 @@ def build_alignment_report(
     for project in sorted(
         profile_report.projects, key=lambda project: natural_page_key(project.project_id)
     ):
+        f2_bytes: bytes | None = None
         try:
             project_directory = _project_directory(root, project.project_id)
             f2_path = project_directory / "rounds" / "F2.json"
-            f2_bytes, tokenized_pages = _read_tokenized_f2(f2_path)
+            f2_bytes = _read_f2_bytes(f2_path)
+            tokenized_pages = _tokenize_f2_bytes(f2_bytes)
         except ValueError as error:
             diagnostics.append(
                 AlignmentDiagnostic(
                     code="malformed_f2",
                     message=str(error),
                     project_id=project.project_id,
+                )
+            )
+            projects.append(
+                _f2_unavailable_project(
+                    project=project,
+                    message=str(error),
+                    f2_bytes=f2_bytes,
                 )
             )
             continue
@@ -159,6 +169,51 @@ def build_alignment_report(
     )
 
 
+def _f2_unavailable_project(
+    *,
+    project: ProjectProfile,
+    message: str,
+    f2_bytes: bytes | None,
+) -> ProjectAlignment:
+    """Retain selected profile pages when their project F2 source is unusable."""
+
+    f2_sha256 = sha256(b"" if f2_bytes is None else f2_bytes).hexdigest()
+    project_diagnostic = AlignmentDiagnostic(
+        code="malformed_f2",
+        message=message,
+        project_id=project.project_id,
+    )
+    pages = tuple(
+        _excluded_page(
+            page_name=measurement.page_name,
+            f2_sha256=f2_sha256,
+            scan_sha256=measurement.sha256,
+            source_frame=measurement.source_frame,
+            exclusions=("f2_missing",),
+            diagnostics=(
+                AlignmentDiagnostic(
+                    code="malformed_f2",
+                    message=message,
+                    project_id=project.project_id,
+                    page_name=measurement.page_name,
+                ),
+            ),
+        )
+        for measurement in sorted(project.pages, key=lambda page: natural_page_key(page.page_name))
+    )
+    return ProjectAlignment(
+        project_id=project.project_id,
+        title=project.title,
+        author=project.author,
+        genre=project.genre,
+        pages=pages,
+        diagnostics=(
+            *(_profile_diagnostic(diagnostic) for diagnostic in project.diagnostics),
+            project_diagnostic,
+        ),
+    )
+
+
 def _read_profile(path: Path) -> bytes:
     try:
         return path.read_bytes()
@@ -185,15 +240,14 @@ def _read_f2_bytes(path: Path) -> bytes:
         raise ValueError("Could not read rounds/F2.json.") from error
 
 
-def _read_tokenized_f2(path: Path) -> tuple[bytes, tuple[TokenizedSourcePage, ...]]:
-    source = _read_f2_bytes(path)
+def _tokenize_f2_bytes(source: bytes) -> tuple[TokenizedSourcePage, ...]:
     try:
         pages = _F2_PAGES_ADAPTER.validate_json(source, strict=True)
     except ValidationError as error:
         raise ValueError(
             "Could not load rounds/F2.json as a string-to-string JSON object."
         ) from error
-    return source, tokenize_f2_pages(pages).pages
+    return tokenize_f2_pages(pages).pages
 
 
 def _align_profile_page(

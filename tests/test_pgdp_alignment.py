@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
-from shutil import copytree
+from shutil import copytree, rmtree
 from typing import TYPE_CHECKING
 
 import pytest
@@ -295,6 +296,44 @@ def test_build_alignment_report_excludes_profile_pages_absent_from_f2(tmp_path: 
         page for page in report.projects[0].pages if page.page_name == "missing.png"
     )
     assert missing_page.exclusions == ("f2_page_missing",)
+
+
+@pytest.mark.parametrize("failure", ["missing_project", "unreadable_f2", "malformed_f2"])
+def test_build_alignment_report_keeps_profile_pages_when_project_f2_is_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    corpus_root, profile_path = build_alignment_fixture(tmp_path)
+    project_directory = corpus_root / "projectIDone"
+    f2_path = project_directory / "rounds" / "F2.json"
+    if failure == "missing_project":
+        rmtree(project_directory)
+    elif failure == "unreadable_f2":
+        original_read_bytes = Path.read_bytes
+
+        def unreadable_f2(path: Path) -> bytes:
+            if path == f2_path:
+                raise OSError("F2.json cannot be read")
+            return original_read_bytes(path)
+
+        monkeypatch.setattr(Path, "read_bytes", unreadable_f2)
+    else:
+        _ = f2_path.write_text("{", encoding="utf-8")
+
+    report = build_alignment_report(corpus_root, profile_path, tool_version=__version__)
+
+    assert [project.project_id for project in report.projects] == ["projectIDone"]
+    pages = report.projects[0].pages
+    assert [page.page_name for page in pages] == ["p2.png", "p10.png"]
+    assert all(page.exclusions == ("f2_missing",) for page in pages)
+    assert all(
+        [(diagnostic.code, diagnostic.page_name) for diagnostic in page.diagnostics]
+        == [("malformed_f2", page.page_name)]
+        for page in pages
+    )
+    expected_f2_bytes = b"{" if failure == "malformed_f2" else b""
+    assert {page.f2_sha256 for page in pages} == {sha256(expected_f2_bytes).hexdigest()}
+    assert [diagnostic.code for diagnostic in report.projects[0].diagnostics] == ["malformed_f2"]
+    assert [diagnostic.code for diagnostic in report.diagnostics] == ["malformed_f2"]
 
 
 @pytest.mark.parametrize(
