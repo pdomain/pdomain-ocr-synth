@@ -21,16 +21,17 @@ root. Within each directory, it reads `project.json`, `pages.json`, and
 `rounds/F2.json`. It does not use a network service, large language model, OCR
 engine, or scan measurement.
 
-F2 loading losslessly preserves every decoded source body. The parser recognizes
-exact `/* */` local controls and `/# #/` continued controls in natural page
-order. Malformed, nested, overlapping, or unmatched controls produce stable
-diagnostics. An invalid body remains preserved as evidence, but it does not
-drive block-scoped content predicates. Source-wide illustration, decoration,
-and uncertainty markers can still contribute when they are present.
+F2 loading preserves every decoded source body without loss. The parser
+recognizes exact `/* */` local controls and `/# #/` continued controls. It
+processes them in natural page order. Malformed, nested, overlapping, or
+unmatched controls produce stable diagnostics. An invalid body remains
+preserved as evidence, but it does not drive block-scoped content predicates.
+Source-wide illustration, decoration, and uncertainty markers can still
+contribute when they are present.
 
-Missing or malformed metadata produces diagnostics. Missing-image status
-remains recorded on the page where the available project and page data permit
-a record. The ranker checks image availability without decoding the image.
+Missing or malformed metadata produces diagnostics. When available project and
+page data permit a record, missing-image status remains recorded on the page.
+The ranker checks image availability without decoding the image.
 
 ## Page features produce explicit component scores
 
@@ -47,7 +48,7 @@ caps are:
 - An illustration or decoration contributes 4.
 - An uncertainty note contributes 2.
 
-Natural page ordering governs F2 parsing and page-score ties. This keeps page
+Natural page ordering governs F2 parsing and page-score ties. It keeps page
 names such as `2`, `10`, and their multipart forms in human reading order.
 Diagnostics and selected pages use their own stable deterministic ordering.
 
@@ -62,15 +63,16 @@ Page selection visits those five target groups in that fixed order. It selects
 an eligible page for each group, then fills remaining slots from the ranked
 page list. One page occupies one slot even when it matches several groups.
 
-The defaults return at most 50 projects and 12 pages per project. The immutable
-`pgdp-rank/v1` report records those limits, corpus counts, diagnostics, project
-and page scores, component scores, matched groups, and selected pages.
+By default, the command returns at most 50 projects and 12 pages per project.
+The immutable `pgdp-rank/v1` report records those limits, corpus counts,
+diagnostics, project and page scores, component scores, matched groups, and
+selected pages.
 
 ## Report output is deterministic and corpus-safe
 
-The report contains no absolute paths, timestamps, or host identifiers. It uses
-stable natural ordering and stable diagnostics. Serialization writes sorted,
-indented UTF-8 JSON followed by one newline.
+The report contains no absolute paths, timestamps, or host identifiers. It
+uses stable natural ordering and stable diagnostics. Serialization writes
+sorted, indented UTF-8 JSON followed by one newline.
 
 The writer replaces a sibling temporary file atomically. It refuses an output
 path inside the corpus, so report generation cannot modify corpus contents.

@@ -22,9 +22,9 @@ work begins. Corpus references resolve only through safe relative paths. The
 profiler snapshots and hashes the original ranking bytes and the original bytes
 of each available selected scan. A missing scan has a `null` SHA-256 value.
 
-The profiler handles one full-resolution page at a time. It copies source bytes
-into bounded temporary-file spooling before decoding them. It does not apply
-EXIF orientation, so dimensions, bounds, margins, and bands all use source
+The profiler handles one full-resolution page at a time. Before decoding, it
+copies the source bytes into bounded temporary-file spooling. It does not apply
+EXIF orientation. Dimensions, bounds, margins, and bands therefore use source
 raster coordinates. Each successfully decoded page records its original-byte
 hash, decoded dimensions, image mode, and orientation metadata when present.
 
@@ -41,8 +41,8 @@ Foreground bounds use half-open coordinates. Four margins are derived from
 those bounds in the same source frame. Blank pages have no bounds or margins.
 
 The active-row threshold is the larger of two pixels and 0.5% of print width,
-rounded up. Runs separated by at most one inactive row join. Joined runs shorter
-than two rows are discarded.
+rounded up. Runs separated by at most one inactive row join. The profiler
+discards joined runs shorter than two rows.
 
 The report stores every retained raw ink band. It also derives median band
 height and median pitch between successive band tops. A one-band page
@@ -55,8 +55,8 @@ states its unit, coordinate frame, method, sample count, evidence, and
 exclusions. Confidence is `null`, and `confidence_kind` is `uncalibrated`.
 
 Project estimates pool eligible page values with the median and median absolute
-deviation. Pooling does not remove outliers. Exclusions are metric-specific, so
-a page can contribute to one estimate while remaining ineligible for another.
+deviation. Pooling does not remove outliers. Exclusions are metric-specific. A
+page can contribute to one estimate while remaining ineligible for another.
 
 Blank and corrupt pages contribute no numeric values to pooled estimates.
 Blank pages can retain raw observations such as zero foreground pixels and a
