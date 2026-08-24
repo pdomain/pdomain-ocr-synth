@@ -19,8 +19,8 @@ coordinates and keeps failures as evidence instead of numeric zeroes.
 
 A strict Pydantic boundary validates the complete ranking report before corpus
 work begins. Corpus references resolve only through safe relative paths. The
-profiler snapshots and hashes the original ranking bytes and each selected scan's
-original bytes.
+profiler snapshots and hashes the original ranking bytes and the original bytes
+of each available selected scan. A missing scan has a `null` SHA-256 value.
 
 The profiler handles one full-resolution page at a time. It copies source bytes
 into bounded temporary-file spooling before decoding them. It does not apply

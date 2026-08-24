@@ -25,7 +25,8 @@ F2 loading losslessly preserves every decoded source body. The parser recognizes
 exact `/* */` local controls and `/# #/` continued controls in natural page
 order. Malformed, nested, overlapping, or unmatched controls produce stable
 diagnostics. An invalid body remains preserved as evidence, but it does not
-drive content predicates.
+drive block-scoped content predicates. Source-wide illustration, decoration,
+and uncertainty markers can still contribute when they are present.
 
 Missing or malformed metadata produces diagnostics. Missing-image status
 remains recorded on the page where the available project and page data permit
