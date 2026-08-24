@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-07-14
-- **Provenance:** authored from all 32 evidence-backed migration analyzer records and current repository state
+- **Last verified:** 2026-08-24
+- **Provenance:** authored from all 32 evidence-backed migration analyzer records, current repository
+  state, and the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement
 - **Disposition:** Injected ground truth for active, deferred, blocked, rejected, and owner-dependent intent.
 
 This map preserves useful unbuilt work after separating shipped truth from old
@@ -15,6 +16,11 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Active
 
+- M15b source-line alignment: correct fragmented-band extraction on the fixed 25-page review set.
+  Keep the gates at 98% accepted-line precision, 70% eligible-page coverage, and zero accepted
+  declared-complex pages ([source-line alignment
+  plan](../plans/2026-08-23-pgdp-source-line-alignment.md), [ocr-container-meta issue
+  403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403)).
 - M11 preview UI: implement the localhost picker, sample grid, async rerender,
   transient overrides, manifest detail, and an explicit diff/save flow. Resolve
   the competing `pdomain_ocr_synth.ui` versus `preview` package names and decide
@@ -30,6 +36,11 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Deferred
 
+- Broad PGDP synthesis program: rectify pages and fit typography; add styled typography controls;
+  build a shared page graph and compositor for tables, columns, braces, and brackets; infer local
+  semantics such as poetry and blockquotes; and evaluate downstream OCR and structure quality
+  ([PGDP typography and structure synthesis
+  design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)).
 - Bootstrap: decide whether to add a physical `LICENSE` and whether contributor
   guidance needs `DEVELOPMENT.md` beyond current guidance
   (`docs/plans/00-bootstrap.md`).
@@ -111,6 +122,9 @@ evidence does not select them:
   `docs/plans/11-preview-ui-scoping.md`).
 
 ## Legacy-unverified sweep
+
+The 2026-08-24 PGDP migration promoted and retired the two implemented M14 ranking and M15a
+observed-geometry plans.
 
 All 32 analyzer records were classified from documents, source, tests, graph
 neighbors, and commits. The implemented development, recipe-schema,

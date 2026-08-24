@@ -8,7 +8,8 @@
 - **Created:** 2026-07-14
 - **Last verified:** 2026-08-24
 - **Provenance:** authored from repository evidence, the 2026-08-24 local PGDP alignment review,
-  earlier ranking and geometry-profile corpus runs, tests, plans, and CI
+  earlier ranking and geometry-profile corpus runs, tests, plans, CI, and the 2026-08-24 PGDP
+  architecture promotion and plan retirement
 - **Disposition:** Injected operational ground truth.
 
 M00-M10 are substantially shipped. The repository supports recipe discovery and
@@ -130,8 +131,12 @@ in [ocr-container-meta issue 403](https://github.com/ConcaveTrillion/ocr-contain
 [Development and recipe system](../architecture/development-and-recipe-system.md)
 records the shipped development, schema, loader, validation, and CLI contracts.
 [Output and publishing](../architecture/output-and-publishing.md) records local
-training layouts, determinism, resume, and publishing. Recipe authors should
-start with [Recipe workflow](../usage/recipe-workflow.md).
+training layouts, determinism, resume, and publishing. [PGDP ranking and review
+queue](../architecture/pgdp-ranking-and-review-queue.md) records M14's shipped
+corpus-ranking contract. [PGDP observed geometry
+profiling](../architecture/pgdp-observed-geometry-profiling.md) records M15a's
+shipped scan-measurement contract. Recipe authors should start with [Recipe
+workflow](../usage/recipe-workflow.md).
 
 ## In-flight milestones
 

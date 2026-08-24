@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-07-14
-- **Provenance:** authored from migration-time adversarial review, shipped code, tests, and commit history
+- **Last verified:** 2026-08-24
+- **Provenance:** authored from migration-time adversarial review, shipped code, tests, commit
+  history, and the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement
 - **Disposition:** Append-only durable decisions and lifecycle tombstones.
 
 ## 2026-07-14: Recipes remain the persistent configuration boundary
@@ -140,3 +141,30 @@ advertise those absent mechanisms. Evidence: the two registry modules,
   `git log --grep='^docs: migrate repository documentation to docgraph$'`).
 - Rationale kept: staging, auth, idempotency, tags, transport limits, and ImageFolder deviation are in the replacement architecture.
 - Remaining work: parquet sharding is deferred until scale requires it.
+
+### 2026-08-24 Retired: PGDP ranking and review queue implementation plan
+
+- Old path: `docs/plans/2026-08-22-pgdp-ranking-review-queue.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-ranking-and-review-queue.md`
+- Removal commit: the unique local commit with subject
+  `docs: retire implemented PGDP plans` (resolve with
+  `git log --grep='^docs: retire implemented PGDP plans$'`).
+- Rationale kept: shipped input, parsing, feature, scoring, selection, output, and boundary
+  contracts are in the replacement architecture.
+- Remaining work: the live broad PGDP design and M15 sequence remain in
+  `docs/specs/2026-08-22-pgdp-typography-structure-synthesis-design.md` and
+  `docs/context/intent-map.md`; none belongs to M14's completed scope.
+
+### 2026-08-24 Retired: PGDP observed geometry profiler implementation plan
+
+- Old path: `docs/plans/2026-08-22-pgdp-observed-geometry-profiler.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-observed-geometry-profiling.md`
+- Removal commit: the unique local commit with subject
+  `docs: retire implemented PGDP plans` (resolve with
+  `git log --grep='^docs: retire implemented PGDP plans$'`).
+- Rationale kept: shipped input, source-frame measurement, exclusion, pooling, report, and boundary
+  contracts are in the replacement architecture.
+- Remaining work: M15b and later measurement and synthesis milestones remain in
+  `docs/context/intent-map.md`; the observed-geometry slice itself has none.

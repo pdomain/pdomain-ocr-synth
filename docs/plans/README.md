@@ -6,9 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-08-22
+- **Last verified:** 2026-08-24
 - **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
-  and the 2026-08-22 PGDP geometry verification.
+  and the 2026-08-22 PGDP geometry verification, with the implemented M14 and M15a plans promoted
+  to current architecture during the 2026-08-24 docgraph migration.
 - **Disposition:** Retained as the current roadmap, including shipped PGDP milestones.
 
 ## Goal
@@ -40,7 +41,8 @@ tooling and feedback loops early** so every later milestone benefits from them.
 
 ## Milestones
 
-Archived plans are indexed from this roadmap when they remain useful.
+Current architecture and retained archived plans are indexed from this roadmap when they remain
+useful.
 
 | # | Milestone | Status | Goal | Outcome |
 |---|-----------|--------|------|---------|
@@ -57,8 +59,8 @@ Archived plans are indexed from this roadmap when they remain useful.
 | [10](10-stretch.md) | Stretch | partially done (extra recipes + cloud render remain) | Extra recipes, cloud render, polish | Opt-in follow-ups |
 | [11](11-preview-ui.md) | Preview UI | partial prerequisites (NiceGUI extra and backend preview primitives exist; UI unbuilt) | NiceGUI for visual recipe tuning | `pdomain-ocr-synth-preview --recipe gaelic` works |
 | [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
-| [14](2026-08-22-pgdp-ranking-review-queue.md) | PGDP discovery and review queue | first runnable slice shipped | Rank scan projects and pages from F2 evidence | Deterministic bounded multimodal review queue |
-| [15a](2026-08-22-pgdp-observed-geometry-profiler.md) | PGDP observed geometry profiler | implemented | Measure source-frame ink geometry from ranked scans | Versioned page and book observations |
+| [14](../architecture/pgdp-ranking-and-review-queue.md) | PGDP discovery and review queue | ✅ shipped; current architecture | Rank scan projects and pages from F2 evidence | Deterministic bounded multimodal review queue |
+| [15a](../architecture/pgdp-observed-geometry-profiling.md) | PGDP observed geometry profiler | ✅ shipped; current architecture | Measure source-frame ink geometry from ranked scans | Versioned page and book observations |
 | [15b](2026-08-23-pgdp-source-line-alignment.md) | PGDP source-line alignment | partial: implementation complete; corpus gate failed | Align F2 source lines with eligible single-column scan rows | Deterministic report shipped; fragmented-band extractor follow-up required |
 
 ## NiceGUI surface — preview first, explicit save
