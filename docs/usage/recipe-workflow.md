@@ -86,6 +86,36 @@ excluded pages with diagnostics. A completed measurement returns exit code 0
 even when diagnostics are present. Input errors return 2 and output errors
 return 6.
 
+## Align PGDP source lines with scan rows
+
+```bash
+pdomain-ocr-synth align-pgdp /path/to/pgdp-corpus \
+  --profile ./pgdp-profile.json \
+  --output ./pgdp-alignment.json
+```
+
+`align-pgdp` reads F2 source and the scans referenced by a
+`pgdp-profile/v1` report. It writes a deterministic `pgdp-alignment/v1` report.
+The output must be outside the corpus root, differ from the profile input, and
+name a file rather than a directory. Source or scan changes remain explicit
+exclusions instead of being silently realigned.
+
+The report keeps UTF-8 source byte spans, normalized visible text, formatting
+spans, source-frame candidate boxes, monotone alignment operations, costs,
+residuals, and exclusion evidence. Accepted alignments require a single-column
+page and four to 80 nonblank source lines eligible for matching. Matched
+operations must cover at least 90 percent of those lines. Normalized cost must
+be at most 0.22, and uniqueness margin at least 0.15. Confidence is always null
+with `confidence_kind` set to `uncalibrated` in version 1.
+
+Exclusions cover missing or changed inputs, malformed F2 controls, unusable ink
+bands, implausible line counts, persistent gutters, probable columns, tables,
+illustrations, borders, and high foreground ratios. An excluded or proposed page
+is evidence for review, not an accepted mapping. Candidate boxes remain in the
+original scan frame. The command does not infer baselines, reading order across
+columns, typography, font identity, semantics, rotation, or dewarping, and it
+does not use OCR output as verification.
+
 ## Validate and render
 
 ```bash

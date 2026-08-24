@@ -3,11 +3,11 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** draft
+- **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-08-23
-- **Last verified:** 2026-08-23
-- **Provenance:** derived from the M15b source-line alignment design and shipped M14/M15a code
+- **Last verified:** 2026-08-24
+- **Provenance:** implementation, tests, and the 2026-08-24 five-book corpus review
 - **Disposition:** Active executable plan for the second M15 scan-measurement slice.
 - **Read when:** implementing or reviewing conservative PGDP source-line alignment.
 - **Search terms:** PGDP, M15b, F2 tokenizer, line candidate, gutter, dynamic programming, alignment.
@@ -757,7 +757,7 @@ git commit -m "test: add reviewed PGDP alignment fixtures"
 - Modify: `docs/plans/README.md`
 - Modify: `docs/plans/2026-08-23-pgdp-source-line-alignment.md`
 
-- [ ] **Step 1: Write failing overlay tests**
+- [x] **Step 1: Write failing overlay tests**
 
 Require an RGB overlay that preserves source dimensions, draws each candidate box, labels matched
 source ordinals, distinguishes skipped candidates, and never changes the alignment report.
@@ -770,7 +770,7 @@ def test_overlay_is_source_sized_and_report_is_unchanged(tmp_path: Path) -> None
     assert report_path.read_bytes() == before
 ```
 
-- [ ] **Step 2: Implement the review-only overlay helper**
+- [x] **Step 2: Implement the review-only overlay helper**
 
 Add `render_alignment_overlay(scan_path, page_alignment, output_path) -> Image.Image`. Draw accepted
 matches in green, rejected matches in amber, skipped image candidates in red, and source ordinals in
@@ -781,7 +781,7 @@ Run: `uv run pytest tests/test_pgdp_alignment_review.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 3: Generate two bounded real-corpus reports**
+- [x] **Step 3: Generate two bounded real-corpus reports**
 
 Use a temporary directory outside the corpus. First create or reuse an M15a profile bounded to at
 least 20 reviewable pages and five books, then run:
@@ -798,7 +798,7 @@ cmp /tmp/pgdp-m15b-alignment-a.json /tmp/pgdp-m15b-alignment-b.json
 
 Expected: both commands exit 0 and `cmp` reports no difference.
 
-- [ ] **Step 4: Complete the precision and coverage review**
+- [x] **Step 4: Complete the precision and coverage review**
 
 Review at least 20 pages, 400 source lines, and five books. Include indented prose, italic, bold,
 small-cap, poetry, and quotation pages. Include excluded columns, tables, rules, covers,
@@ -816,7 +816,8 @@ gates. Compute eligible-page coverage as accepted eligible pages divided by all 
 separately and never count them as eligible or accepted.
 
 Use this exhaustive version-1 mapping. `declared_complex` contains `probable_multi_column`,
-`table_like`, `illustration_marker`, `border_dominated`, and `high_foreground_ratio`.
+`persistent_gutter`, `table_like`, `illustration_marker`, `border_dominated`, and
+`high_foreground_ratio`.
 `unavailable_or_malformed` contains `f2_missing`, `page_missing`, `image_missing`,
 `image_unreadable`, `image_decode_failed`, `profile_page_missing`,
 `foreground_bounds_unavailable`, `insufficient_ink_bands`, `blank_page`,
@@ -835,14 +836,14 @@ Pass only when accepted-line precision is at least 98 percent, eligible-page cov
 If a gate fails, leave this plan `partial`, record the exact counts, and open a threshold or
 extractor follow-up. Do not weaken a gate in the same review run.
 
-- [ ] **Step 5: Document the command and verified result**
+- [x] **Step 5: Document the command and verified result**
 
 Add the exact CLI example, wire-version description, exclusions, and interpretation limits to
 `docs/usage/recipe-workflow.md`. Update current state and the M15b roadmap row with measured counts,
 precision, coverage, deterministic replay, and residual risks. Mark this plan `implemented` only if
 all gates pass.
 
-- [ ] **Step 6: Run complete verification**
+- [x] **Step 6: Run complete verification**
 
 Run: `uv run pytest tests/test_pgdp_alignment_review.py tests/test_pgdp_alignment_fixtures.py -q`
 
@@ -856,7 +857,7 @@ Run: `docgraph reindex && docgraph check --strict && git diff --check`
 
 Expected: docgraph reports no new blocking issue and `git diff --check` exits 0.
 
-- [ ] **Step 7: Commit the verified milestone record**
+- [x] **Step 7: Commit the verified milestone record**
 
 ```bash
 git add src/pdomain_ocr_synth/pgdp/alignment_review.py tests/test_pgdp_alignment_review.py docs/usage/recipe-workflow.md docs/context/current-state.md docs/plans/README.md docs/plans/2026-08-23-pgdp-source-line-alignment.md
@@ -872,12 +873,40 @@ focused test. Then rerun `make ci AI=1`, deterministic corpus replay, the visual
 Do not start M15c in this branch. The handoff must state that rotation, dewarping, rectified frames,
 baselines, multi-column reading order, OCR verification, and font fitting remain unimplemented.
 
+## Corpus review result
+
+Two balanced runs over 25 pages from five books were byte-identical. Their report SHA-256 was
+`2d71eb3bef6ac953c82b9e581ffa92dc77436f90f592a6952a4ec27a232eb107`. The report contained 1,681
+raw source-line records. The review ledger covered all 1,107 operation rows across prose,
+indentation, poetry-like text, italics, bold, small capitals, quotations, columns, tables, rules, a
+cover, an illustration, and malformed source.
+
+All 25 pages were classified as unavailable or malformed before alignment. There were zero
+declared complex, source-changed, or eligible pages under the required priority mapping. No line
+was accepted, so accepted-line precision and eligible-page coverage were undefined. The
+zero-complex-acceptance gate passed, but the 98 percent precision and 70 percent coverage gates did
+not.
+
+The confusion ledger covered all 1,107 operation rows and had SHA-256
+`54fd9f18b508e20afb57fec9f3db1415111307747cd9751db22104ca5c56ad8b`. Visual inspection found
+that `fragmented_band` incorrectly excluded 12 pages and 359 rows that otherwise appeared
+alignable. The remaining 13 pages and 748 rows were correctly kept out as complex, malformed, or
+too short. This plan therefore remains partial. A separate extractor follow-up must rerun the fixed
+selection against the unchanged quality gates. That work is tracked in
+[ocr-container-meta issue 403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403).
+
 ## Adversarial Review
 
-- **Stage and source:** Pending pre-implementation review with the M15b design, current M14/M15a
-  code, and plan commands as evidence.
-- **Accepted findings:** None yet.
-- **Effect on this document:** No implementation has started.
-- **Residual risks:** The first reviewed corpus run may show that conservative eligibility has less
-  than 70 percent coverage. That result must remain visible rather than being hidden by threshold
-  changes.
+- **Stage and source:** Per-task specification and quality reviews used the M15b design, this plan,
+  implementation diffs, focused tests, and real-corpus evidence.
+- **Accepted findings:** Candidate extraction now measures persistent-gutter coverage over its full
+  vertical extent. Wire validation rejects invalid operation references and inconsistent review
+  ledgers. Overlay rendering verifies the scan hash and cannot overwrite its source. Missing,
+  unreadable, or malformed project F2 retains every selected page as an explicit exclusion. An
+  unavailable F2 hash is null only on an excluded `f2_missing` page. The declared-complex mapping
+  now includes `persistent_gutter`.
+- **Effect on this document:** Implementation work is complete, but the milestone stays
+  partial because the corpus precision and coverage gates did not pass.
+- **Residual risks:** Fragmented-band detection rejects visually alignable single-column pages.
+  Until that extractor is corrected and the fixed review set passes, alignment confidence remains
+  uncalibrated and eligible-page coverage is undefined.

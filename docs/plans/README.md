@@ -59,7 +59,7 @@ Archived plans are indexed from this roadmap when they remain useful.
 | [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
 | [14](2026-08-22-pgdp-ranking-review-queue.md) | PGDP discovery and review queue | first runnable slice shipped | Rank scan projects and pages from F2 evidence | Deterministic bounded multimodal review queue |
 | [15a](2026-08-22-pgdp-observed-geometry-profiler.md) | PGDP observed geometry profiler | implemented | Measure source-frame ink geometry from ranked scans | Versioned page and book observations |
-| [15b](2026-08-23-pgdp-source-line-alignment.md) | PGDP source-line alignment | planned | Align F2 source lines with eligible single-column scan rows | Versioned, conservative source-frame alignment evidence |
+| [15b](2026-08-23-pgdp-source-line-alignment.md) | PGDP source-line alignment | partial: implementation complete; corpus gate failed | Align F2 source lines with eligible single-column scan rows | Deterministic report shipped; fragmented-band extractor follow-up required |
 
 ## NiceGUI surface — preview first, explicit save
 

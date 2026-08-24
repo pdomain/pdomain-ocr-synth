@@ -6,9 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-08-22
-- **Provenance:** authored from repository evidence, the 2026-08-22 local PGDP ranking and
-  geometry-profile corpus runs, tests, plans, and CI
+- **Last verified:** 2026-08-24
+- **Provenance:** authored from repository evidence, the 2026-08-24 local PGDP alignment review,
+  earlier ranking and geometry-profile corpus runs, tests, plans, and CI
 - **Disposition:** Injected operational ground truth.
 
 M00-M10 are substantially shipped. The repository supports recipe discovery and
@@ -26,6 +26,15 @@ M15's first runnable slice is shipped. The local-only `profile-pgdp` command
 reads an M14 review queue and measures source-frame foreground bounds, margins,
 horizontal ink bands, and pooled pixel estimates. It does not rectify scans or
 claim alignment, baselines, columns, semantics, or fonts.
+
+M15b's implementation is complete, but its corpus quality gate did not pass.
+The local-only `align-pgdp` command writes deterministic `pgdp-alignment/v1`
+reports. A balanced review of 25 pages from five books covered 1,107 operation
+rows. All 25 pages were excluded before alignment, so accepted-line precision
+and eligible-page coverage were undefined. Visual review found that the
+`fragmented_band` exclusion incorrectly rejected 12 otherwise alignable pages
+and 359 reviewed rows. The required 98 percent precision and 70 percent coverage
+thresholds remain unchanged while the extractor is corrected.
 
 ## PGDP ranking verification
 
@@ -82,6 +91,39 @@ The reviewed fixture suite covers clean text-like rows, noise, borders, EXIF
 orientation, and blank pages. Clean and oriented source bounds have zero edge
 error. Matched ink bands have mean one-dimensional IoU 1.0. Border and blank
 fixtures retain the expected `border_dominated` and `blank_page` exclusions.
+
+## PGDP source-line alignment verification
+
+Two balanced `align-pgdp` runs over the same 25 pages from five books produced
+byte-identical reports with SHA-256
+`2d71eb3bef6ac953c82b9e581ffa92dc77436f90f592a6952a4ec27a232eb107`.
+The selection included prose, indentation, poetry-like text, italics, bold,
+small capitals, quotations, columns, tables, rules, a cover, an illustration,
+and malformed source.
+
+The report contained 1,681 source lines and 1,107 operation rows, with no
+accepted alignment. The page reconciliation was 25 unavailable or malformed,
+zero declared complex, zero source changed, and zero eligible. Accepted-line
+precision and eligible-page coverage were therefore undefined, not zero. No
+declared complex page was accepted.
+
+The dominant exclusions were 23 `fragmented_band` and 23
+`line_count_difference_exceeds_maximum`. The report also contained six
+`line_count_out_of_range`, five `table_like`, four `malformed_control`, four
+`persistent_gutter`, four `probable_multi_column`, one `illustration_marker`,
+and one `insufficient_ink_bands` exclusion. Twenty-four normalized path costs
+were 1.0 and one was 1.3333333333333333. All 25 uniqueness margins were 0.0.
+Width and indentation residuals were unavailable because no match operation
+survived. Confidence remains null and uncalibrated.
+
+Visual review classified 12 pages and 359 operation rows as incorrectly
+excluded by `fragmented_band`. The other 13 pages and 748 rows were
+conservatively excluded as complex, malformed, or too short. The reviewed ledger
+had SHA-256
+`54fd9f18b508e20afb57fec9f3db1415111307747cd9751db22104ca5c56ad8b`.
+The milestone remains partial until a separate extractor change passes the
+original quality gates on a fixed review selection. The correction is tracked
+in [ocr-container-meta issue 403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403).
 
 ## Current architecture
 
