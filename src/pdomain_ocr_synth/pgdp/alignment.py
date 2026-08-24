@@ -32,7 +32,11 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
 from pdomain_ocr_synth.pgdp.alignment_source import TokenizedSourcePage, tokenize_f2_pages
 from pdomain_ocr_synth.pgdp.image_measurement import open_image_snapshot, sha256_file
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
-from pdomain_ocr_synth.pgdp.paths import require_canonical_relative_reference
+from pdomain_ocr_synth.pgdp.paths import (
+    corpus_relative_path,
+    require_canonical_relative_reference,
+    resolve_image_candidate,
+)
 from pdomain_ocr_synth.pgdp.profile_models import (
     CoordinateFrame,
     PageMeasurement,
@@ -83,7 +87,9 @@ def build_alignment_report(
     profile_report = ProfileReport.from_json(profile_bytes)
     projects: list[ProjectAlignment] = []
     diagnostics: list[AlignmentDiagnostic] = []
-    for project in profile_report.projects:
+    for project in sorted(
+        profile_report.projects, key=lambda project: natural_page_key(project.project_id)
+    ):
         try:
             project_directory = _project_directory(root, project.project_id)
             f2_path = project_directory / "rounds" / "F2.json"
@@ -225,8 +231,23 @@ def _align_profile_page(
             source_page=source_page,
             exclusions=("foreground_bounds_unavailable",),
         )
-    image_path = _resolve_scan(root, measurement.source_path)
+    image_path, path_diagnostic = _resolve_scan(
+        root,
+        project_id=project_id,
+        page_name=measurement.page_name,
+        source_path=measurement.source_path,
+    )
     if image_path is None:
+        diagnostics = ()
+        if path_diagnostic is not None:
+            diagnostics = (
+                AlignmentDiagnostic(
+                    path_diagnostic,
+                    "Profile source_path is not a permitted scan candidate for this page.",
+                    project_id,
+                    measurement.page_name,
+                ),
+            )
         return _excluded_page(
             page_name=measurement.page_name,
             f2_sha256=f2_sha256,
@@ -234,11 +255,16 @@ def _align_profile_page(
             source_frame=measurement.source_frame,
             source_page=source_page,
             exclusions=("image_missing",),
+            diagnostics=diagnostics,
         )
+    foreground_bounds = _foreground_bounds(measurement)
+    snapshot_sha256: str | None = None
+    provisional: PageAlignment | None = None
     try:
         with open_image_snapshot(image_path) as snapshot:
+            snapshot_sha256 = snapshot.sha256
             if measurement.sha256 != snapshot.sha256:
-                return _excluded_page(
+                provisional = _excluded_page(
                     page_name=measurement.page_name,
                     f2_sha256=f2_sha256,
                     scan_sha256=snapshot.sha256,
@@ -246,17 +272,73 @@ def _align_profile_page(
                     source_page=source_page,
                     exclusions=("scan_hash_mismatch",),
                 )
-            extraction = extract_line_candidates(
-                snapshot,
-                source_frame=measurement.source_frame,
-                foreground_bounds=_foreground_bounds(measurement),
-                ink_bands=measurement.ink_bands,
-            )
+            elif foreground_bounds is None:
+                provisional = _excluded_page(
+                    page_name=measurement.page_name,
+                    f2_sha256=f2_sha256,
+                    scan_sha256=snapshot.sha256,
+                    source_frame=measurement.source_frame,
+                    source_page=source_page,
+                    exclusions=("foreground_bounds_unavailable",),
+                )
+            else:
+                try:
+                    extraction = extract_line_candidates(
+                        snapshot,
+                        source_frame=measurement.source_frame,
+                        foreground_bounds=foreground_bounds,
+                        ink_bands=measurement.ink_bands,
+                    )
+                    result = align_sequences(
+                        source_page.lines,
+                        extraction.candidates,
+                        foreground_bounds=foreground_bounds,
+                        inherited_exclusions=extraction.exclusions,
+                        probable_multi_column=extraction.probable_multi_column,
+                        source_page=source_page,
+                    )
+                    provisional = _result_page(
+                        page_name=measurement.page_name,
+                        f2_sha256=f2_sha256,
+                        scan_sha256=snapshot.sha256,
+                        source_frame=measurement.source_frame,
+                        source_page=source_page,
+                        extraction=extraction,
+                        result=result,
+                    )
+                except (ValueError, RuntimeError) as error:
+                    provisional = _excluded_page(
+                        page_name=measurement.page_name,
+                        f2_sha256=f2_sha256,
+                        scan_sha256=snapshot.sha256,
+                        source_frame=measurement.source_frame,
+                        source_page=source_page,
+                        exclusions=("image_unreadable",),
+                        diagnostics=(
+                            AlignmentDiagnostic(
+                                "image_unreadable", str(error), project_id, measurement.page_name
+                            ),
+                        ),
+                    )
     except (OSError, ValueError, RuntimeError) as error:
-        return _excluded_page(
+        if snapshot_sha256 is None:
+            return _excluded_page(
+                page_name=measurement.page_name,
+                f2_sha256=f2_sha256,
+                scan_sha256=measurement.sha256,
+                source_frame=measurement.source_frame,
+                source_page=source_page,
+                exclusions=("image_unreadable",),
+                diagnostics=(
+                    AlignmentDiagnostic(
+                        "image_unreadable", str(error), project_id, measurement.page_name
+                    ),
+                ),
+            )
+        provisional = _excluded_page(
             page_name=measurement.page_name,
             f2_sha256=f2_sha256,
-            scan_sha256=measurement.sha256,
+            scan_sha256=snapshot_sha256,
             source_frame=measurement.source_frame,
             source_page=source_page,
             exclusions=("image_unreadable",),
@@ -267,54 +349,43 @@ def _align_profile_page(
             ),
         )
     try:
-        scan_changed = sha256_file(image_path) != extraction.source_sha256
+        source_changed = sha256_file(image_path) != snapshot_sha256
     except OSError:
-        scan_changed = True
-    if scan_changed:
+        source_changed = True
+    if source_changed:
         return _excluded_page(
             page_name=measurement.page_name,
             f2_sha256=f2_sha256,
-            scan_sha256=extraction.source_sha256,
+            scan_sha256=snapshot_sha256,
             source_frame=measurement.source_frame,
             source_page=source_page,
             exclusions=("source_changed",),
         )
-    foreground_bounds = _foreground_bounds(measurement)
-    if foreground_bounds is None:
-        return _excluded_page(
-            page_name=measurement.page_name,
-            f2_sha256=f2_sha256,
-            scan_sha256=extraction.source_sha256,
-            source_frame=measurement.source_frame,
-            source_page=source_page,
-            exclusions=("foreground_bounds_unavailable",),
-        )
-    result = align_sequences(
-        source_page.lines,
-        extraction.candidates,
-        foreground_bounds=foreground_bounds,
-        inherited_exclusions=extraction.exclusions,
-        probable_multi_column=extraction.probable_multi_column,
-        source_page=source_page,
-    )
-    return _result_page(
-        page_name=measurement.page_name,
-        f2_sha256=f2_sha256,
-        scan_sha256=extraction.source_sha256,
-        source_frame=measurement.source_frame,
-        source_page=source_page,
-        extraction=extraction,
-        result=result,
-    )
+    return provisional
 
 
-def _resolve_scan(root: Path, source_path: str) -> Path | None:
+def _resolve_scan(
+    root: Path, *, project_id: str, page_name: str, source_path: str
+) -> tuple[Path | None, str | None]:
     try:
         reference = require_canonical_relative_reference(value=source_path, label="source_path")
     except ValueError:
-        return None
+        return None, "source_path_mismatch"
     path = (root / reference).resolve()
-    return path if path.is_file() and path.is_relative_to(root) else None
+    if not path.is_file() or not path.is_relative_to(root):
+        return None, "source_path_mismatch"
+    project_directory = _project_directory(root, project_id)
+    resolution = resolve_image_candidate(
+        project_directory=project_directory,
+        page_name=page_name,
+        corpus_root=root,
+    )
+    if resolution.image_path is None:
+        return None, None
+    expected_path = corpus_relative_path(path=resolution.image_path, corpus_root=root)
+    if source_path != expected_path:
+        return None, "source_path_mismatch"
+    return resolution.image_path, None
 
 
 def _foreground_bounds(measurement: PageMeasurement) -> tuple[int, int, int, int] | None:
