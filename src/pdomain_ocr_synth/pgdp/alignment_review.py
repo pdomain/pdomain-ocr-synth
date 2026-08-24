@@ -6,6 +6,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from enum import StrEnum
+from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -153,18 +154,21 @@ class ReviewCounts:
     eligible: int
 
     def __post_init__(self) -> None:
-        values = (
+        values: tuple[object, ...] = (
             self.selected_total,
             self.declared_complex,
             self.unavailable_or_malformed,
             self.source_changed,
             self.eligible,
         )
-        if any(
-            isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in values
+        for value in values:
+            _validate_nonnegative_integer(value, name="Review counts")
+        if self.selected_total != (
+            self.declared_complex
+            + self.unavailable_or_malformed
+            + self.source_changed
+            + self.eligible
         ):
-            raise ValueError("Review counts must be nonnegative integers.")
-        if self.selected_total != sum(values[1:]):
             raise ValueError("selected_total must equal the four disjoint review counts.")
 
 
@@ -176,6 +180,36 @@ class ReviewLedger:
     references: tuple[ReviewPage, ...]
     classifications: tuple[PageClassification, ...]
     reviewed_lines: tuple[ReviewedLine, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "pages", tuple(self.pages))
+        object.__setattr__(self, "references", tuple(self.references))
+        object.__setattr__(self, "classifications", tuple(self.classifications))
+        object.__setattr__(self, "reviewed_lines", tuple(self.reviewed_lines))
+        if not len(self.pages) == len(self.references) == len(self.classifications):
+            raise ValueError(
+                "Ledger pages, references, and classifications must have equal counts."
+            )
+        if len(set(self.references)) != len(self.references):
+            raise ValueError("Ledger references must not repeat a project/page identity.")
+
+        available: dict[ReviewPage, PageAlignment] = {}
+        for page, reference, classification in zip(
+            self.pages,
+            self.references,
+            self.classifications,
+            strict=True,
+        ):
+            if page.page_name != reference.page_name:
+                raise ValueError("Ledger page names must match their review references.")
+            if classification != classify_page(page):
+                raise ValueError("Ledger classifications must match their report pages.")
+            available[reference] = page
+        _validate_reviewed_lines(
+            self.reviewed_lines,
+            available,
+            frozenset(self.references),
+        )
 
     @classmethod
     def from_report(
@@ -246,6 +280,44 @@ class ReviewSummary:
     uniqueness_margins: tuple[float, ...]
     confidence: None = None
     confidence_kind: Literal["uncalibrated"] = "uncalibrated"
+
+    def __post_init__(self) -> None:
+        _validate_optional_proportion(
+            self.accepted_line_precision,
+            name="accepted_line_precision",
+        )
+        _validate_optional_proportion(
+            self.eligible_page_coverage,
+            name="eligible_page_coverage",
+        )
+        _validate_nonnegative_integer(
+            self.declared_complex_accepted,
+            name="declared_complex_accepted",
+        )
+        if self.declared_complex_accepted > self.counts.declared_complex:
+            raise ValueError("declared_complex_accepted cannot exceed declared_complex pages.")
+
+        object.__setattr__(self, "normalized_costs", tuple(self.normalized_costs))
+        object.__setattr__(self, "width_residuals", tuple(self.width_residuals))
+        object.__setattr__(self, "indentation_residuals", tuple(self.indentation_residuals))
+        object.__setattr__(self, "uniqueness_margins", tuple(self.uniqueness_margins))
+        distributions = (
+            self.normalized_costs,
+            self.width_residuals,
+            self.indentation_residuals,
+            self.uniqueness_margins,
+        )
+        if any(len(values) != self.counts.selected_total for values in distributions):
+            raise ValueError("Review metric distributions must each match selected_total.")
+        _validate_nonnegative_distribution(self.normalized_costs, name="normalized_costs")
+        _validate_optional_nonnegative_distribution(self.width_residuals, name="width_residuals")
+        _validate_optional_nonnegative_distribution(
+            self.indentation_residuals,
+            name="indentation_residuals",
+        )
+        _validate_nonnegative_distribution(self.uniqueness_margins, name="uniqueness_margins")
+        if self.confidence is not None or self.confidence_kind != "uncalibrated":
+            raise ValueError("Review confidence must be null and uncalibrated.")
 
 
 def classify_page(page: PageAlignment) -> PageClassification:
@@ -343,6 +415,8 @@ def render_alignment_overlay(
     if not scan.is_file():
         raise ValueError(f"Overlay scan path must name a regular file: {scan!s}.")
     output = _validated_output_path(output_path, corpus_root=corpus_root)
+    if output == scan or (output.exists() and output.samefile(scan)):
+        raise ValueError("Overlay output must not resolve to the scan path.")
     with Image.open(scan) as source:
         overlay = source.convert("RGB")
     if page_alignment.source_frame is not None and overlay.size != (
@@ -369,14 +443,49 @@ def render_alignment_overlay(
     return overlay
 
 
-def _validate_ordinal(value: int | None, *, name: str) -> None:
+def _validate_ordinal(value: object, *, name: str) -> None:
     if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
         raise ValueError(f"{name} must be a nonnegative integer or null.")
 
 
-def _validate_identity(value: str, *, name: str) -> None:
+def _validate_identity(value: object, *, name: str) -> None:
     if not isinstance(value, str) or not value:
         raise ValueError(f"{name} must be a nonempty string.")
+
+
+def _validate_finite(value: object, *, name: str) -> float | int:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be a number.")
+    if not isfinite(value):
+        raise ValueError(f"{name} must be finite.")
+    return value
+
+
+def _validate_nonnegative_integer(value: object, *, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{name} must be a nonnegative integer.")
+
+
+def _validate_optional_proportion(value: float | None, *, name: str) -> None:
+    if value is None:
+        return
+    numeric = _validate_finite(value, name=name)
+    if not 0.0 <= numeric <= 1.0:
+        raise ValueError(f"{name} must be in [0, 1] or null.")
+
+
+def _validate_nonnegative_distribution(values: tuple[float, ...], *, name: str) -> None:
+    for value in values:
+        if _validate_finite(value, name=name) < 0.0:
+            raise ValueError(f"{name} must contain only nonnegative values.")
+
+
+def _validate_optional_nonnegative_distribution(
+    values: tuple[float | None, ...], *, name: str
+) -> None:
+    for value in values:
+        if value is not None and _validate_finite(value, name=name) < 0.0:
+            raise ValueError(f"{name} must contain only nonnegative values or null.")
 
 
 def _report_pages(report: AlignmentReport) -> dict[ReviewPage, PageAlignment]:

@@ -22,6 +22,7 @@ from pdomain_ocr_synth.pgdp.alignment_review import (
     ReviewCounts,
     ReviewedLine,
     ReviewGateFailure,
+    ReviewLedger,
     ReviewPage,
     classify_page,
     render_alignment_overlay,
@@ -188,6 +189,19 @@ def test_overlay_marks_proposed_matches_amber(tmp_path: Path) -> None:
     assert overlay.getpixel((20, 10)) == (224, 160, 0)
 
 
+def test_overlay_rejects_scan_as_output_without_changing_source(tmp_path: Path) -> None:
+    scan_path = tmp_path / "scan.png"
+    output_path = tmp_path / "overlay.png"
+    Image.new("RGB", (80, 60), color="white").save(scan_path)
+    output_path.symlink_to(scan_path)
+    source_bytes = scan_path.read_bytes()
+
+    with pytest.raises(ValueError, match="scan path"):
+        _ = render_alignment_overlay(scan_path, _page(), output_path)
+
+    assert scan_path.read_bytes() == source_bytes
+
+
 def test_overlay_rejects_output_inside_supplied_corpus_root(tmp_path: Path) -> None:
     corpus_root = tmp_path / "corpus"
     corpus_root.mkdir()
@@ -295,6 +309,52 @@ def test_review_counts_rejects_nonexhaustive_identity() -> None:
             unavailable_or_malformed=1,
             source_changed=1,
             eligible=0,
+        )
+
+
+def test_direct_review_ledger_rejects_mismatched_record_counts() -> None:
+    with pytest.raises(ValueError):
+        _ = ReviewLedger(
+            pages=(_page(),),
+            references=(),
+            classifications=(),
+            reviewed_lines=(),
+        )
+
+
+def test_direct_review_ledger_rejects_page_reference_mismatch() -> None:
+    page = _page()
+
+    with pytest.raises(ValueError):
+        _ = ReviewLedger(
+            pages=(page,),
+            references=(ReviewPage("book", "wrong.png"),),
+            classifications=(classify_page(page),),
+            reviewed_lines=(),
+        )
+
+
+def test_direct_review_ledger_rejects_classification_mismatch() -> None:
+    page = _page()
+
+    with pytest.raises(ValueError):
+        _ = ReviewLedger(
+            pages=(page,),
+            references=(ReviewPage("book", "p1.png"),),
+            classifications=(classify_page(_page(accepted=False, exclusions=("table_like",))),),
+            reviewed_lines=(),
+        )
+
+
+def test_direct_review_ledger_rejects_review_operation_mismatch() -> None:
+    page = _page()
+
+    with pytest.raises(ValueError):
+        _ = ReviewLedger(
+            pages=(page,),
+            references=(ReviewPage("book", "p1.png"),),
+            classifications=(classify_page(page),),
+            reviewed_lines=(ReviewedLine("book", "p1.png", 0, 0, "match", 0, 1, "correct"),),
         )
 
 
@@ -436,8 +496,20 @@ def test_review_gate_enforces_exact_thresholds(
     failures: tuple[ReviewGateFailure, ...],
 ) -> None:
     summary = summarize_review(_report(_page()), ())
+    counts = (
+        summary.counts
+        if complex_accepted == 0
+        else ReviewCounts(
+            selected_total=1,
+            declared_complex=1,
+            unavailable_or_malformed=0,
+            source_changed=0,
+            eligible=0,
+        )
+    )
     threshold_summary = replace(
         summary,
+        counts=counts,
         accepted_line_precision=precision,
         eligible_page_coverage=coverage,
         declared_complex_accepted=complex_accepted,
@@ -447,3 +519,54 @@ def test_review_gate_enforces_exact_thresholds(
 
     assert result.passed is passed
     assert result.failures == failures
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -0.01, 1.01])
+def test_review_summary_rejects_invalid_precision(value: float) -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="accepted_line_precision"):
+        _ = replace(summary, accepted_line_precision=value)
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("-inf"), -0.01, 1.01])
+def test_review_summary_rejects_invalid_coverage(value: float) -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="eligible_page_coverage"):
+        _ = replace(summary, eligible_page_coverage=value)
+
+
+def test_review_summary_rejects_invalid_complex_accepted_count() -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="declared_complex_accepted"):
+        _ = replace(summary, declared_complex_accepted=-1)
+
+
+def test_review_summary_rejects_invalid_normalized_costs() -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="normalized_costs"):
+        _ = replace(summary, normalized_costs=(float("nan"),))
+
+
+def test_review_summary_rejects_invalid_width_residuals() -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="width_residuals"):
+        _ = replace(summary, width_residuals=(float("inf"),))
+
+
+def test_review_summary_rejects_invalid_indentation_residuals() -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="indentation_residuals"):
+        _ = replace(summary, indentation_residuals=(-0.1,))
+
+
+def test_review_summary_rejects_distribution_length_mismatch() -> None:
+    summary = summarize_review(_report(_page()), ())
+
+    with pytest.raises(ValueError, match="selected_total"):
+        _ = replace(summary, uniqueness_margins=())
