@@ -185,8 +185,15 @@
           "type": "string"
         },
         "f2_sha256": {
-          "title": "F2 Sha256",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "F2 Sha256"
         },
         "scan_sha256": {
           "anyOf": [

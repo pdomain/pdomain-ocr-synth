@@ -177,7 +177,7 @@ def _f2_unavailable_project(
 ) -> ProjectAlignment:
     """Retain selected profile pages when their project F2 source is unusable."""
 
-    f2_sha256 = sha256(b"" if f2_bytes is None else f2_bytes).hexdigest()
+    f2_sha256 = None if f2_bytes is None else sha256(f2_bytes).hexdigest()
     project_diagnostic = AlignmentDiagnostic(
         code="malformed_f2",
         message=message,
@@ -521,7 +521,7 @@ def _source_changed(page: PageAlignment) -> PageAlignment:
 def _excluded_page(
     *,
     page_name: str,
-    f2_sha256: str,
+    f2_sha256: str | None,
     scan_sha256: str | None,
     source_frame: CoordinateFrame | None = None,
     source_page: TokenizedSourcePage | None = None,

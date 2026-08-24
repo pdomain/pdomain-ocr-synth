@@ -109,6 +109,17 @@ def test_alignment_report_keeps_uncalibrated_confidence_and_sorted_mappings() ->
     assert page["source_frame"] == {"name": "source", "width": 100, "height": 200}
 
 
+def test_alignment_report_round_trips_a_null_unavailable_f2_hash() -> None:
+    payload = make_report().to_dict()
+    page = payload["projects"][0]["pages"][0]
+    page["f2_sha256"] = None
+
+    report = AlignmentReport.from_dict(payload)
+
+    assert report.projects[0].pages[0].f2_sha256 is None
+    assert report.to_dict()["projects"][0]["pages"][0]["f2_sha256"] is None
+
+
 def test_alignment_report_round_trips_additive_v1_values_without_inventing_defaults() -> None:
     payload = make_report().to_dict()
     payload["future_report"] = {"array": [1, {"nested": True}]}

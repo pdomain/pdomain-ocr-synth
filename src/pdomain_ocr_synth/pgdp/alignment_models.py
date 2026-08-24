@@ -514,7 +514,7 @@ class PageAlignment:
     """All immutable alignment evidence and assessment for one source page."""
 
     page_name: str
-    f2_sha256: str
+    f2_sha256: str | None
     scan_sha256: str | None
     source_frame: CoordinateFrame | None
     source_lines: tuple[WireSourceLine, ...]
@@ -541,7 +541,8 @@ class PageAlignment:
 
     def __post_init__(self) -> None:
         _ = _require_string(self.page_name, name="Page name", nonempty=True)
-        _require_sha256(self.f2_sha256, name="f2_sha256")
+        if self.f2_sha256 is not None:
+            _require_sha256(self.f2_sha256, name="f2_sha256")
         if self.scan_sha256 is not None:
             _require_sha256(self.scan_sha256, name="scan_sha256")
         if self.source_frame is not None and not isinstance(self.source_frame, CoordinateFrame):
@@ -1111,7 +1112,7 @@ class CoordinateFrameInput(_WireModel):
 
 class PageAlignmentInput(_WireModel):
     page_name: StrictStr = Field(min_length=1)
-    f2_sha256: StrictStr
+    f2_sha256: StrictStr | None
     scan_sha256: StrictStr | None = None
     source_frame: CoordinateFrameInput | None = None
     source_lines: tuple[WireSourceLineInput, ...]

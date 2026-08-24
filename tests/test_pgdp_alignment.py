@@ -330,10 +330,21 @@ def test_build_alignment_report_keeps_profile_pages_when_project_f2_is_unavailab
         == [("malformed_f2", page.page_name)]
         for page in pages
     )
-    expected_f2_bytes = b"{" if failure == "malformed_f2" else b""
-    assert {page.f2_sha256 for page in pages} == {sha256(expected_f2_bytes).hexdigest()}
+    expected_f2_sha256 = sha256(b"{").hexdigest() if failure == "malformed_f2" else None
+    assert {page.f2_sha256 for page in pages} == {expected_f2_sha256}
     assert [diagnostic.code for diagnostic in report.projects[0].diagnostics] == ["malformed_f2"]
     assert [diagnostic.code for diagnostic in report.diagnostics] == ["malformed_f2"]
+
+
+def test_build_alignment_report_keeps_available_f2_hash(tmp_path: Path) -> None:
+    corpus_root, profile_path = build_alignment_fixture(tmp_path)
+    f2_path = corpus_root / "projectIDone" / "rounds" / "F2.json"
+
+    report = build_alignment_report(corpus_root, profile_path, tool_version=__version__)
+
+    assert {page.f2_sha256 for page in report.projects[0].pages} == {
+        sha256(f2_path.read_bytes()).hexdigest()
+    }
 
 
 @pytest.mark.parametrize(
