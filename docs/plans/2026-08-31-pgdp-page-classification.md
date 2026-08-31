@@ -114,19 +114,19 @@ Expected: PASS.
 - Modify: `src/pdomain_ocr_synth/pgdp/profiling.py`
 - Modify: `tests/test_pgdp_profiling.py`
 
-- [ ] **Step 1: Write failing tests for the book statistic**
+- [x] **Step 1: Write failing tests for the book statistic**
 
 Cover a book whose pages share a first-band position, one whose pages scatter, and one with a single
 page. Assert the median first-band `y_start` and its median absolute deviation, and assert that
 pages with no ink band are excluded from both.
 
-- [ ] **Step 2: Run the focused test and confirm it fails**
+- [x] **Step 2: Run the focused test and confirm it fails**
 
 Run: `uv run pytest tests/test_pgdp_profiling.py -q`
 
 Expected: FAIL on the missing statistic.
 
-- [ ] **Step 3: Implement the statistic**
+- [x] **Step 3: Implement the statistic**
 
 Reuse the existing `median-mad/v1` method. Emit `first_band_top_px` and `first_band_mad_px` as
 pooled book estimates alongside the current margins and band pitch.
@@ -134,7 +134,7 @@ pooled book estimates alongside the current margins and band pitch.
 Pool over every page Task 1 measured, not only the pages the report emits. A book statistic fitted
 on five ranked pages is not a book statistic.
 
-- [ ] **Step 4: Confirm the focused test passes**
+- [x] **Step 4: Confirm the focused test passes**
 
 Run: `uv run pytest tests/test_pgdp_profiling.py -q`
 

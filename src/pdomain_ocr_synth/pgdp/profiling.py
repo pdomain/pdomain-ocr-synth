@@ -38,6 +38,7 @@ MetricName = Literal[
     "margin_bottom_px",
     "median_band_height_px",
     "median_band_top_pitch_px",
+    "first_band_top_px",
 ]
 
 _METRIC_NAMES: tuple[MetricName, ...] = (
@@ -47,6 +48,7 @@ _METRIC_NAMES: tuple[MetricName, ...] = (
     "margin_bottom_px",
     "median_band_height_px",
     "median_band_top_pitch_px",
+    "first_band_top_px",
 )
 _MARGIN_INDEXES: dict[MetricName, int] = {
     "margin_left_px": 0,
@@ -294,6 +296,12 @@ def _metric_value_or_exclusion(page: PageMeasurement, name: MetricName) -> tuple
         if margin is None:
             return None, "foreground_bounds_unavailable"
         return float(margin), ""
+    if name == "first_band_top_px":
+        # Where a book's text block starts. Its deviation across a book says
+        # whether the book holds a stable type page at all.
+        if not page.ink_bands:
+            return None, "no_ink_bands"
+        return float(page.ink_bands[0].y_start), ""
     for estimate in page.derived_estimates:
         if estimate.name == name and estimate.value is not None:
             return estimate.value, ""

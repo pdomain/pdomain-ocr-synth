@@ -413,3 +413,82 @@ def _unavailable_page(page_name: str, diagnostic_code: str) -> PageMeasurement:
 
 def _diagnostic(code: str, page_name: str) -> ProfileDiagnostic:
     return ProfileDiagnostic(code=code, message=code, project_id="projectID1", page_name=page_name)
+
+
+def _page_with_bands(page_name: str, band_tops: tuple[int, ...]) -> PageMeasurement:
+    """Build a measured page whose ink bands start at the given tops."""
+
+    width, height = 100, 600
+    bands = tuple(InkBand(y_start=top, y_end=top + 8) for top in band_tops)
+    bounds = (10, band_tops[0], 90, band_tops[-1] + 8) if band_tops else None
+    margins = (
+        (bounds[0], bounds[1], width - bounds[2], height - bounds[3])
+        if bounds is not None
+        else None
+    )
+    return PageMeasurement(
+        page_name=page_name,
+        source_path=f"projectID1/{page_name}",
+        sha256="a" * 64,
+        source_frame=CoordinateFrame(width=width, height=height),
+        image_mode="L",
+        grayscale_threshold=127,
+        foreground_pixels=100 if band_tops else 0,
+        foreground_bounds=bounds,
+        margins=margins,
+        ink_bands=bands,
+        derived_estimates=(),
+        diagnostics=() if band_tops else (_diagnostic("blank_page", page_name),),
+    )
+
+
+def test_pool_first_band_top_reports_median_and_deviation() -> None:
+    pages = (
+        _page_with_bands("p1.png", (71, 130, 190)),
+        _page_with_bands("p2.png", (71, 130, 190)),
+        _page_with_bands("p3.png", (72, 131, 191)),
+        _page_with_bands("p4.png", (367, 420)),
+    )
+
+    estimate = pool_estimate("first_band_top_px", pages)
+
+    assert estimate.value == 71.5
+    assert estimate.sample_count == 4
+    assert estimate.unit == "px"
+    assert estimate.truth_class == "pooled"
+    assert estimate.extensions["median_absolute_deviation"] == 0.5
+
+
+def test_pool_first_band_top_excludes_pages_without_bands() -> None:
+    pages = (
+        _page_with_bands("p1.png", (71,)),
+        _page_with_bands("p2.png", ()),
+        _page_with_bands("p3.png", (73,)),
+    )
+
+    estimate = pool_estimate("first_band_top_px", pages)
+
+    assert estimate.value == 72.0
+    assert estimate.sample_count == 2
+    assert estimate.evidence_pages == ("p1.png", "p3.png")
+    assert estimate.exclusions == ("p2.png:blank_page",)
+
+
+def test_pool_first_band_top_handles_a_single_page() -> None:
+    estimate = pool_estimate("first_band_top_px", (_page_with_bands("p1.png", (71,)),))
+
+    assert estimate.value == 71.0
+    assert estimate.sample_count == 1
+    assert estimate.extensions["median_absolute_deviation"] == 0.0
+
+
+def test_scattered_book_reports_a_large_first_band_deviation() -> None:
+    pages = tuple(
+        _page_with_bands(f"p{index}.png", (top,))
+        for index, top in enumerate((60, 80, 100, 120, 140))
+    )
+
+    estimate = pool_estimate("first_band_top_px", pages)
+
+    assert estimate.value == 100.0
+    assert estimate.extensions["median_absolute_deviation"] == 20.0

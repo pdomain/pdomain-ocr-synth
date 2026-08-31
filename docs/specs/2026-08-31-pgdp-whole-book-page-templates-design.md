@@ -44,7 +44,9 @@ and carry the same running head. Two skip it and one does not.
 A letterpress book is set once. The type page holds its position across the whole volume, so a
 band's distance from the top of the page says what the band is.
 
-Measured against each book's modal first-band position:
+Measured against each book's modal first-band position. The classifier uses the median rather
+than the mode. The two agree on every book that qualifies, and differ only where no template is
+fitted:
 
 | book | pages | head y | within 2px | recto/verso shift | measure | sunk pages |
 |---|---|---|---|---|---|---|
