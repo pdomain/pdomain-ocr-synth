@@ -27,6 +27,7 @@ RejectionReason = Literal[
     "long_horizontal_rule",
     "minor_ink_cluster",
     "page_border",
+    "speck_band",
 ]
 
 ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
@@ -42,6 +43,8 @@ ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
     "merge_horizontally_overlapping_clusters": True,
     "fragmented_band_minor_ink_share": 0.02,
     "fragmented_band_maximum_rate": 0.35,
+    "candidate_box_mode": "dominant",
+    "speck_band_minimum_ink_share": 0.05,
     "gutter_minimum_width_ratio": 0.03,
     "gutter_minimum_vertical_coverage_ratio": 0.6,
 }
@@ -55,6 +58,9 @@ _JOIN_MAXIMUM_CENTER_DISTANCE_TENTHS = 12
 _JOIN_MAXIMUM_HORIZONTAL_GAP_MEDIAN_HEIGHT_FACTOR = 2
 _FRAGMENTED_BAND_MINOR_INK_PERCENT = 2
 _FRAGMENTED_BAND_MAXIMUM_RATE_PERCENT = 35
+_SPECK_BAND_MINIMUM_INK_PERCENT = 5
+_CANDIDATE_BOX_MODE = "dominant"
+_DROP_SPECK_BANDS = True
 _GUTTER_MINIMUM_WIDTH_PERCENT = 3
 _GUTTER_MINIMUM_VERTICAL_COVERAGE_TENTHS = 6
 _PASSTHROUGH_DIAGNOSTICS = frozenset(
@@ -464,6 +470,7 @@ def _extract_band_candidates(
     candidates: list[LineCandidate] = []
     rejected: list[RejectedComponent] = []
     all_clusters: list[_Cluster] = []
+    measured: list[tuple[int, tuple[_Cluster, ...], tuple[_Cluster, ...]]] = []
     measured_bands = 0
     fragmented_bands = 0
     for band_ordinal, band in enumerate(ink_bands):
@@ -509,6 +516,26 @@ def _extract_band_candidates(
         )
         clusters = merge_horizontally_overlapping_clusters(join_components(components))
         counted, minor = drop_minor_ink_clusters(clusters)
+        measured.append((band_ordinal, counted, minor))
+
+    median_band_ink = (
+        median(sum(c.foreground_pixels for c in counted) for _, counted, _ in measured)
+        if measured
+        else 0.0
+    )
+    for band_ordinal, counted, minor in measured:
+        if _DROP_SPECK_BANDS and is_speck_band(counted, median_band_ink=median_band_ink):
+            rejected.extend(
+                RejectedComponent(
+                    reason="speck_band",
+                    box=cluster.box,
+                    foreground_pixels=cluster.foreground_pixels,
+                    band_ordinal=band_ordinal,
+                    component_ordinal=cluster.component_ordinal,
+                )
+                for cluster in tuple(counted) + tuple(minor)
+            )
+            continue
         all_clusters.extend(counted)
         rejected.extend(
             RejectedComponent(
@@ -533,7 +560,7 @@ def _extract_band_candidates(
                 )
                 for cluster in counted
             )
-        cluster = max(counted, key=lambda item: (item.foreground_pixels, -item.component_ordinal))
+        cluster = _band_candidate_cluster(counted, minor)
         candidate_mask = foreground[
             cluster.box[1] : cluster.box[3], cluster.box[0] : cluster.box[2]
         ]
@@ -541,20 +568,21 @@ def _extract_band_candidates(
             int(np.count_nonzero(candidate_mask[:, column_index]))
             for column_index in range(cluster.box[2] - cluster.box[0])
         )
+        ink = sum(column_counts)
+        if ink == 0:
+            continue
         candidates.append(
             LineCandidate(
                 band_ordinal=band_ordinal,
                 box=cluster.box,
                 component_ordinal=cluster.component_ordinal,
                 component_count=cluster.component_count,
-                foreground_pixels=cluster.foreground_pixels,
+                foreground_pixels=ink,
                 width=cluster.box[2] - cluster.box[0],
                 height=cluster.box[3] - cluster.box[1],
-                fill_ratio=cluster.foreground_pixels
+                fill_ratio=ink
                 / ((cluster.box[2] - cluster.box[0]) * (cluster.box[3] - cluster.box[1])),
-                horizontal_ink_profile=tuple(
-                    int(count) / cluster.foreground_pixels for count in column_counts
-                ),
+                horizontal_ink_profile=tuple(int(count) / ink for count in column_counts),
             )
         )
     candidates.sort(key=lambda item: (item.band_ordinal, item.box, item.component_ordinal))
@@ -619,6 +647,38 @@ def merge_horizontally_overlapping_clusters(
             key=lambda item: (item.box, item.component_ordinal),
         )
     )
+
+
+def _band_candidate_cluster(counted: Sequence[_Cluster], minor: Sequence[_Cluster]) -> _Cluster:
+    """Choose the cluster a band contributes as its line candidate.
+
+    `dominant` keeps only the cluster holding the most ink. It loses the rest of
+    a line that split at a wide sentence space. `union` spans every counted
+    cluster, which keeps that line whole. `union_all` also spans the minor-ink
+    clusters, pulling stray accents and punctuation back inside the line box.
+    """
+
+    if _CANDIDATE_BOX_MODE == "dominant":
+        return max(counted, key=lambda item: (item.foreground_pixels, -item.component_ordinal))
+    if _CANDIDATE_BOX_MODE == "union":
+        return _merge_clusters(tuple(counted))
+    if _CANDIDATE_BOX_MODE == "union_all":
+        return _merge_clusters(tuple(counted) + tuple(minor))
+    raise ValueError(f"Unsupported candidate box mode {_CANDIDATE_BOX_MODE!r}.")
+
+
+def is_speck_band(clusters: Sequence[_Cluster], *, median_band_ink: float) -> bool:
+    """Whether a band holds too little ink to be a text row.
+
+    A fleck of dust or a broken serif can occupy an ink band of its own. It then
+    becomes a line candidate that matches no source line, which leaves the
+    aligner several near-equal ways to place the real rows.
+    """
+
+    if median_band_ink <= 0:
+        return False
+    ink = sum(cluster.foreground_pixels for cluster in clusters)
+    return ink * 100 < median_band_ink * _SPECK_BAND_MINIMUM_INK_PERCENT
 
 
 def drop_minor_ink_clusters(

@@ -173,6 +173,7 @@ def test_extract_candidates_tolerates_one_fragmented_band_and_records_it(tmp_pat
     result = _extract(image_path)
 
     # One fragmented band out of three is a rate of 0.333, under the 0.35 limit.
+    # Band 1 keeps only its dominant cluster, which ends at x=59.
     assert result.exclusions == ()
     assert [candidate.box for candidate in result.candidates] == [
         (20, 20, 56, 25),
@@ -453,6 +454,8 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
         "merge_horizontally_overlapping_clusters": True,
         "fragmented_band_minor_ink_share": 0.02,
         "fragmented_band_maximum_rate": 0.35,
+        "candidate_box_mode": "dominant",
+        "speck_band_minimum_ink_share": 0.05,
         "gutter_minimum_width_ratio": 0.03,
         "gutter_minimum_vertical_coverage_ratio": 0.6,
     }
@@ -948,14 +951,66 @@ def test_extract_candidates_raises_no_fragmented_band_without_measured_bands(
     assert [item.reason for item in result.rejected] == ["empty_band", "empty_band"]
 
 
-def test_extract_candidates_takes_the_dominant_cluster_from_a_fragmented_band(
+@pytest.mark.parametrize(
+    ("mode", "expected_box", "expected_components"),
+    [
+        ("dominant", (20, 2, 41, 9), 1),
+        ("union", (20, 2, 90, 9), 2),
+        ("union_all", (20, 2, 90, 9), 2),
+    ],
+)
+def test_candidate_box_mode_controls_what_a_fragmented_band_contributes(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+    expected_box: tuple[int, int, int, int],
+    expected_components: int,
 ) -> None:
-    image_path = tmp_path / "dominant.png"
+    monkeypatch.setattr(alignment_image, "_CANDIDATE_BOX_MODE", mode)
+    image_path = tmp_path / f"{mode}.png"
     _page_with_fragmented_bands(10, 3).save(image_path)
 
     result = _extract_rows(image_path, 10)
 
-    # The wider left cluster holds more ink than the right one, so it wins.
-    assert result.candidates[0].box == (20, 2, 41, 9)
-    assert result.candidates[0].component_count == 1
+    # dominant keeps only the wider left cluster; the unions span the whole row.
+    assert result.candidates[0].box == expected_box
+    assert result.candidates[0].component_count == expected_components
+
+
+def test_candidate_box_mode_rejects_an_unknown_value(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(alignment_image, "_CANDIDATE_BOX_MODE", "nonsense")
+    image_path = tmp_path / "unknown-mode.png"
+    _page_with_fragmented_bands(10, 3).save(image_path)
+
+    with pytest.raises(ValueError, match="Unsupported candidate box mode"):
+        _ = _extract_rows(image_path, 10)
+
+
+def test_speck_band_is_dropped_before_it_becomes_a_candidate(tmp_path: Path) -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    image_path = tmp_path / "speck-band.png"
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    for y_start in (20, 60):
+        draw.rectangle((20, y_start + 2, 60, y_start + 8), fill=0)
+    draw.point((70, 42), fill=0)
+    image.save(image_path)
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=(10, 10, 90, 75),
+            ink_bands=(
+                InkBand(y_start=20, y_end=30),
+                InkBand(y_start=40, y_end=50),
+                InkBand(y_start=60, y_end=70),
+            ),
+        )
+
+    assert [candidate.band_ordinal for candidate in result.candidates] == [0, 2]
+    assert [item.reason for item in result.rejected] == ["speck_band"]
+    assert "fragmented_band" not in result.exclusions
