@@ -48,6 +48,50 @@ public testing helper package are not current contracts. Documentation must not
 advertise those absent mechanisms. Evidence: the two registry modules,
 `degradation/pipeline.py`, `pyproject.toml`, and their tests.
 
+## 2026-08-31: Geometry alone decides what a band is, and three tests share the job
+
+Three assumptions in the PGDP pipeline each named a band wrongly, and all three produced the same
+symptom: a source line binds to the wrong band, and every line below it shifts by one until a merged
+band absorbs the surplus.
+
+Band 0 is no longer taken for the running head. A fleck of dust can hold a band above the head, so
+the classifier now picks the first band at or below `center - window` and names every ordinal down
+to it as furniture. Position is the only signal available, because the profile wire format carries
+band bounds and no ink, and height cannot substitute: a genuine 9px roman folio and a 5px speck are
+not separable by height.
+
+A band as tall as the type around it is never dust. `is_speck_band` required only that a band carry
+under 5 percent of the page's median band ink, which condemned the section number `I.` at about
+2 percent along with the dust. It now also requires the band to be at most 31 percent of the page's
+median band height. Dust sits below 20 percent of that height and the wrongly dropped lines start at
+42, so 31 is the midpoint of the gap rather than either of its edges.
+
+A band that fills its box is a printed rule, not a line. `_remove_long_rules` only removes rules
+spanning 80 percent of the foreground width, so a decorative rule under a chapter title survived and
+took a source line. `is_rule_band` rejects a band that is under half the median band height and over
+60 percent ink by area. Text rows reached 0.40 density at the 99th percentile over 17,205 matched
+candidates; the measured rules ran 0.61 to 0.78.
+
+The speck and rule changes must ship together. Removing the rule alone made `379.png` worse, because
+the rule had been absorbing the line left over by the wrongly dropped `TO`; wrong matches on that
+page would have risen from about 2 to about 29 while it stayed accepted.
+
+Measured over five whole books: accepted pages rose from 665 to 713 with no book losing a page, 35
+pages moved from `unknown` into a real class, and accepted pages on which a dense thin band bound a
+source line fell from 4 to 0. No accepted page binds a source line to a suppressed furniture
+band. The accepted-line precision gate is not re-measured here. The existing
+ledger stores `incorrect_rows` as positional indices among a page's matches, and those positions
+moved, so the figure of 0.9974 recorded on 2026-08-31 does not carry over and a fresh review pass is
+required before the gate can be claimed again.
+
+Versions become `first-band-templates/v3` and `source-frame-components/v4`. Neither wire shape
+changed, so `pgdp-profile/v2` and `pgdp-alignment/v3` stand.
+
+Evidence: `docs/specs/2026-08-31-pgdp-whole-book-page-templates-design.md`,
+`docs/specs/2026-08-31-pgdp-fragmented-band-correction-design.md`,
+`src/pdomain_ocr_synth/pgdp/page_templates.py`, `src/pdomain_ocr_synth/pgdp/alignment_image.py`,
+and the five whole-book re-runs kept outside the repo.
+
 ## 2026-08-31: Book admission replaces the M15b coverage gate
 
 A book is admitted to synthesis when it yields at least 30 accepted pages. The corpus-wide

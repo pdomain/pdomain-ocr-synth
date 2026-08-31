@@ -202,10 +202,6 @@ stays visible as evidence rather than disappearing.
 ## Open questions
 
 - How many templates a book needs before the set stops paying for itself.
-- Whether a page starting above its book's median is furniture or junk. A quarter of pages in
-  qualifying books sit above it, most by a pixel or two, but the tail reaches 64px. The two examples
-  seen so far are a 3px speck and a table rule, which are different defects with the same
-  measurement.
 - What separates front matter, plates, advertisements, and indexes from each other and from the
   trough. All currently fall to `unknown`.
 - What bounds a page's residual against the chapter-opening template. Residuals are tight in two
@@ -256,6 +252,32 @@ Be honest about what this admits. These two books put 6 percent and 10 percent o
 2px of the book median, against 90 percent for Dead Men's Shoes. Their heads are real but unsteady,
 and their windows will run near 48px, leaving about 28px of margin rather than the 72px a steady
 book enjoys. The ledger after this change is what tells us whether that margin holds.
+
+## Revision, 2026-08-31: band 0 is not always the running head
+
+The classifier read `ink_bands[0]` as the page's running head. That is wrong whenever a fleck of
+dust holds an ink band of its own above the head, and it answers the open question this design
+carried about pages that start above their book's median. Such a page is junk above furniture, and
+the two cases need separating rather than choosing between.
+
+The profile keeps the speck because it cannot see it. Its wire format carries `y_start` and `y_end`
+and nothing else, so the ink share the aligner uses to drop dust is not available at classification
+time. Height cannot stand in for it either: `f005.png` opens with a 9px roman folio that is a
+genuine head, while the speck on `166.png` is 5px.
+
+Position can. A speck sits higher than anything the press printed, so the first band at or below
+`center - window` is the first that can be type. `_head_band_ordinal` returns that band, the class
+is decided from its top, and every ordinal down to and including it is named as furniture. Where
+band 0 already is the head the result is unchanged, which is every page but a handful.
+
+The failure had two shapes. On `166.png` the speck sat 63px above the book median, so the page fell
+outside the head window, classified `unknown`, suppressed nothing, and let a body source line bind
+to the head. On `p003.png` the speck sat close enough to the median that the page still classified,
+and ordinal 0 then suppressed the speck while the head below it stayed live. Both are the same
+assumption failing.
+
+Across the five review books this moved 35 pages from `unknown` into a real class and moved none the
+other way.
 
 ## Adversarial Review
 

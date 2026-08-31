@@ -150,6 +150,56 @@ The fixed 25-page selection stays fixed, and replay stays deterministic.
 - It does not calibrate confidence.
 - It does not begin M15c or any later typography, semantic, or compositor work.
 
+## Revision, 2026-08-31: a short line is not a speck, and a rule is not a line
+
+Two extractor defects share one symptom. A source line binds to the wrong band, and every line
+below it shifts by one until some merged band absorbs the surplus. They were found together and
+must be fixed together, because fixing either alone makes a page worse.
+
+### The ink share condemns short lines with the dust
+
+`is_speck_band` dropped any band carrying under 5 percent of the page's median band ink. A section
+number set as `I.` carries about 2 percent, so it was dropped with the dust, and the source line it
+should have taken bound to whatever sat nearest. The same happened to `1.` and to the small-capitals
+`TO`.
+
+A band as tall as the type around it is a short line, whatever its ink. The test now also requires
+the band to be at most 31 percent of the page's median band height. Of the 641 bands dropped as
+specks in `projectID603d7d5e04ca0`, 84 percent sit below 20 percent of that height and are dust,
+while the wrongly dropped lines start at 42 percent. Any value above 20 and at or below 42 separates
+the two; 31 is the midpoint, so neither edge of the observed gap sets the constant.
+
+### A decorative rule reaches the aligner as an ordinary candidate
+
+`_remove_long_rules` only removes a rule spanning at least 80 percent of the foreground width. A
+rule set under a chapter title spans about a fifth of the text block, so it survived and became a
+line candidate. On `118.png` it took `Scottish.` and held the page one line out of step for eleven
+more matches.
+
+Ink cannot see it, because a rule carries about as much ink as a short line of small capitals. What
+separates them is that a rule fills its box. Over 17,205 matched candidates on accepted pages the
+densest text row reached 0.40 at the 99th percentile and 0.68 at the extreme, while the four
+measured rules ran 0.61 to 0.78. `is_rule_band` rejects a band that is both under half the page's
+median band height and over 60 percent ink by area.
+
+### Why both, and not either
+
+Removing the rule alone made `379.png` worse. The rule had been absorbing the source line left over
+by the wrongly dropped `TO`, so the damage stopped after two matches. With the rule gone and `TO`
+still dropped, the surplus ran the length of the page and the count of wrong matches rose from about
+2 to about 29, on a page that stayed accepted. Restoring `TO` is what makes removing the rule safe.
+
+### Measured effect
+
+Whole-book re-profile and re-alignment of the five review books. Accepted pages rose from 665 to
+713, and no book lost a page. Accepted pages on which a dense thin band bound a source line fell
+from 4 to 0. `118.png` now aligns correctly but leaves the accepted set, because one of its source
+lines has no candidate once the rule is gone; that trades a page carrying eleven wrong lines for no
+page at all.
+
+The extractor version becomes `source-frame-components/v4`. The wire shape does not change, so
+`pgdp-alignment/v3` stands.
+
 ## Adversarial Review
 
 - **Stage and source:** One read-only reviewer checked this design and its implementation plan
