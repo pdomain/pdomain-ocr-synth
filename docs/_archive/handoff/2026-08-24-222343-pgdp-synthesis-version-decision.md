@@ -1,17 +1,20 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-08-24"
+kind: archive
+status: retired
 created_at: "2026-08-24T22:23:43Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
-base_commit: 70e0811991a3bbb88d9e271b2c6ae1a86f39e9a7
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
+base_commit: "70e0811991a3bbb88d9e271b2c6ae1a86f39e9a7"
 supersedes: "2026-08-24-130626-pgdp-synthesis-next-steps.md"
+created: "2026-08-24"
+last_verified: "2026-08-31"
 ---
 
 # PGDP synthesis version decision
+
+> **Retired — superseded by `docs/handoff/2026-08-31-133615-pgdp-page-classification-shipped.md`.**
 
 ## Goal
 
