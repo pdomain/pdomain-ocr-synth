@@ -13,6 +13,7 @@ from pdomain_ocr_synth.pgdp.image_measurement import (
 )
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.page_templates import (
+    PAGE_TEMPLATE_METHOD,
     PageClassification,
     classify_pages,
     fit_book_templates,
@@ -86,6 +87,7 @@ def profile_methods() -> dict[str, str]:
         "foreground_threshold": _THRESHOLD_METHOD,
         "ink_bands": _PAGE_DERIVATION_METHOD,
         "pooling": _POOLING_METHOD,
+        "page_templates": PAGE_TEMPLATE_METHOD,
     }
 
 

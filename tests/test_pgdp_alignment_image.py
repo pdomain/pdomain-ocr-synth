@@ -173,11 +173,11 @@ def test_extract_candidates_tolerates_one_fragmented_band_and_records_it(tmp_pat
     result = _extract(image_path)
 
     # One fragmented band out of three is a rate of 0.333, under the 0.35 limit.
-    # Band 1 keeps only its dominant cluster, which ends at x=59.
+    # Band 1 keeps both clusters, so its candidate spans out to x=79.
     assert result.exclusions == ()
     assert [candidate.box for candidate in result.candidates] == [
         (20, 20, 56, 25),
-        (20, 35, 59, 40),
+        (20, 35, 79, 40),
         (20, 50, 63, 55),
     ]
     assert [(item.reason, item.band_ordinal, item.box) for item in result.rejected] == [
@@ -442,7 +442,7 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
     from pdomain_ocr_synth.pgdp.alignment_image import ALIGNMENT_IMAGE_METHODS
 
     assert ALIGNMENT_IMAGE_METHODS == {
-        "algorithm": "source-frame-components/v2",
+        "algorithm": "source-frame-components/v3",
         "connectivity": 8,
         "minimum_ink_bands": 2,
         "page_border_edges": 3,
@@ -454,7 +454,8 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
         "merge_horizontally_overlapping_clusters": True,
         "fragmented_band_minor_ink_share": 0.02,
         "fragmented_band_maximum_rate": 0.35,
-        "candidate_box_mode": "dominant",
+        "candidate_box_mode": "union",
+        "suppress_furniture_bands": True,
         "speck_band_minimum_ink_share": 0.05,
         "gutter_minimum_width_ratio": 0.03,
         "gutter_minimum_vertical_coverage_ratio": 0.6,
@@ -1014,3 +1015,56 @@ def test_speck_band_is_dropped_before_it_becomes_a_candidate(tmp_path: Path) -> 
     assert [candidate.band_ordinal for candidate in result.candidates] == [0, 2]
     assert [item.reason for item in result.rejected] == ["speck_band"]
     assert "fragmented_band" not in result.exclusions
+
+
+def _extract_with_furniture(image_path: Path, furniture: tuple[int, ...]) -> CandidateExtraction:
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    with open_image_snapshot(image_path) as snapshot:
+        return extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=_FOREGROUND_BOUNDS,
+            ink_bands=_ROW_BANDS,
+            furniture_band_ordinals=furniture,
+        )
+
+
+def test_a_furniture_band_yields_no_candidate_and_is_recorded(tmp_path: Path) -> None:
+    image_path = tmp_path / "head.png"
+    _page_with_rows().save(image_path)
+
+    result = _extract_with_furniture(image_path, (0,))
+
+    assert [candidate.band_ordinal for candidate in result.candidates] == [1, 2]
+    assert [(item.reason, item.band_ordinal) for item in result.rejected] == [
+        ("running_head", 0),
+    ]
+    assert result.exclusions == ()
+
+
+def test_listing_no_furniture_band_keeps_every_candidate(tmp_path: Path) -> None:
+    image_path = tmp_path / "no-head.png"
+    _page_with_rows().save(image_path)
+
+    result = _extract_with_furniture(image_path, ())
+
+    assert [candidate.band_ordinal for candidate in result.candidates] == [0, 1, 2]
+    assert result.rejected == ()
+
+
+def test_suppressed_bands_leave_the_fragmented_rate_denominator(tmp_path: Path) -> None:
+    image_path = tmp_path / "fragmented-head.png"
+    image = _page_with_rows()
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((70, 20, 78, 24), fill=0)
+    image.save(image_path)
+
+    fragmented_head = _extract_with_furniture(image_path, ())
+    suppressed_head = _extract_with_furniture(image_path, (0,))
+
+    # Band 0 is the only fragmented band. Suppressing it must remove it from
+    # both sides of the rate, not just the numerator.
+    assert any(item.reason == "fragmented_band" for item in fragmented_head.rejected)
+    assert not any(item.reason == "fragmented_band" for item in suppressed_head.rejected)
+    assert "fragmented_band" not in suppressed_head.exclusions

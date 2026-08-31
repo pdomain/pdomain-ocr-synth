@@ -27,11 +27,12 @@ RejectionReason = Literal[
     "long_horizontal_rule",
     "minor_ink_cluster",
     "page_border",
+    "running_head",
     "speck_band",
 ]
 
 ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
-    "algorithm": "source-frame-components/v2",
+    "algorithm": "source-frame-components/v3",
     "connectivity": 8,
     "minimum_ink_bands": 2,
     "page_border_edges": 3,
@@ -43,7 +44,8 @@ ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
     "merge_horizontally_overlapping_clusters": True,
     "fragmented_band_minor_ink_share": 0.02,
     "fragmented_band_maximum_rate": 0.35,
-    "candidate_box_mode": "dominant",
+    "candidate_box_mode": "union",
+    "suppress_furniture_bands": True,
     "speck_band_minimum_ink_share": 0.05,
     "gutter_minimum_width_ratio": 0.03,
     "gutter_minimum_vertical_coverage_ratio": 0.6,
@@ -59,7 +61,7 @@ _JOIN_MAXIMUM_HORIZONTAL_GAP_MEDIAN_HEIGHT_FACTOR = 2
 _FRAGMENTED_BAND_MINOR_INK_PERCENT = 2
 _FRAGMENTED_BAND_MAXIMUM_RATE_PERCENT = 35
 _SPECK_BAND_MINIMUM_INK_PERCENT = 5
-_CANDIDATE_BOX_MODE = "dominant"
+_CANDIDATE_BOX_MODE = "union"
 _DROP_SPECK_BANDS = True
 _GUTTER_MINIMUM_WIDTH_PERCENT = 3
 _GUTTER_MINIMUM_VERTICAL_COVERAGE_TENTHS = 6
@@ -273,6 +275,7 @@ def extract_line_candidates(
     foreground_bounds: Bounds | None,
     ink_bands: Sequence[InkBand] | None,
     diagnostics: Sequence[ProfileDiagnostic] = (),
+    furniture_band_ordinals: Sequence[int] = (),
 ) -> CandidateExtraction:
     """Extract conservative line candidates from one immutable scan snapshot.
 
@@ -321,6 +324,7 @@ def extract_line_candidates(
         retained_bands,
         source_frame=source_frame,
         foreground_bounds=foreground_bounds,
+        furniture_band_ordinals=frozenset(furniture_band_ordinals),
     )
     rejected.extend(band_rejections)
     gutter = _find_gutter(foreground, foreground_bounds, clusters)
@@ -466,6 +470,7 @@ def _extract_band_candidates(
     *,
     source_frame: CoordinateFrame,
     foreground_bounds: Bounds,
+    furniture_band_ordinals: frozenset[int] = frozenset(),
 ) -> tuple[list[LineCandidate], list[RejectedComponent], tuple[_Cluster, ...], _BandCounts]:
     candidates: list[LineCandidate] = []
     rejected: list[RejectedComponent] = []
@@ -524,6 +529,21 @@ def _extract_band_candidates(
         else 0.0
     )
     for band_ordinal, counted, minor in measured:
+        if band_ordinal in furniture_band_ordinals:
+            # A running head or folio is printed but deleted from F2, so it has
+            # no source line to match. Emitting a candidate for it lets the
+            # aligner bind the first real source line to the head instead.
+            rejected.extend(
+                RejectedComponent(
+                    reason="running_head",
+                    box=cluster.box,
+                    foreground_pixels=cluster.foreground_pixels,
+                    band_ordinal=band_ordinal,
+                    component_ordinal=cluster.component_ordinal,
+                )
+                for cluster in tuple(counted) + tuple(minor)
+            )
+            continue
         if _DROP_SPECK_BANDS and is_speck_band(counted, median_band_ink=median_band_ink):
             rejected.extend(
                 RejectedComponent(
@@ -658,6 +678,10 @@ def _band_candidate_cluster(counted: Sequence[_Cluster], minor: Sequence[_Cluste
     clusters, pulling stray accents and punctuation back inside the line box.
     """
 
+    # Union was rejected while running heads were still emitted as candidates:
+    # spanning a head band and its folio produced a body-line shape the aligner
+    # matched a source line to. With heads suppressed that objection is gone,
+    # and union keeps whole the lines that split at a wide sentence space.
     if _CANDIDATE_BOX_MODE == "dominant":
         return max(counted, key=lambda item: (item.foreground_pixels, -item.component_ordinal))
     if _CANDIDATE_BOX_MODE == "union":

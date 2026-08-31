@@ -348,6 +348,7 @@ def _align_profile_page(
                         source_frame=measurement.source_frame,
                         foreground_bounds=foreground_bounds,
                         ink_bands=measurement.ink_bands,
+                        furniture_band_ordinals=measurement.furniture_band_ordinals,
                     )
                     result = align_sequences(
                         source_page.lines,

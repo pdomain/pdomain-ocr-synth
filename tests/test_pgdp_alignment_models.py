@@ -104,7 +104,7 @@ def test_alignment_report_keeps_uncalibrated_confidence_and_sorted_mappings() ->
     assert page["confidence"] is None
     assert page["confidence_kind"] == "uncalibrated"
     assert payload["schema_version"] == ALIGNMENT_SCHEMA_VERSION == 1
-    assert payload["algorithm_version"] == ALIGNMENT_ALGORITHM_VERSION == "pgdp-alignment/v2"
+    assert payload["algorithm_version"] == ALIGNMENT_ALGORITHM_VERSION == "pgdp-alignment/v3"
     assert list(payload["methods"]) == ["a", "z"]
     assert page["source_frame"] == {"name": "source", "width": 100, "height": 200}
 
@@ -202,7 +202,7 @@ def test_alignment_report_round_trips_additive_v1_values_without_inventing_defau
     ("payload_update", "message"),
     [
         ({"schema_version": 2}, "schema_version"),
-        ({"algorithm_version": "pgdp-alignment/v3"}, "algorithm_version"),
+        ({"algorithm_version": "pgdp-alignment/v4"}, "algorithm_version"),
         ({"profile_label": "../profile.json"}, "profile_label"),
     ],
 )
@@ -805,11 +805,14 @@ def test_alignment_operation_rejects_incomplete_match() -> None:
 
 
 def test_schema_is_generated_from_alignment_report_input() -> None:
-    schema_path = Path("schemas/pgdp-alignment-v2.schema.json")
+    schema_path = Path("schemas/pgdp-alignment-v3.schema.json")
     assert schema_path.read_text(encoding="utf-8") == AlignmentReport.json_schema()
 
 
-def test_version_one_schema_is_retained_for_replay() -> None:
-    schema_path = Path("schemas/pgdp-alignment-v1.schema.json")
-    assert schema_path.is_file()
-    assert '"pgdp-alignment/v1"' in schema_path.read_text(encoding="utf-8")
+def test_earlier_schemas_are_retained_for_replay() -> None:
+    """Earlier versions survive as schema files and git history, not as readable payloads."""
+
+    for version in ("v1", "v2"):
+        schema_path = Path(f"schemas/pgdp-alignment-{version}.schema.json")
+        assert schema_path.is_file()
+        assert f'"pgdp-alignment/{version}"' in schema_path.read_text(encoding="utf-8")

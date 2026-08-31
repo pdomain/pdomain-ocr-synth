@@ -117,7 +117,7 @@ def test_align_pgdp_writes_snapshot_safe_report(
 
     assert result == 0
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["algorithm_version"] == "pgdp-alignment/v2"
+    assert payload["algorithm_version"] == "pgdp-alignment/v3"
     assert payload["profile_label"] == profile_path.name
     assert payload["profile_sha256"] == sha256(profile_path.read_bytes()).hexdigest()
     assert capsys.readouterr().out == ""

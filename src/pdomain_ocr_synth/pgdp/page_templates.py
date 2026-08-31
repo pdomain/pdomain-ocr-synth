@@ -31,6 +31,19 @@ PageClass = Literal[
 
 PAGE_TEMPLATE_METHOD = "first-band-templates/v1"
 
+
+def page_template_methods() -> dict[str, float | int | str | bool]:
+    """Return the versioned constants page classification is fixed to."""
+
+    return {
+        "algorithm": PAGE_TEMPLATE_METHOD,
+        "head_mad_maximum_px": _HEAD_MAD_MAXIMUM_PX,
+        "head_window_minimum_px": _HEAD_WINDOW_MINIMUM_PX,
+        "head_window_mad_factor": _HEAD_WINDOW_MAD_FACTOR,
+        "chapter_sink_minimum_px": _CHAPTER_SINK_MINIMUM_PX,
+    }
+
+
 _HEAD_MAD_MAXIMUM_PX = 2
 _CHAPTER_SINK_MINIMUM_PX = 150
 # How steady a book's first band must be is a different question from how far a
