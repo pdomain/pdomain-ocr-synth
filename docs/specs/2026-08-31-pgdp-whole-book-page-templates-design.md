@@ -117,9 +117,13 @@ from it.
 That deviation is the whole test. It is 0px in Dead Men's Shoes, 1px in the Royal Mint, and 1px in
 In a German Colony. It is 18.5px in St Baldred of the Bass.
 
-A book has a usable type page when its first-band deviation is at most
-`HEAD_MAD_MAXIMUM_PX`. Otherwise every page in it is classified `unknown` and M15b suppresses
-nothing.
+A book has a usable type page when its first-band deviation is at most `HEAD_MAD_MAXIMUM_PX`, which
+is 2. Otherwise every page in it is classified `unknown` and M15b suppresses nothing.
+
+That value sits inside an observed gap. Across 41 books profiled whole, 30 have a deviation of 0px
+or 1px and the next book up is at 2.5px. No book measured between 1 and 2.5. The books below the
+line hold their first band within two pixels of the median on 59 to 99 percent of pages; the books
+above it manage 9 to 50 percent.
 
 Do not use a tolerance scaled from the deviation as the test on its own. Scaling widens with the
 disorder it is meant to detect. At three times its deviation, St Baldred admits 81 percent of its
@@ -129,7 +133,17 @@ Within a fitting book, a page's residual against a template is the absolute diff
 first-band `y_start` and the template's, in pixels. A page joins a normal template when that
 residual is at most `max(2, 3 x deviation)` px and its text-block left edge is within the same bound
 of the template's. A page joins the chapter-opening template when it has no band inside the normal
-head window and its first band lies at least `CHAPTER_SINK_MINIMUM_PX` below the median.
+head window and its first band lies at least `CHAPTER_SINK_MINIMUM_PX` below the median, which is
+150.
+
+Across the 8,162 pages of the 30 qualifying books, offsets from the median cluster at both ends and
+thin out between. Pages sitting 0 to 10px below the median account for 16.8 percent, and pages 201
+to 500px below account for 4.4 percent. The 51 to 200px range holds 1.5 percent, spread over three
+times the width.
+
+A page landing in that thin range is classified `unknown` rather than forced into either template.
+The range is a trough, not a gap, so a page inside it is genuinely ambiguous and M15b suppresses
+nothing on it.
 
 ### What the profile records
 
@@ -176,10 +190,11 @@ stays visible as evidence rather than disappearing.
 ## Open questions
 
 - How many templates a book needs before the set stops paying for itself.
-- What `HEAD_MAD_MAXIMUM_PX` and `CHAPTER_SINK_MINIMUM_PX` should be. Four books give 0, 1, 1, and
-  18.5px of first-band deviation, and one book's chapter sinks of 236 and 296px. Both constants need
-  a wider sample before they are fixed, and each is an algorithm constant that a later change would
-  version.
+- Whether a page starting above its book's median is furniture or junk. A quarter of pages in
+  qualifying books sit above it, most by a pixel or two, but the tail reaches 64px. The two examples
+  seen so far are a 3px speck and a table rule, which are different defects with the same
+  measurement.
+- Whether the six page classes cover plates, advertisements, and indexes, or need more.
 - Whether page class belongs in `pgdp-profile/v2` or in a separate report, given that
   `pgdp-profile/v1` must stay byte-compatible.
 

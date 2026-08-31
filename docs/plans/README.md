@@ -62,7 +62,8 @@ useful.
 | [14](../architecture/pgdp-ranking-and-review-queue.md) | PGDP discovery and review queue | ✅ shipped; current architecture | Rank scan projects and pages from F2 evidence | Deterministic bounded multimodal review queue |
 | [15a](../architecture/pgdp-observed-geometry-profiling.md) | PGDP observed geometry profiler | ✅ shipped; current architecture | Measure source-frame ink geometry from ranked scans | Versioned page and book observations |
 | [15b](2026-08-23-pgdp-source-line-alignment.md) | PGDP source-line alignment | partial: implementation complete; corpus gate failed | Align F2 source lines with eligible single-column scan rows | Deterministic report shipped; fragmented-band extractor follow-up required |
-| [15b-fix](2026-08-31-pgdp-fragmented-band-correction.md) | PGDP fragmented-band correction | draft: design approved, implementation not started | Stop rejecting whole pages when one ink band splits into clusters | `pgdp-alignment/v2` passes the unchanged 98% precision and 70% coverage gates |
+| [15b-fix](2026-08-31-pgdp-fragmented-band-correction.md) | PGDP fragmented-band correction | partial: `pgdp-alignment/v2` shipped; coverage 0.385, precision gate still failing | Stop rejecting whole pages when one ink band splits into clusters | `pgdp-alignment/v2` passes the unchanged 98% precision and 70% coverage gates |
+| [15a-pages](2026-08-31-pgdp-page-classification.md) | PGDP page classification | draft: design approved, implementation not started | Classify pages against measured book templates and suppress running heads | `pgdp-alignment/v3` stops binding source lines to page furniture |
 
 ## NiceGUI surface — preview first, explicit save
 
