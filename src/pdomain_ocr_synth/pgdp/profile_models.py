@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 SCHEMA_VERSION = 1
-ALGORITHM_VERSION = "pgdp-profile/v1"
+ALGORITHM_VERSION = "pgdp-profile/v2"
 SOURCE_FRAME = "source"
 UNCALIBRATED_CONFIDENCE_KIND = "uncalibrated"
 _UNAVAILABLE_IMAGE_DIAGNOSTIC_CODES = frozenset({"image_missing", "image_unreadable"})
@@ -281,6 +281,9 @@ class PageMeasurement:
     derived_estimates: tuple[Estimate, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnostic, ...] = ()
+    page_class: str = "unknown"
+    template_residual_px: int | None = None
+    furniture_band_ordinals: tuple[int, ...] = ()
     extensions: Mapping[str, object] = field(default_factory=dict)
     image_extensions: Mapping[str, object] = field(default_factory=dict)
     observation_extensions: Mapping[str, object] = field(default_factory=dict)
@@ -507,9 +510,36 @@ class PageMeasurement:
                 "derived_estimates": [estimate.to_dict() for estimate in self.derived_estimates],
                 "exclusions": list(self.exclusions),
                 "diagnostics": [diagnostic.to_dict() for diagnostic in self.diagnostics],
+                "page_class": self.page_class,
+                "template_residual_px": self.template_residual_px,
+                "furniture_band_ordinals": list(self.furniture_band_ordinals),
             },
             self.extensions,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class PageTemplateRecord:
+    """One measured page shape a book repeats."""
+
+    page_class: str
+    first_band_top_px: int
+    text_left_px: int
+    text_right_px: int
+    band_count: int
+    page_count: int
+    page_share: float
+
+    def to_dict(self) -> dict[str, JsonValue]:
+        return {
+            "page_class": self.page_class,
+            "first_band_top_px": self.first_band_top_px,
+            "text_left_px": self.text_left_px,
+            "text_right_px": self.text_right_px,
+            "band_count": self.band_count,
+            "page_count": self.page_count,
+            "page_share": self.page_share,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -524,6 +554,7 @@ class ProjectProfile:
     pooled_estimates: tuple[Estimate, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnostic, ...] = ()
+    page_templates: tuple[PageTemplateRecord, ...] = ()
     extensions: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -533,6 +564,7 @@ class ProjectProfile:
         object.__setattr__(self, "pooled_estimates", tuple(self.pooled_estimates))
         object.__setattr__(self, "exclusions", tuple(self.exclusions))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
+        object.__setattr__(self, "page_templates", tuple(self.page_templates))
         object.__setattr__(self, "extensions", _normalized_extensions(self.extensions))
         page_names = tuple(page.page_name for page in self.pages)
         if len(set(page_names)) != len(page_names):
@@ -551,6 +583,7 @@ class ProjectProfile:
                 "pooled_estimates": [estimate.to_dict() for estimate in self.pooled_estimates],
                 "exclusions": list(self.exclusions),
                 "diagnostics": [diagnostic.to_dict() for diagnostic in self.diagnostics],
+                "page_templates": [item.to_dict() for item in self.page_templates],
             },
             self.extensions,
         )
@@ -894,6 +927,9 @@ class PageMeasurementWire(_WireModel):
     derived_estimates: tuple[EstimateWire, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnosticWire, ...] = ()
+    page_class: str = "unknown"
+    template_residual_px: StrictInt | None = None
+    furniture_band_ordinals: tuple[StrictInt, ...] = ()
 
     @field_validator("source_path")
     @classmethod
@@ -999,10 +1035,34 @@ class PageMeasurementWire(_WireModel):
             derived_estimates=tuple(estimate.to_domain() for estimate in self.derived_estimates),
             exclusions=self.exclusions,
             diagnostics=tuple(diagnostic.to_domain() for diagnostic in self.diagnostics),
+            page_class=self.page_class,
+            template_residual_px=self.template_residual_px,
+            furniture_band_ordinals=self.furniture_band_ordinals,
             extensions=_wire_extensions(self),
             image_extensions={} if image is None else _wire_extensions(image),
             observation_extensions=_wire_extensions(observations),
             margin_extensions=margin_extensions,
+        )
+
+
+class PageTemplateWire(_WireModel):
+    page_class: str = Field(min_length=1)
+    first_band_top_px: StrictInt
+    text_left_px: StrictInt
+    text_right_px: StrictInt
+    band_count: StrictInt = Field(ge=0)
+    page_count: StrictInt = Field(ge=0)
+    page_share: float = Field(ge=0.0, le=1.0)
+
+    def to_domain(self) -> PageTemplateRecord:
+        return PageTemplateRecord(
+            page_class=self.page_class,
+            first_band_top_px=self.first_band_top_px,
+            text_left_px=self.text_left_px,
+            text_right_px=self.text_right_px,
+            band_count=self.band_count,
+            page_count=self.page_count,
+            page_share=self.page_share,
         )
 
 
@@ -1015,6 +1075,7 @@ class ProjectProfileWire(_WireModel):
     pooled_estimates: tuple[EstimateWire, ...] = ()
     exclusions: tuple[str, ...] = ()
     diagnostics: tuple[ProfileDiagnosticWire, ...] = ()
+    page_templates: tuple[PageTemplateWire, ...] = ()
 
     @field_validator("pooled_estimates")
     @classmethod
@@ -1035,13 +1096,14 @@ class ProjectProfileWire(_WireModel):
             pooled_estimates=tuple(estimate.to_domain() for estimate in self.pooled_estimates),
             exclusions=self.exclusions,
             diagnostics=tuple(diagnostic.to_domain() for diagnostic in self.diagnostics),
+            page_templates=tuple(item.to_domain() for item in self.page_templates),
             extensions=_wire_extensions(self),
         )
 
 
 class ProfileReportWire(_WireModel):
     schema_version: Literal[1]
-    algorithm_version: Literal["pgdp-profile/v1"]
+    algorithm_version: Literal["pgdp-profile/v2"]
     source_ranking: dict[str, JsonValue]
     methods: dict[str, JsonValue]
     projects: tuple[ProjectProfileWire, ...] = ()

@@ -232,7 +232,7 @@ Expected: PASS.
 - Create: `schemas/pgdp-profile-v2.schema.json`
 - Modify: `tests/test_pgdp_profile_models.py`
 
-- [ ] **Step 1: Write failing tests for the wire model**
+- [x] **Step 1: Write failing tests for the wire model**
 
 Assert the report accepts `pgdp-profile/v2`, rejects an unknown major version, and carries templates
 and page classes.
@@ -242,18 +242,18 @@ Version 1 is retained as its schema file and its git history, not as a readable 
 loading a version 1 payload raises. Rejecting an old major version is the M15b design's stated
 behavior, so do not widen the wire `Literal` or relax the domain equality check.
 
-- [ ] **Step 2: Run the focused test and confirm it fails**
+- [x] **Step 2: Run the focused test and confirm it fails**
 
 Run: `uv run pytest tests/test_pgdp_profile_models.py -q`
 
 Expected: FAIL on the version strings.
 
-- [ ] **Step 3: Implement the version bump and regenerate the schema**
+- [x] **Step 3: Implement the version bump and regenerate the schema**
 
 Bump the profile algorithm version, add the template and page-class fields, then write
 `schemas/pgdp-profile-v2.schema.json` from the model.
 
-- [ ] **Step 4: Confirm the focused test passes**
+- [x] **Step 4: Confirm the focused test passes**
 
 Run: `uv run pytest tests/test_pgdp_profile_models.py -q`
 

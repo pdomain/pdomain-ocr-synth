@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from statistics import median
 from typing import TYPE_CHECKING, Literal
 
@@ -12,10 +12,16 @@ from pdomain_ocr_synth.pgdp.image_measurement import (
     open_image_snapshot,
 )
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
+from pdomain_ocr_synth.pgdp.page_templates import (
+    PageClassification,
+    classify_pages,
+    fit_book_templates,
+)
 from pdomain_ocr_synth.pgdp.profile_models import (
     Estimate,
     InkBand,
     PageMeasurement,
+    PageTemplateRecord,
     ProfileDiagnostic,
     ProjectProfile,
 )
@@ -87,12 +93,16 @@ def profile_project(project: ProfileInputProject) -> ProjectProfile:
     """Measure one selected project one image at a time."""
 
     measured = tuple(profile_page(project.project_id, page) for page in project.pages)
+    # Templates and pooled estimates describe a book, so both are computed over
+    # every measured page. Fitting them on the emitted subset would describe the
+    # ranking instead, which is what whole-book mode exists to avoid.
+    templates = fit_book_templates(measured)
+    classified = {item.page_name: item for item in classify_pages(measured, templates)}
     emitted = tuple(
-        measurement for measurement, page in zip(measured, project.pages, strict=True) if page.emit
+        _with_page_class(measurement, classified.get(measurement.page_name))
+        for measurement, page in zip(measured, project.pages, strict=True)
+        if page.emit
     )
-    # Pool over every measured page. A book statistic fitted on the ranked
-    # subset is not a book statistic, so whole-book mode widens what is pooled
-    # without widening what is emitted.
     return ProjectProfile(
         project_id=project.project_id,
         title=project.title,
@@ -100,6 +110,31 @@ def profile_project(project: ProfileInputProject) -> ProjectProfile:
         genre=project.genre,
         pages=emitted,
         pooled_estimates=tuple(pool_estimate(name, measured) for name in _METRIC_NAMES),
+        page_templates=tuple(
+            PageTemplateRecord(
+                page_class=template.page_class,
+                first_band_top_px=template.first_band_top_px,
+                text_left_px=template.text_left_px,
+                text_right_px=template.text_right_px,
+                band_count=template.band_count,
+                page_count=template.page_count,
+                page_share=template.page_share,
+            )
+            for template in templates.templates
+        ),
+    )
+
+
+def _with_page_class(
+    measurement: PageMeasurement, classification: PageClassification | None
+) -> PageMeasurement:
+    if classification is None:
+        return measurement
+    return replace(
+        measurement,
+        page_class=classification.page_class,
+        template_residual_px=classification.template_residual_px,
+        furniture_band_ordinals=classification.furniture_band_ordinals,
     )
 
 

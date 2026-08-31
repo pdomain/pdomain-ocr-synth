@@ -22,7 +22,8 @@ from pdomain_ocr_synth.pgdp.profile_models import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_ARTIFACT = REPO_ROOT / "schemas" / "pgdp-profile-v1.schema.json"
+SCHEMA_ARTIFACT = REPO_ROOT / "schemas" / "pgdp-profile-v2.schema.json"
+RETIRED_SCHEMA_ARTIFACT = REPO_ROOT / "schemas" / "pgdp-profile-v1.schema.json"
 
 
 def _diagnostic(code: str, page_name: str) -> ProfileDiagnostic:
@@ -826,7 +827,7 @@ def test_profile_wire_rejects_unversioned_reports(field: str) -> None:
     ("key", "value", "message"),
     [
         ("schema_version", 2, "schema_version"),
-        ("algorithm_version", "pgdp-profile/v2", "algorithm_version"),
+        ("algorithm_version", "pgdp-profile/v3", "algorithm_version"),
     ],
 )
 def test_profile_reader_rejects_unknown_major_versions(
@@ -841,6 +842,29 @@ def test_profile_reader_rejects_unknown_major_versions(
 
 def test_profile_schema_artifact_matches_fresh_generation() -> None:
     assert SCHEMA_ARTIFACT.read_text(encoding="utf-8") == profile_schema_json()
+
+
+def test_version_one_schema_is_retained_unchanged() -> None:
+    """Version 1 survives as its schema file and git history, not as a readable payload.
+
+    Rejecting an unknown major version is the intended behaviour, so a stored v1
+    report does not load. What is retained is the contract it was written to.
+    """
+
+    assert RETIRED_SCHEMA_ARTIFACT.is_file()
+    assert '"pgdp-profile/v1"' in RETIRED_SCHEMA_ARTIFACT.read_text(encoding="utf-8")
+
+    with pytest.raises(ValueError, match="algorithm_version"):
+        _ = ProfileReport.from_dict(
+            {
+                "schema_version": 1,
+                "algorithm_version": "pgdp-profile/v1",
+                "source_ranking": {"algorithm_version": "pgdp-rank/v1"},
+                "methods": {},
+                "projects": [],
+                "diagnostics": [],
+            }
+        )
 
 
 def test_profile_schema_declares_the_top_level_contract() -> None:
