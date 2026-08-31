@@ -80,8 +80,11 @@ A book is described by a small set of measured templates rather than one type pa
 
 - **Normal recto** and **normal verso**, which differ only by the binding shift.
 - **Chapter opening**, whose text block starts lower and which carries no running head.
-- **Front matter**, such as a title page, dedication, or contents.
-- **Plate or illustration**, whose ink does not form regular bands.
+
+Front matter and plates are deliberately absent. Front matter has no measured discriminator, and one
+illustration is too little to separate a plate from a table with tall bands. Both fall to `unknown`,
+which suppresses nothing, so neither omission costs anything today. The two front-matter pages seen
+so far, `a005.png` at +76 and `118.png` at +111, land in the trough and behave correctly there.
 
 Chapter openings are as regular as body pages. In Dead Men's Shoes they sink by a repeated amount.
 `p060`, `p094`, `p140`, and `p208` all start 296px below the modal position, and `p024` and `p273`
@@ -133,8 +136,16 @@ pages inside a 55px window, which classifies nothing.
 
 Within a fitting book, a page's residual against a template is the absolute difference between its
 first-band `y_start` and the template's, in pixels. A page joins a normal template when that
-residual is at most `max(2, 3 x deviation)` px and its text-block left edge is within the same bound
-of the template's. A page joins the chapter-opening template when it has no band inside the normal
+residual is at most `max(HEAD_WINDOW_MINIMUM_PX, 3 x deviation)` px, where the minimum is 8, and its
+text-block left edge is within the same bound of the template's.
+
+How steady a book's first band must be is a separate question from how far one page may sit from it,
+and the two bounds must not be confused. Running heads were measured 0 to 4px off their book's
+median, while the nearest page whose first band is genuine text sat 76px below. A 2px window would
+have left `p179.png` unclassified and therefore still misaligned. The share of pages joining a normal
+template is flat between a 4px and a 20px window on all three steady books, so the choice inside that
+range does not matter; 8 is double the observed spread and an order of magnitude clear of text. A
+page joins the chapter-opening template when it has no band inside the normal
 head window and its first band lies at least `CHAPTER_SINK_MINIMUM_PX` below the median, which is
 150.
 
@@ -151,8 +162,7 @@ nothing on it.
 
 Each book gains its templates and each page gains a class.
 
-- Page class is one of `normal_recto`, `normal_verso`, `chapter_opening`, `front_matter`, `plate`,
-  or `unknown`.
+- Page class is one of `normal_recto`, `normal_verso`, `chapter_opening`, or `unknown`.
 - Each template records its first-band `y_start`, text-block left and right edges, modal band count,
   the number of pages assigned to it, and their share of the book.
 - Each book records `first_band_mad_px` and the share of its pages that are not `unknown`.
@@ -196,7 +206,11 @@ stays visible as evidence rather than disappearing.
   qualifying books sit above it, most by a pixel or two, but the tail reaches 64px. The two examples
   seen so far are a 3px speck and a table rule, which are different defects with the same
   measurement.
-- Whether the six page classes cover plates, advertisements, and indexes, or need more.
+- What separates front matter, plates, advertisements, and indexes from each other and from the
+  trough. All currently fall to `unknown`.
+- What bounds a page's residual against the chapter-opening template. Residuals are tight in two
+  books, with medians of 11px and 2px, and scattered in a third at 224px. Nothing depends on the
+  bound yet, because `chapter_opening` suppresses no band.
 - Whether page class belongs in `pgdp-profile/v2` or in a separate report, given that
   `pgdp-profile/v1` must stay byte-compatible.
 

@@ -147,7 +147,7 @@ Expected: PASS.
 - Create: `src/pdomain_ocr_synth/pgdp/page_templates.py`
 - Create: `tests/test_pgdp_page_templates.py`
 
-- [ ] **Step 1: Write failing tests for template fitting**
+- [x] **Step 1: Write failing tests for template fitting**
 
 Cover a book that splits cleanly into recto and verso by text-block left edge, one whose two sides
 do not differ, and one whose deviation exceeds the limit. Assert that the third yields no templates.
@@ -155,13 +155,13 @@ do not differ, and one whose deviation exceeds the limit. Assert that the third 
 Assert each template records its first-band `y_start`, text-block left and right edges, modal band
 count, assigned page count, and share of the book.
 
-- [ ] **Step 2: Run the focused test and confirm it fails**
+- [x] **Step 2: Run the focused test and confirm it fails**
 
 Run: `uv run pytest tests/test_pgdp_page_templates.py -q`
 
 Expected: FAIL with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement fitting**
+- [x] **Step 3: Implement fitting**
 
 Add `_HEAD_MAD_MAXIMUM_PX = 2`. A book with a larger first-band deviation yields no templates.
 
@@ -173,7 +173,7 @@ Define the head window as the book's median first-band `y_start` plus or minus
 bound governs both. Fit a chapter-opening template from pages with no band inside the head window
 whose first band sits at least `_CHAPTER_SINK_MINIMUM_PX = 150` below the median.
 
-- [ ] **Step 4: Confirm the focused test passes**
+- [x] **Step 4: Confirm the focused test passes**
 
 Run: `uv run pytest tests/test_pgdp_page_templates.py -q`
 
@@ -186,28 +186,39 @@ Expected: PASS.
 - Modify: `src/pdomain_ocr_synth/pgdp/page_templates.py`
 - Modify: `tests/test_pgdp_page_templates.py`
 
-- [ ] **Step 1: Write failing tests for classification**
+- [x] **Step 1: Write failing tests for classification**
 
-Cover one page per class: `normal_recto`, `normal_verso`, `chapter_opening`, `front_matter`,
-`plate`, and `unknown`. Assert that a page whose offset lands between 11 and 149 pixels classifies
-`unknown` rather than joining either template, and that every page of a book with no templates
-classifies `unknown`.
+Cover one page per class: `normal_recto`, `normal_verso`, `chapter_opening`, and `unknown`. Assert
+that a page whose offset lands between the head window and the chapter sink classifies `unknown`
+rather than joining either template, and that every page of a book with no templates classifies
+`unknown`.
+
+Front matter and plates get no class of their own. Neither has a discriminator the corpus supports,
+and both fall to `unknown`, which suppresses nothing.
+
+Pin the two boundary cases the review found: a head 4px below its book median is still a head, and
+genuine text 76px below is not.
 
 Assert each page records `page_class` and `template_residual_px`.
 
-- [ ] **Step 2: Run the focused test and confirm it fails**
+- [x] **Step 2: Run the focused test and confirm it fails**
 
 Run: `uv run pytest tests/test_pgdp_page_templates.py -q`
 
 Expected: FAIL on the missing classifier.
 
-- [ ] **Step 3: Implement classification**
+- [x] **Step 3: Implement classification**
 
-A page joins a normal template when its first-band residual is at most `max(2, 3 x deviation)` px
-and its text-block left edge is within the same bound. Classify the trough between the head window
-and the chapter sink as `unknown`.
+A page joins a normal template when its first-band residual is at most
+`max(_HEAD_WINDOW_MINIMUM_PX, 3 x deviation)` px, with the minimum set to 8, and its text-block left
+edge is within the same bound. Classify the trough between the head window and the chapter sink as
+`unknown`.
 
-- [ ] **Step 4: Confirm the focused test passes**
+Do not reuse the 2px figure from the book-steadiness test here. It measures how steady a book is,
+not how far one page may sit from the median, and at 2px `p179.png` goes unclassified and stays
+misaligned.
+
+- [x] **Step 4: Confirm the focused test passes**
 
 Run: `uv run pytest tests/test_pgdp_page_templates.py -q`
 
