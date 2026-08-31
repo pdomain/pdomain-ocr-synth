@@ -111,8 +111,14 @@ The report algorithm becomes `pgdp-alignment/v2` and the candidate method become
 `source-frame-components/v2`. The design for version 1 requires a new algorithm version whenever a
 constant or method changes, and this correction changes both.
 
-Version 1 code paths and stored version 1 reports stay available for exact replay. Version 2 adds
-three constants to the serialized method block:
+Version 1 stays reproducible through git history and its retained schema file, not through the
+version 2 reader. `schemas/pgdp-alignment-v1.schema.json` is kept unchanged, and checking out the
+commit before the version 2 bump reproduces version 1 bytes exactly.
+
+Loading a stored version 1 report with version 2 code fails validation, by design. The M15b design
+requires an unknown major algorithm version to be rejected rather than guessed at.
+
+Version 2 adds three constants to the serialized method block:
 
 - `merge_horizontally_overlapping_clusters: true`
 - `fragmented_band_minor_ink_share: 0.02`
