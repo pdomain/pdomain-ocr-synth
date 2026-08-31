@@ -46,21 +46,19 @@ accepted pages rose from 0 to 7, and eligible-page coverage rose to 0.538. All
 216 matches across the seven accepted pages are monotone with correct text at
 both ends, so no shifted page remains.
 
-One gate now fails. Accepted-line precision measured 0.9716 on 2026-08-31,
-615 correct matches of 633 across 22 pages and four books, against a 0.98 gate.
-Every error sits on a page carrying no page class: classified pages scored 394
-of 394, unclassified pages 221 of 239. All 18 errors are the same defect, a
-running head taken as candidate 0 and matched to a body source line. Requiring
-a page class before acceptance would raise precision to 1.000 on that sample,
-cut accepted pages from 367 to 306, and cut admitted books from three to two.
-That ledger was reviewed by a model reading line crops, not signed off by a
-person. The 70 percent coverage gate was withdrawn on
-2026-08-31 and replaced by per-book admission at 30 accepted pages, because
-coverage was being measured on a review selection that M14 skews toward hard
-pages. Whole-book runs over the five review books accept 367 of 971 eligible
-pages across 1385 pages, and admit three books holding 226, 75, and 52 accepted
-pages while leaving out two holding 14 and 0. The 98 percent precision
-threshold is unchanged.
+All three M15b gates now pass. Accepted-line precision is 0.9974, which is 779 correct
+matches of 781 across 28 pages and five books. No declared-complex page is
+accepted. All five books clear the 30-page admission minimum, with 665 accepted
+pages between them.
+
+Two page-template fitting defects were behind the earlier 0.9716 measurement.
+The binding-side split read the trailing digits of the file name, which one book
+numbers at ten times the folio, and the first-band deviation ceiling of 2px
+refused two books whose heads wander by about 16px. Classified pages rose from
+527 of 1385 to 1165, and accepted pages from 367 to 665. The 70 percent coverage
+gate was withdrawn on 2026-08-31 and replaced by per-book admission at 30
+accepted pages. That ledger was reviewed by a model reading line crops, not
+signed off by a person.
 
 ## PGDP ranking verification
 

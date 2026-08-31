@@ -29,7 +29,7 @@ PageClass = Literal[
     "unknown",
 ]
 
-PAGE_TEMPLATE_METHOD = "first-band-templates/v1"
+PAGE_TEMPLATE_METHOD = "first-band-templates/v2"
 
 
 def page_template_methods() -> dict[str, float | int | str | bool]:
@@ -41,10 +41,14 @@ def page_template_methods() -> dict[str, float | int | str | bool]:
         "head_window_minimum_px": _HEAD_WINDOW_MINIMUM_PX,
         "head_window_mad_factor": _HEAD_WINDOW_MAD_FACTOR,
         "chapter_sink_minimum_px": _CHAPTER_SINK_MINIMUM_PX,
+        "side_minimum_share": _SIDE_MINIMUM_SHARE,
     }
 
 
-_HEAD_MAD_MAXIMUM_PX = 2
+# A head that wanders is not a head that is missing. The ceiling is set by the window it produces:
+# at 25 the widest window is 3 x 25 = 75px, which stays below the 76px at which genuine top-of-page
+# text begins, so a qualifying book can never call body text a running head.
+_HEAD_MAD_MAXIMUM_PX = 25
 _CHAPTER_SINK_MINIMUM_PX = 150
 # How steady a book's first band must be is a different question from how far a
 # single page may sit from it. Running heads were measured 0 to 4px off their
@@ -53,6 +57,9 @@ _CHAPTER_SINK_MINIMUM_PX = 150
 # so 8 is double the observed spread and an order of magnitude clear of text.
 _HEAD_WINDOW_MINIMUM_PX = 8
 _HEAD_WINDOW_MAD_FACTOR = 3
+# A binding shift divides a book roughly in half. A group far below that is an oddity, such as one
+# indented page, and letting it define a side would give it a template of its own.
+_SIDE_MINIMUM_SHARE = 0.2
 
 _TRAILING_DIGITS = re.compile(r"(\d+)(?!.*\d)")
 
@@ -129,9 +136,10 @@ def fit_book_templates(pages: Sequence[PageMeasurement]) -> BookTemplates:
 
     templates: list[PageTemplate] = []
     total = len(geometry)
+    recto_side, verso_side = _split_sides(normal)
     groups: tuple[tuple[PageClass, list[_PageGeometry]], ...] = (
-        ("normal_recto", [item for item in normal if item.recto]),
-        ("normal_verso", [item for item in normal if not item.recto]),
+        ("normal_recto", recto_side),
+        ("normal_verso", verso_side),
         ("chapter_opening", sunk),
     )
     for page_class, group in groups:
@@ -180,15 +188,14 @@ def _classify_page(
 
     offset = geometry.first_band_top - center
     if abs(offset) <= window:
-        page_class: PageClass = "normal_recto" if geometry.recto else "normal_verso"
-        template = by_class.get(page_class)
+        template = _nearest_normal(geometry, by_class)
         if template is None or abs(geometry.text_left - template.text_left_px) > window:
             return PageClassification(geometry.page_name, "unknown", None, ())
         # The first band of a normal page is the running head. It is printed but
         # deleted from F2, so the aligner must not match a source line to it.
         return PageClassification(
             geometry.page_name,
-            page_class,
+            template.page_class,
             int(abs(geometry.first_band_top - template.first_band_top_px)),
             (0,),
         )
@@ -205,6 +212,47 @@ def _classify_page(
     # Between the head window and the chapter sink the evidence is thin, so the
     # page is left unclassified rather than forced into a template.
     return PageClassification(geometry.page_name, "unknown", None, ())
+
+
+def _nearest_normal(
+    geometry: _PageGeometry, by_class: dict[PageClass, PageTemplate]
+) -> PageTemplate | None:
+    """Pick the binding side whose text block sits closest to this page's own."""
+
+    sides = [by_class[name] for name in ("normal_recto", "normal_verso") if name in by_class]
+    if not sides:
+        return None
+    return min(
+        sides, key=lambda item: (abs(geometry.text_left - item.text_left_px), item.page_class)
+    )
+
+
+def _split_sides(
+    normal: Sequence[_PageGeometry],
+) -> tuple[list[_PageGeometry], list[_PageGeometry]]:
+    """Split normal pages into binding sides by text-block left edge."""
+
+    if not normal:
+        return ([], [])
+    center = median(item.text_left for item in normal)
+    low = [item for item in normal if item.text_left <= center]
+    high = [item for item in normal if item.text_left > center]
+    if min(len(low), len(high)) < _SIDE_MINIMUM_SHARE * len(normal):
+        # No usable shift to find, so the file name decides after all. It cannot place a head box
+        # wrong here, because both sides then share almost the same measurements.
+        return (
+            [item for item in normal if item.recto],
+            [item for item in normal if not item.recto],
+        )
+    # File names are not always numbered by folio, so the side a name implies can be wrong for a
+    # whole book. Geometry defines the two groups; the name only picks which label goes on which.
+    if _recto_share(high) > _recto_share(low):
+        return (high, low)
+    return (low, high)
+
+
+def _recto_share(group: Sequence[_PageGeometry]) -> float:
+    return sum(item.recto for item in group) / len(group) if group else 0.0
 
 
 def _fit_template(

@@ -3,13 +3,13 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** partial
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-31
 - **Last verified:** 2026-08-31
 - **Provenance:** derived from the approved whole-book page template design and first-band geometry
   measured across 41 whole PGDP books on 2026-08-31
-- **Disposition:** Classification and suppression shipped; blocked on the precision gate.
+- **Disposition:** Classification, suppression, and the two template-fitting corrections shipped; all three gates pass.
 - **Read when:** implementing book templates, page classes, or running-head suppression.
 - **Search terms:** PGDP, M15a, page class, type page, running head, template, recto, verso.
 
@@ -500,6 +500,44 @@ the plan asks for five.
 Evidence: `.m15b-evidence/decisions.jsonl`, `.m15b-evidence/precision-v3.json`,
 `.m15b-evidence/ledger-sheets/`, and the scripts `render_ledger_sheets.py`,
 `select_precision_sample.py`, and `measure_precision.py`.
+
+## After the template fitting fix, 2026-08-31
+
+All three gates pass. Precision is 0.9974, which is 779 correct matches of 781; no declared-complex
+page is accepted; and all five books clear the 30-page admission minimum, with 665 accepted pages
+between them.
+
+Two fitting defects were corrected. The binding-side split now groups pages by text-block left edge
+rather than by the trailing digits of the file name, and the first-band deviation ceiling rose from
+2px to 25px. Both are described in
+[the page template design](../specs/2026-08-31-pgdp-whole-book-page-templates-design.md).
+
+| book | classified before | after | accepted before | after | precision |
+|---|---|---|---|---|---|
+| `projectID609bfa0449bdf` | 300/312 | 300/312 | 226 | 226 | 1.000 |
+| `projectID64a479f51ce5b` | 200/237 | 200/237 | 75 | 75 | 1.000 |
+| `projectID603d7d5e04ca0` | 0/426 | 352/426 | 52 | 177 | 0.987 |
+| `projectID657550412c8dc` | 27/312 | 250/312 | 14 | 155 | 1.000 |
+| `projectID67a80fde44d34` | 0/98 | 63/98 | 0 | 32 | 1.000 |
+
+The two healthy books are untouched. Their alignment reports differ only in `profile_label` and
+`profile_sha256`, with zero pages changed, so their earlier ledger of 422 matches carries over.
+
+Replay is deterministic. Re-profiling and re-aligning `projectID67a80fde44d34` reproduced a
+byte-identical profile and page-identical alignment.
+
+Two errors remain, both on `projectID603d7d5e04ca0` and both understood.
+
+- `097.png` row 2 matches the source line `I.` to a decorative rule band. This is a separate defect
+  from the running head and was present before the fix.
+- `166.png` still classifies as `unknown`, so its running head is still matched to a body source
+  line. Its first band sits outside the head window.
+
+The ledger behind these numbers was reviewed by a model reading rendered line crops against each
+source line, at the owner's direction, rather than signed off row by row by a person.
+
+Evidence: `.m15b-evidence/precision-t2.json`, `.m15b-evidence/decisions-t2.jsonl`,
+`.m15b-evidence/template-fix-comparison.txt`, and `.m15b-evidence/ledger-sheets-t2/`.
 
 ## Final review and handoff
 

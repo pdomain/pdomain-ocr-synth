@@ -3,13 +3,13 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** partial
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-31
 - **Last verified:** 2026-08-31
 - **Provenance:** derived from the approved fragmented-band correction design and the reproduced
   fixed 25-page M15b review set measured on 2026-08-31
-- **Disposition:** Extractor correction shipped; blocked on the uniqueness-margin decision.
+- **Disposition:** Extractor correction shipped; all three gates pass without changing the uniqueness margin.
 - **Read when:** implementing or reviewing the `pgdp-alignment/v2` line-candidate extractor.
 - **Search terms:** PGDP, M15b, fragmented band, extractor v2, cluster merge, minor ink, band rate.
 
@@ -381,8 +381,13 @@ they are not. The margin is still what rejects almost everything, at 551 of the 
 that whole-book runs did not accept, but missing normalization is not why.
 
 Correcting that threshold is outside this plan and outside the approved design. Both, along with
-the M15b design and issue 403, require the alignment thresholds to stay unchanged. This plan
-therefore stays `partial` and needs an owner decision on the uniqueness margin before M15b can pass.
+the M15b design and issue 403, require the alignment thresholds to stay unchanged.
+
+The threshold did not need correcting. Two page-template fitting defects were fixed instead, and
+with running heads suppressed on all five books the gates pass without touching the uniqueness
+margin: precision 0.9974, no accepted declared-complex page, and all five books admitted with 665
+accepted pages. See [the page classification
+plan](2026-08-31-pgdp-page-classification.md) for the measured result.
 
 ## Final review and handoff
 

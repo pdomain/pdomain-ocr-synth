@@ -111,6 +111,88 @@ def test_book_without_a_binding_shift_still_fits_both_sides() -> None:
     assert by_class["normal_recto"].text_left_px == by_class["normal_verso"].text_left_px
 
 
+def test_side_split_survives_file_names_numbered_by_ten() -> None:
+    """A book naming pages at ten times the folio must still split by binding side."""
+
+    pages: list[PageMeasurement] = []
+    for folio in range(1, 21):
+        recto = bool(folio % 2)
+        pages.append(
+            _page(
+                f"p{folio * 10:04d}.png",
+                first_band_top=111,
+                left=120 if recto else 185,
+                right=880 if recto else 945,
+            )
+        )
+
+    templates = fit_book_templates(tuple(pages))
+
+    by_class = {item.page_class: item for item in templates.templates}
+    assert set(by_class) == {"normal_recto", "normal_verso"}
+    assert {by_class["normal_recto"].text_left_px, by_class["normal_verso"].text_left_px} == {
+        120,
+        185,
+    }
+    assert by_class["normal_recto"].page_count == 10
+    assert by_class["normal_verso"].page_count == 10
+
+
+def test_pages_of_a_book_numbered_by_ten_all_classify() -> None:
+    pages: list[PageMeasurement] = []
+    for folio in range(1, 21):
+        recto = bool(folio % 2)
+        pages.append(
+            _page(
+                f"p{folio * 10:04d}.png",
+                first_band_top=111,
+                left=120 if recto else 185,
+                right=880 if recto else 945,
+            )
+        )
+
+    templates = fit_book_templates(tuple(pages))
+    classified = {item.page_name: item for item in classify_pages(tuple(pages), templates)}
+
+    assert all(item.page_class != "unknown" for item in classified.values())
+    assert all(item.furniture_band_ordinals == (0,) for item in classified.values())
+
+
+def test_book_with_a_noisy_head_still_fits_templates() -> None:
+    """A first band that wanders by about 16px is unsteady, not absent."""
+
+    offsets = (-18, -12, -6, 0, 6, 12, 18, -16, 16, 0)
+    pages = tuple(
+        _page(
+            f"p{number:03d}.png",
+            first_band_top=185 + offsets[number % len(offsets)],
+            left=80 if number % 2 else 140,
+            right=920 if number % 2 else 980,
+        )
+        for number in range(1, 41)
+    )
+
+    templates = fit_book_templates(pages)
+
+    assert templates.has_type_page
+    assert templates.first_band_mad_px is not None
+    assert 2 < templates.first_band_mad_px <= 25
+    assert templates.head_window_px is not None
+    assert templates.head_window_px <= 75
+
+
+def test_book_whose_head_wanders_past_the_ceiling_fits_nothing() -> None:
+    pages = tuple(
+        _page(f"p{number:03d}.png", first_band_top=185 + (number % 2) * 60)
+        for number in range(1, 21)
+    )
+
+    templates = fit_book_templates(pages)
+
+    assert not templates.has_type_page
+    assert templates.templates == ()
+
+
 def test_scattered_book_fits_no_templates() -> None:
     pages = tuple(
         _page(f"p{number:03d}.png", first_band_top=top)

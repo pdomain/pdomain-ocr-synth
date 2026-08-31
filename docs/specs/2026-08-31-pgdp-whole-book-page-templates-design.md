@@ -214,6 +214,49 @@ stays visible as evidence rather than disappearing.
 - Whether page class belongs in `pgdp-profile/v2` or in a separate report, given that
   `pgdp-profile/v1` must stay byte-compatible.
 
+## Revision, 2026-08-31: two fitting defects found on whole books
+
+Three of the five review books classify almost nothing, and the two reasons are unrelated. Together
+they cost 61 of 367 accepted pages and every one of the 18 errors in the measured precision ledger.
+
+### The side split must come from geometry, not the file name
+
+Deciding recto from the trailing digits of the file name fails whenever a book does not number its
+files by folio. `projectID657550412c8dc` names pages at ten times the folio, so `p1720.png` is page
+172 and `p1350.png` is page 135. The last digit is then almost always zero, 291 of its 298 pages
+read as verso, and the split collapses.
+
+The damage follows from the collapse. That book's text-block left edge is genuinely bimodal, with
+127 pages near 120 and 121 near 185. A single pooled template takes 123, which sits about 60px from
+one of the real modes, so the 8px edge test rejects nearly every page. The book classifies 27 of
+312 despite a first-band deviation of 1.0, which is as steady as the best book in the set.
+
+Group the normal pages by their text-block left edge instead, and label the two groups by the
+majority file-name parity within each. Geometry is what the template stores and what classification
+tests, so geometry is what should define the grouping. The file name keeps only the naming job it
+can still do.
+
+This also corrects a number in the table above. The 6px recto-verso shift recorded for In a German
+Colony compared 7 pages against 291, so it described the broken split rather than the book.
+
+### The deviation ceiling refuses books whose head wanders
+
+A ceiling of 2px assumes a head that barely moves. Two books have a head that is clearly present and
+clearly periodic, but noisy: `projectID603d7d5e04ca0` at a deviation of 18.5 and
+`projectID67a80fde44d34` at 16.0. Both are refused outright and classify nothing.
+
+Chapter openings are not the cause. Excluding every sunk page moves the two figures only to 16.0 and
+14.5.
+
+Raise the ceiling to 25. The window formula stays `max(8, 3 x deviation)`, so the widest window a
+qualifying book can produce is 75px, which stays below the 76px at which genuine top-of-page text
+begins. A book at a deviation of 26 is still refused, because its window would cross that line.
+
+Be honest about what this admits. These two books put 6 percent and 10 percent of their pages within
+2px of the book median, against 90 percent for Dead Men's Shoes. Their heads are real but unsteady,
+and their windows will run near 48px, leaving about 28px of margin rather than the 72px a steady
+book enjoys. The ledger after this change is what tells us whether that margin holds.
+
 ## Adversarial Review
 
 - **Stage and source:** One read-only reviewer checked this design against the M15b and v2 extractor
