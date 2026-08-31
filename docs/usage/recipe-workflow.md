@@ -324,12 +324,23 @@ The positional `corpus_root` is the local PGDP corpus directory.
 ### `profile-pgdp <corpus_root>`
 
 The positional `corpus_root` is the local PGDP corpus directory. The command
-profiles only the selected pages in the supplied M14 ranking report.
+profiles only the selected pages in the supplied M14 ranking report, unless
+`--whole-book` widens what it measures.
 
 | Flag | Meaning |
 |------|---------|
 | `--ranking PATH` | Read this required `pgdp-rank/v1` JSON report |
 | `--output PATH` | Write the required `pgdp-profile/v1` JSON report here; it must be outside the corpus root, differ from `--ranking`, and not name a directory |
+| `--whole-book` | Measure every page image in each ranked project directory, but emit only the ranked pages |
+
+`--whole-book` separates what is measured from what is reported. Book-level
+estimates describe a book, so they are pooled over every page of it. The
+emitted page list is unchanged, so a later `align-pgdp` run still sees the
+ranking's selection. Profiling costs about 9.5ms per page against alignment's
+1s, which is why the two stages take different page sets.
+
+The run prints `pages pooled` alongside `pages measured` in this mode, and each
+pooled estimate records the pages that contributed in `evidence_pages`.
 
 ### `align-pgdp <corpus_root>`
 

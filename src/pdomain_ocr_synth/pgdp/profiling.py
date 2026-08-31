@@ -84,14 +84,20 @@ def profile_methods() -> dict[str, str]:
 def profile_project(project: ProfileInputProject) -> ProjectProfile:
     """Measure one selected project one image at a time."""
 
-    pages = tuple(profile_page(project.project_id, page) for page in project.pages)
+    measured = tuple(profile_page(project.project_id, page) for page in project.pages)
+    emitted = tuple(
+        measurement for measurement, page in zip(measured, project.pages, strict=True) if page.emit
+    )
+    # Pool over every measured page. A book statistic fitted on the ranked
+    # subset is not a book statistic, so whole-book mode widens what is pooled
+    # without widening what is emitted.
     return ProjectProfile(
         project_id=project.project_id,
         title=project.title,
         author=project.author,
         genre=project.genre,
-        pages=pages,
-        pooled_estimates=tuple(pool_estimate(name, pages) for name in _METRIC_NAMES),
+        pages=emitted,
+        pooled_estimates=tuple(pool_estimate(name, measured) for name in _METRIC_NAMES),
     )
 
 

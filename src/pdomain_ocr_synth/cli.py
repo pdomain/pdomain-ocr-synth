@@ -327,6 +327,11 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="write the source-geometry profile JSON here",
     )
+    _ = p_profile_pgdp.add_argument(
+        "--whole-book",
+        action="store_true",
+        help="measure every page of each ranked project, but emit only the ranked pages",
+    )
 
     p_align_pgdp = subparsers.add_parser(
         "align-pgdp",
@@ -1581,7 +1586,9 @@ def _cmd_rank_pgdp(
     return 0
 
 
-def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
+def _cmd_profile_pgdp(
+    corpus_root: str, *, ranking: str, output: str, whole_book: bool = False
+) -> int:
     """Measure selected local PGDP scans and write a geometry profile."""
 
     from pdomain_ocr_synth.pgdp.image_measurement import SnapshotSpoolError
@@ -1612,7 +1619,7 @@ def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
 
     try:
         ranking_snapshot = read_profile_snapshot(ranking_path)
-        selection = load_profile_snapshot(ranking_snapshot, corpus_root=root)
+        selection = load_profile_snapshot(ranking_snapshot, corpus_root=root, whole_book=whole_book)
         ranking_sha256 = sha256(ranking_snapshot).hexdigest()
     except ValueError as error:
         print(f"error: {error}", file=sys.stderr)
@@ -1644,6 +1651,16 @@ def _cmd_profile_pgdp(corpus_root: str, *, ranking: str, output: str) -> int:
     print(f"projects profiled: {len(report.projects)}")
     print(f"pages measured: {measured_pages}")
     print(f"pages excluded: {len(pages) - measured_pages}")
+    if whole_book:
+        # Whole-book mode pools over pages it does not emit, so report both.
+        pooled_pages = sum(
+            max(
+                (estimate.sample_count for estimate in project.pooled_estimates),
+                default=0,
+            )
+            for project in report.projects
+        )
+        print(f"pages pooled: {pooled_pages}")
     print(f"diagnostics: {diagnostics}")
     return 0
 
@@ -1764,6 +1781,7 @@ _IMPLEMENTED_DISPATCH = {
         args.corpus_root,
         ranking=args.ranking,
         output=args.output,
+        whole_book=args.whole_book,
     ),
     "align-pgdp": lambda args: _cmd_align_pgdp(
         args.corpus_root,

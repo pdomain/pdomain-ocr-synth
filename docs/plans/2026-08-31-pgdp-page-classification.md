@@ -75,7 +75,7 @@ Templates describe a book, so they must be fitted over every page of it. But ali
 1s per page against profiling's 9.5ms, and the fixed 25-page selection must not move. So this task
 separates what is measured from what is emitted.
 
-- [ ] **Step 1: Write failing tests for whole-book enumeration**
+- [x] **Step 1: Write failing tests for whole-book enumeration**
 
 Assert that with the new mode a project measures every `*.png` under its directory, not only the
 pages the M14 ranking named, and that the emitted report still contains exactly the ranked pages.
@@ -85,13 +85,13 @@ emitted. Assert the default mode is unchanged.
 Cover a project directory holding a page the ranking does not name, and one whose ranked page is
 missing from disk.
 
-- [ ] **Step 2: Run the focused tests and confirm they fail**
+- [x] **Step 2: Run the focused tests and confirm they fail**
 
 Run: `uv run pytest tests/test_pgdp_profile_input.py tests/test_cli_profile_pgdp.py -q`
 
 Expected: FAIL on the unknown option.
 
-- [ ] **Step 3: Implement the mode**
+- [x] **Step 3: Implement the mode**
 
 Add `--whole-book` to `profile-pgdp`. When set, enumerate every `*.png` directly under each ranked
 project directory in sorted order and measure all of them. Pool estimates and fit templates over
@@ -101,7 +101,7 @@ consumes still holds the fixed selection.
 Record on each project how many pages were measured and how many were emitted, so a reader can see
 the templates rest on more pages than the report lists.
 
-- [ ] **Step 4: Confirm the focused tests pass**
+- [x] **Step 4: Confirm the focused tests pass**
 
 Run: `uv run pytest tests/test_pgdp_profile_input.py tests/test_cli_profile_pgdp.py -q`
 

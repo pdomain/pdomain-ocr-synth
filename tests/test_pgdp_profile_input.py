@@ -400,3 +400,51 @@ def test_profile_input_keeps_missing_image_page_for_later_measurement_diagnostic
     page = ranking_input.projects[0].pages[0]
     assert page.image_path is None
     assert page.source_path is None
+
+
+def test_whole_book_measures_every_page_but_emits_only_ranked_pages(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    project = _make_project(corpus_root, "projectIDa")
+    for name in ("p1.png", "p2.png", "p3.png", "p4.png"):
+        (project / name).touch()
+    ranking_path = tmp_path / "ranking.json"
+    _write_ranking(ranking_path, projects=(_project("projectIDa", ("p2.png", "p4.png")),))
+
+    selection = load_profile_input(ranking_path, corpus_root=corpus_root, whole_book=True)
+
+    pages = selection.projects[0].pages
+    assert [page.name for page in pages] == ["p1.png", "p2.png", "p3.png", "p4.png"]
+    assert [page.name for page in pages if page.emit] == ["p2.png", "p4.png"]
+
+
+def test_whole_book_is_off_by_default(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    project = _make_project(corpus_root, "projectIDa")
+    for name in ("p1.png", "p2.png"):
+        (project / name).touch()
+    ranking_path = tmp_path / "ranking.json"
+    _write_ranking(ranking_path, projects=(_project("projectIDa", ("p2.png",)),))
+
+    selection = load_profile_input(ranking_path, corpus_root=corpus_root)
+
+    pages = selection.projects[0].pages
+    assert [page.name for page in pages] == ["p2.png"]
+    assert all(page.emit for page in pages)
+
+
+def test_whole_book_keeps_a_ranked_page_missing_from_disk(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    project = _make_project(corpus_root, "projectIDa")
+    (project / "p1.png").touch()
+    ranking_path = tmp_path / "ranking.json"
+    _write_ranking(ranking_path, projects=(_project("projectIDa", ("p9.png",)),))
+
+    selection = load_profile_input(ranking_path, corpus_root=corpus_root, whole_book=True)
+
+    pages = selection.projects[0].pages
+    assert [page.name for page in pages] == ["p1.png", "p9.png"]
+    missing = next(page for page in pages if page.name == "p9.png")
+    assert missing.emit is True
+    assert missing.image_path is None
+    unranked = next(page for page in pages if page.name == "p1.png")
+    assert unranked.emit is False

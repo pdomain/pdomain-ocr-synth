@@ -377,3 +377,71 @@ def test_profile_pgdp_hashes_and_parses_one_ranking_snapshot(
     assert reads == 1
     assert payload["source_ranking"]["sha256"] == hashlib.sha256(snapshot).hexdigest()
     assert "pages measured: 1" in capsys.readouterr().out
+
+
+def _add_extra_page(corpus_root: Path, name: str, *, top: int) -> None:
+    """Add a page image that the ranking will not select."""
+
+    image = Image.new("L", (40, 30), color=255)
+    for x in range(5, 35):
+        for y in range(top, top + 5):
+            image.putpixel((x, y), 0)
+    image.save(corpus_root / "projectIDone" / name)
+
+
+def test_whole_book_pools_every_page_but_emits_only_the_ranked_page(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    _write_project(corpus_root)
+    _add_extra_page(corpus_root, "p2.png", top=12)
+    _add_extra_page(corpus_root, "p3.png", top=14)
+    ranking_path = tmp_path / "ranking.json"
+    _ranking_for(corpus_root, ranking_path)
+    output = tmp_path / "profile.json"
+
+    rc = main(
+        [
+            "profile-pgdp",
+            str(corpus_root),
+            "--ranking",
+            str(ranking_path),
+            "--output",
+            str(output),
+            "--whole-book",
+        ]
+    )
+
+    assert rc == 0
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    project = payload["projects"][0]
+    assert [page["page_name"] for page in project["pages"]] == ["p1.png"]
+    pooled = {estimate["name"]: estimate for estimate in project["pooled_estimates"]}
+    assert pooled["margin_top_px"]["sample_count"] == 3
+    assert pooled["margin_top_px"]["evidence_pages"] == ["p1.png", "p2.png", "p3.png"]
+
+
+def test_default_mode_pools_only_the_ranked_page(tmp_path: Path) -> None:
+    corpus_root = tmp_path / "corpus"
+    _write_project(corpus_root)
+    _add_extra_page(corpus_root, "p2.png", top=12)
+    ranking_path = tmp_path / "ranking.json"
+    _ranking_for(corpus_root, ranking_path)
+    output = tmp_path / "profile.json"
+
+    rc = main(
+        [
+            "profile-pgdp",
+            str(corpus_root),
+            "--ranking",
+            str(ranking_path),
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    project = payload["projects"][0]
+    assert [page["page_name"] for page in project["pages"]] == ["p1.png"]
+    pooled = {estimate["name"]: estimate for estimate in project["pooled_estimates"]}
+    assert pooled["margin_top_px"]["sample_count"] == 1
+    assert pooled["margin_top_px"]["evidence_pages"] == ["p1.png"]

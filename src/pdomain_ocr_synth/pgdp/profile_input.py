@@ -30,6 +30,14 @@ class ProfileInputPage:
     name: str
     image_path: Path | None
     source_path: str | None
+    emit: bool = True
+    """Whether the page appears in the emitted report.
+
+    Whole-book mode measures every page of a book so its templates rest on the
+    whole volume, but emits only the pages the M14 ranking selected. Alignment
+    costs about a hundred times more per page than profiling, and the fixed
+    review selection must not move.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,11 +64,13 @@ class ProfileInput:
         object.__setattr__(self, "projects", tuple(self.projects))
 
 
-def load_profile_input(ranking_path: str | Path, *, corpus_root: str | Path) -> ProfileInput:
+def load_profile_input(
+    ranking_path: str | Path, *, corpus_root: str | Path, whole_book: bool = False
+) -> ProfileInput:
     """Validate an M14 report and resolve its selected images safely."""
 
     ranking_snapshot = read_profile_snapshot(ranking_path)
-    return load_profile_snapshot(ranking_snapshot, corpus_root=corpus_root)
+    return load_profile_snapshot(ranking_snapshot, corpus_root=corpus_root, whole_book=whole_book)
 
 
 def read_profile_snapshot(ranking_path: str | Path) -> bytes:
@@ -72,7 +82,9 @@ def read_profile_snapshot(ranking_path: str | Path) -> bytes:
         raise ValueError("Ranking report must be valid ranking JSON.") from error
 
 
-def load_profile_snapshot(ranking_snapshot: bytes, *, corpus_root: str | Path) -> ProfileInput:
+def load_profile_snapshot(
+    ranking_snapshot: bytes, *, corpus_root: str | Path, whole_book: bool = False
+) -> ProfileInput:
     """Validate one immutable M14 report snapshot and resolve its selected images safely."""
 
     payload = _load_ranking_payload(ranking_snapshot)
@@ -92,6 +104,12 @@ def load_profile_snapshot(ranking_snapshot: bytes, *, corpus_root: str | Path) -
             project_directory=project_directory,
             corpus_root=root,
         )
+        if whole_book:
+            pages = _with_unranked_pages(
+                ranked=pages,
+                project_directory=project_directory,
+                corpus_root=root,
+            )
         projects.append(
             ProfileInputProject(
                 project_id=project_id,
@@ -102,6 +120,44 @@ def load_profile_snapshot(ranking_snapshot: bytes, *, corpus_root: str | Path) -
             )
         )
     return ProfileInput(projects=tuple(projects))
+
+
+def _with_unranked_pages(
+    *,
+    ranked: tuple[ProfileInputPage, ...],
+    project_directory: Path,
+    corpus_root: Path,
+) -> tuple[ProfileInputPage, ...]:
+    """Add every unranked page image so book statistics rest on the whole book.
+
+    Ranked pages keep `emit` set, so the emitted report still holds exactly the
+    M14 selection. The added pages are measured and pooled, then dropped.
+    """
+
+    ranked_names = {page.name for page in ranked}
+    extra: list[ProfileInputPage] = []
+    for image_path in sorted(project_directory.glob("*.png")):
+        page_name = image_path.name
+        if page_name in ranked_names:
+            continue
+        resolution = resolve_image_candidate(
+            project_directory=project_directory,
+            page_name=page_name,
+            corpus_root=corpus_root,
+        )
+        if resolution.unsafe_candidate or resolution.image_path is None:
+            continue
+        extra.append(
+            ProfileInputPage(
+                name=page_name,
+                image_path=resolution.image_path,
+                source_path=corpus_relative_path(
+                    path=resolution.image_path, corpus_root=corpus_root
+                ),
+                emit=False,
+            )
+        )
+    return tuple(sorted(ranked + tuple(extra), key=lambda page: page.name))
 
 
 def _load_ranking_payload(ranking_snapshot: bytes) -> RankingReportData:
