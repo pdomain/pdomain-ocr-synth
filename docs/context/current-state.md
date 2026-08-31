@@ -23,19 +23,30 @@ reads PGDP project metadata and F2 text, ranks projects, and writes a bounded
 JSON review queue. It does not measure typography from page images or synthesize
 training data.
 
-M15's first runnable slice is shipped. The local-only `profile-pgdp` command
-reads an M14 review queue and measures source-frame foreground bounds, margins,
-horizontal ink bands, and pooled pixel estimates. It does not rectify scans or
-claim alignment, baselines, columns, semantics, or fonts.
+M15a is shipped and now writes `pgdp-profile/v2`. The local-only `profile-pgdp`
+command measures source-frame foreground bounds, margins, horizontal ink bands,
+and pooled pixel estimates. Its `--whole-book` mode measures every page image in
+a ranked project directory while emitting only the ranked pages, so book
+statistics describe the book rather than the ranking. It fits per-book page
+templates from first ink-band positions and classifies each page as
+`normal_recto`, `normal_verso`, `chapter_opening`, or `unknown`. It does not
+rectify scans or claim baselines, columns, semantics, or fonts.
 
-M15b's implementation is complete, but its corpus quality gate did not pass.
-The local-only `align-pgdp` command writes deterministic `pgdp-alignment/v1`
-reports. A balanced review of 25 pages from five books covered 1,107 operation
-rows. All 25 pages were excluded before alignment, so accepted-line precision
-and eligible-page coverage were undefined. Visual review found that the
-`fragmented_band` exclusion incorrectly rejected 12 otherwise alignable pages
-and 359 reviewed rows. The required 98 percent precision and 70 percent coverage
-thresholds remain unchanged while the extractor is corrected.
+M15b writes `pgdp-alignment/v3` and remains partial. Three defects found on
+2026-08-31 are corrected. Version 1 rejected a page whenever any ink band split
+into more than one cluster, which excluded ordinary text pages over punctuation
+and dust. Specks became ink bands of their own and then candidates matching no
+source line. Running heads and page numbers, printed but deleted from F2, were
+emitted as candidates, and when a page's candidate count equalled its eligible
+source-line count the aligner bound source line 0 to the head and shifted every
+match below it.
+
+On the fixed 25-page selection, `fragmented_band` exclusions fell from 23 to 5,
+accepted pages rose from 0 to 7, and eligible-page coverage rose to 0.538. All
+216 matches across the seven accepted pages are monotone with correct text at
+both ends, so no shifted page remains. Both gates still fail: coverage is below
+0.70, and accepted-line precision is undefined because it needs a human
+confusion ledger. The 98 percent and 70 percent thresholds are unchanged.
 
 ## PGDP ranking verification
 

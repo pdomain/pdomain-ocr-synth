@@ -95,7 +95,7 @@ pdomain-ocr-synth align-pgdp /path/to/pgdp-corpus \
 ```
 
 `align-pgdp` reads F2 source and the scans referenced by a
-`pgdp-profile/v1` report. It writes a deterministic `pgdp-alignment/v1` report.
+`pgdp-profile/v2` report. It writes a deterministic `pgdp-alignment/v3` report.
 The output must be outside the corpus root, differ from the profile input, and
 name a file rather than a directory. Source or scan changes remain explicit
 exclusions instead of being silently realigned.
@@ -330,7 +330,7 @@ profiles only the selected pages in the supplied M14 ranking report, unless
 | Flag | Meaning |
 |------|---------|
 | `--ranking PATH` | Read this required `pgdp-rank/v1` JSON report |
-| `--output PATH` | Write the required `pgdp-profile/v1` JSON report here; it must be outside the corpus root, differ from `--ranking`, and not name a directory |
+| `--output PATH` | Write the required `pgdp-profile/v2` JSON report here; it must be outside the corpus root, differ from `--ranking`, and not name a directory |
 | `--whole-book` | Measure every page image in each ranked project directory, but emit only the ranked pages |
 
 `--whole-book` separates what is measured from what is reported. Book-level
@@ -342,6 +342,18 @@ ranking's selection. Profiling costs about 9.5ms per page against alignment's
 The run prints `pages pooled` alongside `pages measured` in this mode, and each
 pooled estimate records the pages that contributed in `evidence_pages`.
 
+Whole-book measurement also fits per-book page templates. A book whose first ink
+band holds a steady position across the volume gets templates for its normal
+recto, normal verso, and chapter-opening pages, and every page is classified
+against them as `normal_recto`, `normal_verso`, `chapter_opening`, or `unknown`.
+A book whose first band wanders gets no templates and every page classifies
+`unknown`.
+
+The class decides which bands `align-pgdp` ignores. A normal page's first band
+is its running head, which is printed but deleted from F2, so no candidate is
+emitted for it. Every other class suppresses nothing. Front matter and plates
+have no class of their own because the corpus offers no discriminator for them.
+
 ### `align-pgdp <corpus_root>`
 
 The `corpus_root` positional argument is the local PGDP corpus directory.
@@ -351,7 +363,7 @@ corpus scans. Those scans must still be available and match the supplied M15a
 
 | Flag | Meaning |
 |------|---------|
-| `--profile PATH` | Read this required `pgdp-profile/v1` JSON report |
+| `--profile PATH` | Read this required `pgdp-profile/v2` JSON report |
 | `--output PATH` | Write the required `pgdp-alignment/v1` JSON report here; it must be outside the corpus root, differ from `--profile`, and not name a directory |
 
 ## Audit log schema

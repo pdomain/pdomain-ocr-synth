@@ -3,13 +3,13 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** draft
+- **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-08-31
 - **Last verified:** 2026-08-31
 - **Provenance:** derived from the approved whole-book page template design and first-band geometry
   measured across 41 whole PGDP books on 2026-08-31
-- **Disposition:** Active executable plan for M15a page classification and furniture suppression.
+- **Disposition:** Classification and suppression shipped; blocked on the coverage and precision gates.
 - **Read when:** implementing book templates, page classes, or running-head suppression.
 - **Search terms:** PGDP, M15a, page class, type page, running head, template, recto, verso.
 
@@ -267,7 +267,7 @@ Expected: PASS.
 - Modify: `src/pdomain_ocr_synth/pgdp/alignment.py`
 - Modify: `tests/test_pgdp_alignment_image.py`
 
-- [ ] **Step 1: Write failing tests for suppression**
+- [x] **Step 1: Write failing tests for suppression**
 
 Cover a page listing a furniture band, asserting no candidate is emitted for it and a `running_head`
 rejection records it. Cover a page listing none, asserting every band still yields a candidate.
@@ -276,13 +276,13 @@ and so behave exactly as they do today.
 
 Assert the fragmented-band rate denominator excludes suppressed bands.
 
-- [ ] **Step 2: Run the focused test and confirm it fails**
+- [x] **Step 2: Run the focused test and confirm it fails**
 
 Run: `uv run pytest tests/test_pgdp_alignment_image.py -q`
 
 Expected: FAIL on the missing suppression.
 
-- [ ] **Step 3: Implement suppression**
+- [x] **Step 3: Implement suppression**
 
 Add `running_head` to the `RejectionReason` `Literal`.
 
@@ -297,7 +297,7 @@ its `y_start` falls inside the head window, and lists nothing otherwise. A page 
 `chapter_opening`, `front_matter`, `plate`, or `unknown` lists nothing, so those pages behave exactly
 as they do today.
 
-- [ ] **Step 4: Confirm the focused test passes**
+- [x] **Step 4: Confirm the focused test passes**
 
 Run: `uv run pytest tests/test_pgdp_alignment_image.py -q`
 
@@ -313,7 +313,7 @@ Expected: PASS.
 - Modify: `tests/test_pgdp_alignment_models.py`
 - Modify: `tests/test_cli_align_pgdp.py`
 
-- [ ] **Step 1: Write failing tests for the version strings**
+- [x] **Step 1: Write failing tests for the version strings**
 
 Assert `pgdp-alignment/v3` and `source-frame-components/v3`, and that the serialized method block
 records `head_mad_maximum_px` and `chapter_sink_minimum_px`.
@@ -322,18 +322,18 @@ As in Task 5, versions 1 and 2 are retained as schema files and git history. Ass
 still exist and name their own versions, and assert that loading a version 1 or version 2 payload
 raises.
 
-- [ ] **Step 2: Run the focused tests and confirm they fail**
+- [x] **Step 2: Run the focused tests and confirm they fail**
 
 Run: `uv run pytest tests/test_pgdp_alignment_models.py tests/test_cli_align_pgdp.py -q`
 
 Expected: FAIL on the version strings.
 
-- [ ] **Step 3: Implement the version bump**
+- [x] **Step 3: Implement the version bump**
 
 Bump both version strings, move the wire `Literal` to the new version, add the two constants to the
 method block, and regenerate the v3 schema. Retain the v1 and v2 schema files unchanged.
 
-- [ ] **Step 4: Confirm the focused tests pass**
+- [x] **Step 4: Confirm the focused tests pass**
 
 Run: `uv run pytest tests/test_pgdp_alignment_models.py tests/test_cli_align_pgdp.py -q`
 
@@ -345,16 +345,16 @@ Expected: PASS.
 
 - Modify: `docs/plans/2026-08-31-pgdp-page-classification.md`
 
-- [ ] **Step 1: Reprofile the five review books whole**
+- [x] **Step 1: Reprofile the five review books whole**
 
 Run `profile-pgdp --whole-book` against the fixed ranking. It measures every page of the five books
 and emits the same 25, so `align-pgdp` runs unchanged against the fixed selection.
 
-- [ ] **Step 2: Confirm deterministic replay**
+- [x] **Step 2: Confirm deterministic replay**
 
 Run `align-pgdp` twice and confirm the reports are byte-identical.
 
-- [ ] **Step 3: Verify the known header steals are gone**
+- [x] **Step 3: Verify the known header steals are gone**
 
 Expected: `p008.png` and `p179.png` no longer bind source line 0 to their running head. `118.png` and
 `a005.png` still match their first band, because it is genuine text.
@@ -364,18 +364,18 @@ Expected: `p008.png` and `p179.png` no longer bind source line 0 to their runnin
 Render overlays for every eligible page, record the intended and observed mapping and a reviewer
 decision per operation, and reconcile all 25 pages into exactly one of the four categories.
 
-- [ ] **Step 5: Measure the three gates**
+- [x] **Step 5: Measure the three gates**
 
 Expected: at least 98 percent accepted-line precision, at least 70 percent eligible-page coverage,
 zero accepted declared-complex pages.
 
-- [ ] **Step 6: Re-sweep the candidate box mode**
+- [x] **Step 6: Re-sweep the candidate box mode**
 
 The dominant mode was chosen because union widened running-head bands into body-line shapes. With
 heads suppressed that reason is gone, so rerun the six-variant sweep and record whether union now
 wins.
 
-- [ ] **Step 7: Record the measured counts in this plan**
+- [x] **Step 7: Record the measured counts in this plan**
 
 Write the exclusion counts, page reconciliation, ledger hash, and report hash into a
 `## Corpus review result` section. Do not weaken a gate to make the review pass.
@@ -389,24 +389,24 @@ Write the exclusion counts, page reconciliation, ledger hash, and report hash in
 - Modify: `docs/context/intent-map.md`
 - Modify: `docs/plans/README.md`
 
-- [ ] **Step 1: Document the wire versions and the page classes**
+- [x] **Step 1: Document the wire versions and the page classes**
 
-- [ ] **Step 2: Record the measured counts, coverage, precision, and residual risks**
+- [x] **Step 2: Record the measured counts, coverage, precision, and residual risks**
 
-- [ ] **Step 3: Mark milestones**
+- [x] **Step 3: Mark milestones**
 
 Mark this plan and the M15b plans `implemented` only if all three gates pass. Otherwise leave them
 `partial` and state which gate failed.
 
 ## Task 10: Verify and commit
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `make ci AI=1`
 
 Expected: PASS with no new lint, type, test, or build failures.
 
-- [ ] **Step 2: Run the documentation gate**
+- [x] **Step 2: Run the documentation gate**
 
 Run: `docgraph reindex && docgraph check --strict && git diff --check`
 
@@ -416,9 +416,48 @@ Expected: no new blocking issue and `git diff --check` exits 0.
 
 Close `ConcaveTrillion/ocr-container-meta#403` only when all three gates pass.
 
-- [ ] **Step 4: Commit locally**
+- [x] **Step 4: Commit locally**
 
 Do not push without explicit approval.
+
+## Corpus review result
+
+Running-head suppression works. Both gates still fail, and the milestone stays partial.
+
+The fixed 25-page selection was reprofiled with `--whole-book`, pooling 1,367 pages to emit 25. Two
+`align-pgdp` runs were byte-identical, with report SHA-256
+`525c7604c944ceb4e794cbefdb62f0fba7cc78cd58d65fe0550f17568c401627` against profile SHA-256
+`d7ea14ac83e35207c4d02b53b5b9ea5ba4964bf251d99976f495f2653d2782ae`.
+
+Page reconciliation is unchanged at 13 eligible, 10 unavailable or malformed, 2 declared complex, and
+0 source changed. Accepted pages rose from 5 to 7 and eligible-page coverage from 0.385 to 0.538. No
+declared-complex page was accepted.
+
+| stage | fragmented_band | accepted | coverage |
+|---|---|---|---|
+| version 1 | 23 | 0 | undefined |
+| version 2 extractor | 5 | 3 | 0.231 |
+| speck bands dropped | 5 | 5 | 0.385 |
+| running heads suppressed | 5 | 6 | 0.462 |
+| union candidate box | 5 | 7 | 0.538 |
+
+The two pages that bound source line 0 to their running head are fixed. `p008.png` is no longer
+accepted, and `p179.png` is accepted with its first source line on the first body row.
+
+Every accepted page was checked at both ends of its monotone path against the source text. All 216
+matches across the seven pages run in strictly increasing source and candidate order, and the first
+and last match of each page carry the right text. No shifted page remains.
+
+That check is not the confusion ledger the gate requires. It was read from the report and the
+rendered overlays rather than signed off line by line by a person, so accepted-line precision stays
+undefined and its gate stays failed. Overlays for all 13 eligible pages are in
+`/workspaces/pdomain/.m15b-evidence/overlays-v3/`.
+
+Coverage of 0.538 falls short of the 0.70 gate. The five eligible pages that remain unaccepted all
+fail on uniqueness margin, and four of them come from the two books whose first-band deviation
+exceeds 2px, so they fit no templates and their heads were never suppressed. Reaching 0.70 needs
+either a way to classify books with no stable type page, or a decision that 0.70 is the wrong target
+for training-data synthesis.
 
 ## Final review and handoff
 
