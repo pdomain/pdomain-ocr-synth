@@ -466,6 +466,41 @@ coverage was being measured on the review selection rather than on whole books. 
 over all five books admit three of them, with 226, 75, and 52 accepted pages against 14 and 0 for
 the two that are left out. See `docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md`.
 
+## Measured accepted-line precision, 2026-08-31
+
+Precision is 0.9716, which is 615 correct matches of 633, against a 0.98 gate. The gate fails.
+
+Every error falls on a page that carries no page class. Classified pages score 394 of 394, and
+unclassified pages 221 of 239.
+
+| book | pages reviewed | matches | precision |
+|---|---|---|---|
+| `projectID609bfa0449bdf` | 8 | 180 | 1.000 |
+| `projectID64a479f51ce5b` | 6 | 242 | 1.000 |
+| `projectID603d7d5e04ca0` | 5 | 137 | 0.891 |
+| `projectID657550412c8dc` | 3 | 74 | 0.959 |
+
+All 18 errors are the same defect. The running head becomes candidate 0 and takes a body source
+line, which shifts the rows beneath it until a short source line absorbs the offset. That costs one
+row on `098.png` and twelve on `089.png`.
+
+The classified matches are not easy cases. They include small-capital address blocks, italic date
+headings, accented words, currency and fractions, drama speaker labels, and hyphenated words joined
+across a line end. None of them failed.
+
+Requiring a page class before acceptance would raise precision on this sample to 1.000. Accepted
+pages would fall from 367 to 306, and admitted books from three to two, keeping
+`projectID609bfa0449bdf` at 226 pages and `projectID64a479f51ce5b` at 74.
+
+Two limits apply to this measurement. The reviewer was a model reading rendered line crops against
+each source line, not a person signing off each row, so it is evidence rather than the human
+sign-off the gate names. And it covers four books, because the fifth accepts no pages at all, where
+the plan asks for five.
+
+Evidence: `.m15b-evidence/decisions.jsonl`, `.m15b-evidence/precision-v3.json`,
+`.m15b-evidence/ledger-sheets/`, and the scripts `render_ledger_sheets.py`,
+`select_precision_sample.py`, and `measure_precision.py`.
+
 ## Final review and handoff
 
 Request a branch-wide review against the design and this plan. Resolve every accepted finding with a

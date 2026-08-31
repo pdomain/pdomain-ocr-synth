@@ -46,8 +46,15 @@ accepted pages rose from 0 to 7, and eligible-page coverage rose to 0.538. All
 216 matches across the seven accepted pages are monotone with correct text at
 both ends, so no shifted page remains.
 
-One gate now fails. Accepted-line precision is undefined because it needs a
-human confusion ledger. The 70 percent coverage gate was withdrawn on
+One gate now fails. Accepted-line precision measured 0.9716 on 2026-08-31,
+615 correct matches of 633 across 22 pages and four books, against a 0.98 gate.
+Every error sits on a page carrying no page class: classified pages scored 394
+of 394, unclassified pages 221 of 239. All 18 errors are the same defect, a
+running head taken as candidate 0 and matched to a body source line. Requiring
+a page class before acceptance would raise precision to 1.000 on that sample,
+cut accepted pages from 367 to 306, and cut admitted books from three to two.
+That ledger was reviewed by a model reading line crops, not signed off by a
+person. The 70 percent coverage gate was withdrawn on
 2026-08-31 and replaced by per-book admission at 30 accepted pages, because
 coverage was being measured on a review selection that M14 skews toward hard
 pages. Whole-book runs over the five review books accept 367 of 971 eligible
