@@ -156,6 +156,9 @@ The fixed 25-page selection stays fixed, and replay stays deterministic.
   unalignable page was accepted. A second defect surfaced in that run: the uniqueness margin is an
   unnormalized absolute cost difference, and it rejects eight otherwise fully matched text pages.
   That threshold is outside this design and needs a separate owner decision.
+- **Superseded diagnosis:** the low uniqueness margins were later traced to running heads and page
+  numbers being emitted as line candidates with no F2 source line. The correction is designed in
+  [the whole-book page template design](2026-08-31-pgdp-whole-book-page-templates-design.md).
 
 ## Where the measurements come from
 
