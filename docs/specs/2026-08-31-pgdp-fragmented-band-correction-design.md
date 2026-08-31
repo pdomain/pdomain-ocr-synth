@@ -101,9 +101,13 @@ carries an independent `malformed_control` exclusion.
 the 12 and exclude it, so version 2 makes 13 pages eligible where review found 12 alignable.
 
 The downstream alignment gates are the remaining defense. If they reject `053.png`, eligible-page
-coverage is 12 of 13, or 92 percent, comfortably above the 70 percent gate. If they accept it with
-wrong lines, accepted-line precision falls and this design needs another pass. The implementation
-run measures which happens; this design does not assume either.
+coverage is 12 of 13, or 92 percent. If they accept it with wrong lines, accepted-line precision
+falls and this design needs another pass. The implementation run measures which happens; this
+design does not assume either.
+
+The 70 percent coverage gate this paragraph was written against was withdrawn on 2026-08-31 and
+replaced by per-book admission at 30 accepted pages. Coverage is now a reported statistic. See
+[the whole-book yield gate design](2026-08-31-pgdp-whole-book-yield-gate-design.md).
 
 ## How the algorithm version changes
 
@@ -129,10 +133,12 @@ minor-ink filter is still recorded as evidence rather than dropped.
 
 ## What does not change
 
-The three quality gates stay exactly as they are: at least 98 percent accepted-line precision, at
-least 70 percent eligible-page coverage, and zero accepted declared-complex pages. The alignment
-thresholds stay at 90 percent matched lines, cost at most 0.22, and uniqueness margin at least
-0.15. Confidence stays null with `confidence_kind` set to `uncalibrated`.
+The quality gates stay exactly as they are for this correction: at least 98 percent accepted-line
+precision, at least 70 percent eligible-page coverage, and zero accepted declared-complex pages.
+The coverage gate was later withdrawn, on 2026-08-31, in favour of per-book admission at 30
+accepted pages. The alignment thresholds stay at 90 percent matched lines, cost at most 0.22, and
+uniqueness margin at least 0.15. Confidence stays null with `confidence_kind` set to
+`uncalibrated`.
 
 The fixed 25-page selection stays fixed, and replay stays deterministic.
 

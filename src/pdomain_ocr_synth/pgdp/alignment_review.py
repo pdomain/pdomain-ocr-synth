@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections import Counter
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import file_digest
 from io import BytesIO
 from math import isfinite
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 from PIL import Image, ImageDraw
 
@@ -33,7 +34,6 @@ class ReviewGateFailure(StrEnum):
     """One unmet bounded-review acceptance threshold."""
 
     ACCEPTED_LINE_PRECISION = "accepted_line_precision"
-    ELIGIBLE_PAGE_COVERAGE = "eligible_page_coverage"
     DECLARED_COMPLEX_ACCEPTED = "declared_complex_accepted"
 
 
@@ -81,6 +81,11 @@ _KNOWN_EXCLUSION_CODES = (
     | _ALIGNMENT_QUALITY_CODES
     | {_SOURCE_CHANGED_CODE}
 )
+
+# Seed value, not a calibrated one: nothing fits typography from an aligned page yet, so no
+# downstream consumer can state how many pages a per-book style fit needs. See
+# docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md.
+MINIMUM_ACCEPTED_PAGES_PER_BOOK: Final = 30
 
 _ACCEPTED_MATCH_COLOR = (0, 192, 0)
 _REJECTED_MATCH_COLOR = (224, 160, 0)
@@ -397,11 +402,82 @@ def validate_review_gate(summary: ReviewSummary) -> ReviewGateResult:
     failures: list[ReviewGateFailure] = []
     if summary.accepted_line_precision is None or summary.accepted_line_precision < 0.98:
         failures.append(ReviewGateFailure.ACCEPTED_LINE_PRECISION)
-    if summary.eligible_page_coverage is None or summary.eligible_page_coverage < 0.70:
-        failures.append(ReviewGateFailure.ELIGIBLE_PAGE_COVERAGE)
     if summary.declared_complex_accepted != 0:
         failures.append(ReviewGateFailure.DECLARED_COMPLEX_ACCEPTED)
     return ReviewGateResult(passed=not failures, failures=tuple(failures))
+
+
+@dataclass(frozen=True, slots=True)
+class BookYield:
+    """One book's accepted-page yield and its admission to synthesis."""
+
+    project_id: str
+    eligible_pages: int
+    accepted_pages: int
+    eligible_page_coverage: float | None
+    admitted: bool
+
+    def __post_init__(self) -> None:
+        _validate_identity(self.project_id, name="project_id")
+        _validate_nonnegative_integer(self.eligible_pages, name="eligible_pages")
+        _validate_nonnegative_integer(self.accepted_pages, name="accepted_pages")
+        if self.accepted_pages > self.eligible_pages:
+            raise ValueError("accepted_pages cannot exceed eligible_pages.")
+        _validate_optional_proportion(
+            self.eligible_page_coverage,
+            name="eligible_page_coverage",
+        )
+        expected_coverage = (
+            None if not self.eligible_pages else self.accepted_pages / self.eligible_pages
+        )
+        if self.eligible_page_coverage != expected_coverage:
+            raise ValueError("eligible_page_coverage must match accepted over eligible pages.")
+        if self.admitted != (self.accepted_pages >= MINIMUM_ACCEPTED_PAGES_PER_BOOK):
+            raise ValueError("admitted must match the accepted-page minimum.")
+
+
+def summarize_book_yield(
+    report: AlignmentReport,
+    *,
+    selected_pages: Sequence[ReviewPage] | None = None,
+) -> tuple[BookYield, ...]:
+    """Measure each book's accepted-page yield and whether it is admitted to synthesis."""
+
+    ledger = ReviewLedger.from_report(report, selected_pages=selected_pages)
+    eligible: Counter[str] = Counter()
+    accepted: Counter[str] = Counter()
+    # Report project order is already natural-sorted and validated, so preserving first-seen
+    # order keeps replay byte-identical without imposing a second, different sort key.
+    project_ids: dict[str, None] = {}
+    if selected_pages is None:
+        # An explicit selection defines its own book set; a whole report does not, so a project
+        # holding no pages still has to report a zero yield rather than vanish.
+        for project in report.projects:
+            project_ids.setdefault(project.project_id)
+    for page, reference, classification in zip(
+        ledger.pages,
+        ledger.references,
+        ledger.classifications,
+        strict=True,
+    ):
+        project_ids.setdefault(reference.project_id)
+        if classification.category is not ReviewCategory.ELIGIBLE:
+            continue
+        eligible[reference.project_id] += 1
+        if page.accepted:
+            accepted[reference.project_id] += 1
+    return tuple(
+        BookYield(
+            project_id=project_id,
+            eligible_pages=eligible[project_id],
+            accepted_pages=accepted[project_id],
+            eligible_page_coverage=(
+                None if not eligible[project_id] else accepted[project_id] / eligible[project_id]
+            ),
+            admitted=accepted[project_id] >= MINIMUM_ACCEPTED_PAGES_PER_BOOK,
+        )
+        for project_id in project_ids
+    )
 
 
 def render_alignment_overlay(

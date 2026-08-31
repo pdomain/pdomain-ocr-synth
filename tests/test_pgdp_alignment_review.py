@@ -20,6 +20,8 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
     WireSourceLine,
 )
 from pdomain_ocr_synth.pgdp.alignment_review import (
+    MINIMUM_ACCEPTED_PAGES_PER_BOOK,
+    BookYield,
     ReviewCategory,
     ReviewCounts,
     ReviewedLine,
@@ -28,6 +30,7 @@ from pdomain_ocr_synth.pgdp.alignment_review import (
     ReviewPage,
     classify_page,
     render_alignment_overlay,
+    summarize_book_yield,
     summarize_review,
     validate_review_gate,
 )
@@ -42,6 +45,9 @@ def test_review_helpers_are_public() -> None:
     assert pgdp.render_alignment_overlay is render_alignment_overlay
     assert pgdp.summarize_review is summarize_review
     assert pgdp.validate_review_gate is validate_review_gate
+    assert pgdp.summarize_book_yield is summarize_book_yield
+    assert pgdp.BookYield is BookYield
+    assert pgdp.MINIMUM_ACCEPTED_PAGES_PER_BOOK == MINIMUM_ACCEPTED_PAGES_PER_BOOK
 
 
 def _page(
@@ -524,8 +530,9 @@ def test_review_summary_rejects_match_on_a_proposed_page() -> None:
     [
         (0.98, 0.70, 0, True, ()),
         (0.979, 0.70, 0, False, (ReviewGateFailure.ACCEPTED_LINE_PRECISION,)),
-        (0.98, 0.699, 0, False, (ReviewGateFailure.ELIGIBLE_PAGE_COVERAGE,)),
         (0.98, 0.70, 1, False, (ReviewGateFailure.DECLARED_COMPLEX_ACCEPTED,)),
+        (0.98, 0.0, 0, True, ()),
+        (0.98, None, 0, True, ()),
         (
             None,
             None,
@@ -533,7 +540,6 @@ def test_review_summary_rejects_match_on_a_proposed_page() -> None:
             False,
             (
                 ReviewGateFailure.ACCEPTED_LINE_PRECISION,
-                ReviewGateFailure.ELIGIBLE_PAGE_COVERAGE,
                 ReviewGateFailure.DECLARED_COMPLEX_ACCEPTED,
             ),
         ),
@@ -570,6 +576,136 @@ def test_review_gate_enforces_exact_thresholds(
 
     assert result.passed is passed
     assert result.failures == failures
+
+
+def _accepted_pages(count: int, *, prefix: str = "p") -> tuple[PageAlignment, ...]:
+    return tuple(replace(_page(), page_name=f"{prefix}{index:04d}.png") for index in range(count))
+
+
+def _books(*projects: ProjectAlignment) -> AlignmentReport:
+    return AlignmentReport(
+        tool_version="0.1.0",
+        profile_label="profile.json",
+        profile_sha256=_sha256(),
+        methods={},
+        thresholds={},
+        projects=projects,
+    )
+
+
+@pytest.mark.parametrize(
+    ("accepted_count", "admitted"),
+    [
+        (MINIMUM_ACCEPTED_PAGES_PER_BOOK, True),
+        (MINIMUM_ACCEPTED_PAGES_PER_BOOK + 1, True),
+        (MINIMUM_ACCEPTED_PAGES_PER_BOOK - 1, False),
+        (0, False),
+    ],
+)
+def test_book_yield_admits_only_at_the_accepted_page_minimum(
+    accepted_count: int, admitted: bool
+) -> None:
+    pages = _accepted_pages(accepted_count)
+    filler = replace(
+        _page(accepted=False, exclusions=("uniqueness_margin_below_minimum",)),
+        page_name="zzz.png",
+    )
+    report = _books(ProjectAlignment(project_id="book", pages=(*pages, filler)))
+
+    (yielded,) = summarize_book_yield(report)
+
+    assert yielded.project_id == "book"
+    assert yielded.accepted_pages == accepted_count
+    assert yielded.eligible_pages == accepted_count + 1
+    assert yielded.admitted is admitted
+
+
+def test_book_yield_reports_one_entry_per_book_in_report_order() -> None:
+    report = _books(
+        ProjectAlignment(project_id="book2", pages=_accepted_pages(1)),
+        ProjectAlignment(project_id="book10", pages=_accepted_pages(2)),
+    )
+
+    yields = summarize_book_yield(report)
+
+    assert [item.project_id for item in yields] == ["book2", "book10"]
+    assert [item.accepted_pages for item in yields] == [1, 2]
+
+
+def test_book_yield_keeps_non_eligible_pages_out_of_coverage() -> None:
+    complex_page = replace(
+        _page(accepted=False, exclusions=("table_like",)),
+        page_name="zzz.png",
+        state="excluded",
+    )
+    report = _books(ProjectAlignment(project_id="book", pages=(*_accepted_pages(3), complex_page)))
+
+    (yielded,) = summarize_book_yield(report)
+
+    assert yielded.eligible_pages == 3
+    assert yielded.accepted_pages == 3
+    assert yielded.eligible_page_coverage == 1.0
+
+
+def test_book_yield_reports_a_book_with_no_page_at_all() -> None:
+    report = _books(
+        ProjectAlignment(project_id="book1", pages=_accepted_pages(1)),
+        ProjectAlignment(project_id="book2", pages=()),
+    )
+
+    yields = summarize_book_yield(report)
+
+    assert [item.project_id for item in yields] == ["book1", "book2"]
+    assert yields[1].eligible_pages == 0
+    assert yields[1].eligible_page_coverage is None
+    assert yields[1].admitted is False
+
+
+def test_book_yield_over_a_selection_covers_only_the_selected_books() -> None:
+    report = _books(
+        ProjectAlignment(project_id="book1", pages=_accepted_pages(1)),
+        ProjectAlignment(project_id="book2", pages=_accepted_pages(1)),
+    )
+
+    yields = summarize_book_yield(report, selected_pages=(ReviewPage("book2", "p0000.png"),))
+
+    assert [item.project_id for item in yields] == ["book2"]
+
+
+def test_book_yield_reports_a_book_with_no_eligible_page() -> None:
+    complex_page = replace(
+        _page(accepted=False, exclusions=("table_like",)),
+        state="excluded",
+    )
+    report = _books(ProjectAlignment(project_id="book", pages=(complex_page,)))
+
+    (yielded,) = summarize_book_yield(report)
+
+    assert yielded.eligible_pages == 0
+    assert yielded.eligible_page_coverage is None
+    assert yielded.admitted is False
+
+
+@pytest.mark.parametrize(
+    ("eligible", "accepted", "coverage", "admitted"),
+    [
+        (10, 11, 1.0, False),
+        (10, 5, 0.4, False),
+        (10, 5, 0.5, True),
+        (0, 0, 0.0, False),
+    ],
+)
+def test_book_yield_rejects_inconsistent_fields(
+    eligible: int, accepted: int, coverage: float, admitted: bool
+) -> None:
+    with pytest.raises(ValueError):
+        _ = BookYield(
+            project_id="book",
+            eligible_pages=eligible,
+            accepted_pages=accepted,
+            eligible_page_coverage=coverage,
+            admitted=admitted,
+        )
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -0.01, 1.01])

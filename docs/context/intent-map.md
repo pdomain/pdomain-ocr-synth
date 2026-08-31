@@ -16,16 +16,15 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Active
 
-- M15b source-line alignment: reach the unchanged gates of 98% accepted-line precision, 70%
-  eligible-page coverage, and zero accepted declared-complex pages. The fragmented-band, speck-band,
-  and running-head defects are corrected and coverage is 0.538 ([page classification
-  plan](../plans/2026-08-31-pgdp-page-classification.md), [fragmented-band correction
-  plan](../plans/2026-08-31-pgdp-fragmented-band-correction.md), [ocr-container-meta issue
-  403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403)).
-- Decide whether 70% eligible-page coverage is the right target. The end goal is synthesising
-  training data, which needs enough correctly measured pages per book rather than a high fraction of
-  them. Precision protects the fitted style; coverage only sets how much evidence a book yields. The
-  M15b design calls both thresholds conservative seed values for corpus review to calibrate.
+- M15b source-line alignment: reach 98% accepted-line precision and zero accepted declared-complex
+  pages, and admit each book on at least 30 accepted pages. The fragmented-band, speck-band, and
+  running-head defects are corrected, and whole-book runs admit three of the five review books
+  ([page classification plan](../plans/2026-08-31-pgdp-page-classification.md), [fragmented-band
+  correction plan](../plans/2026-08-31-pgdp-fragmented-band-correction.md), [ocr-container-meta
+  issue 403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403)).
+- Calibrate the 30-page book admission minimum. It is an uncalibrated seed, because nothing fits
+  typography from an aligned page yet and so no consumer can state its real requirement ([whole-book
+  yield gate design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md)).
 - Classify books with no stable type page. Two of the five review books have a first-band deviation
   above 2px, fit no templates, and so keep their running heads as candidates. Four of the five
   eligible pages that remain unaccepted come from them.

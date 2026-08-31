@@ -44,9 +44,16 @@ match below it.
 On the fixed 25-page selection, `fragmented_band` exclusions fell from 23 to 5,
 accepted pages rose from 0 to 7, and eligible-page coverage rose to 0.538. All
 216 matches across the seven accepted pages are monotone with correct text at
-both ends, so no shifted page remains. Both gates still fail: coverage is below
-0.70, and accepted-line precision is undefined because it needs a human
-confusion ledger. The 98 percent and 70 percent thresholds are unchanged.
+both ends, so no shifted page remains.
+
+One gate now fails. Accepted-line precision is undefined because it needs a
+human confusion ledger. The 70 percent coverage gate was withdrawn on
+2026-08-31 and replaced by per-book admission at 30 accepted pages, because
+coverage was being measured on a review selection that M14 skews toward hard
+pages. Whole-book runs over the five review books accept 367 of 971 eligible
+pages across 1385 pages, and admit three books holding 226, 75, and 52 accepted
+pages while leaving out two holding 14 and 0. The 98 percent precision
+threshold is unchanged.
 
 ## PGDP ranking verification
 

@@ -9,7 +9,7 @@
 - **Last verified:** 2026-08-31
 - **Provenance:** derived from the approved whole-book page template design and first-band geometry
   measured across 41 whole PGDP books on 2026-08-31
-- **Disposition:** Classification and suppression shipped; blocked on the coverage and precision gates.
+- **Disposition:** Classification and suppression shipped; blocked on the precision gate.
 - **Read when:** implementing book templates, page classes, or running-head suppression.
 - **Search terms:** PGDP, M15a, page class, type page, running head, template, recto, verso.
 
@@ -49,8 +49,10 @@ basedpyright dependencies.
 - Follow [the whole-book page template
   design](../specs/2026-08-31-pgdp-whole-book-page-templates-design.md).
 - Preserve `pgdp-rank/v1`, `pgdp-profile/v1`, and `pgdp-alignment/v1` and `v2` byte compatibility.
-- Do not change the three quality gates: 98 percent accepted-line precision, 70 percent
-  eligible-page coverage, and zero accepted declared-complex pages.
+- Do not change the two corpus gates: 98 percent accepted-line precision and zero accepted
+  declared-complex pages. The 70 percent eligible-page coverage gate was replaced on
+  2026-08-31 by per-book admission at 30 accepted pages; see
+  `docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md`.
 - Do not change the alignment thresholds: 90 percent matched lines, cost at most 0.22, uniqueness
   margin at least 0.15.
 - Keep the fixed 25-page selection fixed and replay deterministic.
@@ -366,7 +368,8 @@ decision per operation, and reconcile all 25 pages into exactly one of the four 
 
 - [x] **Step 5: Measure the three gates**
 
-Expected: at least 98 percent accepted-line precision, at least 70 percent eligible-page coverage,
+Expected: at least 98 percent accepted-line precision, at least 30 accepted pages in every
+admitted book,
 zero accepted declared-complex pages.
 
 - [x] **Step 6: Re-sweep the candidate box mode**
@@ -453,11 +456,15 @@ rendered overlays rather than signed off line by line by a person, so accepted-l
 undefined and its gate stays failed. Overlays for all 13 eligible pages are in
 `/workspaces/pdomain/.m15b-evidence/overlays-v3/`.
 
-Coverage of 0.538 falls short of the 0.70 gate. The five eligible pages that remain unaccepted all
-fail on uniqueness margin, and four of them come from the two books whose first-band deviation
-exceeds 2px, so they fit no templates and their heads were never suppressed. Reaching 0.70 needs
-either a way to classify books with no stable type page, or a decision that 0.70 is the wrong target
-for training-data synthesis.
+Coverage of 0.538 fell short of the 0.70 gate, and that gate has since been withdrawn. The five
+eligible pages that remain unaccepted all fail on uniqueness margin, and four of them come from the
+two books whose first-band deviation exceeds 2px, so they fit no templates and their heads were
+never suppressed.
+
+The 0.70 target was replaced on 2026-08-31 by per-book admission at 30 accepted pages, because
+coverage was being measured on the review selection rather than on whole books. Whole-book runs
+over all five books admit three of them, with 226, 75, and 52 accepted pages against 14 and 0 for
+the two that are left out. See `docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md`.
 
 ## Final review and handoff
 

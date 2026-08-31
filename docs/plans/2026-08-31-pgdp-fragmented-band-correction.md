@@ -54,8 +54,10 @@ basedpyright dependencies.
 - Follow [the M15b design](../specs/2026-08-23-pgdp-source-line-alignment-design.md) everywhere this
   correction does not override it.
 - Preserve `pgdp-rank/v1`, `pgdp-profile/v1`, and `pgdp-alignment/v1` byte compatibility.
-- Do not change the three quality gates: 98 percent accepted-line precision, 70 percent
-  eligible-page coverage, and zero accepted declared-complex pages.
+- Do not change the two corpus gates: 98 percent accepted-line precision and zero accepted
+  declared-complex pages. The 70 percent eligible-page coverage gate was replaced on
+  2026-08-31 by per-book admission at 30 accepted pages; see
+  `docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md`.
 - Do not change the alignment thresholds: 90 percent matched lines, cost at most 0.22, uniqueness
   margin at least 0.15.
 - Keep the fixed 25-page selection fixed and replay deterministic.
@@ -276,7 +278,8 @@ malformed, source changed, or eligible, using the version 1 priority mapping.
 
 Compute accepted-line precision, eligible-page coverage, and accepted declared-complex pages.
 
-Expected: at least 98 percent precision, at least 70 percent coverage, zero accepted declared-complex
+Expected: at least 98 percent precision, at least 30 accepted pages in every admitted book, zero
+accepted declared-complex
 pages.
 
 - [x] **Step 4: Record the outcome for `053.png` specifically**
@@ -356,8 +359,9 @@ The design's known risk did not materialize. `053.png` became eligible as predic
 alignment quality gates rejected it on `line_count_difference_exceeds_maximum`, with a normalized
 cost of 1.84 and a matched ratio of 0.0. No declared-complex page was accepted.
 
-Only 3 of the 13 eligible pages were accepted, so eligible-page coverage is 0.231, below the 0.70
-gate. Accepted-line precision is undefined because it needs a human confusion ledger that this run
+Only 3 of the 13 eligible pages were accepted, so eligible-page coverage is 0.231. That was below
+the 0.70 gate, which was withdrawn on 2026-08-31 in favour of per-book admission at 30 accepted
+pages. Accepted-line precision is undefined because it needs a human confusion ledger that this run
 did not produce.
 
 The uniqueness-margin threshold is what rejects the rest, and it looks like a second defect. All
@@ -368,6 +372,13 @@ and best path costs. Unlike `normalized_cost`, it is never divided by the line c
 page faces the same absolute 0.15 bar as a 5-line page. Uniform prose makes the second-best path
 nearly as cheap as the best, which drives the margin toward zero on exactly the pages this
 correction was meant to admit.
+
+The line-count part of that explanation did not survive whole-book measurement. Across 971 eligible
+pages from five whole books, page line count barely moves the margin: the correlation is -0.097,
+and the acceptance rate is flat at 0.39, 0.34, and 0.40 for pages of 20 to 30, 30 to 40, and 40 or
+more lines. If the absolute bar penalised long pages, long pages would be accepted less often, and
+they are not. The margin is still what rejects almost everything, at 551 of the 604 eligible pages
+that whole-book runs did not accept, but missing normalization is not why.
 
 Correcting that threshold is outside this plan and outside the approved design. Both, along with
 the M15b design and issue 403, require the alignment thresholds to stay unchanged. This plan

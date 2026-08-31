@@ -15,6 +15,8 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
     WireStyleRun,
 )
 from pdomain_ocr_synth.pgdp.alignment_review import (
+    MINIMUM_ACCEPTED_PAGES_PER_BOOK,
+    BookYield,
     PageClassification,
     ReviewCategory,
     ReviewCounts,
@@ -26,6 +28,7 @@ from pdomain_ocr_synth.pgdp.alignment_review import (
     ReviewSummary,
     classify_page,
     render_alignment_overlay,
+    summarize_book_yield,
     summarize_review,
     validate_review_gate,
 )
@@ -57,9 +60,11 @@ __all__ = [
     "ALIGNMENT_ALGORITHM_VERSION",
     "ALIGNMENT_SCHEMA_VERSION",
     "CONFIDENCE_KIND",
+    "MINIMUM_ACCEPTED_PAGES_PER_BOOK",
     "AlignmentDiagnostic",
     "AlignmentOperation",
     "AlignmentReport",
+    "BookYield",
     "CoordinateFrame",
     "CorpusSummary",
     "Diagnostic",
@@ -96,6 +101,7 @@ __all__ = [
     "rank_corpus",
     "render_alignment_overlay",
     "score_page",
+    "summarize_book_yield",
     "summarize_review",
     "validate_review_gate",
     "write_report",

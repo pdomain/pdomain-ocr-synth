@@ -6,9 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-08-24
+- **Last verified:** 2026-08-31
 - **Provenance:** authored from migration-time adversarial review, shipped code, tests, commit
-  history, and the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement
+  history, the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement, and
+  the 2026-08-31 whole-book yield measurement over five books and 1385 pages
 - **Disposition:** Append-only durable decisions and lifecycle tombstones.
 
 ## 2026-07-14: Recipes remain the persistent configuration boundary
@@ -46,6 +47,37 @@ Python, degradation entry-point discovery, registry schema negotiation, and a
 public testing helper package are not current contracts. Documentation must not
 advertise those absent mechanisms. Evidence: the two registry modules,
 `degradation/pipeline.py`, `pyproject.toml`, and their tests.
+
+## 2026-08-31: Book admission replaces the M15b coverage gate
+
+A book is admitted to synthesis when it yields at least 30 accepted pages. The corpus-wide
+70 percent eligible-page coverage gate is removed. Accepted-line precision at 98 percent and zero
+accepted declared-complex pages remain the only corpus gates, and coverage remains a reported
+per-book statistic.
+
+Coverage was failing on the wrong population. It was measured on the bounded 25-page review set,
+which M14 selects for typographic interest: against the other 1360 pages of the same five books,
+that set over-represents tables 4.3 times, poetry 7.4 times, and aligned fields 5.7 times, with a
+median rank score of 21.0 against 4.0.
+
+Whole books do not rescue the fraction, and that is the point. Across five books and 1385 pages,
+367 of 971 eligible pages were accepted, a corpus coverage of 0.378. The per-book counts are 226,
+75, 52, 14, and 0, so three books supply enough pages to fit a style and two do not. Synthesis
+consumes a book's own correctly measured pages, so the count is what decides whether a book is
+usable and the fraction is incidental.
+
+The 30-page minimum is an uncalibrated seed. Nothing fits typography from an aligned page yet, so
+no consumer can state its real requirement, and corpus review is expected to set the number once
+one exists.
+
+This change was recorded before the affected numbers were re-measured, satisfying the M15b rule
+against weakening a gate inside the same review run. It closes the coverage half of the follow-up
+tracked as `ConcaveTrillion/ocr-container-meta#403`.
+
+Evidence: `docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md`,
+`src/pdomain_ocr_synth/pgdp/alignment_review.py`, `tests/test_pgdp_alignment_review.py`, and the
+five whole-book `pgdp-alignment/v3` runs summarized in `.m15b-evidence/wholebook-yield.json` and
+`.m15b-evidence/admission-v3.json`.
 
 ### 2026-07-14 Retired: M01 development tooling plan
 
