@@ -20,7 +20,11 @@ from pdomain_ocr_synth.pgdp.image_measurement import (
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame, InkBand, ProfileDiagnostic
 
 if TYPE_CHECKING:
-    from pdomain_ocr_synth.pgdp.alignment_image import CandidateExtraction
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Bounds,
+        CandidateExtraction,
+        _Cluster,
+    )
 
 
 _SOURCE_FRAME = CoordinateFrame(width=100, height=80)
@@ -442,7 +446,7 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
     from pdomain_ocr_synth.pgdp.alignment_image import ALIGNMENT_IMAGE_METHODS
 
     assert ALIGNMENT_IMAGE_METHODS == {
-        "algorithm": "source-frame-components/v3",
+        "algorithm": "source-frame-components/v4",
         "connectivity": 8,
         "minimum_ink_bands": 2,
         "page_border_edges": 3,
@@ -457,6 +461,9 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
         "candidate_box_mode": "union",
         "suppress_furniture_bands": True,
         "speck_band_minimum_ink_share": 0.05,
+        "speck_band_maximum_height_share": 0.31,
+        "rule_band_maximum_height_share": 0.5,
+        "rule_band_minimum_ink_density": 0.6,
         "gutter_minimum_width_ratio": 0.03,
         "gutter_minimum_vertical_coverage_ratio": 0.6,
     }
@@ -1068,3 +1075,142 @@ def test_suppressed_bands_leave_the_fragmented_rate_denominator(tmp_path: Path) 
     assert any(item.reason == "fragmented_band" for item in fragmented_head.rejected)
     assert not any(item.reason == "fragmented_band" for item in suppressed_head.rejected)
     assert "fragmented_band" not in suppressed_head.exclusions
+
+
+def _band_clusters(box: Bounds, foreground_pixels: int) -> tuple[_Cluster, ...]:
+    from pdomain_ocr_synth.pgdp.alignment_image import Component, join_components
+
+    return join_components(
+        (Component(ordinal=0, label=0, box=box, foreground_pixels=foreground_pixels),)
+    )
+
+
+def test_a_dense_thin_band_is_read_as_a_printed_rule() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import is_rule_band
+
+    rule = _band_clusters((505, 811, 713, 824), 1997)
+
+    assert is_rule_band(rule, median_band_height=33.0)
+
+
+def test_a_short_line_of_small_capitals_is_not_a_printed_rule() -> None:
+    """Regression guard for 241.png, whose `towers.` reached a density of 0.68.
+
+    Small capitals in a narrow box carry nearly as much ink per pixel as a rule,
+    so density alone would take them. A rule is also far thinner than the rows
+    around it, and that is what separates the two.
+    """
+
+    from pdomain_ocr_synth.pgdp.alignment_image import is_rule_band
+
+    line = _band_clusters((300, 900, 397, 918), 1188)
+
+    assert not is_rule_band(line, median_band_height=33.0)
+
+
+def test_a_thin_band_of_ordinary_type_is_not_a_printed_rule() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import is_rule_band
+
+    line = _band_clusters((300, 900, 422, 912), 758)
+
+    assert not is_rule_band(line, median_band_height=30.0)
+
+
+def test_a_rule_band_is_dropped_before_it_becomes_a_candidate(tmp_path: Path) -> None:
+    """Regression for 097.png, whose decorative rule took the source line `I.`.
+
+    The rule survives the long-rule test because it spans a fifth of the text
+    block, so it reached the aligner as an ordinary candidate and every line
+    below it shifted by one.
+    """
+
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    image_path = tmp_path / "rule-band.png"
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    for y_start in (20, 60):
+        draw.rectangle((20, y_start + 2, 60, y_start + 8), fill=0)
+    draw.rectangle((35, 43, 55, 45), fill=0)
+    image.save(image_path)
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=(10, 10, 90, 75),
+            ink_bands=(
+                InkBand(y_start=20, y_end=30),
+                InkBand(y_start=40, y_end=50),
+                InkBand(y_start=60, y_end=70),
+            ),
+        )
+
+    assert [candidate.band_ordinal for candidate in result.candidates] == [0, 2]
+    assert [item.reason for item in result.rejected] == ["rule_band"]
+
+
+def test_a_short_line_of_type_is_not_a_speck_however_little_ink_it_carries() -> None:
+    """Regression for 097.png, whose section number `I.` was dropped as dust.
+
+    The number carries about two percent of the ink a full row carries, so the
+    ink share alone condemned it. Its source line then bound to the decorative
+    rule below it, and every line under that shifted by one.
+    """
+
+    from pdomain_ocr_synth.pgdp.alignment_image import is_speck_band
+
+    number = _band_clusters((543, 901, 567, 927), 200)
+
+    assert not is_speck_band(number, median_band_ink=9053.0, median_band_height=33.0)
+
+
+def test_a_fleck_of_dust_is_still_a_speck() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import is_speck_band
+
+    dust = _band_clusters((430, 77, 440, 82), 42)
+
+    assert is_speck_band(dust, median_band_ink=9053.0, median_band_height=33.0)
+
+
+def test_speck_height_share_is_measured_against_the_page_median_row() -> None:
+    """The same band is dust beside tall type and a short line beside small type."""
+
+    from pdomain_ocr_synth.pgdp.alignment_image import is_speck_band
+
+    band = _band_clusters((543, 901, 567, 913), 100)
+
+    assert is_speck_band(band, median_band_ink=9053.0, median_band_height=40.0)
+    assert not is_speck_band(band, median_band_ink=9053.0, median_band_height=24.0)
+
+
+def test_a_band_that_is_both_dust_and_solid_is_recorded_as_dust() -> None:
+    """A solid fleck of dirt satisfies both tests, and the speck test runs first.
+
+    Both tests reject the band, so only the recorded reason turns on the order.
+    Dust is the truer description of a mark this small, however densely it prints.
+    """
+
+    from pdomain_ocr_synth.pgdp.alignment_image import is_rule_band, is_speck_band
+
+    fleck = _band_clusters((430, 77, 442, 82), 55)
+
+    assert is_speck_band(fleck, median_band_ink=9053.0, median_band_height=33.0)
+    assert is_rule_band(fleck, median_band_height=33.0)
+
+
+def test_each_height_share_is_a_maximum_that_includes_its_boundary() -> None:
+    """Both predicates read their share as `at most`, so the exact boundary counts."""
+
+    from pdomain_ocr_synth.pgdp.alignment_image import is_rule_band, is_speck_band
+
+    # 31 of 100 is exactly the speck ceiling; 32 is over it.
+    assert is_speck_band(
+        _band_clusters((0, 0, 200, 31), 1), median_band_ink=1000.0, median_band_height=100.0
+    )
+    assert not is_speck_band(
+        _band_clusters((0, 0, 200, 32), 1), median_band_ink=1000.0, median_band_height=100.0
+    )
+    # 50 of 100 is exactly the rule ceiling; 51 is over it.
+    assert is_rule_band(_band_clusters((0, 0, 200, 50), 9000), median_band_height=100.0)
+    assert not is_rule_band(_band_clusters((0, 0, 200, 51), 9000), median_band_height=100.0)

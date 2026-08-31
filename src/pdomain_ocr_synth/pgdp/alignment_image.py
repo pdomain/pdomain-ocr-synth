@@ -27,12 +27,13 @@ RejectionReason = Literal[
     "long_horizontal_rule",
     "minor_ink_cluster",
     "page_border",
+    "rule_band",
     "running_head",
     "speck_band",
 ]
 
 ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
-    "algorithm": "source-frame-components/v3",
+    "algorithm": "source-frame-components/v4",
     "connectivity": 8,
     "minimum_ink_bands": 2,
     "page_border_edges": 3,
@@ -47,6 +48,9 @@ ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
     "candidate_box_mode": "union",
     "suppress_furniture_bands": True,
     "speck_band_minimum_ink_share": 0.05,
+    "speck_band_maximum_height_share": 0.31,
+    "rule_band_maximum_height_share": 0.5,
+    "rule_band_minimum_ink_density": 0.6,
     "gutter_minimum_width_ratio": 0.03,
     "gutter_minimum_vertical_coverage_ratio": 0.6,
 }
@@ -61,8 +65,21 @@ _JOIN_MAXIMUM_HORIZONTAL_GAP_MEDIAN_HEIGHT_FACTOR = 2
 _FRAGMENTED_BAND_MINOR_INK_PERCENT = 2
 _FRAGMENTED_BAND_MAXIMUM_RATE_PERCENT = 35
 _SPECK_BAND_MINIMUM_INK_PERCENT = 5
+# Ink alone cannot tell dust from a section number. A band tall enough to hold type is
+# never dust, however little ink it carries. Of the 641 bands dropped as specks in
+# projectID603d7d5e04ca0, 84 percent sit below 20 percent of the page's median band height and are
+# dust, while the genuine short lines being dropped with them began at 42 percent. Any value above
+# 20 and at or below 42 separates the two; the midpoint is taken so that neither edge sets it.
+_SPECK_BAND_MAXIMUM_HEIGHT_PERCENT = 31
+# A printed rule is a solid bar, so it is both thinner and far denser than a row of type. Over
+# 17205 matched candidates the densest text row reached 0.40 at the 99th percentile and 0.68 at
+# the extreme, while measured rules ran 0.61 to 0.78 at half the median row height or less. The
+# pair separates them; neither number does it alone.
+_RULE_BAND_MAXIMUM_HEIGHT_PERCENT = 50
+_RULE_BAND_MINIMUM_INK_DENSITY_PERCENT = 60
 _CANDIDATE_BOX_MODE = "union"
 _DROP_SPECK_BANDS = True
+_DROP_RULE_BANDS = True
 _GUTTER_MINIMUM_WIDTH_PERCENT = 3
 _GUTTER_MINIMUM_VERTICAL_COVERAGE_TENTHS = 6
 _PASSTHROUGH_DIAGNOSTICS = frozenset(
@@ -528,6 +545,13 @@ def _extract_band_candidates(
         if measured
         else 0.0
     )
+    # Both medians describe every measured band, including the specks and rules they are then
+    # used to judge. A median tolerates that: a page carries a handful of such bands against
+    # dozens of rows, so they sit in the tail and do not move the middle. Excluding them would
+    # need the classification the medians exist to produce.
+    band_boxes = [_merge_clusters(tuple(counted)).box for _, counted, _ in measured if counted]
+    band_heights = [box[3] - box[1] for box in band_boxes]
+    median_band_height = median(band_heights) if band_heights else 0.0
     for band_ordinal, counted, minor in measured:
         if band_ordinal in furniture_band_ordinals:
             # A running head or folio is printed but deleted from F2, so it has
@@ -544,10 +568,27 @@ def _extract_band_candidates(
                 for cluster in tuple(counted) + tuple(minor)
             )
             continue
-        if _DROP_SPECK_BANDS and is_speck_band(counted, median_band_ink=median_band_ink):
+        if _DROP_SPECK_BANDS and is_speck_band(
+            counted, median_band_ink=median_band_ink, median_band_height=median_band_height
+        ):
             rejected.extend(
                 RejectedComponent(
                     reason="speck_band",
+                    box=cluster.box,
+                    foreground_pixels=cluster.foreground_pixels,
+                    band_ordinal=band_ordinal,
+                    component_ordinal=cluster.component_ordinal,
+                )
+                for cluster in tuple(counted) + tuple(minor)
+            )
+            continue
+        # The speck test runs first, so a band thin and faint enough to be dust is recorded as
+        # dust even when it also fills its box. A solid fleck of dirt is dust, not a rule, and
+        # both tests reject the band either way; only the recorded reason turns on the order.
+        if _DROP_RULE_BANDS and is_rule_band(counted, median_band_height=median_band_height):
+            rejected.extend(
+                RejectedComponent(
+                    reason="rule_band",
                     box=cluster.box,
                     foreground_pixels=cluster.foreground_pixels,
                     band_ordinal=band_ordinal,
@@ -691,18 +732,54 @@ def _band_candidate_cluster(counted: Sequence[_Cluster], minor: Sequence[_Cluste
     raise ValueError(f"Unsupported candidate box mode {_CANDIDATE_BOX_MODE!r}.")
 
 
-def is_speck_band(clusters: Sequence[_Cluster], *, median_band_ink: float) -> bool:
+def is_speck_band(
+    clusters: Sequence[_Cluster], *, median_band_ink: float, median_band_height: float
+) -> bool:
     """Whether a band holds too little ink to be a text row.
 
     A fleck of dust or a broken serif can occupy an ink band of its own. It then
     becomes a line candidate that matches no source line, which leaves the
     aligner several near-equal ways to place the real rows.
+
+    Ink alone overshoots. A section number set as `I.` carries about two percent
+    of the ink a full row carries, so the ink share condemns it with the dust,
+    and the source line it should have taken then binds to whatever else is near.
+    A band as tall as the type around it is a short line, not a speck, whatever
+    its ink.
     """
 
-    if median_band_ink <= 0:
+    if median_band_ink <= 0 or not clusters:
         return False
+    if median_band_height > 0:
+        box = _merge_clusters(tuple(clusters)).box
+        if (box[3] - box[1]) * 100 > median_band_height * _SPECK_BAND_MAXIMUM_HEIGHT_PERCENT:
+            return False
     ink = sum(cluster.foreground_pixels for cluster in clusters)
     return ink * 100 < median_band_ink * _SPECK_BAND_MINIMUM_INK_PERCENT
+
+
+def is_rule_band(clusters: Sequence[_Cluster], *, median_band_height: float) -> bool:
+    """Whether a band holds a printed rule rather than a row of type.
+
+    A decorative rule under a chapter title is short enough to survive the
+    long-rule test, so it reaches the aligner as an ordinary candidate. It then
+    takes whichever source line the run of type would have taken, and every line
+    below it shifts by one. Ink alone cannot see it, because a rule carries about
+    as much ink as a short line of small capitals; what separates them is that a
+    rule fills its box.
+    """
+
+    if median_band_height <= 0 or not clusters:
+        return False
+    box = _merge_clusters(tuple(clusters)).box
+    height = box[3] - box[1]
+    if height * 100 > median_band_height * _RULE_BAND_MAXIMUM_HEIGHT_PERCENT:
+        return False
+    area = (box[2] - box[0]) * height
+    if area <= 0:
+        return False
+    ink = sum(cluster.foreground_pixels for cluster in clusters)
+    return ink * 100 > area * _RULE_BAND_MINIMUM_INK_DENSITY_PERCENT
 
 
 def drop_minor_ink_clusters(
