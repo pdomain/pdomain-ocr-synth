@@ -1,19 +1,22 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-08-31"
+kind: archive
+status: retired
 created_at: "2026-08-31T13:36:15Z"
-owner: CT
-branch: fix/pgdp-fragmented-band-v2
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth/.worktrees/pgdp-fragmented-band-v2
-base_commit: 4a2a4e5c28a4b6d28432091120a2170c4dec4150
+owner: "CT"
+branch: "fix/pgdp-fragmented-band-v2"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth/.worktrees/pgdp-fragmented-band-v2"
+base_commit: "4a2a4e5c28a4b6d28432091120a2170c4dec4150"
 supersedes: "2026-08-24-222343-pgdp-synthesis-version-decision.md"
-handoff_reason: stopping
-host: claude-code
+handoff_reason: "stopping"
+host: "claude-code"
+created: "2026-08-31"
+last_verified: "2026-08-31"
 ---
 
 # PGDP page classification shipped
+
+> **Retired — superseded by `docs/handoff/2026-08-31-183553-m15b-gates-pass-and-merged.md`.**
 
 ## Goal
 
