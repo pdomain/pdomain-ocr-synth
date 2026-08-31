@@ -29,7 +29,7 @@ PageClass = Literal[
     "unknown",
 ]
 
-PAGE_TEMPLATE_METHOD = "first-band-templates/v2"
+PAGE_TEMPLATE_METHOD = "first-band-templates/v3"
 
 
 def page_template_methods() -> dict[str, float | int | str | bool]:
@@ -107,11 +107,17 @@ class PageClassification:
 @dataclass(frozen=True, slots=True)
 class _PageGeometry:
     page_name: str
-    first_band_top: int
+    band_tops: tuple[int, ...]
     text_left: int
     text_right: int
     band_count: int
     recto: bool
+
+    @property
+    def first_band_top(self) -> int:
+        """The top of the topmost ink band, whether or not it is type."""
+
+        return self.band_tops[0]
 
 
 def fit_book_templates(pages: Sequence[PageMeasurement]) -> BookTemplates:
@@ -186,18 +192,21 @@ def _classify_page(
     if center is None or window is None:
         return PageClassification(geometry.page_name, "unknown", None, ())
 
-    offset = geometry.first_band_top - center
+    head_ordinal = _head_band_ordinal(geometry, center=center, window=window)
+    head_top = geometry.band_tops[head_ordinal]
+    offset = head_top - center
     if abs(offset) <= window:
         template = _nearest_normal(geometry, by_class)
         if template is None or abs(geometry.text_left - template.text_left_px) > window:
             return PageClassification(geometry.page_name, "unknown", None, ())
-        # The first band of a normal page is the running head. It is printed but
-        # deleted from F2, so the aligner must not match a source line to it.
+        # The running head is printed but deleted from F2, so the aligner must not
+        # match a source line to it. Nothing is printed above the head, so every
+        # band down to and including it is furniture.
         return PageClassification(
             geometry.page_name,
             template.page_class,
-            int(abs(geometry.first_band_top - template.first_band_top_px)),
-            (0,),
+            int(abs(head_top - template.first_band_top_px)),
+            tuple(range(head_ordinal + 1)),
         )
 
     if offset >= _CHAPTER_SINK_MINIMUM_PX and "chapter_opening" in by_class:
@@ -205,13 +214,32 @@ def _classify_page(
         return PageClassification(
             geometry.page_name,
             "chapter_opening",
-            int(abs(geometry.first_band_top - template.first_band_top_px)),
+            int(abs(head_top - template.first_band_top_px)),
             (),
         )
 
     # Between the head window and the chapter sink the evidence is thin, so the
     # page is left unclassified rather than forced into a template.
     return PageClassification(geometry.page_name, "unknown", None, ())
+
+
+def _head_band_ordinal(geometry: _PageGeometry, *, center: float, window: float) -> int:
+    """Ordinal of the topmost band that could be the page's running head.
+
+    A fleck of dust can hold an ink band of its own above the head, and the
+    profile keeps it because dropping it needs the ink the profile does not
+    carry. Such a band sits higher than anything the press printed, so the first
+    band at or below the head window is the first that can be type. When every
+    band is above the window the page is nowhere near its book's text block, and
+    the topmost band is returned so the caller reaches the same `unknown` it
+    would have reached anyway.
+    """
+
+    floor = center - window
+    for ordinal, top in enumerate(geometry.band_tops):
+        if top >= floor:
+            return ordinal
+    return 0
 
 
 def _nearest_normal(
@@ -277,7 +305,7 @@ def _page_geometry(page: PageMeasurement) -> _PageGeometry | None:
         return None
     return _PageGeometry(
         page_name=page.page_name,
-        first_band_top=page.ink_bands[0].y_start,
+        band_tops=tuple(band.y_start for band in page.ink_bands),
         text_left=bounds[0],
         text_right=bounds[2],
         band_count=len(page.ink_bands),

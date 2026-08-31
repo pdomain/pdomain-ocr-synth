@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from pdomain_ocr_synth.pgdp.page_templates import (
     classify_pages,
     fit_book_templates,
@@ -64,6 +66,14 @@ def _blank(page_name: str) -> PageMeasurement:
         derived_estimates=(),
         diagnostics=(ProfileDiagnostic(code="blank_page", message="blank", page_name=page_name),),
     )
+
+
+def _with_leading_band(page: PageMeasurement, band: InkBand) -> PageMeasurement:
+    """Put one extra ink band above everything the page already measured."""
+
+    bands = page.ink_bands
+    assert bands is not None
+    return replace(page, ink_bands=(band, *bands))
 
 
 def _steady_book() -> tuple[PageMeasurement, ...]:
@@ -327,3 +337,66 @@ def test_genuine_top_of_page_text_is_not_taken_for_a_head() -> None:
 
     assert classified["p021.png"].page_class == "unknown"
     assert classified["p021.png"].furniture_band_ordinals == ()
+
+
+def test_a_speck_above_the_head_window_does_not_hide_the_running_head() -> None:
+    """Regression for 166.png, which carried a dirt speck 80px above its head.
+
+    The profile keeps the speck because dropping it needs ink the profile does
+    not carry, so band 0 sat 63px above the book median. The page fell outside
+    the head window, classified `unknown`, and its running head was never
+    suppressed, which let a body source line bind to the head.
+    """
+
+    page = _page("p021.png", first_band_top=71)
+    speckled = _with_leading_band(page, InkBand(y_start=20, y_end=26))
+    pages = (*_steady_book(), speckled)
+    templates = fit_book_templates(pages)
+
+    classified = {item.page_name: item for item in classify_pages(pages, templates)}
+
+    assert classified["p021.png"].page_class == "normal_recto"
+    assert classified["p021.png"].furniture_band_ordinals == (0, 1)
+
+
+def test_a_speck_inside_the_head_window_still_names_only_the_first_band() -> None:
+    """A band that could itself be the head is taken as the head, as before.
+
+    A thin roman folio sits exactly where a running head sits, so position
+    cannot tell it from dust and height must not be asked to. Only a band above
+    the window is skipped.
+    """
+
+    page = _page("p021.png", first_band_top=71)
+    speckled = _with_leading_band(page, InkBand(y_start=69, y_end=72))
+    pages = (*_steady_book(), speckled)
+    templates = fit_book_templates(pages)
+
+    classified = {item.page_name: item for item in classify_pages(pages, templates)}
+
+    assert classified["p021.png"].furniture_band_ordinals == (0,)
+
+
+def test_a_speck_above_a_chapter_opening_still_leaves_every_band() -> None:
+    """The speck must not suppress a band on a page that has no running head.
+
+    The book's chapter-opening template is fitted from the topmost band of every
+    page, so it takes clean openings to exist at all. A speckled opening is then
+    classified against it.
+    """
+
+    openings = tuple(
+        _page(f"c{number:03d}.png", first_band_top=400, bands=16) for number in range(1, 5)
+    )
+    page = _page("p021.png", first_band_top=400, bands=16)
+    speckled = _with_leading_band(page, InkBand(y_start=20, y_end=26))
+    pages = (*_steady_book(), *openings, speckled)
+    templates = fit_book_templates(pages)
+
+    classified = {item.page_name: item for item in classify_pages(pages, templates)}
+
+    assert classified["p021.png"].page_class == "chapter_opening"
+    assert classified["p021.png"].furniture_band_ordinals == ()
+    # The residual measures the opening against its template, so it must come
+    # from the band that opens the chapter and not from the speck above it.
+    assert classified["p021.png"].template_residual_px == 0

@@ -341,7 +341,7 @@ def test_profile_method_versions_are_stable() -> None:
         "foreground_threshold": "otsu-256/v1",
         "ink_bands": "row-ink-bands/v1",
         "pooling": "median-mad/v1",
-        "page_templates": "first-band-templates/v2",
+        "page_templates": "first-band-templates/v3",
     }
 
 
@@ -349,7 +349,7 @@ def test_page_template_constants_are_stable() -> None:
     from pdomain_ocr_synth.pgdp.page_templates import page_template_methods
 
     assert page_template_methods() == {
-        "algorithm": "first-band-templates/v2",
+        "algorithm": "first-band-templates/v3",
         "head_mad_maximum_px": 25,
         "head_window_minimum_px": 8,
         "head_window_mad_factor": 3,
