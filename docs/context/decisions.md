@@ -79,7 +79,19 @@ page would have risen from about 2 to about 29 while it stayed accepted.
 Measured over five whole books: accepted pages rose from 665 to 713 with no book losing a page, 35
 pages moved from `unknown` into a real class, and accepted pages on which a dense thin band bound a
 source line fell from 4 to 0. No accepted page binds a source line to a suppressed furniture
-band. The accepted-line precision gate is not re-measured here. The existing
+band.
+
+The three M15b gates were then re-measured, because the earlier ledger keys its errors by position
+among a page's matches and those positions moved. A fresh stratified sample of 26 accepted pages
+across the five books, 760 matched lines, was judged by rendering each matched line as an image crop
+and reading it against its source line. Accepted-line precision is 1.0000 against a floor of 0.98,
+no accepted page is declared complex, and all five books clear the 30-page admission minimum at 713
+accepted pages. As with the 2026-08-31 measurement of 0.9716 and 0.9974, the judging was done by a
+model reading rendered crops at the owner's direction, not signed off row by row by a person.
+
+Two pages the earlier reviews had recorded as wrong are now correct. `089.png` had twelve wrong
+matches of 33 while showing a matched ratio of 1.0 and a uniqueness margin of 0.275; it now matches
+26 lines correctly at a margin of 1.701. The accepted-line precision gate is not re-measured here. The existing
 ledger stores `incorrect_rows` as positional indices among a page's matches, and those positions
 moved, so the figure of 0.9974 recorded on 2026-08-31 does not carry over and a fresh review pass is
 required before the gate can be claimed again.

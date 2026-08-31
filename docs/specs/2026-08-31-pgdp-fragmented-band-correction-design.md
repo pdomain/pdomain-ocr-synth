@@ -197,6 +197,11 @@ from 4 to 0. `118.png` now aligns correctly but leaves the accepted set, because
 lines has no candidate once the rule is gone; that trades a page carrying eleven wrong lines for no
 page at all.
 
+A fresh ledger re-measured the M15b gates, since the earlier one keys errors by position among a
+page's matches and those positions moved. Over 26 accepted pages and 760 matched lines, stratified
+across the five books, accepted-line precision is 1.0000 against a floor of 0.98, no accepted page is
+declared complex, and every book clears the 30-page admission minimum.
+
 The extractor version becomes `source-frame-components/v4`. The wire shape does not change, so
 `pgdp-alignment/v3` stands.
 
