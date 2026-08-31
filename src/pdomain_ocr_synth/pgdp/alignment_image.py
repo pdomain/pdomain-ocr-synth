@@ -21,10 +21,16 @@ if TYPE_CHECKING:
 
 
 Bounds = tuple[int, int, int, int]
-RejectionReason = Literal["empty_band", "fragmented_band", "long_horizontal_rule", "page_border"]
+RejectionReason = Literal[
+    "empty_band",
+    "fragmented_band",
+    "long_horizontal_rule",
+    "minor_ink_cluster",
+    "page_border",
+]
 
 ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
-    "algorithm": "source-frame-components/v1",
+    "algorithm": "source-frame-components/v2",
     "connectivity": 8,
     "minimum_ink_bands": 2,
     "page_border_edges": 3,
@@ -33,6 +39,9 @@ ALIGNMENT_IMAGE_METHODS: dict[str, float | int | str] = {
     "join_minimum_vertical_overlap_ratio": 0.4,
     "join_maximum_vertical_center_distance_ratio": 0.6,
     "join_maximum_horizontal_gap_median_height_ratio": 2.0,
+    "merge_horizontally_overlapping_clusters": True,
+    "fragmented_band_minor_ink_share": 0.02,
+    "fragmented_band_maximum_rate": 0.35,
     "gutter_minimum_width_ratio": 0.03,
     "gutter_minimum_vertical_coverage_ratio": 0.6,
 }
@@ -44,6 +53,8 @@ _LONG_RULE_MAXIMUM_HEIGHT_PERCENT = 2
 _JOIN_MINIMUM_VERTICAL_OVERLAP_PERCENT = 40
 _JOIN_MAXIMUM_CENTER_DISTANCE_TENTHS = 12
 _JOIN_MAXIMUM_HORIZONTAL_GAP_MEDIAN_HEIGHT_FACTOR = 2
+_FRAGMENTED_BAND_MINOR_INK_PERCENT = 2
+_FRAGMENTED_BAND_MAXIMUM_RATE_PERCENT = 35
 _GUTTER_MINIMUM_WIDTH_PERCENT = 3
 _GUTTER_MINIMUM_VERTICAL_COVERAGE_TENTHS = 6
 _PASSTHROUGH_DIAGNOSTICS = frozenset(
@@ -188,6 +199,26 @@ class _LabeledComponents:
 
 
 @dataclass(frozen=True, slots=True)
+class _BandCounts:
+    """How many bands were measurable, and how many of those stayed fragmented."""
+
+    measured: int
+    fragmented: int
+
+    @property
+    def exceeds_maximum_rate(self) -> bool:
+        """Whether the fragmented share is past the version 2 page limit.
+
+        A page with no measurable band has no rate. It is excluded by the
+        `insufficient_ink_bands` and `empty_band` paths instead.
+        """
+
+        if self.measured == 0:
+            return False
+        return self.fragmented * 100 > self.measured * _FRAGMENTED_BAND_MAXIMUM_RATE_PERCENT
+
+
+@dataclass(frozen=True, slots=True)
 class _Cluster:
     """One join-compatible cluster within an M15a ink band."""
 
@@ -279,7 +310,7 @@ def extract_line_candidates(
     rejected: list[RejectedComponent] = []
     _remove_page_borders(foreground, rejected)
     _remove_long_rules(foreground, foreground_bounds, rejected)
-    candidates, band_rejections, clusters = _extract_band_candidates(
+    candidates, band_rejections, clusters, band_counts = _extract_band_candidates(
         foreground,
         retained_bands,
         source_frame=source_frame,
@@ -288,7 +319,7 @@ def extract_line_candidates(
     rejected.extend(band_rejections)
     gutter = _find_gutter(foreground, foreground_bounds, clusters)
     exclusions: list[str] = []
-    if any(item.reason == "fragmented_band" for item in band_rejections):
+    if band_counts.exceeds_maximum_rate:
         exclusions.append("fragmented_band")
         candidates = ()
     if gutter is not None:
@@ -429,10 +460,12 @@ def _extract_band_candidates(
     *,
     source_frame: CoordinateFrame,
     foreground_bounds: Bounds,
-) -> tuple[list[LineCandidate], list[RejectedComponent], tuple[_Cluster, ...]]:
+) -> tuple[list[LineCandidate], list[RejectedComponent], tuple[_Cluster, ...], _BandCounts]:
     candidates: list[LineCandidate] = []
     rejected: list[RejectedComponent] = []
     all_clusters: list[_Cluster] = []
+    measured_bands = 0
+    fragmented_bands = 0
     for band_ordinal, band in enumerate(ink_bands):
         if band.y_start < 0 or band.y_end > source_frame.height:
             return (
@@ -446,6 +479,7 @@ def _extract_band_candidates(
                     )
                 ],
                 (),
+                _BandCounts(measured=0, fragmented=0),
             )
         band_mask = foreground[band.y_start : band.y_end].copy()
         labeled = _label_components(band_mask)
@@ -473,9 +507,22 @@ def _extract_band_candidates(
             )
             for component in labeled.components
         )
-        clusters = join_components(components)
-        all_clusters.extend(clusters)
-        if len(clusters) != 1:
+        clusters = merge_horizontally_overlapping_clusters(join_components(components))
+        counted, minor = drop_minor_ink_clusters(clusters)
+        all_clusters.extend(counted)
+        rejected.extend(
+            RejectedComponent(
+                reason="minor_ink_cluster",
+                box=cluster.box,
+                foreground_pixels=cluster.foreground_pixels,
+                band_ordinal=band_ordinal,
+                component_ordinal=cluster.component_ordinal,
+            )
+            for cluster in minor
+        )
+        measured_bands += 1
+        if len(counted) != 1:
+            fragmented_bands += 1
             rejected.extend(
                 RejectedComponent(
                     reason="fragmented_band",
@@ -484,10 +531,9 @@ def _extract_band_candidates(
                     band_ordinal=band_ordinal,
                     component_ordinal=cluster.component_ordinal,
                 )
-                for cluster in clusters
+                for cluster in counted
             )
-            continue
-        cluster = clusters[0]
+        cluster = max(counted, key=lambda item: (item.foreground_pixels, -item.component_ordinal))
         candidate_mask = foreground[
             cluster.box[1] : cluster.box[3], cluster.box[0] : cluster.box[2]
         ]
@@ -512,7 +558,12 @@ def _extract_band_candidates(
             )
         )
     candidates.sort(key=lambda item: (item.band_ordinal, item.box, item.component_ordinal))
-    return candidates, rejected, tuple(all_clusters)
+    return (
+        candidates,
+        rejected,
+        tuple(all_clusters),
+        _BandCounts(measured=measured_bands, fragmented=fragmented_bands),
+    )
 
 
 def join_components(components: Sequence[Component]) -> tuple[_Cluster, ...]:
@@ -535,6 +586,82 @@ def join_components(components: Sequence[Component]) -> tuple[_Cluster, ...]:
         grouped.setdefault(joined.find(label), []).append(component)
     clusters = tuple(_cluster(group) for _, group in sorted(grouped.items()))
     return tuple(sorted(clusters, key=lambda item: (item.box, item.component_ordinal)))
+
+
+def merge_horizontally_overlapping_clusters(
+    clusters: Sequence[_Cluster],
+) -> tuple[_Cluster, ...]:
+    """Union clusters whose horizontal ranges overlap.
+
+    Clusters that overlap in x cannot be separate columns or separate words, so a
+    band that splits them apart split one visual line. Overlap is transitive here:
+    a chain of overlapping clusters becomes one cluster even when its ends do not
+    overlap each other.
+    """
+
+    if not clusters:
+        return ()
+    ordered = tuple(sorted(clusters, key=lambda item: (item.box, item.component_ordinal)))
+    merged = _DisjointSet()
+    labels = [merged.add() for _ in ordered]
+    for index, cluster in enumerate(ordered):
+        for later_index in range(index + 1, len(ordered)):
+            later = ordered[later_index]
+            if later.box[0] >= cluster.box[2]:
+                break
+            merged.union(labels[index], labels[later_index])
+    grouped: dict[int, list[_Cluster]] = {}
+    for label, cluster in zip(labels, ordered, strict=True):
+        grouped.setdefault(merged.find(label), []).append(cluster)
+    return tuple(
+        sorted(
+            (_merge_clusters(group) for _, group in sorted(grouped.items())),
+            key=lambda item: (item.box, item.component_ordinal),
+        )
+    )
+
+
+def drop_minor_ink_clusters(
+    clusters: Sequence[_Cluster],
+) -> tuple[tuple[_Cluster, ...], tuple[_Cluster, ...]]:
+    """Split clusters into the ones that count and the negligible-ink ones.
+
+    A comma, an accent, a speck of dust, or a broken serif can miss the join rule
+    and stand alone. Counting it as a second cluster would fragment an ordinary
+    text row, so it is set aside. It is returned rather than discarded, and the
+    caller records it as evidence. When every cluster falls below the share, the
+    band keeps all of them: that band really is fragmented.
+    """
+
+    ordered = tuple(clusters)
+    total = sum(cluster.foreground_pixels for cluster in ordered)
+    if total <= 0:
+        return ordered, ()
+    counted = tuple(
+        cluster
+        for cluster in ordered
+        if cluster.foreground_pixels * 100 >= total * _FRAGMENTED_BAND_MINOR_INK_PERCENT
+    )
+    if not counted:
+        return ordered, ()
+    minor = tuple(cluster for cluster in ordered if cluster not in counted)
+    return counted, minor
+
+
+def _merge_clusters(clusters: Sequence[_Cluster]) -> _Cluster:
+    if len(clusters) == 1:
+        return clusters[0]
+    return _Cluster(
+        box=(
+            min(cluster.box[0] for cluster in clusters),
+            min(cluster.box[1] for cluster in clusters),
+            max(cluster.box[2] for cluster in clusters),
+            max(cluster.box[3] for cluster in clusters),
+        ),
+        component_ordinal=min(cluster.component_ordinal for cluster in clusters),
+        component_count=sum(cluster.component_count for cluster in clusters),
+        foreground_pixels=sum(cluster.foreground_pixels for cluster in clusters),
+    )
 
 
 def _components_are_joinable(left: Component, right: Component, *, maximum_gap: float) -> bool:

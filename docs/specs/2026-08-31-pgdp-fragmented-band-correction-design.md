@@ -138,6 +138,25 @@ The fixed 25-page selection stays fixed, and replay stays deterministic.
 - It does not calibrate confidence.
 - It does not begin M15c or any later typography, semantic, or compositor work.
 
+## Adversarial Review
+
+- **Stage and source:** One read-only reviewer checked this design and its implementation plan
+  against the version 1 design, the extractor code, the existing tests, and the measurement data in
+  `/workspaces/pdomain/.m15b-evidence/`.
+- **Accepted findings:** The minor-ink filter also lowers `p092.png` and `p055.png`, so the claim
+  that every complex page's rate is unchanged was wrong. `053.png` sits below 7 of the 12 text
+  pages, not 9. A sentence promised two new constants and listed three. The plan cited four line
+  numbers for three assertions. The 0.35 denominator never defined a measured band or the zero-band
+  case. The minor-ink filter had no rejection reason it could record under, so version 2 adds
+  `minor_ink_cluster`.
+- **Effect on this document:** Every accepted finding was corrected here or in the plan before
+  implementation began.
+- **Residual risks:** `053.png` becomes eligible although review found it not alignable. The
+  implementation run confirmed the alignment quality gates reject it, so no declared-complex or
+  unalignable page was accepted. A second defect surfaced in that run: the uniqueness margin is an
+  unnormalized absolute cost difference, and it rejects eight otherwise fully matched text pages.
+  That threshold is outside this design and needs a separate owner decision.
+
 ## Where the measurements come from
 
 Measurements come from the fixed 25-page review set reproduced on 2026-08-31. That reproduction

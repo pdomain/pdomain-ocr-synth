@@ -163,7 +163,7 @@ def test_candidate_records_component_measurements_and_normalized_profile(tmp_pat
     assert candidate.horizontal_ink_profile[:9] == pytest.approx((1 / 33,) * 9)
 
 
-def test_extract_candidates_excludes_fragmented_band_in_stable_order(tmp_path: Path) -> None:
+def test_extract_candidates_tolerates_one_fragmented_band_and_records_it(tmp_path: Path) -> None:
     image_path = tmp_path / "fragmented.png"
     image = _page_with_rows()
     draw = ImageDraw.Draw(image)
@@ -172,8 +172,13 @@ def test_extract_candidates_excludes_fragmented_band_in_stable_order(tmp_path: P
 
     result = _extract(image_path)
 
-    assert result.candidates == ()
-    assert result.exclusions == ("fragmented_band",)
+    # One fragmented band out of three is a rate of 0.333, under the 0.35 limit.
+    assert result.exclusions == ()
+    assert [candidate.box for candidate in result.candidates] == [
+        (20, 20, 56, 25),
+        (20, 35, 59, 40),
+        (20, 50, 63, 55),
+    ]
     assert [(item.reason, item.band_ordinal, item.box) for item in result.rejected] == [
         ("fragmented_band", 1, (20, 35, 59, 40)),
         ("fragmented_band", 1, (70, 35, 79, 40)),
@@ -192,8 +197,8 @@ def test_extract_candidates_sorts_three_fragmented_clusters_by_box(tmp_path: Pat
 
     result = _extract(image_path)
 
-    assert result.candidates == ()
-    assert result.exclusions == ("fragmented_band", "probable_multi_column")
+    # Still one fragmented band out of three, so only the gutter excludes the page.
+    assert result.exclusions == ("probable_multi_column",)
     assert [(item.band_ordinal, item.box) for item in result.rejected] == [
         (1, (20, 35, 29, 40)),
         (1, (50, 35, 56, 40)),
@@ -436,7 +441,7 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
     from pdomain_ocr_synth.pgdp.alignment_image import ALIGNMENT_IMAGE_METHODS
 
     assert ALIGNMENT_IMAGE_METHODS == {
-        "algorithm": "source-frame-components/v1",
+        "algorithm": "source-frame-components/v2",
         "connectivity": 8,
         "minimum_ink_bands": 2,
         "page_border_edges": 3,
@@ -445,6 +450,9 @@ def test_alignment_image_methods_expose_all_fixed_thresholds() -> None:
         "join_minimum_vertical_overlap_ratio": 0.4,
         "join_maximum_vertical_center_distance_ratio": 0.6,
         "join_maximum_horizontal_gap_median_height_ratio": 2.0,
+        "merge_horizontally_overlapping_clusters": True,
+        "fragmented_band_minor_ink_share": 0.02,
+        "fragmented_band_maximum_rate": 0.35,
         "gutter_minimum_width_ratio": 0.03,
         "gutter_minimum_vertical_coverage_ratio": 0.6,
     }
@@ -657,3 +665,297 @@ def test_component_join_uses_the_band_median_height_for_horizontal_gaps(tmp_path
         ((10, 20, 50, 30), 3),
         ((20, 40, 50, 45), 1),
     ]
+
+
+def test_merge_overlapping_clusters_unions_a_detached_mark_above_a_row() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Component,
+        join_components,
+        merge_horizontally_overlapping_clusters,
+    )
+
+    components = (
+        Component(ordinal=0, label=0, box=(20, 35, 40, 40), foreground_pixels=100),
+        Component(ordinal=1, label=1, box=(25, 30, 30, 33), foreground_pixels=15),
+    )
+    clusters = join_components(components)
+    assert len(clusters) == 2
+
+    merged = merge_horizontally_overlapping_clusters(clusters)
+
+    assert len(merged) == 1
+    assert merged[0].box == (20, 30, 40, 40)
+    assert merged[0].component_count == 2
+    assert merged[0].component_ordinal == 0
+    assert merged[0].foreground_pixels == 115
+
+
+def test_merge_overlapping_clusters_keeps_disjoint_columns_apart() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Component,
+        join_components,
+        merge_horizontally_overlapping_clusters,
+    )
+
+    components = (
+        Component(ordinal=0, label=0, box=(10, 35, 38, 40), foreground_pixels=100),
+        Component(ordinal=1, label=1, box=(61, 35, 89, 40), foreground_pixels=100),
+    )
+    clusters = join_components(components)
+    assert len(clusters) == 2
+
+    assert merge_horizontally_overlapping_clusters(clusters) == clusters
+
+
+def test_merge_overlapping_clusters_follows_a_chain_of_overlaps() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Component,
+        join_components,
+        merge_horizontally_overlapping_clusters,
+    )
+
+    components = (
+        Component(ordinal=0, label=0, box=(20, 35, 30, 40), foreground_pixels=40),
+        Component(ordinal=1, label=1, box=(28, 28, 45, 33), foreground_pixels=50),
+        Component(ordinal=2, label=2, box=(43, 35, 60, 40), foreground_pixels=60),
+    )
+    clusters = join_components(components)
+    assert len(clusters) == 3
+
+    merged = merge_horizontally_overlapping_clusters(clusters)
+
+    assert len(merged) == 1
+    assert merged[0].box == (20, 28, 60, 40)
+    assert merged[0].component_count == 3
+    assert merged[0].foreground_pixels == 150
+
+
+def test_merge_overlapping_clusters_returns_a_single_cluster_unchanged() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Component,
+        join_components,
+        merge_horizontally_overlapping_clusters,
+    )
+
+    components = (Component(ordinal=0, label=0, box=(20, 35, 40, 40), foreground_pixels=100),)
+    clusters = join_components(components)
+
+    assert merge_horizontally_overlapping_clusters(clusters) == clusters
+    assert merge_horizontally_overlapping_clusters(()) == ()
+
+
+def test_merge_overlapping_clusters_is_stable_when_cluster_order_reverses() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Component,
+        join_components,
+        merge_horizontally_overlapping_clusters,
+    )
+
+    components = (
+        Component(ordinal=0, label=0, box=(20, 35, 30, 40), foreground_pixels=40),
+        Component(ordinal=1, label=1, box=(28, 28, 45, 33), foreground_pixels=50),
+        Component(ordinal=2, label=2, box=(70, 35, 89, 40), foreground_pixels=60),
+    )
+    forward = merge_horizontally_overlapping_clusters(join_components(components))
+    reversed_input = merge_horizontally_overlapping_clusters(
+        tuple(reversed(join_components(tuple(reversed(components)))))
+    )
+
+    assert forward == reversed_input
+    assert tuple(cluster.box for cluster in forward) == ((20, 28, 45, 40), (70, 35, 89, 40))
+
+
+def _unjoinable_pair(main_pixels: int, minor_pixels: int) -> tuple[object, ...]:
+    from pdomain_ocr_synth.pgdp.alignment_image import Component, join_components
+
+    return join_components(
+        (
+            Component(ordinal=0, label=0, box=(20, 22, 61, 29), foreground_pixels=main_pixels),
+            Component(ordinal=1, label=1, box=(70, 20, 71, 21), foreground_pixels=minor_pixels),
+        )
+    )
+
+
+def test_drop_minor_ink_clusters_removes_a_cluster_below_the_share() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import drop_minor_ink_clusters
+
+    clusters = _unjoinable_pair(287, 1)
+    assert len(clusters) == 2
+
+    counted, minor = drop_minor_ink_clusters(clusters)
+
+    assert len(counted) == 1
+    assert counted[0].foreground_pixels == 287
+    assert len(minor) == 1
+    assert minor[0].foreground_pixels == 1
+
+
+def test_drop_minor_ink_clusters_keeps_a_cluster_exactly_at_the_share() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import drop_minor_ink_clusters
+
+    clusters = _unjoinable_pair(98, 2)
+    assert len(clusters) == 2
+
+    counted, minor = drop_minor_ink_clusters(clusters)
+
+    assert counted == clusters
+    assert minor == ()
+
+
+def test_drop_minor_ink_clusters_never_empties_a_band() -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import (
+        Component,
+        drop_minor_ink_clusters,
+        join_components,
+    )
+
+    components = tuple(
+        Component(
+            ordinal=index,
+            label=index,
+            box=(index * 10, 20, index * 10 + 2, 22),
+            foreground_pixels=1,
+        )
+        for index in range(60)
+    )
+    clusters = join_components(components)
+    assert len(clusters) == 60
+
+    counted, minor = drop_minor_ink_clusters(clusters)
+
+    assert counted == clusters
+    assert minor == ()
+
+
+def test_extract_candidates_records_minor_ink_clusters_as_evidence(tmp_path: Path) -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    image_path = tmp_path / "speck.png"
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    for y_start in (20, 40, 60):
+        draw.rectangle((20, y_start + 2, 60, y_start + 8), fill=0)
+    draw.point((70, 40), fill=0)
+    image.save(image_path)
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=(10, 10, 90, 75),
+            ink_bands=(
+                InkBand(y_start=20, y_end=30),
+                InkBand(y_start=40, y_end=50),
+                InkBand(y_start=60, y_end=70),
+            ),
+        )
+
+    assert result.exclusions == ()
+    assert [candidate.band_ordinal for candidate in result.candidates] == [0, 1, 2]
+    assert [candidate.box for candidate in result.candidates] == [
+        (20, 22, 61, 29),
+        (20, 42, 61, 49),
+        (20, 62, 61, 69),
+    ]
+    assert [(item.reason, item.band_ordinal, item.box) for item in result.rejected] == [
+        ("minor_ink_cluster", 1, (70, 40, 71, 41)),
+    ]
+
+
+def _page_with_fragmented_bands(band_count: int, fragmented_count: int) -> Image.Image:
+    """Draw `band_count` rows, the first `fragmented_count` of them split in two."""
+
+    image = Image.new("L", (100, 20 * band_count + 20), color=255)
+    draw = ImageDraw.Draw(image)
+    for index in range(band_count):
+        top = 20 * index + 2
+        if index < fragmented_count:
+            draw.rectangle((20, top, 40, top + 6), fill=0)
+            draw.rectangle((70, top, 89, top + 6), fill=0)
+        else:
+            draw.rectangle((20, top, 60, top + 6), fill=0)
+    return image
+
+
+def _extract_rows(image_path: Path, band_count: int) -> CandidateExtraction:
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    with open_image_snapshot(image_path) as snapshot:
+        return extract_line_candidates(
+            snapshot,
+            source_frame=CoordinateFrame(width=100, height=20 * band_count + 20),
+            foreground_bounds=(10, 10, 95, 20 * band_count + 15),
+            ink_bands=tuple(
+                InkBand(y_start=20 * index, y_end=20 * index + 15) for index in range(band_count)
+            ),
+        )
+
+
+def test_extract_candidates_keeps_a_page_below_the_fragmented_rate(tmp_path: Path) -> None:
+    image_path = tmp_path / "under.png"
+    _page_with_fragmented_bands(10, 3).save(image_path)
+
+    result = _extract_rows(image_path, 10)
+
+    # 3 of 10 bands is a rate of 0.30, under the 0.35 limit.
+    assert "fragmented_band" not in result.exclusions
+    assert len(result.candidates) == 10
+
+
+def test_extract_candidates_keeps_a_page_exactly_at_the_fragmented_rate(tmp_path: Path) -> None:
+    image_path = tmp_path / "at-limit.png"
+    _page_with_fragmented_bands(20, 7).save(image_path)
+
+    result = _extract_rows(image_path, 20)
+
+    # 7 of 20 bands is exactly 0.35, which the limit admits.
+    assert "fragmented_band" not in result.exclusions
+    assert len(result.candidates) == 20
+
+
+def test_extract_candidates_excludes_a_page_above_the_fragmented_rate(tmp_path: Path) -> None:
+    image_path = tmp_path / "over.png"
+    _page_with_fragmented_bands(10, 4).save(image_path)
+
+    result = _extract_rows(image_path, 10)
+
+    # 4 of 10 bands is a rate of 0.40, past the 0.35 limit.
+    assert "fragmented_band" in result.exclusions
+    assert result.candidates == ()
+
+
+def test_extract_candidates_raises_no_fragmented_band_without_measured_bands(
+    tmp_path: Path,
+) -> None:
+    from pdomain_ocr_synth.pgdp.alignment_image import extract_line_candidates
+
+    image_path = tmp_path / "off-band.png"
+    image = Image.new("L", (100, 80), color=255)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((20, 20, 60, 26), fill=0)
+    image.save(image_path)
+
+    with open_image_snapshot(image_path) as snapshot:
+        result = extract_line_candidates(
+            snapshot,
+            source_frame=_SOURCE_FRAME,
+            foreground_bounds=(10, 10, 90, 70),
+            ink_bands=(InkBand(y_start=40, y_end=50), InkBand(y_start=55, y_end=65)),
+        )
+
+    assert result.candidates == ()
+    assert "fragmented_band" not in result.exclusions
+    assert [item.reason for item in result.rejected] == ["empty_band", "empty_band"]
+
+
+def test_extract_candidates_takes_the_dominant_cluster_from_a_fragmented_band(
+    tmp_path: Path,
+) -> None:
+    image_path = tmp_path / "dominant.png"
+    _page_with_fragmented_bands(10, 3).save(image_path)
+
+    result = _extract_rows(image_path, 10)
+
+    # The wider left cluster holds more ink than the right one, so it wins.
+    assert result.candidates[0].box == (20, 2, 41, 9)
+    assert result.candidates[0].component_count == 1

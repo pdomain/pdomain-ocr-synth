@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 ALIGNMENT_SCHEMA_VERSION: Final = 1
-ALIGNMENT_ALGORITHM_VERSION: Final = "pgdp-alignment/v1"
+ALIGNMENT_ALGORITHM_VERSION: Final = "pgdp-alignment/v2"
 CONFIDENCE_KIND: Final = "uncalibrated"
 
 AlignmentOperationKind = Literal["match", "skip_image", "skip_text"]
@@ -1247,7 +1247,7 @@ class ProjectAlignmentInput(_WireModel):
 
 class AlignmentReportInput(_WireModel):
     schema_version: Literal[1]
-    algorithm_version: Literal["pgdp-alignment/v1"]
+    algorithm_version: Literal["pgdp-alignment/v2"]
     tool_version: StrictStr = Field(min_length=1)
     profile_label: StrictStr = Field(min_length=1, pattern=r"^[^/\\]+$")
     profile_sha256: StrictStr
