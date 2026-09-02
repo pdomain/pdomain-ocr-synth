@@ -1,8 +1,10 @@
 """Recognition-mode output writer for ``pdomain-ocr-training/v1``.
 
-Layout produced (per ``docs/architecture/output-and-publishing.md``, harmonized
-with ``pd-ocr-trainer/dataset_store.py`` which is the actual API
-contract — see the spec note about ``labels.json`` vs ``labels.csv``)::
+Layout produced, per ``docs/architecture/output-and-publishing.md``. It was
+harmonized against ``pd-ocr-trainer``'s ``dataset_store.py``, which is being
+retired; that contract, including why it is ``labels.json`` and not
+``labels.csv``, is captured under "The trainer profile contract, captured" in
+the same document::
 
     <destination>/
     ├── images/

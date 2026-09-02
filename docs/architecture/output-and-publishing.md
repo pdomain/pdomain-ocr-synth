@@ -28,6 +28,34 @@ paragraph collections. Page layouts produce fixed canvases; paragraph layouts
 retain their rendered extents. Integration tests validate both layouts against
 the trainer-facing profile shape.
 
+## The trainer profile contract, captured
+
+The layout above was harmonized against `pd-ocr-trainer`'s `dataset_store.py`, which is being
+retired. These are the facts this repository's writer depends on, recorded here so they survive
+that repository's removal. Measured from
+`pd-ocr-trainer/src/pd_ocr_trainer/dataset_store.py` at commit `9a074050` on 2026-09-02.
+
+The profile tree is `<split>/<profile>/<task>/`, with `task` one of `detection` or
+`recognition`, and the base profile named `all`. An older layout used `base-ocr` for the same
+profile and `dataset_store` migrated it forward.
+
+Each task directory holds `images/` and a `labels.json` that is a flat JSON object mapping an
+image filename to its ground-truth text. It is `labels.json`, not `labels.csv`. A directory
+counts as a profile only if at least one task under it has a `labels.json`.
+
+Two naming rules carry information in the filename rather than in a field.
+
+A recognition crop's filename ends in four digit-only underscore-separated segments holding its
+pixel coordinates. Stripping those four segments recovers the detection page filename it came
+from. This is the only link between the two halves of a dataset.
+
+A project identifier is recovered from an image stem by stripping trailing digit-only
+underscore-separated segments. So a stem carries its project, then its page, then in the
+recognition case its crop box, with nothing declaring which is which.
+
+Both rules are positional and unversioned. Anything reading them is guessing structure from a
+string, which is why `pdomain-ocr-training` supersedes this format rather than extending it.
+
 ## Determinism and safe continuation
 
 Every sample derives its randomness from the run seed and stable sample index.
