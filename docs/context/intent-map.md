@@ -33,6 +33,14 @@ delivery scaffolding. Each item cites its source document or replacement.
   the competing `pdomain_ocr_synth.ui` versus `preview` package names and decide
   whether detection preview belongs in v1 before coding
   (`docs/plans/11-preview-ui*.md`, `docs/specs/11-preview-ui.md`).
+- M11 has lost a design rationale and needs a new one. The plan and spec justified
+  the preview UI's framework and layering by pointing at a workspace pattern: that
+  `pd-ocr-labeler` and `pd-ocr-trainer` both use NiceGUI with the same MVVM and
+  layered shape. Both repositories are being retired, and the successor does not
+  share the trait. `pdomain-ocr-training` declares no NiceGUI dependency, where
+  `pd-ocr-trainer` pinned `nicegui>=1.4.0`, and its modules are flat rather than
+  layered. Choose the framework and layering on their merits before implementing,
+  rather than inheriting a pattern that no surviving repository follows.
 - M12 glyph annotations: confirm the sibling shared model and the semantic-text
   versus presentation invariant, prototype GSUB/cluster mapping, then implement
   the Gaelic/Roman v1 model, char spans, validation, additive recognition and
