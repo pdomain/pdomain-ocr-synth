@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-08-31"
+kind: archive
+status: retired
 created_at: "2026-08-31T18:35:53Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
-base_commit: fe36aa0a0174d33cfe5cc8863f062de07b15956f
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
+base_commit: "fe36aa0a0174d33cfe5cc8863f062de07b15956f"
 supersedes: "2026-08-31-133615-pgdp-page-classification-shipped.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-08-31"
+last_verified: "2026-09-02"
 ---
+
+> **Retired — superseded by `docs/handoff/docs/handoff/2026-09-02-210255-m15b-residuals-fixed-and-contracts-decision.md`.**
+
 
 # M15b gates pass and merged
 
