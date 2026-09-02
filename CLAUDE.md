@@ -49,8 +49,12 @@ output for debugging.
 - If pydantic recipe models change, run `make schema` to regenerate `docs/specs/recipe.schema.json`.
 - Never commit fonts — they are user-provided and license-sensitive; `make fetch-fonts` is interactive by design.
 - Recipes live in `recipes/` as YAML; schema is in `docs/specs/recipe.schema.json`.
-- Output contract is `pd-ocr-trainer`'s profile layout — confirm from
-  `../pd-ocr-trainer/` before changing the output adapter.
+- Output contract is captured in
+  [`docs/architecture/output-and-publishing.md`](docs/architecture/output-and-publishing.md)
+  under "The trainer profile contract, captured" — confirm from `../pdomain-ocr-training/`
+  before changing the output adapter. `pd-ocr-trainer`, the repo the contract was
+  originally measured from, is retired; `pdomain-ocr-training` supersedes it and reads
+  this same profile shape.
 
 ## Specs
 
@@ -58,7 +62,8 @@ Full spec set in `docs/specs/00-N.md` (read in order). Roadmap milestones in `do
 
 ## Sibling repos
 
-- `../pd-ocr-trainer/` — consumes synth output; defines the profile directory layout this repo must match.
+- `../pdomain-ocr-training/` — consumes synth output; reads the profile directory layout
+  this repo must match. Supersedes the retired `pd-ocr-trainer`.
 - `../pdomain-book-tools/` — shared OCR/image primitives (potential future dependency).
 
 ## GH issues

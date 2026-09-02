@@ -50,7 +50,8 @@ producing a project that *looks* like its peers.
       ```
 - [x] Set the default branch to `main` on GitHub.
 - [ ] Add a license file matching peer projects (check what
-      `pd-ocr-trainer` ships; mirror it).
+      `pdomain-ocr-training` ships and mirror it; `pd-ocr-trainer`, the
+      peer this item originally named, is retired).
       NOTE: no LICENSE file present yet; pyproject.toml declares `license = "Unlicense"` but no file shipped.
 
 ### Git config files (mirror the peer pattern)

@@ -8,7 +8,7 @@ name: gaelic
 description: |
   Cló Gaelach (insular Irish typography) and pre-reform Irish orthography.
   Produces recognition word-crops for fine-tuning a DocTR recognition model
-  via pd-ocr-trainer profile `gaelic`.
+  via pdomain-ocr-training profile `gaelic`.
 seed: 42
 
 # ----------------------------------------------------------------------------

@@ -251,8 +251,8 @@ marker, and inline safety rationale to appear here.
 | `tests/test_cli_preview.py:556` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
 | `tests/test_cli_preview.py:623` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
 | `tests/test_fonts.py:109` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
-| `src/pdomain_ocr_synth/output/detection.py:453` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
-| `src/pdomain_ocr_synth/output/detection.py:491` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/output/detection.py:455` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
+| `src/pdomain_ocr_synth/output/detection.py:493` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
 | `tests/test_degradation.py:59` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
 | `tests/test_degradation.py:480` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
 | `tests/test_degradation.py:655` | `pyright: ignore[reportArgumentType]` | not used by pipeline |
@@ -270,8 +270,8 @@ marker, and inline safety rationale to appear here.
 | `src/pdomain_ocr_synth/text_transforms/registry.py:89` | `pyright: ignore[reportConstantRedefinition]` | process-local registry or worker state is intentionally installed once |
 | `tests/test_corpus_runner.py:185` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
 | `tests/test_corpus_runner.py:219` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
-| `tests/test_cli_render.py:736` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
-| `tests/test_cli_render.py:773` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_cli_render.py:738` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
+| `tests/test_cli_render.py:775` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
 | `src/pdomain_ocr_synth/render/page.py:167` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
 | `src/pdomain_ocr_synth/render/line.py:88` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |
 | `src/pdomain_ocr_synth/render/line.py:89` | `pyright: ignore[reportArgumentType]` | runtime schema or explicit coercion narrows the broader static union |

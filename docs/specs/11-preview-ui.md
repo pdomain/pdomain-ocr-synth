@@ -55,8 +55,10 @@ should be the right tool; for everything else, the CLI is.
 
 ## Architecture
 
-Same MVVM + layered pattern used by `pd-ocr-labeler` and
-`pd-ocr-trainer`:
+Same MVVM + layered pattern used by `pd-ocr-labeler` and the retired
+`pd-ocr-trainer` (superseded by `pdomain-ocr-training`, which does not
+use this pattern — verify the layering choice still applies before
+implementing):
 
 ```
 state         (immutable Recipe + transient PreviewSession)

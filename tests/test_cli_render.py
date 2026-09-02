@@ -350,7 +350,9 @@ def test_render_labels_json_matches_trainer_recognition_contract(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """``labels.json`` is what ``pd-ocr-trainer/dataset_store.py`` consumes.
+    """``labels.json`` is what ``pdomain-ocr-training`` consumes (originally
+    harmonized against the retired ``pd-ocr-trainer/dataset_store.py``; see
+    ``docs/architecture/output-and-publishing.md``).
 
     Schema: a JSON object whose keys are PNG filenames (no path
     components) and whose values are plain strings (no nested objects).

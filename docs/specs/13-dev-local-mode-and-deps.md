@@ -40,8 +40,8 @@ projects as **editable installs from the local checkout** (instead of
 the canonical published wheels), pins to **GPU extras**, or pulls
 `python-doctr` from a git ref. This is how cross-repo work happens —
 e.g. exercising an unreleased `pdomain-book-tools` change from
-`pd-ocr-trainer`, or running a synth recipe against a local
-`pd-ocr-trainer` profile writer.
+`pdomain-ocr-training`, or running a synth recipe against a local
+`pdomain-ocr-training` profile writer.
 
 The hazard: a plain `uv sync --group <something>` (the last step of
 `make upgrade-deps`) will resolve against `pyproject.toml` /
@@ -52,12 +52,14 @@ release. The contributor only finds out when their next test run
 unexpectedly fails to pick up changes in a sibling repo.
 
 `pdomain-ocr-synth` does not (today) install editable sibling pd-* repos —
-its only direct workspace coupling is the **output contract** with
-`pd-ocr-trainer`'s `dataset_store.py`, not a runtime dependency.
+its only direct workspace coupling is the **output contract** `pdomain-ocr-training`
+reads (originally harmonized against the retired `pd-ocr-trainer`'s
+`dataset_store.py`; see [Output and
+publishing](../architecture/output-and-publishing.md)), not a runtime dependency.
 However:
 
 1. Future milestones may add an editable `pdomain-book-tools` or
-   `pd-ocr-trainer` install for integration tests (e.g. round-tripping
+   `pdomain-ocr-training` install for integration tests (e.g. round-tripping
    a synth recipe through the trainer's dataset reader).
 2. The standardized fix should be uniform across all `pd-*` Makefiles
    so contributors see the same UX everywhere. Diverging here would
@@ -72,7 +74,7 @@ editable siblings.
 The behavior below applies to **whatever `upgrade-deps`-style target
 runs `uv sync`** in this repo's Makefile. It is written so the same
 text drops cleanly into peer repos (`pdomain-book-tools`, `pdomain-ocr-cli`,
-`pd-ocr-trainer`, `pd-ocr-labeler`, `pdomain-ocr-labeler-spa`,
+`pdomain-ocr-training`, `pd-ocr-labeler`, `pdomain-ocr-labeler-spa`,
 `pdomain-prep-for-pgdp`, `pd-png-optimizer`).
 
 ### 1. Detect dev-local vs canonical before `uv sync`

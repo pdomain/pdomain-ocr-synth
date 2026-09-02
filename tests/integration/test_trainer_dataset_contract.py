@@ -1,10 +1,13 @@
-"""Cross-project contract tests against ``pd-ocr-trainer`` readers.
+"""Cross-project contract tests against ``pdomain-ocr-training`` readers.
 
 This is the M09 residual: locks the contract that ``pdomain-ocr-synth``'s
 recognition + detection writer outputs are loadable by the readers
-``pd-ocr-trainer`` actually drives — `doctr.datasets.RecognitionDataset`
+``pdomain-ocr-training`` actually drives — `doctr.datasets.RecognitionDataset`
 and `doctr.datasets.DetectionDataset` (the trainer wires both directly,
-see ``pd_ocr_trainer/train_recog.py`` and ``train_detect.py``).
+see ``pdomain_ocr_training/recog.py`` and ``detect.py``). This test was
+originally written against the now-retired ``pd-ocr-trainer``, which wired
+the same two doctr readers the same way; ``pdomain-ocr-training`` supersedes
+it and reads the identical ``labels.json`` shape.
 
 Two layers
 ----------
@@ -368,7 +371,7 @@ def test_recognition_dataset_loads_synth_output(tmp_path: Path) -> None:
     """Drive ``doctr.datasets.RecognitionDataset`` on synth output.
 
     Locks the strongest possible cross-project contract: the actual
-    reader pd-ocr-trainer constructs (``train_recog.py:483``)
+    reader ``pdomain-ocr-training`` constructs (``recog.py:498``)
     instantiates without error and yields the right sample count.
     """
 
@@ -406,7 +409,7 @@ def test_detection_dataset_loads_synth_output(tmp_path: Path) -> None:
     """Drive ``doctr.datasets.DetectionDataset`` on synth output.
 
     Locks the contract for the trainer's detection reader
-    (``train_detect.py:455``). Asserts both straight-bbox mode
+    (``pdomain_ocr_training/detect.py:486``). Asserts both straight-bbox mode
     (``use_polygons=False``, the default) and rotated mode
     (``use_polygons=True``) — the trainer flips this based on
     ``--rotation`` so synth output must be valid for either.
@@ -416,7 +419,7 @@ def test_detection_dataset_loads_synth_output(tmp_path: Path) -> None:
 
     out, pages = _write_detection_output(tmp_path)
 
-    # Straight bboxes — what train_detect.py:455 does by default.
+    # Straight bboxes — what pdomain_ocr_training/detect.py:486 does by default.
     ds_straight = DetectionDataset(
         img_folder=str(out / "images"),
         label_path=str(out / "labels.json"),
@@ -434,7 +437,7 @@ def test_detection_dataset_loads_synth_output(tmp_path: Path) -> None:
 
     # Class names default to the single 'words' class doctr uses for
     # list-form polygons. The trainer reads this for model head
-    # construction (train_detect.py:356).
+    # construction (pdomain_ocr_training/detect.py:379).
     assert ds_straight.class_names == ds_rotated.class_names
     assert len(ds_straight.class_names) >= 1
 

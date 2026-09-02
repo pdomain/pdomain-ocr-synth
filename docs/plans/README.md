@@ -76,7 +76,9 @@ A **preview UI** provides a clear benefit: pick a recipe, render N samples with
 the current degradation pipeline, display them in a grid, and toggle stages or
 slide probabilities to see the effect immediately. It turns "edit YAML →
 re-render → open file manager" into one page. It also fits the workspace
-pattern: both `pd-ocr-labeler` and `pd-ocr-trainer` use NiceGUI.
+pattern: `pd-ocr-labeler` uses NiceGUI, and so did the now-retired
+`pd-ocr-trainer` (superseded by `pdomain-ocr-training`, which does not
+declare a NiceGUI dependency).
 
 Captured as **M11** with a separate spec at
 [`../specs/11-preview-ui.md`](../specs/11-preview-ui.md). The UI is

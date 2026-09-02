@@ -111,7 +111,7 @@ enums.
       side-channel file and renders identically to pre-M12 output for
       that recipe.
 - [ ] Cross-repo contract: a structural test (no real
-      pd-ocr-trainer import — same approach as M07's
+      pdomain-ocr-training import — same approach as M07's
       `test_render_labels_json_matches_trainer_recognition_contract`)
       asserts the `glyph_annotations.json` shape against the
       pdomain-book-tools `GlyphAnnotations` model.

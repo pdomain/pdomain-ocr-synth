@@ -29,7 +29,9 @@ Face publishing adapters, and detection/integration pytest suites.
 
 ## Global Constraints
 
-Preserve deterministic geometry and the `pd-ocr-trainer` contract. Do not treat deferred headings,
+Preserve deterministic geometry and the trainer contract (captured in
+[Output and publishing](../architecture/output-and-publishing.md); read today by
+`pdomain-ocr-training`, which supersedes `pd-ocr-trainer`). Do not treat deferred headings,
 drop caps, extra geometric stages, parquet sharding, or stronger trainer-driver assertions as
 shipped.
 
@@ -66,7 +68,8 @@ because they require either new domain modeling (per-paragraph
 role enum + sub-glyph rendering for headings / drop caps) or a new
 runtime dependency (`datasets` for parquet `push_to_hub`); both
 are tracked here for visibility but neither blocks an M09-shipped
-recipe from being trained on by `pd-ocr-trainer`. M09 close-out
+recipe from being trained on by `pd-ocr-trainer` (as of this M09
+close-out; superseded since by `pdomain-ocr-training`). M09 close-out
 sweep: `2466df6` (skew bbox propagation), `4abadc0` (trainer
 contract test), `08a4809` (page_size_px), `ee54805` (indent),
 `f7b59e4` (alignment left/center), `4a6b199` (alignment right),
@@ -422,10 +425,10 @@ spine-only modes. All commits are on `main`.
 ## Future work — beyond M09
 
 These items remain genuinely open. None block a synth-produced
-detection dataset from being trained on by `pd-ocr-trainer` today;
-each is gated on either new domain modeling or a new runtime
-dependency, so they wait on a deliberate next chunk rather than
-being M09 residual.
+detection dataset from being trained on by `pdomain-ocr-training`
+today (`pd-ocr-trainer` is retired); each is gated on either new
+domain modeling or a new runtime dependency, so they wait on a
+deliberate next chunk rather than being M09 residual.
 
 ### Headings and drop caps
 
@@ -514,7 +517,7 @@ path is in Future work above.
   transfer relies on real labeled data via `pd-ocr-labeler`.
 - **Bbox accuracy under ink_bleed.** Dilation can push glyphs beyond
   the original bbox. Decide: clip, expand, or accept slight
-  over/under-coverage. Match what `pd-ocr-trainer` expects.
+  over/under-coverage. Match what `pdomain-ocr-training` expects.
 - **Parquet image embedding.** Encoding PNGs into parquet bytes is
   efficient but makes preview/debugging harder than imagefolder. The
   HF Dataset Viewer renders both fine; pick parquet for shard count

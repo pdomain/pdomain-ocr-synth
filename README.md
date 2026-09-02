@@ -12,7 +12,8 @@
 
 Synthetic OCR training-data generator. Produces labeled image+text pairs for
 historical and specialty typography (first target: Cló Gaelach / early Irish
-typography), in the format consumed by `pd-ocr-trainer` profiles.
+typography), in the format `pdomain-ocr-training` reads as its profile
+directories.
 
 **Status:** M00–M10 substantially shipped. M11 (preview UI) and M12 (glyph annotations) remain.
 The `docs/specs/` set is the authoritative design reference; `docs/plans/` tracks milestone progress.
@@ -38,14 +39,20 @@ matter of writing a YAML file plus optional custom transforms.
 [ pdomain-ocr-synth ]  →  recognition crops + detection pages
         │
         ▼
-[ pd-ocr-trainer ]  reads new profile (e.g. `gaelic`)
+[ pdomain-ocr-training ]  reads new profile (e.g. `gaelic`)
         │
         ▼
 [ pdomain-ocr-cli ]  uses fine-tuned model on real scans
 ```
 
 The output adapter writes directly into the directory layout
-`pd-ocr-trainer` already understands.
+`pdomain-ocr-training` reads, verified against its
+`RecognitionDataset` / `DetectionDataset` construction in
+`pdomain_ocr_training/recog.py` and `detect.py`. That layout was
+originally harmonized against the now-retired `pd-ocr-trainer`'s
+`dataset_store.py`; see [Output and
+publishing](docs/architecture/output-and-publishing.md) for the
+captured contract.
 
 ## Getting started
 

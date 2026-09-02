@@ -13,7 +13,7 @@
 ## Purpose
 
 Generate labeled synthetic images for OCR training of historical and specialty
-typography. Output drops directly into a `pd-ocr-trainer` profile.
+typography. Output drops directly into a `pdomain-ocr-training` profile.
 
 ## Current implementation status
 
@@ -43,7 +43,7 @@ annotation side channel.
 
 ## Non-goals
 
-- **Not a model trainer.** That's `pd-ocr-trainer`.
+- **Not a model trainer.** That's `pdomain-ocr-training`.
 - **Not a labeler / corrector.** That's `pd-ocr-labeler`.
 - **Not a full layout simulator.** Page-level synthesis is a stretch goal;
   the v1 emphasis is recognition data (word/line crops) plus simple
@@ -57,12 +57,13 @@ annotation side channel.
 |-----------|-----------|
 | Inbound (text) | Local files, URLs, Wikisource, CELT, HF datasets, Internet Archive |
 | Inbound (fonts) | User-provided font files referenced by absolute or recipe-relative paths |
-| Outbound (local) | A `pd-ocr-trainer` profile directory (recognition or detection layout) |
+| Outbound (local) | A `pdomain-ocr-training` profile directory (recognition or detection layout) |
 | Outbound (HF) | Optional Hugging Face dataset repo via `pdomain-ocr-synth publish` (see [Output and publishing](../architecture/output-and-publishing.md) and the workspace-level filesystem path `DATASETS.md`, which is outside this governed Markdown graph) |
 
-The outbound contract is defined by `pd-ocr-trainer`'s `dataset_store.py`. See
-[Output and publishing](../architecture/output-and-publishing.md) for the layout this project must
-match.
+The outbound contract matches what `pdomain-ocr-training` reads today. It was originally
+harmonized against the now-retired `pd-ocr-trainer`'s `dataset_store.py`; that measurement is
+captured in [Output and publishing](../architecture/output-and-publishing.md) for the layout this
+project must match.
 
 ## First recipe: Gaelic
 
@@ -116,7 +117,7 @@ These are flagged here so the spec doesn't pretend they're settled.
 4. **Glyph-level ground truth.** For ligatures and insular forms, the
    character a reader perceives may not match the codepoint string. We
    record the codepoint string as ground truth and let the trainer's vocab
-   handle the rest; this matches `pd-ocr-trainer`'s current behavior.
+   handle the rest; this matches `pdomain-ocr-training`'s current behavior.
 
 ## Adversarial Review
 

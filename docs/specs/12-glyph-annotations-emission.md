@@ -188,7 +188,7 @@ Spec 08's recognition `labels.json` is currently a flat
 `labels.json` is unchanged so trainer code that does not opt in keeps
 working. Trainer/labeler consumers that want the side channel read
 both files keyed by filename. (We do not extend `labels.json`'s value
-shape because `pd-ocr-trainer`'s `RecognitionDataset` parses it
+shape because `pdomain-ocr-training`'s `RecognitionDataset` parses it
 directly; introducing nested values would force a coordinated trainer
 release.)
 

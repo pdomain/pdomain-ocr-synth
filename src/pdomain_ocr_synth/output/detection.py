@@ -1,12 +1,14 @@
 """Detection-mode output writer for ``pdomain-ocr-training/v1``.
 
 This is the M09 analog of :mod:`pdomain_ocr_synth.output.recognition`. It
-writes the on-disk layout that ``pd-ocr-trainer``'s detection pipeline
+writes the on-disk layout that ``pdomain-ocr-training``'s detection pipeline
 consumes — full pages with bbox annotations.
 
 Layout produced (per ``docs/architecture/output-and-publishing.md`` §"Detection
-mode layout", harmonized with ``pd-ocr-trainer/dataset_store.py`` and
-``doctr.datasets.DetectionDataset`` which is the actual API contract)::
+mode layout". It was harmonized against ``pd-ocr-trainer``'s ``dataset_store.py``,
+which is being retired; that contract is captured under "The trainer profile
+contract, captured" in the same document. ``doctr.datasets.DetectionDataset``,
+which ``pdomain-ocr-training`` calls directly, is the actual API contract)::
 
     <destination>/
     ├── images/

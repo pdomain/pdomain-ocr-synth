@@ -58,7 +58,10 @@ The current implementation sequence and resolved backend constraints are in
 
 ### `pdomain_ocr_synth.preview` package
 
-- [ ] Layered structure mirroring `pd-ocr-labeler` / `pd-ocr-trainer`:
+- [ ] Layered structure mirroring `pd-ocr-labeler` / the retired
+      `pd-ocr-trainer` (superseded by `pdomain-ocr-training`, which does
+      not use this pattern — verify the layering choice still applies
+      before implementing):
   - `state.py` — `PreviewSession`, `RecipeOverride`, immutable types
   - `operations.py` — `load_recipe`, `render_samples`,
     `apply_override`, `save_override_to_recipe`
