@@ -14,6 +14,9 @@
     "MD060": false
   },
   "ignores": [
-    "docs/archive/**"
+    "docs/archive/**",
+    // docgraph retires documents into docs/_archive/ and prepends its own
+    // "Retired — superseded by" banner above the title, which MD041 rejects.
+    "docs/_archive/**"
   ]
 }
