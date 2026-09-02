@@ -46,10 +46,10 @@ accepted pages rose from 0 to 7, and eligible-page coverage rose to 0.538. All
 216 matches across the seven accepted pages are monotone with correct text at
 both ends, so no shifted page remains.
 
-All three M15b gates now pass. Accepted-line precision is 0.9974, which is 779 correct
-matches of 781 across 28 pages and five books. No declared-complex page is
-accepted. All five books clear the 30-page admission minimum, with 665 accepted
-pages between them.
+All three M15b gates now pass. Accepted-line precision is 1.0000, measured over
+760 rows from 26 pages across five books after the band-identification fixes. No
+declared-complex page is accepted. All five books clear the 30-page admission
+minimum, with 713 accepted pages between them.
 
 Two page-template fitting defects were behind the earlier 0.9716 measurement.
 The binding-side split read the trailing digits of the file name, which one book
