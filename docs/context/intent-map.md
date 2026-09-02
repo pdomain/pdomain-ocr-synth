@@ -16,13 +16,15 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Active
 
-- M15b source-line alignment is measured and passing: precision 0.9974, no accepted
-  declared-complex page, and all five review books admitted with 665 accepted pages ([page
+- M15b source-line alignment is measured and passing: precision 1.0000 over 760 rows, no
+  accepted declared-complex page, and all five review books admitted ([page
   classification plan](../plans/2026-08-31-pgdp-page-classification.md), [fragmented-band correction
   plan](../plans/2026-08-31-pgdp-fragmented-band-correction.md), [ocr-container-meta issue
   403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403)).
-- Classify the pages that still fall to `unknown`. Two known errors remain, both from a page whose
-  first band sits outside its book's head window and one source line matched to a decorative rule.
+- Both previously known alignment errors are fixed. Three band-identification defects caused
+  them: head-band selection picked by ordinal rather than position, a decorative rule was
+  treated as a match candidate, and the speck test had to narrow at the same time because
+  removing the rule alone made `379.png` worse.
 - Calibrate the 30-page book admission minimum. It is an uncalibrated seed, because nothing fits
   typography from an aligned page yet and so no consumer can state its real requirement ([whole-book
   yield gate design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md)).
