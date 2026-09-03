@@ -17,10 +17,16 @@ import pytest
 from pdomain_ocr_synth.pgdp.typography_measure import (
     LineTypographyExclusion,
     LineTypographyMeasurement,
+    LineWordExclusion,
+    LineWordMeasurement,
+    measure_baseline_pitches,
     measure_line_typography,
+    measure_line_words,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pdomain_ocr_synth.pgdp.typography_measure import Bounds
 
 # Every synthetic line spans this many columns, chosen so `max(200, width // 8)` divides it
@@ -211,3 +217,178 @@ def test_exclusion_requires_a_slope_only_for_the_skew_reason() -> None:
         _ = LineTypographyExclusion(
             reason="insufficient_segments", segment_count=1, skew_slope=0.01
         )
+
+
+# --- Task 3: word segmentation and reconciliation -------------------------------------------
+
+
+def _build_word_line(
+    word_gaps_px: Sequence[int], *, word_height_px: int, word_width_px: int = 30
+) -> tuple[
+    np.ndarray[tuple[int, int], np.dtype[np.bool]],
+    Bounds,
+    tuple[float, ...],
+    tuple[Bounds, ...],
+]:
+    """Build a synthetic line of solid rectangular word blocks with exact known gaps.
+
+    Each "word" is a single filled rectangle rather than a glyph stub, so its row
+    projection and column extent are exact by construction and every expected value below
+    is computed geometry, not a measurement. Returns the full-page mask, the line's box,
+    its horizontal ink profile exactly as `alignment_image.LineCandidate` would store it
+    (box-width-normalized to sum to one), and the expected box of each word.
+    """
+
+    left_margin_px = 10
+    word_count = len(word_gaps_px) + 1
+    total_width = 2 * left_margin_px + word_count * word_width_px + sum(word_gaps_px)
+    canvas_height = word_height_px + 20
+    canvas = np.zeros((canvas_height, total_width), dtype=np.bool)
+    row_top = 10
+    row_bottom = row_top + word_height_px
+
+    boxes: list[Bounds] = []
+    x = left_margin_px
+    for index in range(word_count):
+        canvas[row_top:row_bottom, x : x + word_width_px] = True
+        boxes.append((x, row_top, x + word_width_px, row_bottom))
+        x += word_width_px
+        if index < len(word_gaps_px):
+            x += word_gaps_px[index]
+
+    rows_with_ink = np.flatnonzero(canvas.any(axis=1))
+    columns_with_ink = np.flatnonzero(canvas.any(axis=0))
+    box: Bounds = (
+        int(np.min(columns_with_ink)),
+        int(np.min(rows_with_ink)),
+        int(np.max(columns_with_ink)) + 1,
+        int(np.max(rows_with_ink)) + 1,
+    )
+    line_mask = canvas[box[1] : box[3], box[0] : box[2]]
+    line_width = box[2] - box[0]
+    column_counts = [int(line_mask[:, column].sum()) for column in range(line_width)]
+    total = sum(column_counts)
+    profile = tuple(count / total for count in column_counts)
+    return canvas, box, profile, tuple(boxes)
+
+
+@pytest.mark.parametrize("x_height_px", [8, 12, 20, 28, 40, 80])
+def test_word_gap_threshold_derives_from_measured_x_height(x_height_px: int) -> None:
+    """The plan's gap threshold, `max(2, round(0.25 * x_height_px))`, spans 2 to 20 px
+    across this sweep. A gap one px short of it must bridge into a single run; a gap at
+    it must split into two, proving the threshold tracks x-height rather than a constant.
+    """
+
+    threshold = max(2, round(0.25 * x_height_px))
+
+    bridged_mask, bridged_box, bridged_profile, _ = _build_word_line(
+        [threshold - 1], word_height_px=x_height_px
+    )
+    bridged = measure_line_words(bridged_mask, bridged_box, bridged_profile, "oneword", x_height_px)
+    assert isinstance(bridged, LineWordMeasurement)
+    assert bridged.word_run_count == 1
+
+    split_mask, split_box, split_profile, _ = _build_word_line(
+        [threshold], word_height_px=x_height_px
+    )
+    split = measure_line_words(split_mask, split_box, split_profile, "two words", x_height_px)
+    assert isinstance(split, LineWordMeasurement)
+    assert split.word_run_count == 2
+
+
+def test_measure_line_words_binds_runs_to_words_when_counts_agree() -> None:
+    gaps = (10, 14)
+    x_height_px = 20
+    mask, box, profile, expected_boxes = _build_word_line(gaps, word_height_px=x_height_px)
+
+    result = measure_line_words(mask, box, profile, "alpha beta gamma", x_height_px)
+
+    assert isinstance(result, LineWordMeasurement)
+    assert result.word_run_count == 3
+    assert result.source_word_count == 3
+    assert result.words_reconciled is True
+    assert len(result.words) == 3
+    for word, expected_box in zip(result.words, expected_boxes, strict=True):
+        assert word.box == expected_box
+    assert result.words[0].following_gap_px == gaps[0]
+    assert result.words[1].following_gap_px == gaps[1]
+    assert result.words[2].following_gap_px is None
+
+
+def test_measure_line_words_records_disagreement_without_word_rows() -> None:
+    gaps = (10, 14)
+    x_height_px = 20
+    mask, box, profile, _ = _build_word_line(gaps, word_height_px=x_height_px)
+
+    result = measure_line_words(mask, box, profile, "alpha beta", x_height_px)
+
+    assert isinstance(result, LineWordMeasurement)
+    assert result.word_run_count == 3
+    assert result.source_word_count == 2
+    assert result.words_reconciled is False
+    assert result.words == ()
+
+
+def test_measure_line_words_reports_x_height_unavailable() -> None:
+    mask, box, profile, _ = _build_word_line((10,), word_height_px=20)
+
+    result = measure_line_words(mask, box, profile, "alpha beta", None)
+
+    assert isinstance(result, LineWordExclusion)
+    assert result.reason == "x_height_unavailable"
+
+
+def test_source_word_count_collapses_whitespace_runs() -> None:
+    mask, box, profile, _ = _build_word_line((10,), word_height_px=20)
+
+    result = measure_line_words(mask, box, profile, "alpha   beta", 20)
+
+    assert isinstance(result, LineWordMeasurement)
+    assert result.source_word_count == 2
+
+
+# --- The pitch addition: consecutive matched baselines only ----------------------------------
+
+
+def _measurement(*, baseline_row_px: int) -> LineTypographyMeasurement:
+    return LineTypographyMeasurement(
+        baseline_row_px=baseline_row_px,
+        x_height_top_row_px=baseline_row_px - 20,
+        x_height_px=20,
+        ascender_extent_px=baseline_row_px,
+        descender_extent_px=10,
+        stroke_width_px=2.0,
+        skew_slope=0.0,
+        segment_count=8,
+    )
+
+
+def test_measure_baseline_pitches_reports_adjacent_matched_lines() -> None:
+    lines = (
+        (0, _measurement(baseline_row_px=100)),
+        (1, _measurement(baseline_row_px=140)),
+        (2, _measurement(baseline_row_px=180)),
+    )
+
+    pitches = measure_baseline_pitches(lines)
+
+    assert [pitch.pitch_px for pitch in pitches] == [40, 40]
+    assert [(pitch.upper_ordinal, pitch.lower_ordinal) for pitch in pitches] == [(0, 1), (1, 2)]
+
+
+def test_measure_baseline_pitches_skips_an_excluded_middle_line() -> None:
+    """A page whose middle line is excluded must not report a doubled pitch across the gap.
+
+    Without the ordinal-adjacency requirement, the naive next-available-pair reading would
+    report a single pitch of 80 px here -- double the true 40 px single-line spacing.
+    """
+
+    lines = (
+        (0, _measurement(baseline_row_px=100)),
+        (1, LineTypographyExclusion(reason="insufficient_segments", segment_count=1)),
+        (2, _measurement(baseline_row_px=180)),
+    )
+
+    pitches = measure_baseline_pitches(lines)
+
+    assert pitches == ()

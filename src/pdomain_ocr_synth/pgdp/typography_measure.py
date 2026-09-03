@@ -16,15 +16,20 @@ local estimator, not a rectification: it never builds a rotated frame or a resam
 
 from __future__ import annotations
 
+import itertools
 import math
 from dataclasses import dataclass
 from statistics import median
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 Bounds = tuple[int, int, int, int]
 LineExclusionReason = Literal["insufficient_segments", "skew_exceeds_maximum"]
+WordExclusionReason = Literal["x_height_unavailable"]
 
 TYPOGRAPHY_MEASURE_METHODS: dict[str, float | int | str] = {
     "algorithm": "segment-vertical-projection/v1",
@@ -38,6 +43,15 @@ _SEGMENT_MINIMUM_WIDTH_PX = 200
 _SEGMENT_WIDTH_DIVISOR = 8
 _MINIMUM_USABLE_SEGMENTS = 3
 _MAXIMUM_SKEW_SLOPE = 0.02
+
+WORD_SEGMENTATION_METHODS: dict[str, float | int | str] = {
+    "algorithm": "ink-profile-word-runs/v1",
+    "gap_threshold_minimum_px": 2,
+    "gap_threshold_x_height_ratio": 0.25,
+}
+
+_GAP_THRESHOLD_MINIMUM_PX = 2
+_GAP_THRESHOLD_X_HEIGHT_RATIO = 0.25
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +113,86 @@ class LineTypographyExclusion:
 
 
 @dataclass(frozen=True, slots=True)
+class WordMeasurement:
+    """One reconciled word's ink box and the gap that follows it, in the `source` frame.
+
+    `following_gap_px` is the width, in px, of the zero-ink column run immediately after
+    this word's run and before the next; the last word on a line has none.
+    """
+
+    box: Bounds
+    following_gap_px: int | None = None
+
+    def __post_init__(self) -> None:
+        x_start, y_start, x_end, y_end = self.box
+        if x_end <= x_start or y_end <= y_start:
+            raise ValueError("A word box must have positive width and height.")
+        if self.following_gap_px is not None and self.following_gap_px < 0:
+            raise ValueError("following_gap_px must be nonnegative.")
+
+
+@dataclass(frozen=True, slots=True)
+class LineWordMeasurement:
+    """Word-run segmentation and reconciliation for one matched line.
+
+    `words` carries a per-word box only when `words_reconciled` is true. PGDP text is
+    fallible and so is gap detection, so a disagreement between `word_run_count` and
+    `source_word_count` is recorded as evidence rather than resolved by a guess: binding
+    a mismatched run count to a word in order would silently misattribute boxes to the
+    wrong words, so no per-word row is emitted for a line that disagrees.
+    """
+
+    word_run_count: int
+    source_word_count: int
+    words_reconciled: bool
+    words: tuple[WordMeasurement, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.word_run_count < 0:
+            raise ValueError("word_run_count must be nonnegative.")
+        if self.source_word_count < 0:
+            raise ValueError("source_word_count must be nonnegative.")
+        if self.words_reconciled != (self.word_run_count == self.source_word_count):
+            raise ValueError("words_reconciled must match whether the two counts agree.")
+        object.__setattr__(self, "words", tuple(self.words))
+        if not self.words_reconciled and self.words:
+            raise ValueError("An unreconciled line must not emit word rows.")
+        if self.words_reconciled and len(self.words) != self.word_run_count:
+            raise ValueError("A reconciled line must emit exactly one row per word run.")
+
+
+@dataclass(frozen=True, slots=True)
+class LineWordExclusion:
+    """Why one matched line got no word segmentation at all."""
+
+    reason: WordExclusionReason = "x_height_unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class BaselinePitch:
+    """The vertical distance between two consecutive matched lines' baselines.
+
+    Emitted only for a pair of matched lines whose caller-assigned ordinals differ by
+    exactly one and which both produced a baseline. Task 2's segment-floor and
+    skew-backstop exclusions break the naive reading of "consecutive": measured against
+    the five whole-book alignment reports, 13.9 percent of matched lines get no baseline,
+    so the next available measured pair can sit two or more ordinals apart. Reporting that
+    gap as a single-line pitch would silently overstate the leading by roughly a factor of
+    two, so such a pair is skipped by `measure_baseline_pitches` rather than divided down.
+    """
+
+    upper_ordinal: int
+    lower_ordinal: int
+    pitch_px: int
+
+    def __post_init__(self) -> None:
+        if self.lower_ordinal != self.upper_ordinal + 1:
+            raise ValueError("A baseline pitch requires ordinals exactly one apart.")
+        if self.pitch_px < 0:
+            raise ValueError("pitch_px must be nonnegative.")
+
+
+@dataclass(frozen=True, slots=True)
 class _SegmentEstimate:
     """One column segment's local baseline and x-height-top row, before pooling."""
 
@@ -150,6 +244,149 @@ def measure_line_typography(
         skew_slope=skew_slope,
         segment_count=len(usable),
     )
+
+
+def measure_line_words(
+    mask: np.ndarray[tuple[int, int], np.dtype[np.bool]],
+    box: Bounds,
+    horizontal_ink_profile: Sequence[float],
+    visible_text: str,
+    x_height_px: int | None,
+) -> LineWordMeasurement | LineWordExclusion:
+    """Segment word runs from a matched line's stored ink profile and reconcile them
+    against its aligned transcription.
+
+    `horizontal_ink_profile` is the box-width-normalized column profile
+    `alignment_image.LineCandidate` already stores, so finding runs needs no image; `mask`
+    is `alignment_image.build_candidate_mask`'s page ink mask, consulted only to draw each
+    reconciled word's own row projection. `x_height_px` is `None` when
+    `measure_line_typography` produced no measurement for this line: a gap threshold
+    cannot be derived from an unmeasured x-height, so word segmentation is skipped
+    entirely rather than falling back to a fixed pixel constant that would not scale
+    across books.
+
+    `source_word_count` is `len(visible_text.split())`. Splitting with no argument
+    collapses runs of whitespace and drops leading and trailing whitespace, so repeated
+    spaces in the transcription never inflate the count with phantom empty words.
+    """
+
+    if x_height_px is None:
+        return LineWordExclusion(reason="x_height_unavailable")
+
+    x_start, _, x_end, _ = box
+    width = x_end - x_start
+    if len(horizontal_ink_profile) != width:
+        raise ValueError("horizontal_ink_profile length must match the line box width.")
+
+    gap_threshold_px = max(
+        _GAP_THRESHOLD_MINIMUM_PX, _round_half_up(_GAP_THRESHOLD_X_HEIGHT_RATIO * x_height_px)
+    )
+    runs = _find_word_runs(horizontal_ink_profile, gap_threshold_px)
+    source_word_count = len(visible_text.split())
+    words_reconciled = len(runs) == source_word_count
+
+    if not words_reconciled:
+        return LineWordMeasurement(
+            word_run_count=len(runs),
+            source_word_count=source_word_count,
+            words_reconciled=False,
+        )
+
+    following_gaps = tuple(
+        runs[index + 1][0] - runs[index][1] if index + 1 < len(runs) else None
+        for index in range(len(runs))
+    )
+    words = tuple(
+        _measure_word_box(mask, box=box, run=run, following_gap_px=following_gap_px)
+        for run, following_gap_px in zip(runs, following_gaps, strict=True)
+    )
+    return LineWordMeasurement(
+        word_run_count=len(runs),
+        source_word_count=source_word_count,
+        words_reconciled=True,
+        words=words,
+    )
+
+
+def measure_baseline_pitches(
+    lines: Sequence[tuple[int, LineTypographyMeasurement | LineTypographyExclusion]],
+) -> tuple[BaselinePitch, ...]:
+    """Baseline pitches between consecutive matched lines on one page.
+
+    `lines` carries every matched line's caller-assigned ordinal alongside its
+    `measure_line_typography` result, in ordinal order. A pitch is emitted only for a pair
+    of list-adjacent entries whose ordinals differ by exactly one and which are both a
+    `LineTypographyMeasurement`; a pair whose ordinals are further apart, or where either
+    side carries a `LineTypographyExclusion`, is skipped rather than measured, so a
+    baseline gap wider than one line never enters the data as an understated pitch.
+    """
+
+    pitches: list[BaselinePitch] = []
+    for (upper_ordinal, upper), (lower_ordinal, lower) in itertools.pairwise(lines):
+        if lower_ordinal != upper_ordinal + 1:
+            continue
+        if not isinstance(upper, LineTypographyMeasurement):
+            continue
+        if not isinstance(lower, LineTypographyMeasurement):
+            continue
+        pitches.append(
+            BaselinePitch(
+                upper_ordinal=upper_ordinal,
+                lower_ordinal=lower_ordinal,
+                pitch_px=lower.baseline_row_px - upper.baseline_row_px,
+            )
+        )
+    return tuple(pitches)
+
+
+def _find_word_runs(profile: Sequence[float], gap_threshold_px: int) -> tuple[tuple[int, int], ...]:
+    """Column ranges, tight to ink, of word runs bridging small intra-word gaps.
+
+    Consecutive ink columns separated by fewer than `gap_threshold_px` zero-ink columns
+    stay in the same run, so a word's own letter-spacing never fragments it into several
+    runs; a zero-ink run at or above the threshold starts a new run. Each returned range is
+    a half-open `(start, end)` pair of box-local column indices.
+    """
+
+    ink_columns = [index for index, value in enumerate(profile) if value > 0.0]
+    if not ink_columns:
+        return ()
+    runs: list[tuple[int, int]] = []
+    run_start = ink_columns[0]
+    previous = ink_columns[0]
+    for column in ink_columns[1:]:
+        if column - previous - 1 >= gap_threshold_px:
+            runs.append((run_start, previous + 1))
+            run_start = column
+        previous = column
+    runs.append((run_start, previous + 1))
+    return tuple(runs)
+
+
+def _measure_word_box(
+    mask: np.ndarray[tuple[int, int], np.dtype[np.bool]],
+    *,
+    box: Bounds,
+    run: tuple[int, int],
+    following_gap_px: int | None,
+) -> WordMeasurement:
+    """One word run's absolute source-frame box, from the run's own row projection.
+
+    The column range is already tight to ink by construction of `_find_word_runs`; the
+    row range is not known from the profile at all, so it is measured fresh from `mask`,
+    the same page ink mask `alignment_image.build_candidate_mask` builds.
+    """
+
+    x_start, y_start, _, y_end = box
+    run_start, run_end = run
+    word_x_start = x_start + run_start
+    word_x_end = x_start + run_end
+    column_mask = mask[y_start:y_end, word_x_start:word_x_end]
+    ink_rows = np.flatnonzero(column_mask.any(axis=1))
+    row_top = int(np.min(ink_rows))
+    row_bottom = int(np.max(ink_rows))
+    word_box: Bounds = (word_x_start, y_start + row_top, word_x_end, y_start + row_bottom + 1)
+    return WordMeasurement(box=word_box, following_gap_px=following_gap_px)
 
 
 def _segment_bounds(width: int, segment_width: int) -> tuple[tuple[int, int], ...]:
