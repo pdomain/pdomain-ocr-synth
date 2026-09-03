@@ -96,11 +96,13 @@ threshold derived from its 18 px x-height, so over-splitting on inter-letter
 spacing is the likelier cause than under-splitting. Guessing at the threshold
 without that measurement would be tuning against one book.
 
-One cause is already measured. [F2 silently rejoins line-break
-hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md), so every in-page
-break costs one over-split on the following line. It explains roughly 4 to 5 of
-the 24 percentage points of over-split, not all of it, and it makes the case for
-an OCR witness pass rather than a wider threshold.
+**That follow-up ran on 2026-09-03 and found the cause.** The shipped threshold
+is below the optimum in all five books, so it splits inside words at letter
+gaps. A per-page threshold from the page's own gap distribution lifts the worst
+book from 0.217 to 0.814 and clears the floor everywhere. See [the word-gap
+threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md). Not
+implemented: it moves word segmentation to a v2 algorithm version and
+invalidates the corpus numbers and fixtures recorded above.
 
 ## The sample-size answer, and what it does not settle
 
@@ -153,10 +155,10 @@ This repo still has unpushed commits on `master`. Nothing here was pushed.
 
 ## Resume steps
 
-1. Measure over-split against under-split word counts per book for
-   `projectID603d7d5e04ca0` and `projectID657550412c8dc`, then decide whether the
-   gap threshold needs a per-book term. That closes Gate 6 and moves the plan
-   from `partial` to complete.
+1. Decide whether to take the measured Gate 6 fix: word segmentation `v2` with a
+   per-page Otsu-derived gap threshold, fixtures regenerated, corpus re-run. It
+   clears the floor in all five books. It is the only thing between this plan and
+   complete.
 2. Ask CT whether Gate 4's model-reviewed verdict is enough, or whether the 210
    sheets in `.m15d-evidence/gate4-sheets/` want a human pass.
 3. Before any later slice reruns the corpus, use the `alignment-t2-*` reports.
@@ -164,6 +166,7 @@ This repo still has unpushed commits on `master`. Nothing here was pushed.
 ## Pointers
 
 - [the M15d plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
+- [Word-gap threshold is too low](../research/2026-09-03-word-gap-threshold-is-too-low.md)
 - [F2 line-break hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
 - [the typography design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
 - [previous handoff](2026-09-02-210255-m15b-residuals-fixed-and-contracts-decision.md)

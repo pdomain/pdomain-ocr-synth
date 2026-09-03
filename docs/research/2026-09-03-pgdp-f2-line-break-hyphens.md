@@ -17,8 +17,8 @@ Kind: research
 - **Last verified:** 2026-09-03
 - **Provenance:** measured on 2026-09-03 over 41,708 F2 lines in the five whole-book PGDP projects
   under `/workspaces/pdomain-data/pgdp-corpus`, against the M15d word-reconciliation results
-- **Disposition:** Active finding. Constrains how M15d Gate 6 should be read and scopes an OCR
-  witness pass.
+- **Disposition:** Active finding, with its predicted consequence retracted on 2026-09-03. The F2
+  measurement stands; the over-split attribution does not.
 - **Read when:** interpreting word-run reconciliation, changing the word-gap threshold, or deciding
   whether the pipeline needs OCR.
 - **Search terms:** PGDP, F2, hyphen, line break, dehyphenation, word reconciliation, over-split,
@@ -82,25 +82,31 @@ the first line, which still balances at one ink run to one word. The next line d
 ink run, `ture`, has no F2 word to bind to, so the reconciler sees one run more than the
 transcription has words.
 
-That is the right shape for what M15d measured. Sweeping the gap threshold gave 0.242 over-split
-against 0.040 under-split at 6 px, and a one-per-break bias in a single direction is what produces
-that asymmetry.
+**The predicted consequence was tested on 2026-09-03 and did not hold.** Two predictions follow
+from the mechanism: the first matched line of a page is protected by the `*` marker and should
+over-split less than later lines, and the orphan leading run should be a narrow word fragment.
+Neither survived. In `projectID609bfa0449bdf` first lines reconcile *worse* than later lines,
+0.580 against 0.636. The median leading-run width, as a share of the first F2 word's expected
+share, is 0.957 on over-split lines against 1.017 on exact ones in that book, and 0.990 against
+1.011 in `projectID657550412c8dc`. A fragment would be far narrower than that.
 
-**The word-gap threshold is not what is wrong.** The plan measured the threshold curve as flat
-between 5 and 8 px, and the book failing hardest at 0.208 reconciliation has the corpus's widest
-measured word gap, 25 px against a 4 to 5 px threshold, so the detector is not under-splitting.
-Widening it would trade a real measurement for a passing number.
+**The real cause was something else.** The shipped gap threshold is too low in every book and
+splits inside words at ordinary letter gaps. See
+[the word-gap threshold finding](2026-09-03-word-gap-threshold-is-too-low.md), which lifts the
+worst book from 0.217 to 0.814. An earlier version of this document claimed the threshold was not
+the problem and argued against raising it. That was wrong, and backwards: a threshold that is too
+low is exactly what produces a high over-split rate.
 
-**Gate 6 is partly a measurement of F2's line-joining policy.** A gate demanding exact run-to-word
-agreement charges the detector for a transcription convention it cannot see.
+**Gate 6 is still partly a measurement of F2's line-joining policy,** but a much smaller part than
+this document first claimed.
 
 ## What this does NOT establish
 
-**It does not explain Gate 6 on its own.** 62 page-final lines across about 1,385 pages puts
-line-end hyphenation near 4.5 percent of line ends. Applied to 41,708 lines that is on the order of
-1,900 silent in-page joins, so roughly 4 to 5 of the 24 percentage points of over-split. The worst
-book reconciles at 0.208 and needs 0.29 more to clear the 0.50 floor. Something else is also wrong
-there, and it has not been identified.
+**It does not explain Gate 6, and the something-else has now been found.** 62 page-final lines
+across about 1,385 pages puts line-end hyphenation near 4.5 percent of line ends, so at most 4 to 5
+of the 24 percentage points of over-split. Both direct tests of the mechanism failed, so even that
+bound is generous. The actual cause is
+[a gap threshold that is too low in every book](2026-09-03-word-gap-threshold-is-too-low.md).
 
 **The 4.5 percent rate is inferred, not measured.** It assumes page-final lines hyphenate at the
 same rate as all other lines. F2 has erased the direct evidence, so the rate cannot be measured from
@@ -114,11 +120,11 @@ to what ink is on the line.
 
 ## Next steps
 
-1. Trace the 62 marked `-*` page-boundary breaks through reconciliation. They are the one place where
-   a split is known to have happened, so they give a ground-truth sample for confirming the
-   one-per-break over-split mechanism before building anything.
-2. Measure over-split against under-split per book for the two failing books, which is the M15d
-   Gate 6 follow-up this finding partly answers.
+1. Done on 2026-09-03, and it refuted the mechanism. Both the page-boundary control and the
+   leading-run width test came back negative, and the cause was
+   [the gap threshold](2026-09-03-word-gap-threshold-is-too-low.md).
+2. Re-test this finding after the threshold fix lands. With over-splitting removed, a residual
+   one-per-break bias would become visible if it exists at all.
 3. Scope an OCR witness pass. F2 stays the label and ink projection stays the geometry; OCR supplies
    only correspondence, telling us a line's leading run is a continuation fragment. A
    `continuation_fragment` flag with a stated one-token tolerance is then a rule with a reason rather
@@ -126,7 +132,9 @@ to what ink is on the line.
 
 ## Related
 
+- [The word-gap threshold is too low in every book](2026-09-03-word-gap-threshold-is-too-low.md)
+  — the finding that replaced this one as the explanation of over-split.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
-  — Gate 6 and the gap-threshold sweep this finding constrains.
+  — Gate 6 and the gap-threshold sweep.
 - [PGDP typography and structure synthesis design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
   — the slice an OCR witness pass would sit in front of.

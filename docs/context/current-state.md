@@ -97,12 +97,19 @@ against a 4 to 5 px threshold, so over-splitting is the likelier cause than
 under-splitting, and the follow-up must measure the split direction per book
 before changing the threshold.
 
-One systematic cause is already identified. [F2 silently rejoins line-break
-hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md): zero of 41,708
-F2 lines across five books end in a word-break hyphen, so every in-page break
-has been joined and each costs exactly one over-split on the next line. It
-accounts for roughly 4 to 5 of the 24 percentage points of over-split rather
-than all of it, and it means the gap threshold is not what is wrong.
+The cause was found on 2026-09-03. The shipped gap threshold,
+`max(2, round(0.25 * x_height_px))`, is below the optimum in all five books, so
+it splits inside words at ordinary letter gaps. Deriving it per page from that
+page's own gap-length distribution lifts the worst book from 0.217 to 0.814 and
+clears the 0.50 floor everywhere. See [the word-gap threshold
+finding](../research/2026-09-03-word-gap-threshold-is-too-low.md). It is not
+implemented, because it moves word segmentation to a v2 algorithm version and
+invalidates the recorded corpus numbers and fixtures.
+
+A separate finding, that [F2 silently rejoins line-break
+hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md), is a true fact
+about the transcription with a much smaller effect than first supposed. Both of
+its predicted consequences were tested and failed.
 
 The sample-size question the 30-page admission minimum depends on now has a
 partial answer. Pooled x-height, baseline pitch, and stroke width settle within

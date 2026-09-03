@@ -325,9 +325,15 @@ sweeping an absolute gap threshold independent of any x-height estimate:
 Three things follow.
 
 The detector tops out near 0.72, so roughly 28 percent of lines will not reconcile even at the best
-threshold. Word-count disagreement is therefore normal rather than a defect, which supports the
-plan's decision to keep every line-level observable when counts disagree instead of dropping the
-line. Gate 6 at 0.50 is achievable with real headroom, not a coin flip.
+threshold. **Superseded on 2026-09-03.** That ceiling is an artifact of sweeping one absolute
+threshold across all five books pooled, which averages over books whose optima differ from 5 to
+11 px. Measured per book, the detector reaches 0.63 to 0.84, and a per-page threshold derived from
+the page's own gap distribution reaches 0.61 to 0.81. See
+[the word-gap threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md).
+
+Word-count disagreement is still normal rather than a defect, which supports the plan's decision to
+keep every line-level observable when counts disagree instead of dropping the line. Gate 6 at 0.50
+is achievable with real headroom, not a coin flip.
 
 The curve is flat between 5 and 8 px, so the threshold does not need to be precise. At a typical
 20 px x-height, `max(2, round(0.25 * x_height_px))` gives 5 px, which sits inside that plateau. The
@@ -403,11 +409,18 @@ measure the split direction per book before changing the threshold. **Follow-up 
 measure over-split against under-split counts per book for the two failing books, and decide
 whether the gap threshold needs a per-book term. This plan stays `partial` until that lands.
 
-Part of that answer is already measured. [F2 silently rejoins line-break
-hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md): across 41,708 F2 lines in five
-books, zero end in a word-break hyphen, so every in-page break has been joined by proofers and each
-one costs exactly one over-split on the following line. That accounts for roughly 4 to 5 of the 24
-percentage points of over-split, not for all of it, and it argues against widening the threshold.
+**That follow-up ran on 2026-09-03 and found the cause.** The shipped threshold,
+`max(2, round(0.25 * x_height_px))`, is below the optimum in all five books, by 1 px at best and
+6 px at worst, so it splits inside words at ordinary letter gaps. Deriving it per page from that
+page's own gap-length distribution lifts the worst book from 0.217 to 0.814 and clears the 0.50
+floor in all five: 0.802, 0.751, 0.608, 0.814, 0.790. See
+[the word-gap threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md). The fix
+is not implemented, because it moves word segmentation to a v2 algorithm version and invalidates
+the corpus numbers and fixtures recorded here.
+
+An earlier hypothesis, that [F2's silent rejoining of line-break
+hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md) drove the over-split, was tested and
+failed both of its predictions. The F2 measurement stands; its attributed effect does not.
 
 **Gate 8, the sample-size answer.** Body pages were shuffled with a fixed seed and pooled at
 n = 5, 10, 20, 30, 50, 100, truncated at each book's own body-page count, and compared against
