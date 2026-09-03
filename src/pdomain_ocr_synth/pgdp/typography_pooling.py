@@ -32,6 +32,7 @@ from pdomain_ocr_synth.pgdp.profile_models import Estimate
 from pdomain_ocr_synth.pgdp.typography_models import (
     BODY_PAGE_CLASSES,
     CHAPTER_OPENING_PAGE_CLASSES,
+    TYPOGRAPHY_ESTIMATE_NAMES,
     StyleName,
     StyleTypography,
 )
@@ -257,9 +258,15 @@ def _pool_style(style_name: StyleName, pages: Sequence[PageTypography]) -> Style
 def _pool_pages(
     pages: Sequence[PageTypography], *, unpooled: Sequence[PageTypography]
 ) -> tuple[Estimate, ...]:
-    """Second-stage medians over page medians, one estimate per metric name."""
+    """Second-stage medians over page medians, one estimate per metric name.
 
-    names = tuple(dict.fromkeys(estimate.name for page in pages for estimate in page.estimates))
+    Every canonical metric name is emitted whether or not a page produced a value for it. A
+    book whose pages all failed then reports nulls carrying one exclusion per page, which
+    says "measured and got nothing" where an absent key would say nothing at all.
+    """
+
+    names: set[str] = set(TYPOGRAPHY_ESTIMATE_NAMES)
+    names.update(estimate.name for page in pages for estimate in page.estimates)
     return tuple(_book_estimate(name, pages=pages, unpooled=unpooled) for name in sorted(names))
 
 

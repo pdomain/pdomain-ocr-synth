@@ -108,6 +108,39 @@ operations must cover at least 90 percent of those lines. Normalized cost must
 be at most 0.22, and uniqueness margin at least 0.15. Confidence is always null
 with `confidence_kind` set to `uncalibrated` in version 1.
 
+## Measure typography from an alignment
+
+```bash
+pdomain-ocr-synth typography-pgdp /path/to/pgdp-corpus \
+  --alignment ./pgdp-alignment.json \
+  --profile ./pgdp-profile.json \
+  --output ./pgdp-typography.json
+```
+
+`typography-pgdp` measures per-line baseline row, x-height, ascender and
+descender extents, stroke width, skew slope, word runs, and per-word ink boxes
+from the accepted pages of a `pgdp-alignment/v3` report, then pools them per
+page, per book, and per page class into a deterministic `pgdp-typography/v1`
+report.
+
+The command refuses to run unless the profile hashes to the value the alignment
+report recorded, so the two inputs are provably the pair that produced each
+other. On every page it rebuilds the same ink mask the alignment extractor
+built and checks that the mask reproduces each matched candidate's recorded
+`foreground_pixels` and `horizontal_ink_profile` exactly and that the rebuilt
+Otsu threshold equals the recorded one. A page that fails is excluded as
+`mask_mismatch` carrying both values.
+
+Every value is a pixel count in the `source` frame with `confidence` null and
+`confidence_kind` set to `uncalibrated`. The report names nothing the design
+treats as latent: no font identity, nominal point size, advance, side bearing,
+native word-space width, tracking, kerning, leading, or physical margin.
+
+Pooled estimates and per-page aggregates cover every accepted page. Per-line
+and per-word rows are emitted only for the first `--evidence-pages` measured
+pages of each book, which keeps a five-book run from emitting roughly 150,000
+word records.
+
 Exclusions cover missing or changed inputs, malformed F2 controls, unusable ink
 bands, implausible line counts, persistent gutters, probable columns, tables,
 illustrations, borders, and high foreground ratios. An excluded or proposed page
@@ -198,6 +231,7 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `rank-pgdp <corpus_root>` | Rank local PGDP projects and select bounded review pages |
 | `profile-pgdp <corpus_root>` | Measure selected local PGDP scan geometry |
 | `align-pgdp <corpus_root>` | Align PGDP F2 source lines with measured scan lines |
+| `typography-pgdp <corpus_root>` | Measure font-free typographic observables from an alignment |
 
 ## Render-family options
 
@@ -365,6 +399,20 @@ corpus scans. Those scans must still be available and match the supplied M15a
 |------|---------|
 | `--profile PATH` | Read this required `pgdp-profile/v2` JSON report |
 | `--output PATH` | Write the required `pgdp-alignment/v1` JSON report here; it must be outside the corpus root, differ from `--profile`, and not name a directory |
+
+### `typography-pgdp <corpus_root>`
+
+The `corpus_root` positional argument is the local PGDP corpus directory. The
+command measures typographic observables from the accepted pages of an
+alignment report, and it opens no font, renders no text, and never leaves the
+`source` coordinate frame.
+
+| Flag | Meaning |
+|------|---------|
+| `--alignment PATH` | Read this required `pgdp-alignment/v3` JSON report |
+| `--profile PATH` | Read this required `pgdp-profile/v2` JSON report; it must hash to the value the alignment recorded |
+| `--output PATH` | Write the required `pgdp-typography/v1` JSON report here; it must be outside the corpus root, differ from both inputs, and not name a directory |
+| `--evidence-pages N` | Emit per-line and per-word rows for this many measured pages per book (default 12) |
 
 ## Audit log schema
 

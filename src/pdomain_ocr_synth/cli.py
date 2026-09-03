@@ -30,6 +30,10 @@ from pdomain_ocr_synth import __version__
 
 NOT_IMPLEMENTED_EXIT = 1
 USAGE_EXIT = 2
+#: Mirrors ``pgdp.typography_models.DEFAULT_EVIDENCE_PAGES_PER_BOOK`` so building the parser
+#: costs no PGDP import. ``tests/test_cli_typography_pgdp.py`` pins the two together.
+_TYPOGRAPHY_EVIDENCE_PAGES_DEFAULT = 12
+
 VALIDATION_EXIT = 3
 RENDER_EXIT = 5
 DESTINATION_EXIT = 6
@@ -347,6 +351,36 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         required=True,
         help="write the source-line alignment JSON here",
+    )
+
+    p_typography_pgdp = subparsers.add_parser(
+        "typography-pgdp",
+        help="measure font-free typographic observables from an alignment report",
+    )
+    _ = p_typography_pgdp.add_argument("corpus_root", help="local PGDP corpus root directory")
+    _ = p_typography_pgdp.add_argument(
+        "--alignment",
+        required=True,
+        help="M15b source-line alignment JSON path",
+    )
+    _ = p_typography_pgdp.add_argument(
+        "--profile",
+        required=True,
+        help="M15a source-geometry profile JSON path the alignment recorded",
+    )
+    _ = p_typography_pgdp.add_argument(
+        "--output",
+        required=True,
+        help="write the typography JSON here",
+    )
+    _ = p_typography_pgdp.add_argument(
+        "--evidence-pages",
+        type=int,
+        default=_TYPOGRAPHY_EVIDENCE_PAGES_DEFAULT,
+        help=(
+            "emit per-line and per-word rows for this many measured pages per book "
+            f"(default {_TYPOGRAPHY_EVIDENCE_PAGES_DEFAULT})"
+        ),
     )
 
     return parser
@@ -1665,6 +1699,53 @@ def _cmd_profile_pgdp(
     return 0
 
 
+def _cmd_typography_pgdp(
+    corpus_root: str, *, alignment: str, profile: str, output: str, evidence_pages: int
+) -> int:
+    """Measure font-free typographic observables and write a snapshot-safe report."""
+
+    from pdomain_ocr_synth.pgdp.report import write_report
+    from pdomain_ocr_synth.pgdp.typography import build_typography_report
+
+    root = Path(corpus_root).expanduser()
+    if not root.exists():
+        print(f"error: corpus root does not exist: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if not root.is_dir():
+        print(f"error: corpus root is not a directory: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if evidence_pages < 0:
+        print("error: --evidence-pages must be nonnegative", file=sys.stderr)
+        return USAGE_EXIT
+    alignment_path = Path(alignment).expanduser()
+    profile_path = Path(profile).expanduser()
+    output_path = Path(output).expanduser()
+    for label, source in (("alignment", alignment_path), ("profile", profile_path)):
+        if output_path.resolve() == source.resolve():
+            print(f"error: typography output must differ from the {label} input", file=sys.stderr)
+            return DESTINATION_EXIT
+    if output_path.exists() and not output_path.is_file():
+        print(f"error: typography output is not a file: {output_path}", file=sys.stderr)
+        return DESTINATION_EXIT
+    try:
+        report = build_typography_report(
+            root,
+            alignment_path,
+            profile_path,
+            tool_version=__version__,
+            evidence_pages=evidence_pages,
+        )
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return VALIDATION_EXIT
+    try:
+        write_report(report, output_path, root)
+    except (OSError, ValueError, ExceptionGroup) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return DESTINATION_EXIT
+    return 0
+
+
 def _cmd_align_pgdp(corpus_root: str, *, profile: str, output: str) -> int:
     """Align local PGDP source lines and write a snapshot-safe report."""
 
@@ -1787,6 +1868,13 @@ _IMPLEMENTED_DISPATCH = {
         args.corpus_root,
         profile=args.profile,
         output=args.output,
+    ),
+    "typography-pgdp": lambda args: _cmd_typography_pgdp(
+        args.corpus_root,
+        alignment=args.alignment,
+        profile=args.profile,
+        output=args.output,
+        evidence_pages=args.evidence_pages,
     ),
 }
 

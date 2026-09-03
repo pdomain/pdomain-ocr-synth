@@ -55,6 +55,7 @@ from pdomain_ocr_synth.pgdp.profile_models import (
 )
 from pdomain_ocr_synth.pgdp.ranking import rank_corpus
 from pdomain_ocr_synth.pgdp.report import write_report
+from pdomain_ocr_synth.pgdp.typography import ProvenanceError, build_typography_report
 from pdomain_ocr_synth.pgdp.typography_models import (
     DEFAULT_EVIDENCE_PAGES_PER_BOOK,
     LATENT_KEY_DENYLIST,
@@ -112,6 +113,7 @@ __all__ = [
     "ProfileReport",
     "ProjectAlignment",
     "ProjectProfile",
+    "ProvenanceError",
     "RankedPage",
     "RankedProject",
     "RankingLimits",
@@ -132,6 +134,7 @@ __all__ = [
     "WireSourceLine",
     "WireStyleRun",
     "WordTypography",
+    "build_typography_report",
     "classify_page",
     "extract_page_features",
     "find_latent_discipline_violations",
