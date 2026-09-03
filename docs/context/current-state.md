@@ -60,6 +60,54 @@ gate was withdrawn on 2026-08-31 and replaced by per-book admission at 30
 accepted pages. That ledger was reviewed by a model reading line crops, not
 signed off by a person.
 
+## PGDP font-free typography
+
+M15d ships `typography-pgdp` and remains partial. The local-only command reads a
+`pgdp-alignment/v3` report together with the `pgdp-profile/v2` profile that
+alignment recorded, rebuilds each accepted page's ink mask, and measures per
+line: baseline row, x-height, ascender and descender extents, stroke width,
+skew slope, word runs, and per-word ink boxes. It pools those in two stages,
+page then book, and writes a deterministic `pgdp-typography/v1` report. It opens
+no font, renders no text, and never leaves the `source` coordinate frame.
+
+The command refuses to run unless the profile hashes to the value the alignment
+report recorded. On every page it checks that the rebuilt mask reproduces each
+matched candidate's stored `foreground_pixels` and `horizontal_ink_profile`
+exactly and that the rebuilt Otsu threshold equals the recorded one. Across 665
+accepted pages in five books, all 17,205 matched candidates reproduced and no
+page was excluded as `mask_mismatch`.
+
+Per-line and per-word rows are emitted only for the first `--evidence-pages`
+measured pages of each book, defaulting to 12. Pooled estimates and per-page
+aggregates cover every accepted page, which keeps a five-book run from emitting
+roughly 150,000 word records.
+
+Seven of the eight gates pass. Two runs per book were byte-identical. The
+estimator recovers known geometry within 1 px on all 34 synthetic fixtures and
+8 reviewed ones. Of 210 rendered line crops across three books, 208 were judged
+correct by a model reading them and none was judged wrong; the two remaining are
+all-capital lines carrying no lowercase to measure an x-height rule against. The
+MAD of per-page x-height medians is 0 in every book, well inside the 0.08
+ceiling. No corpus report names anything the design treats as latent.
+
+Word reconciliation fails the 0.50 floor in two of five books: 0.620, 0.539, and
+0.520 pass, 0.476 and 0.208 do not. The failure is recorded rather than
+weakened. The book at 0.208 has the corpus's widest word spacing at 25 px
+against a 4 to 5 px threshold, so over-splitting on inter-letter spacing is the
+likelier cause than under-splitting, and the follow-up must measure the split
+direction per book before changing the threshold.
+
+The sample-size question the 30-page admission minimum depends on now has a
+partial answer. Pooled x-height, baseline pitch, and stroke width settle within
+0.5 px at 5 body pages in four books and 20 in the fifth, so 30 is comfortably
+sufficient for those three. Word gap is the unstable one: one book needs 50
+pages and another has not settled at 100. `MINIMUM_ACCEPTED_PAGES_PER_BOOK`
+stays at 30.
+
+Font candidates, inverse rendering, typeface ranking, rectification, rectified
+frames, change-point detection, and any point-size or leading claim remain
+unimplemented.
+
 ## PGDP ranking verification
 
 Two runs over `/workspaces/pdomain-data/pgdp-corpus` used a project limit of 50

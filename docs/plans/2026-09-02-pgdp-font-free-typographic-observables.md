@@ -1,5 +1,5 @@
 ---
-Status: active
+Status: partial
 Owner: CT
 Created: 2026-09-02
 Last verified: 2026-09-03
@@ -11,13 +11,14 @@ Kind: plan
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** active
+- **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-09-02
 - **Last verified:** 2026-09-03
 - **Provenance:** authored from the PGDP typography design, the shipped M15a/M15b implementation and wire contracts, the
   whole-book yield-gate design, and the 2026-09-02 handoff
-- **Disposition:** Approved 2026-09-03. Executable plan for M15d.
+- **Disposition:** Partial as of 2026-09-03. All eight tasks landed and seven of eight gates pass;
+  Gate 6 fails in two of five books and has a recorded follow-up.
 - **Read when:** implementing or reviewing scan-derived typographic measurement before any font candidate exists.
 - **Search terms:** PGDP, M15, typography, x-height, baseline, word gap, stroke width, pooled book style, inverse
   rendering.
@@ -42,8 +43,8 @@ Schema.
 
 M15 says "Measure page geometry and typographic observables. Store uncertainty, provenance, source coordinates, and
 pooled book styles." Geometry shipped in M15a. Alignment shipped in M15b and now supplies a known transcription bound to
-a known ink box on 713 accepted pages across five books. Typographic observables and pooled book styles have never been
-started.
+a known ink box on 665 accepted pages across five books, measured on 2026-09-03 from the `alignment-t2-*`
+reports. Typographic observables and pooled book styles have never been started.
 
 The design's target, inverse rendering that ranks font candidates by re-rendering a known transcription across size,
 feature, variation, tracking, blur, and ink-spread settings, is far too large for one plan. It also cannot be scored
@@ -175,10 +176,10 @@ review and calibration. This mirrors M14's bounded review queue rather than inve
 
 **Files:** modify `src/pdomain_ocr_synth/pgdp/alignment_image.py`, modify `tests/test_pgdp_alignment_image.py`.
 
-- [ ] Extract `_foreground_mask`, `_remove_page_borders`, and `_remove_long_rules` into one public
+- [x] Extract `_foreground_mask`, `_remove_page_borders`, and `_remove_long_rules` into one public
       `build_candidate_mask`, and have `extract_line_candidates` call it. No behaviour change; the diff should read as a
       move.
-- [ ] Add the round-trip test: for every committed alignment fixture, cropping the mask to a candidate's box reproduces
+- [x] Add the round-trip test: for every committed alignment fixture, cropping the mask to a candidate's box reproduces
       that candidate's recorded `foreground_pixels` and `horizontal_ink_profile` exactly.
 
 This is provable rather than hopeful. `_extract_band_candidates` computes both values from `foreground[box]`, the page
@@ -189,11 +190,11 @@ bit for bit.
 
 **Files:** create `src/pdomain_ocr_synth/pgdp/typography_measure.py`, create `tests/test_pgdp_typography_measure.py`.
 
-- [ ] Estimate from a segment-wise vertical ink projection inside the matched box, splitting into column segments of
+- [x] Estimate from a segment-wise vertical ink projection inside the matched box, splitting into column segments of
       `max(200, width // 8)` px, taking the median across segments and requiring at least three usable ones.
-- [ ] Emit `skew_slope` per line, fitted over segment baselines, with a backstop exclusion above `|slope| > 0.02`.
-- [ ] Derive `stroke_width_px` as the median horizontal ink run between the x-height top and the baseline.
-- [ ] Test against committed synthetic block bitmaps with exactly known geometry.
+- [x] Emit `skew_slope` per line, fitted over segment baselines, with a backstop exclusion above `|slope| > 0.02`.
+- [x] Derive `stroke_width_px` as the median horizontal ink run between the x-height top and the baseline.
+- [x] Test against committed synthetic block bitmaps with exactly known geometry.
 
 Segmenting is what makes this work in an unrectified frame. Smear across a width `w` at skew angle `t` is `w * tan(t)`.
 At half a degree, a whole-line projection 1500 px wide smears the baseline by 13.1 px, which destroys a 20 px x-height.
@@ -204,11 +205,11 @@ rectification.
 
 **Files:** modify `src/pdomain_ocr_synth/pgdp/typography_measure.py` and its test.
 
-- [ ] Find word runs from the stored `horizontal_ink_profile`, treating zero-ink column runs of at least `max(2,
+- [x] Find word runs from the stored `horizontal_ink_profile`, treating zero-ink column runs of at least `max(2,
       round(0.25 * x_height_px))` as gaps. Deriving the threshold from measured x-height is why Task 2 lands first.
-- [ ] Emit `word_run_count`, `source_word_count`, and `words_reconciled`. When counts agree, bind runs to words in order
+- [x] Emit `word_run_count`, `source_word_count`, and `words_reconciled`. When counts agree, bind runs to words in order
       and emit per-word boxes and gap widths.
-- [ ] When they disagree, still emit every line-level observable, emit no word rows, and record both counts.
+- [x] When they disagree, still emit every line-level observable, emit no word rows, and record both counts.
 
 The disagreement is evidence a later labeler or bbox-tightener pass needs, not a reason to discard a good line
 measurement.
@@ -218,11 +219,11 @@ measurement.
 **Files:** create `src/pdomain_ocr_synth/pgdp/typography_models.py`, create `schemas/pgdp-typography-v1.schema.json`,
 create `tests/test_pgdp_typography_models.py`, modify `src/pdomain_ocr_synth/pgdp/__init__.py`.
 
-- [ ] Mirror `alignment_models.py`: frozen slotted dataclasses validating in `__post_init__`, paired wire models with
+- [x] Mirror `alignment_models.py`: frozen slotted dataclasses validating in `__post_init__`, paired wire models with
       `extra="allow"`, explicit `to_dict`, sorted-key deterministic JSON.
-- [ ] Reuse `Estimate`, `CoordinateFrame`, and `ProfileDiagnostic` unchanged. Add `LineTypography`, `WordTypography`,
+- [x] Reuse `Estimate`, `CoordinateFrame`, and `ProfileDiagnostic` unchanged. Add `LineTypography`, `WordTypography`,
       `PageTypography`, `BookTypography`, and `TypographyReport`.
-- [ ] Add the latent-discipline test: no emitted key matches the denylist, and every estimate carries `unit == "px"`,
+- [x] Add the latent-discipline test: no emitted key matches the denylist, and every estimate carries `unit == "px"`,
       `frame == "source"`, `confidence is None`, and `confidence_kind == "uncalibrated"`.
 
 This makes the design's latent list enforceable rather than aspirational.
@@ -231,12 +232,12 @@ This makes the design's latent list enforceable rather than aspirational.
 
 **Files:** create `src/pdomain_ocr_synth/pgdp/typography_pooling.py` and its test.
 
-- [ ] Two-stage median and MAD, page then book, grouped by the shipped `page_class`. Method version
+- [x] Two-stage median and MAD, page then book, grouped by the shipped `page_class`. Method version
       `typography-median-mad/v1`.
-- [ ] Record exclusions as `"{page_name}:{code}"`, matching `profiling.pool_estimate`'s existing format.
-- [ ] Pool `normal_recto` and `normal_verso` into the body style and `chapter_opening` separately. Report `unknown`
+- [x] Record exclusions as `"{page_name}:{code}"`, matching `profiling.pool_estimate`'s existing format.
+- [x] Pool `normal_recto` and `normal_verso` into the body style and `chapter_opening` separately. Report `unknown`
       counts but pool them into no style.
-- [ ] State in the docstring that grouping by `page_class` is a cheaper stand-in for the design's change-point
+- [x] State in the docstring that grouping by `page_class` is a cheaper stand-in for the design's change-point
       detection, and that title pages and notes are not separated by this slice.
 
 ### Task 6: Orchestrate and add `typography-pgdp`
@@ -244,12 +245,12 @@ This makes the design's latent list enforceable rather than aspirational.
 **Files:** create `src/pdomain_ocr_synth/pgdp/typography.py`, create its tests and CLI test, modify
 `src/pdomain_ocr_synth/cli.py`, `tests/test_cli.py`, `tests/test_spec_docs.py`.
 
-- [ ] `typography-pgdp CORPUS_ROOT --alignment PATH --profile PATH --output PATH [--evidence-pages N]`.
-- [ ] Verify `sha256(profile) == alignment.profile_sha256` before doing any work.
-- [ ] Reuse `open_image_snapshot`, the live-path rehash, and `write_report` exactly as `alignment.py` does. Return
+- [x] `typography-pgdp CORPUS_ROOT --alignment PATH --profile PATH --output PATH [--evidence-pages N]`.
+- [x] Verify `sha256(profile) == alignment.profile_sha256` before doing any work.
+- [x] Reuse `open_image_snapshot`, the live-path rehash, and `write_report` exactly as `alignment.py` does. Return
       `VALIDATION_EXIT` and `DESTINATION_EXIT` as that command does. Print no JSON to stdout.
-- [ ] Measure only accepted pages, recording proposed and excluded counts.
-- [ ] On every measured page, verify the rebuilt mask reproduces each candidate's recorded values and that the rebuilt
+- [x] Measure only accepted pages, recording proposed and excluded counts.
+- [x] On every measured page, verify the rebuilt mask reproduces each candidate's recorded values and that the rebuilt
       Otsu threshold equals the recorded one. On mismatch, exclude the page as `mask_mismatch` with both values as
       evidence.
 
@@ -258,9 +259,9 @@ This makes the design's latent list enforceable rather than aspirational.
 **Files:** create `tests/fixtures/pgdp_typography/manifest.json` and its test, modify
 `src/pdomain_ocr_synth/pgdp/alignment_review.py`.
 
-- [ ] Follow M15b's fixture rules including its licence rule: commit cropped or downsampled real scans only where the
+- [x] Follow M15b's fixture rules including its licence rule: commit cropped or downsampled real scans only where the
       source licence permits, otherwise byte-stable synthetic derivatives, recording which is which.
-- [ ] Add a review-only overlay drawing the estimated baseline and x-height on a matched line crop, outside the
+- [x] Add a review-only overlay drawing the estimated baseline and x-height on a matched line crop, outside the
       production report path.
 
 ### Task 8: Corpus run, gates, and the sample-size answer
@@ -268,12 +269,12 @@ This makes the design's latent list enforceable rather than aspirational.
 **Files:** modify `docs/usage/recipe-workflow.md`, `docs/context/current-state.md`, `docs/plans/README.md`, and this
 plan.
 
-- [ ] Run `typography-pgdp` twice over the five whole-book alignment reports and confirm `cmp` reports no difference.
-- [ ] Measure every gate below and record the numbers whether they pass or fail.
-- [ ] Run the calibration experiment: for each admitted book, deterministically subsample accepted body pages at n = 5,
+- [x] Run `typography-pgdp` twice over the five whole-book alignment reports and confirm `cmp` reports no difference.
+- [x] Measure every gate below and record the numbers whether they pass or fail.
+- [x] Run the calibration experiment: for each admitted book, deterministically subsample accepted body pages at n = 5,
       10, 20, 30, 50, 100, recompute pooled x-height, baseline pitch, stroke width, and word gap at each n, and report
       the smallest n at which all four stop moving by more than 0.5 px.
-- [ ] Truncate the sweep per book at that book's own accepted body-page count, and report the truncation. Not every
+- [x] Truncate the sweep per book at that book's own accepted body-page count, and report the truncation. Not every
       admitted book reaches n = 100. The 2026-08-31 per-book accepted counts were 226, 75, 177, 155, and 32, so at least
       one book cannot reach even n = 50. A book whose sweep truncates before its four observables settle reports "did
       not converge within available pages" rather than a number, and that outcome is itself the answer for that book.
@@ -338,6 +339,99 @@ ink height varies with whether a line happens to carry ascenders or descenders. 
 x-height directly per line rather than as a fraction, so it should beat the proxy. Treat 0.72 as the
 target and the proxy figures as a floor, and confirm the real number in Task 8 rather than assuming
 it.
+
+## Measured on 2026-09-03: the corpus run and every gate
+
+The five whole-book runs used the `alignment-t2-*` reports and their `profile-t2-*` profiles
+in `/workspaces/pdomain/.m15b-evidence/`, not the older `alignment-wholebook-*` pair. Only the
+t2 set carries the page-classification fixes, and only it matches the per-book accepted counts
+this plan already quotes: 226, 75, 177, 155, and 32, for 665 accepted pages. The older
+whole-book reports accept 367 pages and class one whole book `unknown`, and the two earlier
+"Measured on 2026-09-03" sections above were taken from them. Their conclusions still hold
+because they measure line widths and gap thresholds rather than page counts.
+
+Every gate below was measured on the t2 corpus report. Evidence lives in
+`/workspaces/pdomain/.m15d-evidence/`.
+
+| Gate | Result | Verdict |
+| --- | --- | ---: |
+| 1. Determinism | 5 of 5 books byte-identical across two runs | pass |
+| 2. Mask reproduction | 665 measured pages, 17,205 matched candidates verified, 0 `mask_mismatch` | pass |
+| 3. Synthetic estimator | 34 of 34 fixtures within 1 px, plus 8 reviewed fixtures | pass |
+| 4. Reviewed line correctness | 208 of 210 judged correct, 0 incorrect | pass |
+| 5. Book-level stability | relative MAD 0.000 in all 5 books, ceiling 0.08 | pass |
+| 6. Word reconciliation | 0.620, 0.539, 0.520 pass; 0.476 and 0.208 fail | 3 of 5 |
+| 7. Latent discipline | 0 violations across all 5 corpus reports | pass |
+| 8. Sample-size answer | measured per book, below | pass |
+
+**Gate 2 is the one that had to be exact, and is.** Across 665 pages, every one of 17,205
+matched candidates reproduced its recorded `foreground_pixels` and `horizontal_ink_profile`
+from the rebuilt mask, and every rebuilt Otsu threshold equalled the recorded one. Task 1's
+claim that the two stages share one definition of ink holds on the whole corpus, not only on
+fixtures.
+
+**Gate 4 was model-reviewed, as decision 7 settled.** 210 matched lines from three books were
+rendered by `render_line_typography_overlay` at 3x on a 460 px window, ten to a sheet, and
+read. 208 were correct: the baseline lay on the visible baseline and the x-height rule on the
+lowercase tops. None was wrong. The remaining two are all-capital and small-capital lines that
+carry no lowercase at all, so the "within 2 px of the lowercase top" half of the criterion has
+nothing to measure against; both baselines were correct. Counting those two as failures gives
+0.9905, which clears the 0.95 threshold without needing the charitable reading.
+
+**Gate 5 passes with room that looks suspicious and is not.** The MAD of per-page x-height
+medians is exactly 0 in all five books. Per-page medians are integers, and a page of body text
+at one type size produces the same integer median page after page, so the dispersion collapses
+to zero. The 16th and 84th percentiles in `extensions` confirm the estimates are not
+degenerate: they sit within 1 px of the median rather than on top of it.
+
+**Gate 6 fails in two books and is recorded rather than weakened,** per decision 6.
+
+| book | reconciled / measured lines | rate |
+| --- | ---: | ---: |
+| projectID609bfa0449bdf | 2801 / 4515 | 0.620 |
+| projectID64a479f51ce5b | 1547 / 2868 | 0.539 |
+| projectID67a80fde44d34 | 397 / 763 | 0.520 |
+| projectID603d7d5e04ca0 | 1692 / 3553 | 0.476 |
+| projectID657550412c8dc | 739 / 3546 | 0.208 |
+
+The three passing books sit near the 0.72 ceiling the earlier sweep predicted. The two failing
+books do not, and the gap is not uniform: projectID657550412c8dc reconciles one line in five.
+Its measured word gap is 25 px against a 4 to 5 px gap threshold derived from its 18 px
+x-height, which is the widest spacing in the corpus, so the detector is not under-splitting.
+Over-splitting on wide inter-letter spacing is the likelier cause, and the follow-up should
+measure the split direction per book before changing the threshold. **Follow-up required:**
+measure over-split against under-split counts per book for the two failing books, and decide
+whether the gap threshold needs a per-book term. This plan stays `partial` until that lands.
+
+**Gate 8, the sample-size answer.** Body pages were shuffled with a fixed seed and pooled at
+n = 5, 10, 20, 30, 50, 100, truncated at each book's own body-page count, and compared against
+the full-book value at a 0.5 px tolerance.
+
+| book | body pages | sweep | x-height | pitch | stroke | word gap | all four |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| projectID609bfa0449bdf | 212 | to 100 | 20 | 5 | 5 | did not converge | did not converge |
+| projectID64a479f51ce5b | 71 | to 50 | 5 | 5 | 5 | 5 | 5 |
+| projectID603d7d5e04ca0 | 168 | to 100 | 5 | 5 | 5 | 5 | 5 |
+| projectID657550412c8dc | 149 | to 100 | 5 | 5 | 5 | 50 | 50 |
+| projectID67a80fde44d34 | 32 | to 30 | 5 | 5 | 5 | 20 | 20 |
+
+Two books truncate below n = 100 and one below n = 50, as the plan expected. Four of the five
+converge, at 5, 5, 50, and 20 body pages. The fifth does not: projectID609bfa0449bdf's word gap
+still sits 0.75 px from its full-book value at n = 100, so its answer is "did not converge
+within available pages" for that observable, and 20 pages for the other three.
+
+**What this says about the 30-page minimum.** For x-height, baseline pitch, and stroke width,
+five body pages are enough in every book and twenty in the worst, so 30 is comfortably
+sufficient and the prediction stated before the run was right. Word gap is the unstable
+observable: one book needs 50 pages and another does not settle within 100. The honest
+recommendation is unchanged. Leave `MINIMUM_ACCEPTED_PAGES_PER_BOOK` at 30, record that it now
+has one calibrated lower bound for three of the four font-free observables, and note that word
+gap and font fitting both remain uncalibrated consumers.
+
+**One design correction the corpus forced.** Book-level estimates originally pooled only pages
+belonging to a style. Measured against the older whole-book reports, one book classed all 52 of
+its accepted pages `unknown` and reported no estimates at all despite carrying 902 measured
+lines. Book estimates now pool every measured page and only styles stay class-gated.
 
 ## Acceptance gates
 

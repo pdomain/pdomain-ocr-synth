@@ -64,6 +64,7 @@ useful.
 | [15b](2026-08-23-pgdp-source-line-alignment.md) | PGDP source-line alignment | partial: implementation complete; corpus gate failed | Align F2 source lines with eligible single-column scan rows | Deterministic report shipped; fragmented-band extractor follow-up required |
 | [15b-fix](2026-08-31-pgdp-fragmented-band-correction.md) | PGDP fragmented-band correction | partial: `pgdp-alignment/v2` shipped; coverage 0.385, precision gate still failing | Stop rejecting whole pages when one ink band splits into clusters | `pgdp-alignment/v2` passes the unchanged 98% precision and 70% coverage gates |
 | [15a-pages](2026-08-31-pgdp-page-classification.md) | PGDP page classification | draft: design approved, implementation not started | Classify pages against measured book templates and suppress running heads | `pgdp-alignment/v3` stops binding source lines to page furniture |
+| [15d](2026-09-02-pgdp-font-free-typographic-observables.md) | PGDP font-free typographic observables | partial: all eight tasks landed; 7 of 8 gates pass, word reconciliation fails in 2 of 5 books | Measure baseline, x-height, stroke, skew, and word runs from aligned ink | `typography-pgdp` writes a deterministic `pgdp-typography/v1` report |
 
 ## NiceGUI surface — preview first, explicit save
 
