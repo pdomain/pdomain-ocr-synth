@@ -278,6 +278,35 @@ plan.
       one book cannot reach even n = 50. A book whose sweep truncates before its four observables settle reports "did
       not converge within available pages" rather than a number, and that outcome is itself the answer for that book.
 
+## Measured on 2026-09-03: the segment floor excludes 13.9 percent of lines
+
+Task 2's estimator needs at least three segments of `max(200, width // 8)` px, so a matched line
+narrower than 600 px is excluded as `insufficient_segments`. Measured against the five whole-book
+alignment reports in `.m15b-evidence/`, over 9,754 matched lines on 367 accepted pages:
+
+| width | share of matched lines |
+| --- | ---: |
+| under 400 px | 9.3 percent |
+| under 600 px | 13.9 percent |
+| under 800 px | 64.1 percent |
+
+Median width is 784 px and the tenth percentile is 431 px. The widest excluded line is 599 px,
+confirming the cliff sits exactly at three segments.
+
+Losing 13.9 percent of lines costs the pooled estimates little, because pooling is two-stage and a
+page with thirty matched lines still contributes a solid median after losing four. The exclusions
+are not random, though: short lines are paragraph-final lines, headings, and verse, so the loss is
+biased rather than uniform.
+
+**One consequence is a correctness problem, not a coverage one.** `baseline_pitch_px` is defined
+above as the distance between consecutive matched baselines on a page. When one line in a run has
+no baseline, the next available pair is two lines apart, and measuring it as a pitch silently
+reports roughly double the true leading. Task 3 or Task 5 must define what consecutive means in the
+presence of exclusions. The options are to emit a pitch only for adjacent matched lines whose
+ordinals differ by one, or to record the ordinal gap alongside each pitch and let pooling divide by
+it. Emitting only adjacent pairs is simpler and loses nothing that matters, since a page has many
+pairs.
+
 ## Acceptance gates
 
 1. **Determinism.** Two runs over identical inputs produce byte-identical JSON; `cmp` exits 0.
