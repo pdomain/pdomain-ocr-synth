@@ -1,8 +1,8 @@
 ---
-Status: draft
+Status: active
 Owner: CT
 Created: 2026-09-02
-Last verified: 2026-09-02
+Last verified: 2026-09-03
 Kind: plan
 ---
 
@@ -11,13 +11,13 @@ Kind: plan
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** draft
+- **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-02
-- **Last verified:** 2026-09-02
+- **Last verified:** 2026-09-03
 - **Provenance:** authored from the PGDP typography design, the shipped M15a/M15b implementation and wire contracts, the
   whole-book yield-gate design, and the 2026-09-02 handoff
-- **Disposition:** Proposed executable plan for the next M15 slice. Not approved.
+- **Disposition:** Approved 2026-09-03. Executable plan for M15d.
 - **Read when:** implementing or reviewing scan-derived typographic measurement before any font candidate exists.
 - **Search terms:** PGDP, M15, typography, x-height, baseline, word gap, stroke width, pooled book style, inverse
   rendering.
@@ -338,28 +338,30 @@ manifest with per-font licence notes and no committed font bytes; a pytest marke
 where none are fetched; and a CLI that fails with an explicit "no candidate fonts configured" message rather than
 silently ranking an empty set.
 
-## Open decisions
+## Decisions taken
 
-1. **Milestone name.** The M15b design reserves M15c for rectification, and this slice is not rectification. Suggest
-   `15d` with a note, but the letter is yours.
-2. **Measure in the source frame now, or rectify first?** The biggest one. The design says measurement starts by
-   rectifying, and M15b defers baselines and x-height until after M15c. This plan measures in the source frame using
-   segment-wise projection and treats skew as a reported observable. The argument for it: segmenting cuts skew smear by
-   the width ratio, 7.5 times at the sizes above, the measured skew distribution is itself the evidence needed to scope
-   rectification, and a rectification slice with no typographic target is hard to gate. This is a genuine departure from
-   the spec's stated order.
-3. **Mask-reading slice, or report-only slice?** A smaller version exists: consume only the alignment report, open no
-   images, and ship word gaps, indentation, line ink height and width, and baseline pitch from stored values. It cannot
-   produce x-height, ascender or descender extents, or stroke width, which need row projections the report does not
-   store. Recommend the mask-reading version, because x-height is the observable the milestone is about.
-4. **May Task 1 touch `alignment_image.py`?** The alternative duplicates the mask code and relies on Gate 2 to catch
-   drift. Recommend the refactor.
-5. **CLI name.** `typography-pgdp` matches the `rank-pgdp` / `profile-pgdp` / `align-pgdp` family. `measure-pgdp` reads
-   better but collides conceptually with `profile-pgdp`.
-6. **Are 0.08 and 0.50 acceptable as pre-registered seeds,** and does a failure block the slice or become a follow-up?
-7. **Who reviews Gate 4?** Both prior M15b precision measurements were made by a model reading rendered crops, recorded
-   as such. Same again, or a person this time?
-8. **The default of 12 evidence pages per book.** Report size forces a bound; the number is a judgement call.
+All eight settled by CT on 2026-09-03. The plan is approved for execution.
+
+1. **Milestone name: M15d.** M15c stays reserved for rectification, which this slice is not.
+2. **Measure in the source frame now.** A genuine departure from the design's stated order, taken
+   deliberately. Segment-wise projection cuts skew smear by the width ratio, from 13.1 px across a
+   1500 px line to 1.75 px across a 200 px segment at half a degree. The measured skew distribution
+   becomes the evidence that scopes rectification, which is otherwise a slice with no typographic
+   target to gate itself against.
+3. **Mask-reading slice.** The report-only variant was rejected: it cannot produce x-height,
+   ascender or descender extents, or stroke width, and x-height is the observable this milestone is
+   about.
+4. **Task 1 may refactor `alignment_image.py`.** One definition of ink beats duplicating the mask
+   builder and trusting Gate 2 to catch the drift later.
+5. **CLI name: `typography-pgdp`,** matching the `rank-pgdp` / `profile-pgdp` / `align-pgdp` family.
+6. **Gates 5 and 6 record and follow up.** A failure records the exact counts, leaves this plan
+   `partial`, and opens a follow-up. It does not block the slice, and it does not get weakened
+   inside the same review run. Both numbers are reasoned seeds, so a failure may say more about the
+   seed than about the code.
+7. **Gate 4 is judged by a model reading rendered crops,** recorded explicitly as model-reviewed
+   rather than signed off row by row. Same method as both prior M15b precision measurements, and
+   repeatable whenever the estimator changes.
+8. **Twelve evidence pages per book.**
 
 ## Final review and handoff
 
