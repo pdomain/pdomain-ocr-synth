@@ -29,6 +29,7 @@ Repository-wide documentation governance lives in [`DOCGRAPH.md`](../DOCGRAPH.md
 
 Empty folders are intentional and tracked via `.gitkeep`.
 
-Active docs map to GitHub issues — see this repo's issue tracker for status.
+Active issues live in `docs/issues/` as governed, evidence-bearing reports. The GitHub issue
+tracker is no longer used for status.
 This layout is workspace-standard; see
 `/workspaces/ocr-container/docs/README.md` for the master.
