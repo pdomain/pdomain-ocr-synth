@@ -1,6 +1,6 @@
 ---
 kind: handoff
-status: "active"
+status: "retired"
 created: "2026-09-02"
 created_at: "2026-09-02T21:02:55Z"
 owner: CT
@@ -10,6 +10,7 @@ worktree: /workspaces/pdomain/pdomain-ocr-synth
 base_commit: "9f13c0dda6dbd38a96acb1abd55cbe0469c1dcad"
 supersedes: "2026-08-31-183553-m15b-gates-pass-and-merged.md"
 handoff_reason: user_requested
+superseded_by: "2026-09-03-031500-m15d-typography-shipped-partial.md"
 host: claude-code
 ---
 
