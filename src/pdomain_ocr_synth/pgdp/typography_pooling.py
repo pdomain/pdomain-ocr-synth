@@ -108,6 +108,8 @@ class BookPooling:
     styles: tuple[StyleTypography, ...]
     skew: SkewSummary
     pooled_page_count: int
+    """Pages belonging to some style. Book estimates pool every page, not only these."""
+
     unknown_class_page_count: int
 
 
@@ -214,14 +216,23 @@ def pool_page(
 def pool_book(pages: Sequence[PageTypography]) -> BookPooling:
     """Pool one book's page medians, whole and per style.
 
-    Book estimates pool every page that belongs to a style; a page classed `unknown` is
-    counted and excluded as `"{page_name}:unpooled_page_class"` rather than silently mixed
-    in. A style is emitted only when it has at least one page, so a book with no chapter
-    openings reports one style rather than an empty second one.
+    Book estimates pool every measured page, including pages the template fit could not
+    class. Styles are what the classification gates: a page classed `unknown` is excluded
+    from every style as `"{page_name}:unpooled_page_class"`, and a style is emitted only when
+    it has at least one page, so a book with no chapter openings reports one style rather
+    than an empty second one.
+
+    Restricting the book estimates to style-eligible pages as well was measured on
+    2026-09-03 and rejected. Of the four whole-book runs with accepted pages, one
+    (projectID603d7d5e04ca0) classes all 52 of them `unknown` and another
+    (projectID657550412c8dc) classes 8 of 14 that way, so a style-gated book estimate
+    reported nothing at all for a book carrying 902 measured lines. A book-level median is a
+    statement about the book, not about one template, and withholding it because the
+    template fit was inconclusive throws away the measurement this slice exists to make.
     """
 
     ordered = tuple(sorted(pages, key=lambda page: natural_page_key(page.page_name)))
-    pooled = tuple(page for page in ordered if _style_for(page.page_class) is not None)
+    styled = tuple(page for page in ordered if _style_for(page.page_class) is not None)
     unknown = tuple(page for page in ordered if _style_for(page.page_class) is None)
     styles = tuple(
         style
@@ -229,10 +240,10 @@ def pool_book(pages: Sequence[PageTypography]) -> BookPooling:
         if style is not None
     )
     return BookPooling(
-        estimates=_pool_pages(pooled, unpooled=unknown),
+        estimates=_pool_pages(ordered, unpooled=()),
         styles=styles,
-        skew=_pool_skew(pooled),
-        pooled_page_count=len(pooled),
+        skew=_pool_skew(ordered),
+        pooled_page_count=len(styled),
         unknown_class_page_count=len(unknown),
     )
 

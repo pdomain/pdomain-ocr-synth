@@ -244,7 +244,13 @@ def test_book_pages_are_pooled_in_natural_page_order() -> None:
     )
 
 
-def test_unknown_class_pages_are_counted_and_pooled_into_nothing() -> None:
+def test_unknown_class_pages_join_the_book_but_no_style() -> None:
+    """Measured on 2026-09-03: one whole book classes all 52 accepted pages `unknown`.
+
+    Gating the book estimate on the classification reported nothing for a book carrying 902
+    measured lines, so the book pools every measured page and only styles are class-gated.
+    """
+
     pages = (
         make_page("p2.png"),
         make_page("p3.png", page_class="unknown", x_heights=(40, 40, 40)),
@@ -252,8 +258,22 @@ def test_unknown_class_pages_are_counted_and_pooled_into_nothing() -> None:
     pooled = pool_book(pages)
     assert pooled.unknown_class_page_count == 1
     assert pooled.pooled_page_count == 1
+    assert _value(pooled.estimates, "x_height_px") == 30.0
+    assert _estimate(pooled.estimates, "x_height_px").evidence_pages == ("p2.png", "p3.png")
+    body = pooled.styles[0]
+    assert _value(body.estimates, "x_height_px") == 20.0
+    assert "p3.png:unpooled_page_class" in _estimate(body.estimates, "x_height_px").exclusions
+
+
+def test_a_book_with_no_classified_page_still_reports_its_median() -> None:
+    pages = (
+        make_page("p2.png", page_class="unknown"),
+        make_page("p3.png", page_class="unknown"),
+    )
+    pooled = pool_book(pages)
+    assert pooled.styles == ()
+    assert pooled.unknown_class_page_count == 2
     assert _value(pooled.estimates, "x_height_px") == 20.0
-    assert "p3.png:unpooled_page_class" in _estimate(pooled.estimates, "x_height_px").exclusions
 
 
 def test_recto_and_verso_pool_into_one_body_style() -> None:
