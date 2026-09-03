@@ -325,17 +325,22 @@ def extract_line_candidates(
             inherited_diagnostics=inherited_diagnostics,
         )
 
-    foreground = _foreground_mask(snapshot, source_frame)
-    if not bool(foreground.any()):
+    foreground, mask_rejected = build_candidate_mask(
+        snapshot, source_frame=source_frame, foreground_bounds=foreground_bounds
+    )
+    if not bool(foreground.any()) and not mask_rejected:
+        # No border or rule was stripped, so an empty mask here means the page
+        # was blank before `build_candidate_mask` ran, matching the original
+        # pre-strip check. A page that went blank *because* stripping removed
+        # a border or a page-wide rule is not blank_page: it falls through to
+        # band extraction exactly as before, which reports it band-by-band.
         return _empty_extraction(
             snapshot=snapshot,
             source_frame=source_frame,
             exclusions=("blank_page",),
             inherited_diagnostics=inherited_diagnostics,
         )
-    rejected: list[RejectedComponent] = []
-    _remove_page_borders(foreground, rejected)
-    _remove_long_rules(foreground, foreground_bounds, rejected)
+    rejected: list[RejectedComponent] = list(mask_rejected)
     candidates, band_rejections, clusters, band_counts = _extract_band_candidates(
         foreground,
         retained_bands,
@@ -393,6 +398,26 @@ def _inherited_exclusions(diagnostics: Sequence[ProfileDiagnostic]) -> tuple[str
         if code not in mapped:
             mapped.append(code)
     return tuple(mapped)
+
+
+def build_candidate_mask(
+    snapshot: ImageSnapshot, *, source_frame: CoordinateFrame, foreground_bounds: Bounds
+) -> tuple[np.ndarray[tuple[int, int], np.dtype[np.bool]], tuple[RejectedComponent, ...]]:
+    """Build the source-frame page ink mask that both M15b stages share.
+
+    Thresholds the scan into foreground pixels, then strips full-page borders
+    and long printed rules from it. `extract_line_candidates` crops this mask
+    to each band's cluster box to derive `foreground_pixels` and
+    `horizontal_ink_profile`; a later typography-measurement stage rebuilds
+    the identical mask from the same three steps to stay bound to the same
+    definition of ink.
+    """
+
+    foreground = _foreground_mask(snapshot, source_frame)
+    rejected: list[RejectedComponent] = []
+    _remove_page_borders(foreground, rejected)
+    _remove_long_rules(foreground, foreground_bounds, rejected)
+    return foreground, tuple(rejected)
 
 
 def _foreground_mask(

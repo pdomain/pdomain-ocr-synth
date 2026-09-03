@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, override
 
+import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
@@ -15,6 +17,7 @@ from pdomain_ocr_synth.pgdp.image_measurement import (
     ImageMeasurement,
     ImageSnapshot,
     SnapshotSpoolError,
+    measure_image_snapshot,
     open_image_snapshot,
 )
 from pdomain_ocr_synth.pgdp.profile_models import CoordinateFrame, InkBand, ProfileDiagnostic
@@ -34,6 +37,7 @@ _ROW_BANDS = (
     InkBand(y_start=35, y_end=40),
     InkBand(y_start=50, y_end=55),
 )
+_ALIGNMENT_FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "pgdp_alignment"
 
 
 class _CandidateReplayReadFailingSnapshot(BytesIO):
@@ -1214,3 +1218,64 @@ def test_each_height_share_is_a_maximum_that_includes_its_boundary() -> None:
     # 50 of 100 is exactly the rule ceiling; 51 is over it.
     assert is_rule_band(_band_clusters((0, 0, 200, 50), 9000), median_band_height=100.0)
     assert not is_rule_band(_band_clusters((0, 0, 200, 51), 9000), median_band_height=100.0)
+
+
+def _load_alignment_fixture_cases() -> tuple[tuple[str, Path, Bounds], ...]:
+    """Read `(case_id, image_path, foreground_bounds)` for every committed alignment fixture."""
+
+    manifest = json.loads((_ALIGNMENT_FIXTURE_ROOT / "manifest.json").read_text("utf-8"))
+    cases: list[tuple[str, Path, Bounds]] = []
+    for case in manifest["cases"]:
+        x_start, y_start, x_end, y_end = case["foreground_bounds"]
+        cases.append(
+            (
+                case["case_id"],
+                (_ALIGNMENT_FIXTURE_ROOT / case["image_path"]).resolve(),
+                (x_start, y_start, x_end, y_end),
+            )
+        )
+    return tuple(cases)
+
+
+def test_build_candidate_mask_reproduces_every_fixture_candidates_recorded_ink() -> None:
+    """A rebuilt mask, cropped to a candidate's box, reproduces its stored ink bit for bit.
+
+    `_extract_band_candidates` computes `foreground_pixels` and
+    `horizontal_ink_profile` from `foreground[box]` -- the page mask cropped to
+    the candidate's box -- not from cluster membership. `build_candidate_mask`
+    rebuilds that same mask from the same three steps, so cropping it to the
+    same box must reproduce both stored values exactly, on every committed
+    alignment fixture and every candidate it yields.
+    """
+
+    reproduced_candidate_count = 0
+    for case_id, image_path, foreground_bounds in _load_alignment_fixture_cases():
+        with open_image_snapshot(image_path) as snapshot:
+            measurement = measure_image_snapshot(snapshot)
+            extraction = alignment_image.extract_line_candidates(
+                snapshot,
+                source_frame=measurement.source_frame,
+                foreground_bounds=foreground_bounds,
+                ink_bands=tuple(
+                    InkBand(y_start=band.y_start, y_end=band.y_end)
+                    for band in measurement.ink_bands
+                ),
+            )
+            mask, _rejected = alignment_image.build_candidate_mask(
+                snapshot,
+                source_frame=measurement.source_frame,
+                foreground_bounds=foreground_bounds,
+            )
+        for candidate in extraction.candidates:
+            x_start, y_start, x_end, y_end = candidate.box
+            cropped = mask[y_start:y_end, x_start:x_end]
+            column_counts = tuple(
+                int(np.count_nonzero(cropped[:, column_index]))
+                for column_index in range(x_end - x_start)
+            )
+            rebuilt_ink = sum(column_counts)
+            assert rebuilt_ink == candidate.foreground_pixels, case_id
+            rebuilt_profile = tuple(count / rebuilt_ink for count in column_counts)
+            assert rebuilt_profile == candidate.horizontal_ink_profile, case_id
+            reproduced_candidate_count += 1
+    assert reproduced_candidate_count > 0
