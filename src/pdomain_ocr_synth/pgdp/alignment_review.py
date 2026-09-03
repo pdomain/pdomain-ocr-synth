@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from pdomain_ocr_synth.pgdp.alignment_models import AlignmentReport, PageAlignment
+    from pdomain_ocr_synth.pgdp.typography_models import LineTypography
 
 
 class ReviewCategory(StrEnum):
@@ -90,6 +91,10 @@ MINIMUM_ACCEPTED_PAGES_PER_BOOK: Final = 30
 _ACCEPTED_MATCH_COLOR = (0, 192, 0)
 _REJECTED_MATCH_COLOR = (224, 160, 0)
 _SKIPPED_CANDIDATE_COLOR = (224, 0, 0)
+_BASELINE_COLOR = (0, 96, 255)
+_X_HEIGHT_COLOR = (224, 0, 192)
+_LINE_BOX_COLOR = (128, 128, 128)
+_TYPOGRAPHY_OVERLAY_MARGIN_PX: Final = 8
 
 ObservedOperation = Literal["match", "skip_image", "skip_text"]
 ReviewerDecision = Literal["correct", "incorrect"]
@@ -522,6 +527,81 @@ def render_alignment_overlay(
         draw.rectangle((x_start, y_start, x_end - 1, y_end - 1), outline=color, width=1)
         if source_ordinal is not None:
             draw.text((0, y_start), str(source_ordinal), fill=color)
+    _write_overlay_atomic(overlay, output)
+    return overlay
+
+
+def render_line_typography_overlay(
+    scan_path: str | Path,
+    page_alignment: PageAlignment,
+    line: LineTypography,
+    output_path: str | Path,
+    *,
+    corpus_root: str | Path | None = None,
+    margin_px: int = _TYPOGRAPHY_OVERLAY_MARGIN_PX,
+) -> Image.Image:
+    """Render one measured line as a cropped RGB PNG with its baseline and x-height drawn.
+
+    This is the instrument Gate 4 is judged on: a reviewer looks at the crop and says whether
+    the blue baseline sits on the visible baseline and the magenta x-height rule sits on the
+    lowercase tops. It exists for review only and no production report path calls it.
+
+    The crop is the matched line's box grown by `margin_px` on every side and clipped to the
+    scan, so a reviewer sees enough of the surrounding white to judge the rules against, and
+    the two rules are drawn across the full crop width rather than the box width so neither
+    can be mistaken for part of the box outline.
+    """
+
+    if line.baseline_row_px is None or line.x_height_top_row_px is None:
+        raise ValueError("A typography overlay requires a measured line.")
+    if margin_px < 0:
+        raise ValueError("margin_px must be nonnegative.")
+    scan = Path(scan_path).resolve(strict=True)
+    if not scan.is_file():
+        raise ValueError(f"Overlay scan path must name a regular file: {scan!s}.")
+    output = _validated_output_path(output_path, corpus_root=corpus_root)
+    if output == scan or (output.exists() and output.samefile(scan)):
+        raise ValueError("Overlay output must not resolve to the scan path.")
+    with BytesIO(scan.read_bytes()) as scan_snapshot:
+        scan_digest = file_digest(scan_snapshot, "sha256").hexdigest()
+        if page_alignment.scan_sha256 is None or scan_digest != page_alignment.scan_sha256:
+            raise ValueError("Overlay scan bytes must match page_alignment.scan_sha256.")
+        _ = scan_snapshot.seek(0)
+        with Image.open(scan_snapshot) as source:
+            page = source.convert("RGB")
+    if page_alignment.source_frame is not None and page.size != (
+        page_alignment.source_frame.width,
+        page_alignment.source_frame.height,
+    ):
+        page.close()
+        raise ValueError("Overlay scan dimensions must match the alignment source frame.")
+
+    x_start, y_start, x_end, y_end = line.box
+    crop_left = max(0, x_start - margin_px)
+    crop_top = max(0, y_start - margin_px)
+    crop_right = min(page.width, x_end + margin_px)
+    crop_bottom = min(page.height, y_end + margin_px)
+    overlay = page.crop((crop_left, crop_top, crop_right, crop_bottom))
+    page.close()
+
+    draw = ImageDraw.Draw(overlay)
+    draw.rectangle(
+        (
+            x_start - crop_left,
+            y_start - crop_top,
+            x_end - 1 - crop_left,
+            y_end - 1 - crop_top,
+        ),
+        outline=_LINE_BOX_COLOR,
+        width=1,
+    )
+    for row, color in (
+        (line.baseline_row_px, _BASELINE_COLOR),
+        (line.x_height_top_row_px, _X_HEIGHT_COLOR),
+    ):
+        local_row = row - crop_top
+        if 0 <= local_row < overlay.height:
+            draw.line((0, local_row, overlay.width - 1, local_row), fill=color, width=1)
     _write_overlay_atomic(overlay, output)
     return overlay
 
