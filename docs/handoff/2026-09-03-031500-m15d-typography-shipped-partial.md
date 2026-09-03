@@ -96,6 +96,12 @@ threshold derived from its 18 px x-height, so over-splitting on inter-letter
 spacing is the likelier cause than under-splitting. Guessing at the threshold
 without that measurement would be tuning against one book.
 
+One cause is already measured. [F2 silently rejoins line-break
+hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md), so every in-page
+break costs one over-split on the following line. It explains roughly 4 to 5 of
+the 24 percentage points of over-split, not all of it, and it makes the case for
+an OCR witness pass rather than a wider threshold.
+
 ## The sample-size answer, and what it does not settle
 
 Body pages were shuffled with a fixed seed, pooled at n = 5, 10, 20, 30, 50,
@@ -158,6 +164,7 @@ This repo still has unpushed commits on `master`. Nothing here was pushed.
 ## Pointers
 
 - [the M15d plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
+- [F2 line-break hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
 - [the typography design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
 - [previous handoff](2026-09-02-210255-m15b-residuals-fixed-and-contracts-decision.md)
 - `/workspaces/pdomain/.m15d-evidence/gates.json` — every gate number

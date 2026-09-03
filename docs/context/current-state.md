@@ -93,9 +93,16 @@ ceiling. No corpus report names anything the design treats as latent.
 Word reconciliation fails the 0.50 floor in two of five books: 0.620, 0.539, and
 0.520 pass, 0.476 and 0.208 do not. The failure is recorded rather than
 weakened. The book at 0.208 has the corpus's widest word spacing at 25 px
-against a 4 to 5 px threshold, so over-splitting on inter-letter spacing is the
-likelier cause than under-splitting, and the follow-up must measure the split
-direction per book before changing the threshold.
+against a 4 to 5 px threshold, so over-splitting is the likelier cause than
+under-splitting, and the follow-up must measure the split direction per book
+before changing the threshold.
+
+One systematic cause is already identified. [F2 silently rejoins line-break
+hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md): zero of 41,708
+F2 lines across five books end in a word-break hyphen, so every in-page break
+has been joined and each costs exactly one over-split on the next line. It
+accounts for roughly 4 to 5 of the 24 percentage points of over-split rather
+than all of it, and it means the gap threshold is not what is wrong.
 
 The sample-size question the 30-page admission minimum depends on now has a
 partial answer. Pooled x-height, baseline pitch, and stroke width settle within

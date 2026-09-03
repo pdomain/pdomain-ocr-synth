@@ -403,6 +403,12 @@ measure the split direction per book before changing the threshold. **Follow-up 
 measure over-split against under-split counts per book for the two failing books, and decide
 whether the gap threshold needs a per-book term. This plan stays `partial` until that lands.
 
+Part of that answer is already measured. [F2 silently rejoins line-break
+hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md): across 41,708 F2 lines in five
+books, zero end in a word-break hyphen, so every in-page break has been joined by proofers and each
+one costs exactly one over-split on the following line. That accounts for roughly 4 to 5 of the 24
+percentage points of over-split, not for all of it, and it argues against widening the threshold.
+
 **Gate 8, the sample-size answer.** Body pages were shuffled with a fixed seed and pooled at
 n = 5, 10, 20, 30, 50, 100, truncated at each book's own body-page count, and compared against
 the full-book value at a 0.5 px tolerance.
