@@ -307,6 +307,38 @@ ordinals differ by one, or to record the ordinal gap alongside each pitch and le
 it. Emitting only adjacent pairs is simpler and loses nothing that matters, since a page has many
 pairs.
 
+## Measured on 2026-09-03: what word reconciliation can reach
+
+Gate 6's 0.50 floor was a reasoned seed. Measured against 9,682 matched lines from the five
+whole-book reports, using the stored `horizontal_ink_profile` and the aligned `visible_text` and
+sweeping an absolute gap threshold independent of any x-height estimate:
+
+| gap threshold | exact | over-split | under-split |
+| --- | ---: | ---: | ---: |
+| 4 px | 0.611 | 0.379 | 0.010 |
+| 5 px | 0.703 | 0.281 | 0.016 |
+| 6 px | 0.718 | 0.242 | 0.040 |
+| 7 px | 0.709 | 0.215 | 0.075 |
+| 8 px | 0.676 | 0.188 | 0.135 |
+
+Three things follow.
+
+The detector tops out near 0.72, so roughly 28 percent of lines will not reconcile even at the best
+threshold. Word-count disagreement is therefore normal rather than a defect, which supports the
+plan's decision to keep every line-level observable when counts disagree instead of dropping the
+line. Gate 6 at 0.50 is achievable with real headroom, not a coin flip.
+
+The curve is flat between 5 and 8 px, so the threshold does not need to be precise. At a typical
+20 px x-height, `max(2, round(0.25 * x_height_px))` gives 5 px, which sits inside that plateau. The
+0.25 coefficient looks right.
+
+The rate is sensitive to the x-height estimate, not to the coefficient. Substituting a crude proxy
+of a fixed fraction of ink height gives 0.135 at 0.35, 0.514 at 0.45, and 0.662 at 0.55, because
+ink height varies with whether a line happens to carry ascenders or descenders. Task 2 measures
+x-height directly per line rather than as a fraction, so it should beat the proxy. Treat 0.72 as the
+target and the proxy figures as a floor, and confirm the real number in Task 8 rather than assuming
+it.
+
 ## Acceptance gates
 
 1. **Determinism.** Two runs over identical inputs produce byte-identical JSON; `cmp` exits 0.
