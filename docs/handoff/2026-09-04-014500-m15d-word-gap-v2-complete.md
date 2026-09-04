@@ -1,6 +1,6 @@
 ---
 kind: handoff
-status: "active"
+status: "retired"
 created: "2026-09-04"
 created_at: "2026-09-04T01:45:00Z"
 owner: CT
@@ -11,10 +11,14 @@ base_commit: "24df257"
 pushed: true
 supersedes: "2026-09-03-031500-m15d-typography-shipped-partial.md"
 handoff_reason: milestone_complete
+superseded_by: "2026-09-04-093000-ocr-witness-shipped.md"
 host: claude-code
 ---
 
 # M15d is complete: the word-gap threshold now comes from each book's own gaps
+
+> **Retired on 2026-09-04.** The OCR witness this handoff left open has shipped. See
+> [the current handoff](2026-09-04-093000-ocr-witness-shipped.md).
 
 ## What changed
 
