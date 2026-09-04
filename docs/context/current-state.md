@@ -117,13 +117,18 @@ review sheets re-render byte-identical.
 The residual disagreement was attributed on 2026-09-04. Measured over every
 matched line, the detector gets 91.5 to 97 percent of individual word gaps
 right, against the 59 to 81 percent of whole lines Gate 6 reports: a line
-carries six to twelve gaps and one bad gap fails it. In three books what remains
-is a letter gap sitting one pixel over the threshold, which no single book-wide
-value can remove; in `projectID603d7d5e04ca0` and `projectID657550412c8dc` it is
-lines carrying several gaps of comparable width, which no threshold separates at
-all. PGDP text is not adding words: across all five books only 12 lines have more
-transcription words than the ink has separable runs. See [what word
-reconciliation still
+carries six to twelve gaps and one bad gap fails it. PGDP text is not adding
+words either. Across all five books only 12 lines have more transcription words
+than the ink has separable runs.
+
+Two causes account for the rest. One is a letter gap sitting a pixel over the
+threshold, which no single book-wide value can remove. The other is F2's silent
+rejoining of line-break hyphens, which moves a broken word onto the line where
+it started and leaves this line's leading ink fragment with no word to bind to.
+That second cause is 3.3 to 6.8 percent of all matched lines and 10 to 31
+percent of each book's disagreement, which reinstates a mechanism the hyphen
+finding had retracted: it was retracted against a residual that a broken
+threshold dominated. See [what word reconciliation still
 misses](../research/2026-09-04-what-word-reconciliation-still-misses.md).
 
 A separate finding, that [F2 silently rejoins line-break

@@ -139,13 +139,15 @@ with it.
    the 59 to 81 percent of lines Gate 6 reports, and what remains is threshold jitter in three
    books and structurally inseparable gaps in two. See [what word reconciliation still
    misses](2026-09-04-what-word-reconciliation-still-misses.md).
-2. Keep the [hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) separate. It is a true fact
-   about F2 with a much smaller effect than first claimed.
+2. Keep the [hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) separate. It is a different
+   mechanism, and with this fix in place it turns out to be the largest named cause of what
+   remains: 10 to 31 percent of each book's residual disagreement.
 
 ## Related
 
 - [F2 silently rejoins line-break hyphens](2026-09-03-pgdp-f2-line-break-hyphens.md) — the theory
-  this finding replaced as the main explanation of over-split.
+  this finding replaced as the main explanation of over-split, and the largest named cause of the
+  residual once this fix landed.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
   — Gate 6, and the 0.72 ceiling this finding corrects.
 - [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md)

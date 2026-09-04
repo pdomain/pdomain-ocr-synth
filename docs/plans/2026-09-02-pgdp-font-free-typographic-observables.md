@@ -467,8 +467,9 @@ pages. x-height, baseline pitch, and stroke width settle at exactly the same pag
 before, which is the same evidence that the geometry estimator is untouched.
 
 An earlier hypothesis, that [F2's silent rejoining of line-break
-hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md) drove the over-split, was tested and
-failed both of its predictions. The F2 measurement stands; its attributed effect does not.
+hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md) drove the over-split, was tested on
+2026-09-03 and failed both of its predictions. **Reinstated on 2026-09-04.** Both tests were
+flawed, and with the threshold fixed the mechanism accounts for 10 to 31 percent of what remains.
 
 **Gate 8, the sample-size answer.** Body pages were shuffled with a fixed seed and pooled at
 n = 5, 10, 20, 30, 50, 100, truncated at each book's own body-page count, and compared against

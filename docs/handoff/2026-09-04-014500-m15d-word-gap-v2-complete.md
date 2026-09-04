@@ -124,19 +124,20 @@ corpus run applies to that book rather than a round number.
 **The residual disagreement was attributed after this handoff was first written.**
 See [what word reconciliation still
 misses](../research/2026-09-04-what-word-reconciliation-still-misses.md). The
-short version: the detector gets 91.5 to 97 percent of individual word gaps right,
-against the 59 to 81 percent of lines Gate 6 reports, because a line carries six
-to twelve gaps and one bad gap fails it. In three books the remainder is a letter
-gap one pixel over the threshold, which no global value removes; in two it is
-lines carrying several gaps of comparable width, which no threshold separates.
-PGDP text is not adding words. What is still open there is naming the typographic
-setting that produces the wide-gap regime, and whether reported word-box quality
-should be per-gap rather than per-line.
+detector gets 91.5 to 97 percent of individual word gaps right, against the 59 to
+81 percent of lines Gate 6 reports, because a line carries six to twelve gaps and
+one bad gap fails it. PGDP text is not adding words: across all five books only 12
+lines have more transcription words than the ink has separable runs.
 
-**The hyphen finding was re-tested under v2 and still shows no consistent
-effect.** Restricted to body pages, first lines of a page disagree less than later
-lines in three books and more in two; only `projectID603d7d5e04ca0` is
-significant, at z = -4.17 in the predicted direction. See [the hyphen
+**The hyphen finding is reinstated, and it is the largest named cause of what is
+left.** Cropping the over-split lines no threshold can fix showed every one to be
+ordinary body text beginning with a word fragment carried over from the line
+above. A repair test across all five books puts it at 3.3 to 6.8 percent of
+matched lines and 10 to 31 percent of each book's disagreement. That finding had
+been retracted on 2026-09-03 against a residual a broken threshold dominated;
+fixing the threshold changed the denominator. Its page-boundary control was
+underpowered rather than negative: the expected effect is about 5 points against
+a standard error of 3 to 7. See [the hyphen
 finding](../research/2026-09-03-pgdp-f2-line-break-hyphens.md).
 
 **Gate 4 is still model-reviewed**, as decision 7 settled. Whether the 210 sheets
@@ -166,9 +167,9 @@ pass. `run_all.sh` in the evidence directory has the commands.
 1. Decide whether Gate 4 wants a human pass. Nothing else here is blocked on you.
 2. Decide whether reported word-box quality should be per-gap rather than
    per-line. Gate 6 itself should stay as it is; it did its job.
-3. If the wide-gap regime matters, look at the pages of
-   `projectID657550412c8dc` where over-split lines cluster. Every proxy tried from
-   the text alone failed.
+3. Decide whether to scope the OCR witness pass the hyphen finding proposes. It is
+   now worth 10 to 31 percent of the residual rather than the 4 to 5 percentage
+   points that finding could bound it at.
 
 ## Pointers
 
@@ -183,4 +184,6 @@ pass. `run_all.sh` in the evidence directory has the commands.
 - `/workspaces/pdomain/.m15d-evidence/bimodality.json` — separability against valley depth
 - `/workspaces/pdomain/.m15d-evidence/guard-count.json` — the 14 pages the guard flagged
 - `/workspaces/pdomain/.m15d-evidence/attribution*.json` — the residual, attributed
+- `/workspaces/pdomain/.m15d-evidence/fragment-test.json` — the leading-fragment repair test
+- `/workspaces/pdomain/.m15d-evidence/widegap-sheets/` — the crops that identified the mechanism
 - [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md)

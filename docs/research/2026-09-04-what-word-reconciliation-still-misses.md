@@ -20,11 +20,12 @@ Kind: research
   replay validated line for line against a full-evidence pipeline run of
   `projectID67a80fde44d34`
 - **Disposition:** Active finding. Explains the disagreement that survives the v2 threshold fix
-  and argues Gate 6's line-level metric overstates it by roughly five times.
+  and argues Gate 6's line-level metric overstates it by roughly five times. Two of its own
+  conclusions were corrected later the same day; see "The wide-gap regime is F2, not the type."
 - **Read when:** reading Gate 6, choosing a metric for word-box quality, or deciding whether word
   segmentation needs a witness beyond gap width.
 - **Search terms:** word reconciliation, over-split, per-gap error, Gate 6, letterspacing,
-  residual, threshold jitter.
+  residual, threshold jitter, leading fragment, line-break hyphen.
 
 ## Goal
 
@@ -101,13 +102,11 @@ line's widest. It is a letter gap that crept over the line. Moving the threshold
 those over-splits for under-splits, which is exactly the plateau the original sweep found: the
 best swept threshold for these books is within 1 px of the Otsu value and buys 2 to 4 points.
 
-**In two books the over-split is genuinely wide gaps, and it is not a threshold problem at all.**
-In `projectID603d7d5e04ca0` and `projectID657550412c8dc`, the narrowest accepted gap sits 4 or
-more px above the threshold in 35 and 54 percent of over-split lines, and its median ratio to the
-line's widest gap is 0.63 and 0.71. Those lines carry several gaps of comparable width, so no
-threshold separates their letters from their words. `projectID603d7d5e04ca0` is the worst book on
-Gate 6 because it has both regimes: 1,306 over-split lines and a third of them structurally
-unfixable.
+**In two books the over-split lines carry gaps that are all the same width.** In
+`projectID603d7d5e04ca0` and `projectID657550412c8dc`, the narrowest accepted gap sits 4 or more
+px above the threshold in 35 and 54 percent of over-split lines, and its median ratio to the
+line's widest gap is 0.63 and 0.71. No threshold splits those lines differently. The section
+below identifies what they are, and it is not what this document first guessed.
 
 **Em dashes are a real but small contributor.** Lines containing `--` disagree more than others in
 every one of the five books: 0.230 against 0.187, 0.414 against 0.251, 0.550 against 0.370, 0.327
@@ -119,30 +118,76 @@ one to five words run 0.106 to 0.162 per gap, three to five times the long-line 
 book. But they carry few gaps each, so they contribute 3.6 to 16.9 percent of run errors. Most of
 the absolute error sits on ordinary body lines.
 
+## The wide-gap regime is F2, not the type
+
+**Corrected on 2026-09-04, after this document first concluded the regime was unidentified.**
+Cropping 24 of the 137 structurally unfixable over-split lines in `projectID657550412c8dc` and
+reading them settled it in one look. Every sampled line is ordinary justified body text, and every
+one begins with a word fragment continuing a hyphenated break from the line above.
+
+One example carries the whole mechanism. The ink reads `ness which may justly be extended to
+con-`, eight runs. F2 reads `which may justly be extended to confirmed`, seven words. F2 has moved
+the leading fragment `ness` onto the previous line, where the broken word started, and completed
+`con-` into `confirmed` on this one. The segmentation is correct and the transcription is what
+disagrees.
+
+That is
+[the line-break hyphen mechanism](2026-09-03-pgdp-f2-line-break-hyphens.md), which this document
+first reported as showing no consistent effect.
+
+**A repair test puts a number on it in every book.** For each line over-split by exactly one, two
+repairs were fitted against the F2 word widths, using character count as the width proxy: drop run
+`i`, which models F2 having moved a fragment away, or merge runs `i` and `i+1`, which models the
+detector having split inside a word. The repair with the lowest normalized width error wins.
+
+| book | drop the leading run | drop a later run | merge a split word | over-split-by-one lines |
+| --- | ---: | ---: | ---: | ---: |
+| projectID657550412c8dc | 0.736 | 0.109 | 0.155 | 303 |
+| projectID67a80fde44d34 | 0.424 | 0.159 | 0.417 | 132 |
+| projectID609bfa0449bdf | 0.389 | 0.141 | 0.469 | 686 |
+| projectID64a479f51ce5b | 0.236 | 0.171 | 0.593 | 427 |
+| projectID603d7d5e04ca0 | 0.168 | 0.204 | 0.628 | 1,071 |
+
+Dropping the *leading* run wins 0.168 to 0.736 of the time. Dropping some later run wins 0.109 to
+0.204 spread across roughly seven positions, so about 0.02 each. The first position beats any
+other single position by 8 to 35 times. The positional signal is not chance.
+
+**Line-break hyphens explain 10 to 31 percent of the whole disagreement.** Fragment lines are
+5.3, 3.3, 4.0, 6.0, and 6.8 percent of all matched lines, which against each book's disagreement
+rate is 0.279, 0.128, 0.104, 0.303, and 0.311 of it. That 3.3-to-6.8 percent range independently
+confirms the 4.5 percent line-end hyphenation rate the hyphen finding could only infer.
+
+**Why the first-line-of-page control missed it.** The control is underpowered, not negative. Only
+about 4.5 percent of page ends carry a break, so the expected gap between first lines and later
+lines is roughly 5 points, while each book has 32 to 212 first lines and a standard error of 3 to 7
+points. `projectID657550412c8dc` measured -5.2 points against a 6.0 percent fragment rate, which
+matches the mechanism almost exactly and still reads as z = -1.59. The test could never have
+resolved the effect it was asked about.
+
 ## What this rules out
 
-**Display type is not the cause, as stated.** All-capital lines reconcile *better* than mixed-case
-ones, not worse: 0.048 against 0.406 in `projectID603d7d5e04ca0` and 0.067 against 0.190 in
+**Display type is not the cause.** All-capital lines reconcile *better* than mixed-case ones, not
+worse: 0.048 against 0.406 in `projectID603d7d5e04ca0` and 0.067 against 0.190 in
 `projectID609bfa0449bdf`. Two books show the reverse on samples of 11 and 27 lines, which is
-noise. Whatever the wide-gap regime is, an all-capital setting is not a usable proxy for it.
+noise. The letterspaced-display guess was wrong, and the crops show why: these are body lines.
 
 **Line boxes spanning unrelated ink are negligible.** A box carrying an interior gap of 100 px or
 more occurs 0 to 32 times per book, under 0.7 percent of lines, and accounts for under 1 percent
 of run errors in every book.
 
-**The line-break hyphen mechanism still shows no consistent effect.** Restricted to body pages,
-first lines of a page, which the `*` marker protects, disagree less than later lines in three
-books and more in two. Only `projectID603d7d5e04ca0` is significant, at z = -4.17 in the predicted
-direction; the other four are between -1.59 and +0.66. This is the re-test that
-[the hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) asked for once over-splitting was
-reduced. It does not support the mechanism, and it does not refute it in that one book.
-
 ## What this does NOT establish
 
-**The wide-gap regime is not identified.** It is measured, not explained. The lines are known to
-carry several gaps of comparable width; what typographic setting produces that was not
-established, and the two obvious guesses, all-capital lines and boxes spanning stray ink, were
-both tested and failed.
+**The repair test uses character count as a width proxy.** Letters differ in width, so a
+short-but-wide word can be fitted by a long-but-narrow one. The proxy is good enough to separate
+positions within a line, which is all the test asks of it, but the absolute win rates carry that
+error.
+
+**The repair test covers only lines over-split by exactly one, with at least three words.** That
+is 303 to 1,071 lines per book, a majority of over-split lines but not all of them. Lines
+over-split by two or more were not classified.
+
+**The crops are 24 lines from one book.** They establish the mechanism exists and what it looks
+like. The repair test, not the crops, is what carries it to the other four books.
 
 **The per-gap error rate counts net run errors, not misplaced boundaries.** `abs(runs - words)`
 summed over lines divided by total word gaps is a lower bound on boundary errors: a line that
@@ -160,8 +205,10 @@ not tested.
 
 1. Put to CT whether the reported quality of word boxes should be per-gap rather than per-line.
    Gate 6 itself should stay as it is; it did its job.
-2. Identify the wide-gap regime by looking at the actual pages of
-   `projectID657550412c8dc` where over-split lines cluster, rather than by proxy from the text.
+2. Scope the OCR witness pass
+   [the hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) already proposed. It is now
+   worth 10 to 31 percent of the residual, not the 4 to 5 percentage points that finding could
+   bound it at, and a leading run that no F2 word claims is exactly what OCR would identify.
 3. Leave threshold jitter alone. Three books are at the noise floor of any single global
    threshold, and moving it trades one error for another.
 
@@ -169,7 +216,7 @@ not tested.
 
 - [The word-gap threshold is too low in every book](2026-09-03-word-gap-threshold-is-too-low.md)
   — the finding whose fix produced the residual measured here.
-- [F2 silently rejoins line-break hyphens](2026-09-03-pgdp-f2-line-break-hyphens.md) — re-tested
-  above and still unsupported.
+- [F2 silently rejoins line-break hyphens](2026-09-03-pgdp-f2-line-break-hyphens.md) — confirmed
+  above, and much larger than either document first estimated.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
   — Gate 6 and its 0.50 floor.
