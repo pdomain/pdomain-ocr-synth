@@ -18,6 +18,7 @@ Nothing here opens a font, renders text, or leaves the `source` frame.
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -30,6 +31,12 @@ from pdomain_ocr_synth.pgdp.image_measurement import (
     measure_image_snapshot,
     open_image_snapshot,
     sha256_file,
+)
+from pdomain_ocr_synth.pgdp.ocr_witness import (
+    OCR_WITNESS_METHODS,
+    BookWitness,
+    read_book_witness,
+    witness_line,
 )
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.paths import (
@@ -44,6 +51,7 @@ from pdomain_ocr_synth.pgdp.typography_measure import (
     LineTypographyMeasurement,
     WordGapThreshold,
     derive_word_gap_threshold,
+    find_word_runs,
     measure_baseline_pitches,
     measure_line_typography,
     measure_line_words,
@@ -73,6 +81,7 @@ if TYPE_CHECKING:
         ProjectAlignment,
         WireLineCandidate,
     )
+    from pdomain_ocr_synth.pgdp.ocr_witness import LineWitness, PageWitness
     from pdomain_ocr_synth.pgdp.profile_models import PageMeasurement, ProjectProfile
     from pdomain_ocr_synth.pgdp.typography_measure import (
         LineTypographyExclusion,
@@ -90,8 +99,15 @@ def build_typography_report(
     *,
     tool_version: str,
     evidence_pages: int = DEFAULT_EVIDENCE_PAGES_PER_BOOK,
+    geometry_path: str | Path | None = None,
 ) -> TypographyReport:
-    """Measure typography for every accepted page in one alignment report."""
+    """Measure typography for every accepted page in one alignment report.
+
+    `geometry_path` is optional. Without it this behaves exactly as it did before the witness
+    existed, which is the property the acceptance gate checks byte for byte. With it, each
+    matched line's first ink run is checked against what the recognizer read there, so a line
+    whose first run is a continuation fragment F2 dropped can be marked.
+    """
 
     root = Path(corpus_root).expanduser().resolve()
     if not root.is_dir():
@@ -114,16 +130,19 @@ def build_typography_report(
     profile = ProfileReport.from_json(profile_bytes)
     profiles_by_id = {project.project_id: project for project in profile.projects}
 
+    ordered_projects = sorted(
+        alignment.projects, key=lambda project: natural_page_key(project.project_id)
+    )
+    witness = _read_witness(geometry_path, projects=ordered_projects)
     books = tuple(
         _measure_project(
             root,
             project=project,
             project_profile=profiles_by_id.get(project.project_id),
             evidence_pages=evidence_pages,
+            witness=witness,
         )
-        for project in sorted(
-            alignment.projects, key=lambda project: natural_page_key(project.project_id)
-        )
+        for project in ordered_projects
     )
     return TypographyReport(
         tool_version=tool_version,
@@ -135,6 +154,7 @@ def build_typography_report(
             "algorithm_version": TYPOGRAPHY_ALGORITHM_VERSION,
             "line_measurement": TYPOGRAPHY_MEASURE_METHODS["algorithm"],
             "word_segmentation": WORD_SEGMENTATION_METHODS["algorithm"],
+            **({} if witness is None else {"ocr_witness": OCR_WITNESS_METHODS["algorithm"]}),
             **TYPOGRAPHY_POOLING_METHODS,
         },
         thresholds={
@@ -149,7 +169,83 @@ def build_typography_report(
         },
         evidence_pages_per_book=evidence_pages,
         books=books,
+        extensions=_witness_provenance(witness),
     )
+
+
+def _book_witness_totals(
+    pages: Sequence[PageTypography], *, witness: BookWitness | None
+) -> dict[str, object]:
+    """Roll the per-page witness tallies up to the book.
+
+    `reconciled_after_witness` is reported beside Gate 6's own rate and does not replace it. Gate
+    6 is a tripwire for a broken detector, and folding a known cause into it would make it blind
+    to that cause returning.
+    """
+
+    if witness is None:
+        return {}
+    measured = sum(page.measured_line_count for page in pages)
+    totals = {
+        name: sum(_extension_count(page, name) for page in pages)
+        for name in (
+            "witnessed_line_count",
+            "continuation_fragment_line_count",
+            "reconciled_after_witness_line_count",
+        )
+    }
+    reconciled_after = totals["reconciled_after_witness_line_count"]
+    return {
+        **totals,
+        "reconciled_after_witness": None if measured == 0 else reconciled_after / measured,
+    }
+
+
+def _extension_count(page: PageTypography, name: str) -> int:
+    value = page.extensions.get(name)
+    return value if isinstance(value, int) else 0
+
+
+def _read_witness(
+    geometry_path: str | Path | None, *, projects: Sequence[ProjectAlignment]
+) -> BookWitness | None:
+    """Read the geometry record, refusing one that is not for the single book being measured.
+
+    A geometry file names one project, so a report covering several books has no single witness
+    to apply. Refusing is better than silently witnessing one book and not the others.
+    """
+
+    if geometry_path is None:
+        return None
+    if len(projects) != 1:
+        raise ValueError("A geometry record can only be applied to a single-project alignment.")
+    return read_book_witness(geometry_path, project_id=projects[0].project_id)
+
+
+@dataclass(frozen=True, slots=True)
+class _WitnessTally:
+    """How many of a page's matched lines the recognizer spoke for, and what it said."""
+
+    witnessed: int = 0
+    continuation_fragments: int = 0
+    reconciled_after_witness: int = 0
+
+    def to_extensions(self) -> dict[str, object]:
+        return {
+            "witnessed_line_count": self.witnessed,
+            "continuation_fragment_line_count": self.continuation_fragments,
+            "reconciled_after_witness_line_count": self.reconciled_after_witness,
+        }
+
+
+def _witness_provenance(witness: BookWitness | None) -> dict[str, object]:
+    if witness is None:
+        return {}
+    return {
+        "geometry_label": witness.label,
+        "geometry_sha256": witness.sha256,
+        "ocr_recognizer": witness.recognizer.to_dict(),
+    }
 
 
 def _measure_project(
@@ -158,6 +254,7 @@ def _measure_project(
     project: ProjectAlignment,
     project_profile: ProjectProfile | None,
     evidence_pages: int,
+    witness: BookWitness | None,
 ) -> BookTypography:
     """Measure one book's accepted pages and pool them.
 
@@ -194,6 +291,7 @@ def _measure_project(
             wants_evidence=evidence_remaining > 0,
             book_gap=book_gap,
             page_gap=page_gaps.get(page.page_name),
+            witness=witness,
         )
         if measured.evidence_sampled:
             evidence_remaining -= 1
@@ -223,6 +321,7 @@ def _measure_project(
             "word_gap_threshold_rule": book_gap.rule,
             "word_gap_valley_ratio": book_gap.valley_ratio,
             "word_gap_sample_count": book_gap.sample_count,
+            **_book_witness_totals(ordered, witness=witness),
         },
     )
 
@@ -268,9 +367,14 @@ def _measure_page(
     wants_evidence: bool,
     book_gap: WordGapThreshold,
     page_gap: WordGapThreshold | None,
+    witness: BookWitness | None,
 ) -> PageTypography:
     page_class = "unknown" if measurement is None else measurement.page_class
     gap_evidence = _page_gap_evidence(page_gap)
+    page_witness = None if witness is None else witness.page(page.page_name)
+    if page_witness is not None and page_witness.image_sha256 != page.scan_sha256:
+        page_witness = None
+        gap_evidence = {**gap_evidence, "ocr_witness": "scan_hash_mismatch"}
     if measurement is None:
         return _excluded_page(
             page,
@@ -361,9 +465,15 @@ def _measure_page(
         )
 
     text_left = text_left_by_class.get(page_class)
-    lines, pitches = _measure_lines(
-        mask, matched=matched, text_left=text_left, gap_threshold_px=book_gap.threshold_px
+    lines, pitches, tally = _measure_lines(
+        mask,
+        matched=matched,
+        text_left=text_left,
+        gap_threshold_px=book_gap.threshold_px,
+        page_witness=page_witness,
     )
+    if witness is not None:
+        gap_evidence = {**gap_evidence, **tally.to_extensions()}
     pooling = pool_page(page.page_name, lines, pitches)
     return PageTypography(
         page_name=page.page_name,
@@ -406,27 +516,53 @@ def _measure_lines(
     matched: Sequence[tuple[int, int, WireLineCandidate, str]],
     text_left: int | None,
     gap_threshold_px: int | None,
-) -> tuple[tuple[LineTypography, ...], tuple[int, ...]]:
+    page_witness: PageWitness | None,
+) -> tuple[tuple[LineTypography, ...], tuple[int, ...], _WitnessTally]:
     results: list[tuple[int, LineTypographyMeasurement | LineTypographyExclusion]] = []
     lines: list[LineTypography] = []
+    witnessed = fragments = reconciled_after = 0
     for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
         box = _box(candidate)
         result = measure_line_typography(mask, box)
         results.append((candidate_ordinal, result))
-        lines.append(
-            _line_row(
-                mask,
-                candidate_ordinal=candidate_ordinal,
-                source_ordinal=source_ordinal,
-                candidate=candidate,
-                visible_text=visible_text,
-                result=result,
-                text_left=text_left,
-                gap_threshold_px=gap_threshold_px,
-            )
+        row = _line_row(
+            mask,
+            candidate_ordinal=candidate_ordinal,
+            source_ordinal=source_ordinal,
+            candidate=candidate,
+            visible_text=visible_text,
+            result=result,
+            text_left=text_left,
+            gap_threshold_px=gap_threshold_px,
+            page_witness=page_witness,
         )
+        lines.append(row)
+        witnessed += row.extensions.get("ocr_first_run_text") is not None
+        fragments += row.extensions.get("continuation_fragment") is True
+        reconciled_after += _reconciles_after_witness(row)
     pitches = tuple(pitch.pitch_px for pitch in measure_baseline_pitches(results))
-    return tuple(lines), pitches
+    tally = _WitnessTally(
+        witnessed=witnessed,
+        continuation_fragments=fragments,
+        reconciled_after_witness=reconciled_after,
+    )
+    return tuple(lines), pitches, tally
+
+
+def _reconciles_after_witness(row: LineTypography) -> bool:
+    """Whether this line agrees with its transcription once a witnessed fragment is discounted.
+
+    A flagged line's first run has no transcription word, so the comparison that matters is one
+    run fewer. A line that already reconciles counts as it stands.
+    """
+
+    if row.words_reconciled:
+        return True
+    if row.extensions.get("continuation_fragment") is not True:
+        return False
+    if row.word_run_count is None or row.source_word_count is None:
+        return False
+    return row.word_run_count - 1 == row.source_word_count
 
 
 def _line_row(
@@ -439,6 +575,7 @@ def _line_row(
     result: LineTypographyMeasurement | LineTypographyExclusion,
     text_left: int | None,
     gap_threshold_px: int | None,
+    page_witness: PageWitness | None,
 ) -> LineTypography:
     """One matched line's wire row, measured or excluded.
 
@@ -466,6 +603,14 @@ def _line_row(
     reconciled = measure_line_words(
         mask, box, candidate.horizontal_ink_profile, visible_text, threshold
     )
+    line_witness = _witness_first_run(
+        page_witness,
+        box=box,
+        profile=candidate.horizontal_ink_profile,
+        gap_threshold_px=threshold,
+        visible_text=visible_text,
+        over_split=reconciled.word_run_count > reconciled.source_word_count,
+    )
     return LineTypography(
         candidate_ordinal=candidate_ordinal,
         source_ordinal=source_ordinal,
@@ -488,6 +633,37 @@ def _line_row(
             WordTypography(ordinal=index, box=word.box, following_gap_px=word.following_gap_px)
             for index, word in enumerate(reconciled.words)
         ),
+        extensions={} if line_witness is None else line_witness.to_extensions(),
+    )
+
+
+def _witness_first_run(
+    page_witness: PageWitness | None,
+    *,
+    box: tuple[int, int, int, int],
+    profile: Sequence[float],
+    gap_threshold_px: int,
+    visible_text: str,
+    over_split: bool,
+) -> LineWitness | None:
+    """Ask the recognizer what sits where this line's first ink run does.
+
+    A line with no transcription word and a line with no ink get no witness, because there is
+    nothing for the read to disagree with.
+    """
+
+    if page_witness is None:
+        return None
+    words = visible_text.split()
+    runs = find_word_runs(profile, gap_threshold_px)
+    if not words or not runs:
+        return None
+    return witness_line(
+        page_witness,
+        box=box,
+        first_run=runs[0],
+        source_first_word=words[0],
+        over_split=over_split,
     )
 
 

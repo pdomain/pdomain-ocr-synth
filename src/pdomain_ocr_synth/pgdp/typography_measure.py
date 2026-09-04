@@ -322,7 +322,7 @@ def measure_line_words(
     if len(horizontal_ink_profile) != width:
         raise ValueError("horizontal_ink_profile length must match the line box width.")
 
-    runs = _find_word_runs(horizontal_ink_profile, gap_threshold_px)
+    runs = find_word_runs(horizontal_ink_profile, gap_threshold_px)
     source_word_count = len(visible_text.split())
     words_reconciled = len(runs) == source_word_count
 
@@ -497,7 +497,7 @@ def _valley_ratio(histogram: tuple[int, ...], threshold: int) -> float | None:
     return histogram[threshold] / min(lower_peak, upper_peak)
 
 
-def _find_word_runs(profile: Sequence[float], gap_threshold_px: int) -> tuple[tuple[int, int], ...]:
+def find_word_runs(profile: Sequence[float], gap_threshold_px: int) -> tuple[tuple[int, int], ...]:
     """Column ranges, tight to ink, of word runs bridging small intra-word gaps.
 
     Consecutive ink columns separated by fewer than `gap_threshold_px` zero-ink columns
@@ -530,7 +530,7 @@ def _measure_word_box(
 ) -> WordMeasurement:
     """One word run's absolute source-frame box, from the run's own row projection.
 
-    The column range is already tight to ink by construction of `_find_word_runs`; the
+    The column range is already tight to ink by construction of `find_word_runs`; the
     row range is not known from the profile at all, so it is measured fresh from `mask`,
     the same page ink mask `alignment_image.build_candidate_mask` builds.
     """

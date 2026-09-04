@@ -136,6 +136,15 @@ Every value is a pixel count in the `source` frame with `confidence` null and
 treats as latent: no font identity, nominal point size, advance, side bearing,
 native word-space width, tracking, kerning, leading, or physical margin.
 
+`--geometry` is optional and off by default. Without it the command behaves
+exactly as it does without the flag existing. With it, the command reads an OCR
+geometry JSONL produced elsewhere and checks what the recognizer read where each
+matched line's first ink run sits. PGDP F2 rejoins a word broken across two
+printed lines onto the line where it started, so the next line's first run has
+no transcription word to bind to; the flag makes that visible. A page whose
+geometry `image_sha256` disagrees with the alignment's `scan_sha256` gets no
+witness. Nothing here runs OCR or opens a model.
+
 Pooled estimates and per-page aggregates cover every accepted page. Per-line
 and per-word rows are emitted only for the first `--evidence-pages` measured
 pages of each book, which keeps a five-book run from emitting roughly 150,000
@@ -413,6 +422,7 @@ alignment report, and it opens no font, renders no text, and never leaves the
 | `--profile PATH` | Read this required `pgdp-profile/v2` JSON report; it must hash to the value the alignment recorded |
 | `--output PATH` | Write the required `pgdp-typography/v1` JSON report here; it must be outside the corpus root, differ from both inputs, and not name a directory |
 | `--evidence-pages N` | Emit per-line and per-word rows for this many measured pages per book (default 12) |
+| `--geometry PATH` | Optional OCR geometry JSONL for this book. Marks a line whose first ink run is a continuation fragment the transcription does not carry |
 
 ## Audit log schema
 

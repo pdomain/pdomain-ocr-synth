@@ -202,3 +202,39 @@ def test_evidence_pages_bounds_the_emitted_rows(fixture: Fixture, tmp_path: Path
     book = payload["books"][0]
     assert sum(page["evidence_sampled"] for page in book["pages"]) == 1
     assert book["measured_page_count"] == 2
+
+
+def test_geometry_defaults_to_absent(fixture: Fixture, tmp_path: Path) -> None:
+    parsed = build_parser().parse_args(
+        [
+            "typography-pgdp",
+            str(fixture.corpus_root),
+            "--alignment",
+            str(fixture.alignment_path),
+            "--profile",
+            str(fixture.profile_path),
+            "--output",
+            str(tmp_path / "typography.json"),
+        ]
+    )
+
+    assert parsed.geometry is None
+
+
+def test_geometry_output_must_differ_from_its_input(fixture: Fixture, tmp_path: Path) -> None:
+    geometry = tmp_path / "geometry.jsonl"
+    _ = geometry.write_text("\n", encoding="utf-8")
+
+    result = _run(fixture, geometry, "--geometry", str(geometry))
+
+    assert result == DESTINATION_EXIT
+
+
+def test_an_unreadable_geometry_record_is_a_validation_error(
+    fixture: Fixture, tmp_path: Path
+) -> None:
+    result = _run(
+        fixture, tmp_path / "typography.json", "--geometry", str(tmp_path / "absent.jsonl")
+    )
+
+    assert result == VALIDATION_EXIT

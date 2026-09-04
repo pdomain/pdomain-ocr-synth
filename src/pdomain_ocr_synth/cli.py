@@ -374,6 +374,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="write the typography JSON here",
     )
     _ = p_typography_pgdp.add_argument(
+        "--geometry",
+        default=None,
+        help=(
+            "optional OCR geometry JSONL for this book; marks a line whose first ink run is a "
+            "continuation fragment the transcription does not carry"
+        ),
+    )
+    _ = p_typography_pgdp.add_argument(
         "--evidence-pages",
         type=int,
         default=_TYPOGRAPHY_EVIDENCE_PAGES_DEFAULT,
@@ -1700,7 +1708,13 @@ def _cmd_profile_pgdp(
 
 
 def _cmd_typography_pgdp(
-    corpus_root: str, *, alignment: str, profile: str, output: str, evidence_pages: int
+    corpus_root: str,
+    *,
+    alignment: str,
+    profile: str,
+    output: str,
+    evidence_pages: int,
+    geometry: str | None = None,
 ) -> int:
     """Measure font-free typographic observables and write a snapshot-safe report."""
 
@@ -1720,7 +1734,11 @@ def _cmd_typography_pgdp(
     alignment_path = Path(alignment).expanduser()
     profile_path = Path(profile).expanduser()
     output_path = Path(output).expanduser()
-    for label, source in (("alignment", alignment_path), ("profile", profile_path)):
+    geometry_path = None if geometry is None else Path(geometry).expanduser()
+    sources = [("alignment", alignment_path), ("profile", profile_path)]
+    if geometry_path is not None:
+        sources.append(("geometry", geometry_path))
+    for label, source in sources:
         if output_path.resolve() == source.resolve():
             print(f"error: typography output must differ from the {label} input", file=sys.stderr)
             return DESTINATION_EXIT
@@ -1734,6 +1752,7 @@ def _cmd_typography_pgdp(
             profile_path,
             tool_version=__version__,
             evidence_pages=evidence_pages,
+            geometry_path=geometry_path,
         )
     except ValueError as error:
         print(f"error: {error}", file=sys.stderr)
@@ -1875,6 +1894,7 @@ _IMPLEMENTED_DISPATCH = {
         profile=args.profile,
         output=args.output,
         evidence_pages=args.evidence_pages,
+        geometry=args.geometry,
     ),
 }
 
