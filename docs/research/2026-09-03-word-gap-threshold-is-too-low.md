@@ -102,7 +102,9 @@ re-running detection over stored ink profiles, not by the shipped pipeline. It s
 is correct behaviour, and the remaining gap has not been attributed.
 
 **Otsu is not proven optimal.** It was the first principled data-driven split tried and it worked.
-A gap-histogram valley search or a per-line method was not compared against it.
+A gap-histogram valley search or a per-line method was not compared against it. What is now known
+is that no single global threshold can do much better: in three books the residual over-split is a
+letter gap sitting one pixel over the line.
 
 **The comparison uses a fixed per-book x-height** for the shipped baseline rather than the real
 per-line x-height the pipeline uses, so the shipped column is an approximation of shipped
@@ -133,8 +135,10 @@ with it.
 
 ## Next steps
 
-1. Attribute the residual disagreement. Over the evidence-sampled pages it is mostly over-split in
-   four books and mostly under-split in `projectID657550412c8dc`, and no cause is established.
+1. Done on 2026-09-04. The detector gets 91.5 to 97 percent of individual word gaps right against
+   the 59 to 81 percent of lines Gate 6 reports, and what remains is threshold jitter in three
+   books and structurally inseparable gaps in two. See [what word reconciliation still
+   misses](2026-09-04-what-word-reconciliation-still-misses.md).
 2. Keep the [hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) separate. It is a true fact
    about F2 with a much smaller effect than first claimed.
 
@@ -144,3 +148,5 @@ with it.
   this finding replaced as the main explanation of over-split.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
   — Gate 6, and the 0.72 ceiling this finding corrects.
+- [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md)
+  — the disagreement that survives this finding's fix, attributed.

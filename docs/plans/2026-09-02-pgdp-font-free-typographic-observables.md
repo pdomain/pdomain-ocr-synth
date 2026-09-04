@@ -454,10 +454,12 @@ against 0.83 to 0.85 on the real books, so it does not tell the two cases apart.
 does, scoring 0.104 to 0.152 on the books and 1.00 to 1.18 on the same synthetic shapes. The guard
 fired on no book and on 14 of 665 pages, all of them evidence-only.
 
-**What is left is the residual disagreement, not the threshold.** Over the evidence-sampled pages,
-which carry per-line rows, the surviving disagreement is mostly over-split in four books and
-mostly under-split in projectID657550412c8dc. Exact agreement with a fallible F2 word count is not
-the right long-run target, and the residual has not been attributed to a cause.
+**What is left is the residual disagreement, not the threshold, and it was attributed on
+2026-09-04.** Over every matched line, the surviving disagreement is mostly over-split in four
+books and mostly under-split in projectID657550412c8dc. The detector gets 91.5 to 97 percent of
+individual word gaps right, against the 59 to 81 percent of whole lines Gate 6 reports, because a
+line carries six to twelve gaps and one bad gap fails it. See [what word reconciliation still
+misses](../research/2026-09-04-what-word-reconciliation-still-misses.md).
 
 **Gate 8's word-gap answer improved and the other three did not move.** Word gap now settles in
 every book, at 5, 50, 5, 30, and 5 body pages, where under v1 one book did not converge within 100

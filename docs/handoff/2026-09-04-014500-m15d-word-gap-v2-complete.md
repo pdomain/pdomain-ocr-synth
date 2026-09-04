@@ -121,21 +121,27 @@ corpus run applies to that book rather than a round number.
 
 ## Still open
 
-**The residual disagreement is not attributed.** Over the evidence-sampled pages,
-which are the ones carrying per-line rows, exact agreement runs 0.777, 0.790,
-0.665, 0.726, 0.819, and what remains is mostly over-split in four books and
-mostly under-split in `projectID657550412c8dc`. No cause is established. Exact
-agreement with F2 was never the right long-run target: 0.80 means agreement with a
-fallible reference, not correctness.
+**The residual disagreement was attributed after this handoff was first written.**
+See [what word reconciliation still
+misses](../research/2026-09-04-what-word-reconciliation-still-misses.md). The
+short version: the detector gets 91.5 to 97 percent of individual word gaps right,
+against the 59 to 81 percent of lines Gate 6 reports, because a line carries six
+to twelve gaps and one bad gap fails it. In three books the remainder is a letter
+gap one pixel over the threshold, which no global value removes; in two it is
+lines carrying several gaps of comparable width, which no threshold separates.
+PGDP text is not adding words. What is still open there is naming the typographic
+setting that produces the wide-gap regime, and whether reported word-box quality
+should be per-gap rather than per-line.
 
-**The hyphen finding has not been re-tested under v2.** Its two direct tests, the
-page-boundary control and the leading-run width comparison, were not repeated. With
-over-splitting largely removed, a residual one-per-break bias would now be visible
-if it exists. See [the hyphen
+**The hyphen finding was re-tested under v2 and still shows no consistent
+effect.** Restricted to body pages, first lines of a page disagree less than later
+lines in three books and more in two; only `projectID603d7d5e04ca0` is
+significant, at z = -4.17 in the predicted direction. See [the hyphen
 finding](../research/2026-09-03-pgdp-f2-line-break-hyphens.md).
 
 **Gate 4 is still model-reviewed**, as decision 7 settled. Whether the 210 sheets
-in `.m15d-evidence/gate4-sheets/` want a human pass is unanswered.
+in `.m15d-evidence/gate4-sheets/` want a human pass is unanswered. This is the one
+item here that needs you rather than more measurement.
 
 ## Still not implemented
 
@@ -157,10 +163,12 @@ pass. `run_all.sh` in the evidence directory has the commands.
 
 ## Resume steps
 
-1. Decide whether the residual disagreement is worth attributing, and if so start
-   from `.m15d-evidence/residual.json`.
-2. Re-run the hyphen finding's two tests under v2 if that attribution matters.
-3. Decide whether Gate 4 wants a human pass.
+1. Decide whether Gate 4 wants a human pass. Nothing else here is blocked on you.
+2. Decide whether reported word-box quality should be per-gap rather than
+   per-line. Gate 6 itself should stay as it is; it did its job.
+3. If the wide-gap regime matters, look at the pages of
+   `projectID657550412c8dc` where over-split lines cluster. Every proxy tried from
+   the text alone failed.
 
 ## Pointers
 
@@ -174,4 +182,5 @@ pass. `run_all.sh` in the evidence directory has the commands.
 - `/workspaces/pdomain/.m15d-evidence/book-otsu.json` — book and page thresholds
 - `/workspaces/pdomain/.m15d-evidence/bimodality.json` — separability against valley depth
 - `/workspaces/pdomain/.m15d-evidence/guard-count.json` — the 14 pages the guard flagged
-- `/workspaces/pdomain/.m15d-evidence/residual.json` — over-split against under-split
+- `/workspaces/pdomain/.m15d-evidence/attribution*.json` — the residual, attributed
+- [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md)

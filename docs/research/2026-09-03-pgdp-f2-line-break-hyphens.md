@@ -124,11 +124,14 @@ to what ink is on the line.
 1. Done on 2026-09-03, and it refuted the mechanism. Both the page-boundary control and the
    leading-run width test came back negative, and the cause was
    [the gap threshold](2026-09-03-word-gap-threshold-is-too-low.md).
-2. Re-test this finding now that the threshold fix has landed. It shipped on 2026-09-04 as
-   `ink-profile-word-runs/v2` and Gate 6 now reads 0.805, 0.742, 0.593, 0.800, 0.782. Over-split
-   still dominates the residual in four of the five books over the evidence-sampled pages, so a
-   one-per-break bias would now be visible if it exists. Not run: the page-boundary control and the
-   leading-run width test were not repeated under v2.
+2. Done on 2026-09-04, and the page-boundary control still shows no consistent effect.
+   Restricted to body pages, first lines of a page disagree less than later lines in
+   `projectID609bfa0449bdf`, `projectID603d7d5e04ca0`, and `projectID657550412c8dc` and more in
+   the other two. Only `projectID603d7d5e04ca0` is significant, at z = -4.17 in the predicted
+   direction; the rest fall between -1.59 and +0.66. That is one book of five, which neither
+   supports the mechanism across the corpus nor refutes it there. The leading-run width test was
+   not repeated. See [what word reconciliation still
+   misses](2026-09-04-what-word-reconciliation-still-misses.md).
 3. Scope an OCR witness pass. F2 stays the label and ink projection stays the geometry; OCR supplies
    only correspondence, telling us a line's leading run is a continuation fragment. A
    `continuation_fragment` flag with a stated one-token tolerance is then a rule with a reason rather
@@ -138,6 +141,8 @@ to what ink is on the line.
 
 - [The word-gap threshold is too low in every book](2026-09-03-word-gap-threshold-is-too-low.md)
   — the finding that replaced this one as the explanation of over-split.
+- [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md)
+  — the v2 re-test of this finding's page-boundary control.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
   — Gate 6 and the gap-threshold sweep.
 - [PGDP typography and structure synthesis design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)

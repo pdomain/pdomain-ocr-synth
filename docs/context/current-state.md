@@ -114,10 +114,17 @@ split is in that page's `extensions`. Gates 1 through 5, 7, and 8 came back
 unchanged, which is what confines the edit to word segmentation: the 21 Gate 4
 review sheets re-render byte-identical.
 
-What remains open is the residual disagreement, not the threshold. Over the
-evidence-sampled pages it is mostly over-split in four books and mostly
-under-split in `projectID657550412c8dc`, with no cause established. Exact
-agreement with a fallible F2 word count was never the right long-run target.
+The residual disagreement was attributed on 2026-09-04. Measured over every
+matched line, the detector gets 91.5 to 97 percent of individual word gaps
+right, against the 59 to 81 percent of whole lines Gate 6 reports: a line
+carries six to twelve gaps and one bad gap fails it. In three books what remains
+is a letter gap sitting one pixel over the threshold, which no single book-wide
+value can remove; in `projectID603d7d5e04ca0` and `projectID657550412c8dc` it is
+lines carrying several gaps of comparable width, which no threshold separates at
+all. PGDP text is not adding words: across all five books only 12 lines have more
+transcription words than the ink has separable runs. See [what word
+reconciliation still
+misses](../research/2026-09-04-what-word-reconciliation-still-misses.md).
 
 A separate finding, that [F2 silently rejoins line-break
 hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md), is a true fact
