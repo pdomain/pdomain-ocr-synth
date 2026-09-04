@@ -197,9 +197,46 @@ Three of the four were taken as recommended on 2026-09-04. The fourth was not.
    revision is visible rather than silent.
 2. **Extensions, not a v2 contract.** `pgdp-typography/v1` and its schema are unchanged.
 3. **`reconciled_after_witness` is reported, not gated.** Gate 6 keeps its definition and value.
-4. **No confidence floor, and the reason is recorded.** Still unmeasured. Shipping without one
-   was chosen over inventing a number, and the per-word confidence is carried on every line row
-   so a floor can be calibrated later from the data rather than guessed.
+4. **No confidence floor, and it is now measured rather than deferred.** Calibrated on
+   2026-09-04: a floor would cost more than it saves. See below.
+
+## Measured on 2026-09-04: a confidence floor is not warranted
+
+**The witness only has to notice disagreement, which is a much easier job than reading the
+word.** That is why confidence barely matters, and it is the reason a floor would hurt.
+
+Control lines give ground truth for recognition: their run count already equals their word count,
+so the first ink run *is* the transcription's first word and the read should match it. Bucketed by
+the recognizer's own confidence over all five books:
+
+| confidence | control lines | read matches F2 | flagged lines | flag explains the line |
+| --- | ---: | ---: | ---: | ---: |
+| 0.00-0.50 | 112 | 0.402 | 26 | 0.654 |
+| 0.50-0.70 | 4,752 | 0.944 | 379 | 0.871 |
+| 0.70-0.80 | 2,105 | 0.959 | 135 | 0.859 |
+| 0.80-0.90 | 2,396 | 0.961 | 170 | 0.871 |
+| 0.90-0.95 | 1,591 | 0.972 | 97 | 0.856 |
+| 0.95-1.00 | 3,122 | 0.974 | 169 | 0.828 |
+
+"Flag explains the line" is whether discounting the fragment leaves the run count equal to the
+word count, which is what a correct flag should do.
+
+Three things follow.
+
+**Confidence predicts recognition only below 0.50.** Agreement collapses to 0.402 there and then
+sits between 0.944 and 0.974 across every band above it. Between 0.50 and 1.00 the curve is flat.
+
+**Confidence does not predict whether a flag is right, anywhere.** The explains rate is 0.83 to
+0.87 in every band above 0.50, and the *highest* confidence band scores the lowest of them at
+0.828. A garbled read of a real fragment still disagrees with the transcription, which is all the
+flag needs.
+
+**A floor at 0.50, the only defensible one, would make things slightly worse.** It would drop 26
+of 976 flags, 2.7 percent, and 17 of those 26 look correct against 9 that do not. Any higher floor
+is worse still: reads below 0.80 produce 49.5 to 67.2 percent of every book's flags.
+
+So no floor ships, and the reason is a measurement rather than an omission. The per-word
+confidence stays on every line row so a consumer that wants to weigh it can.
 
 ## Open decisions
 
@@ -219,11 +256,8 @@ structurally.
 a tripwire for a broken detector. Redefining it to absorb a known cause would make it blind to
 that cause returning.
 
-**4. A confidence floor.** A low-confidence OCR read is weak evidence, and treating it as none may
-be right. **Still not measured, and shipped without one.** The records carry per-word confidence
-and the observed values span 0.70 to 0.9997, but no floor has been calibrated against the flag's
-accuracy. Every line row carries the confidence, so the calibration can be done from the shipped
-reports whenever it matters.
+**4. A confidence floor. Closed on 2026-09-04.** Measured and refused; see the section above. It
+is kept here so a later reader sees the question was answered rather than dropped.
 
 ## What this does not do
 

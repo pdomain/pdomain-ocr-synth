@@ -106,10 +106,15 @@ the geometry records stays in `pdomain-source-data`, the flag lives in
 `extensions` rather than a v2 contract, and `reconciled_after_witness` is
 reported rather than gated.
 
-**The fourth was not taken.** A confidence floor is still unmeasured. Shipping
-without one was chosen over inventing a number. Every line row carries the
-per-word confidence, so the floor can be calibrated from the shipped reports
-whenever it matters.
+**The fourth was measured rather than taken.** A confidence floor is not
+warranted. Confidence predicts recognition only below 0.50, where control-line
+agreement collapses to 0.402; above it the curve is flat at 0.944 to 0.974. And
+confidence does not predict whether a flag is right anywhere, with the explains
+rate sitting at 0.83 to 0.87 in every band above 0.50 and the *highest*
+confidence band scoring lowest. A floor at 0.50 would drop 26 of 976 flags and
+17 of those look correct. The witness only has to notice disagreement, which is
+an easier job than reading the word, so a garbled read of a real fragment still
+works. No floor ships, and the per-word confidence stays on every line row.
 
 ## One process failure worth recording
 
@@ -122,8 +127,6 @@ and the commit amended before any push, so the remote never saw it. Use
 `set -o pipefail` when gating on a piped command.
 
 ## Still open
-
-**A confidence floor**, above.
 
 **The other cause of over-split** is untouched and deliberately so: a letter gap
 sitting a pixel over the threshold, which is at the noise floor of any single
@@ -152,9 +155,9 @@ run at most two per call.
 
 ## Resume steps
 
-1. Decide whether Gate 4 wants a human pass.
-2. Calibrate a confidence floor, or record that none is wanted.
-3. If word-box quality is reported to a consumer, report it per gap. The detector
+1. Decide whether Gate 4 wants a human pass. This is the one item that needs you
+   rather than more measurement.
+2. If word-box quality is reported to a consumer, report it per gap. The detector
    gets 91.5 to 97 percent of individual word gaps right against the 59 to 81
    percent of lines Gate 6 reports.
 
@@ -167,4 +170,5 @@ run at most two per call.
 - [Word-gap threshold is too low](../research/2026-09-03-word-gap-threshold-is-too-low.md)
 - [previous handoff](2026-09-04-014500-m15d-word-gap-v2-complete.md)
 - `/workspaces/pdomain/.m15d-evidence/witness-gates.json` — every witness gate number
+- `/workspaces/pdomain/.m15d-evidence/confidence-floor.json` — why no floor ships
 - `/workspaces/pdomain/.m15d-evidence/gates.json` — the M15d v2 gate numbers
