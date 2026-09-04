@@ -218,3 +218,44 @@ def test_the_witness_keys_pass_the_latent_discipline_check(tmp_path: Path) -> No
     payload = json.loads(json.dumps(_report(fixture, geometry).to_dict()))
 
     assert find_latent_discipline_violations(payload) == ()
+
+
+def test_the_per_gap_error_rate_is_reported_without_geometry(tmp_path: Path) -> None:
+    """Gate 6 counts lines and a line carries many gaps, so the per-gap rate is reported too.
+
+    It is a property of the run detector, not of the witness, so it must appear with or without
+    a geometry record.
+    """
+
+    fixture = build_fixture(tmp_path)
+
+    book = _report(fixture, None).books[0]
+
+    gaps = int(str(book.extensions["word_gap_count"]))
+    errors = int(str(book.extensions["word_run_error_count"]))
+    assert gaps > 0
+    assert errors >= 0
+    assert book.extensions["word_gap_error_rate"] == pytest.approx(errors / gaps)
+
+
+def test_the_per_gap_counts_sum_the_pages(tmp_path: Path) -> None:
+    fixture = build_fixture(tmp_path)
+
+    book = _report(fixture, None).books[0]
+
+    for name in ("word_gap_count", "word_run_error_count"):
+        assert int(str(book.extensions[name])) == sum(
+            int(str(page.extensions[name])) for page in book.pages
+        )
+
+
+def test_a_fully_reconciled_book_reports_no_run_errors(tmp_path: Path) -> None:
+    """The fixture's lines all reconcile, so the detector made no boundary error on it."""
+
+    fixture = build_fixture(tmp_path)
+
+    book = _report(fixture, None).books[0]
+
+    assert book.reconciled_line_count == book.measured_line_count
+    assert book.extensions["word_run_error_count"] == 0
+    assert book.extensions["word_gap_error_rate"] == 0.0

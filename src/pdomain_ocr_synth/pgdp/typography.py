@@ -173,6 +173,23 @@ def build_typography_report(
     )
 
 
+def _book_gap_accuracy(pages: Sequence[PageTypography]) -> dict[str, object]:
+    """The book's per-gap error rate, reported beside Gate 6's per-line rate.
+
+    The denominator is the transcription's own word boundaries, so a one-word line that
+    over-splits contributes an error against no boundary. That is rare and the alternative,
+    dropping such lines, would hide a real error.
+    """
+
+    gaps = sum(_extension_count(page, "word_gap_count") for page in pages)
+    errors = sum(_extension_count(page, "word_run_error_count") for page in pages)
+    return {
+        "word_gap_count": gaps,
+        "word_run_error_count": errors,
+        "word_gap_error_rate": None if gaps == 0 else errors / gaps,
+    }
+
+
 def _book_witness_totals(
     pages: Sequence[PageTypography], *, witness: BookWitness | None
 ) -> dict[str, object]:
@@ -220,6 +237,22 @@ def _read_witness(
     if len(projects) != 1:
         raise ValueError("A geometry record can only be applied to a single-project alignment.")
     return read_book_witness(geometry_path, project_id=projects[0].project_id)
+
+
+@dataclass(frozen=True, slots=True)
+class _GapTally:
+    """One page's word boundaries and how many the run detector got wrong.
+
+    Reported because Gate 6 counts lines, and a line carries six to twelve gaps, so one bad gap
+    fails the whole line. Measured over the corpus, line agreement runs 0.59 to 0.81 while
+    per-gap accuracy runs 0.915 to 0.968. A consumer of word boxes is buying gaps, not lines.
+    """
+
+    gaps: int = 0
+    run_errors: int = 0
+
+    def to_extensions(self) -> dict[str, object]:
+        return {"word_gap_count": self.gaps, "word_run_error_count": self.run_errors}
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,6 +354,7 @@ def _measure_project(
             "word_gap_threshold_rule": book_gap.rule,
             "word_gap_valley_ratio": book_gap.valley_ratio,
             "word_gap_sample_count": book_gap.sample_count,
+            **_book_gap_accuracy(ordered),
             **_book_witness_totals(ordered, witness=witness),
         },
     )
@@ -465,13 +499,14 @@ def _measure_page(
         )
 
     text_left = text_left_by_class.get(page_class)
-    lines, pitches, tally = _measure_lines(
+    lines, pitches, tally, gap_tally = _measure_lines(
         mask,
         matched=matched,
         text_left=text_left,
         gap_threshold_px=book_gap.threshold_px,
         page_witness=page_witness,
     )
+    gap_evidence = {**gap_evidence, **gap_tally.to_extensions()}
     if witness is not None:
         gap_evidence = {**gap_evidence, **tally.to_extensions()}
     pooling = pool_page(page.page_name, lines, pitches)
@@ -517,10 +552,11 @@ def _measure_lines(
     text_left: int | None,
     gap_threshold_px: int | None,
     page_witness: PageWitness | None,
-) -> tuple[tuple[LineTypography, ...], tuple[int, ...], _WitnessTally]:
+) -> tuple[tuple[LineTypography, ...], tuple[int, ...], _WitnessTally, _GapTally]:
     results: list[tuple[int, LineTypographyMeasurement | LineTypographyExclusion]] = []
     lines: list[LineTypography] = []
     witnessed = fragments = reconciled_after = 0
+    gaps = run_errors = 0
     for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
         box = _box(candidate)
         result = measure_line_typography(mask, box)
@@ -537,6 +573,9 @@ def _measure_lines(
             page_witness=page_witness,
         )
         lines.append(row)
+        if row.word_run_count is not None and row.source_word_count is not None:
+            gaps += max(0, row.source_word_count - 1)
+            run_errors += abs(row.word_run_count - row.source_word_count)
         witnessed += row.extensions.get("ocr_first_run_text") is not None
         fragments += row.extensions.get("continuation_fragment") is True
         reconciled_after += _reconciles_after_witness(row)
@@ -546,7 +585,7 @@ def _measure_lines(
         continuation_fragments=fragments,
         reconciled_after_witness=reconciled_after,
     )
-    return tuple(lines), pitches, tally
+    return tuple(lines), pitches, tally, _GapTally(gaps=gaps, run_errors=run_errors)
 
 
 def _reconciles_after_witness(row: LineTypography) -> bool:

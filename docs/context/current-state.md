@@ -160,6 +160,13 @@ Gate 6 and does not replace it. Two methods that share no evidence agree on the
 fragment rate within 1.1 points. See [the witness
 plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md).
 
+The report also carries per-gap accuracy, added on 2026-09-04. Gate 6 counts
+lines and a line carries six to twelve word gaps, so one bad gap fails the whole
+line. `word_gap_count`, `word_run_error_count`, and `word_gap_error_rate` appear
+per page and per book, and they read 0.923 to 0.972 correct against Gate 6's
+0.593 to 0.805. A consumer of word boxes is buying gaps, not lines. Gate 6 keeps
+its definition and its value.
+
 Font candidates, inverse rendering, typeface ranking, rectification, rectified
 frames, change-point detection, and any point-size or leading claim remain
 unimplemented.

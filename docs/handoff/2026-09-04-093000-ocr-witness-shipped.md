@@ -157,9 +157,11 @@ run at most two per call.
 
 1. Decide whether Gate 4 wants a human pass. This is the one item that needs you
    rather than more measurement.
-2. If word-box quality is reported to a consumer, report it per gap. The detector
-   gets 91.5 to 97 percent of individual word gaps right against the 59 to 81
-   percent of lines Gate 6 reports.
+2. Done on 2026-09-04. The report now carries `word_gap_count`,
+   `word_run_error_count`, and `word_gap_error_rate` per page and per book. Per-gap
+   accuracy reads 0.923 to 0.972 against Gate 6's 0.593 to 0.805. Verified confined
+   by a structural diff against the previous report: 67 differences on the smallest
+   book, every one of them an addition of the three new keys.
 
 ## Pointers
 
@@ -171,4 +173,5 @@ run at most two per call.
 - [previous handoff](2026-09-04-014500-m15d-word-gap-v2-complete.md)
 - `/workspaces/pdomain/.m15d-evidence/witness-gates.json` — every witness gate number
 - `/workspaces/pdomain/.m15d-evidence/confidence-floor.json` — why no floor ships
+- `/workspaces/pdomain/.m15d-evidence/per-gap-accuracy.json` — per-gap against per-line
 - `/workspaces/pdomain/.m15d-evidence/gates.json` — the M15d v2 gate numbers

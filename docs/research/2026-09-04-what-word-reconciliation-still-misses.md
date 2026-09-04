@@ -203,8 +203,10 @@ not tested.
 
 ## Next steps
 
-1. Put to CT whether the reported quality of word boxes should be per-gap rather than per-line.
-   Gate 6 itself should stay as it is; it did its job.
+1. Done on 2026-09-04. `pgdp-typography/v1` now reports `word_gap_count`,
+   `word_run_error_count`, and `word_gap_error_rate` per page and per book, so a consumer reads
+   per-gap accuracy of 0.923 to 0.972 rather than only Gate 6's 0.593 to 0.805. Gate 6 keeps its
+   definition and its value; it did its job.
 2. Shipped on 2026-09-04. See [the OCR witness
    plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md). It needed no OCR
    engine in this repo: the DocTR records already exist for all five books. On the same
