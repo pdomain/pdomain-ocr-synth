@@ -67,8 +67,12 @@ it to check the change is confined. Evidence is in
 | 6. Gate 6 unmoved | 0.805, 0.742, 0.593, 0.800, 0.782, unchanged | pass |
 | 7. Latent discipline | 0 violations across all 5 witness reports | pass |
 
-**Gate 2 is the one that had to be exact, and is.** A run without `--geometry`
-reproduces the committed v2 report byte for byte in every book.
+**Gate 2 is the one that had to be exact, and is.** At the witness commit, a run
+without `--geometry` reproduced the committed v2 report byte for byte in every
+book. The per-gap metric added later moved that baseline deliberately, so the
+check was re-done in its stronger form: a structural diff of each book's witness
+report against its no-geometry report finds every difference to be a witness key
+and no stray difference in any book, across 1,272 to 1,737 differences.
 
 **Gate 5 is the interesting one.** Two methods that share no evidence agree on
 the fragment rate to within 1.1 points. The repair test fits run widths against
@@ -125,6 +129,25 @@ failure was a real one: a test requires every CLI flag to appear in the usage
 doc's flag table, and `--geometry` did not. It was caught on the next look, fixed,
 and the commit amended before any push, so the remote never saw it. Use
 `set -o pipefail` when gating on a piped command.
+
+## Added after this handoff was first written
+
+Both items the resume steps named as mine to do are done, and both are recorded
+above and in the plan.
+
+**A confidence floor was measured and refused** rather than left unmeasured.
+
+**Per-gap accuracy now ships in the report.** `word_gap_count`,
+`word_run_error_count`, and `word_gap_error_rate` appear on every page and every
+book. Per-gap accuracy reads 0.9695, 0.9715, 0.9233, 0.9449, and 0.9606, against
+Gate 6's 0.805, 0.742, 0.593, 0.800, and 0.782. Gate 6 keeps its definition and
+its value.
+
+The corpus was re-run for both, and the whole evidence set in
+`/workspaces/pdomain/.m15d-evidence/` is now at one code version: five
+`typography-*-a/b` pairs without the witness, all byte-identical within their
+pair, and five `witness-*-a` reports with it. The earlier `nowitness-*` files
+were removed as redundant, since `typography-*-a` is now exactly that run.
 
 ## Still open
 
