@@ -66,6 +66,7 @@ class _CasePayload(BaseModel):
     provenance: Literal["synthetic_derivative", "real_scan_crop"]
     transform: StrictStr
     box: tuple[StrictInt, StrictInt, StrictInt, StrictInt]
+    gap_threshold_px: StrictInt
     visible_text: StrictStr
     expected: _ExpectedPayload
     reviewed_on: StrictStr
@@ -96,6 +97,7 @@ class TypographyCase:
     provenance: str
     transform: str
     box: tuple[int, int, int, int]
+    gap_threshold_px: int
     visible_text: str
     expected: _ExpectedPayload
     reviewed_on: str
@@ -115,6 +117,7 @@ def load_typography_cases() -> tuple[TypographyCase, ...]:
             provenance=case.provenance,
             transform=case.transform,
             box=case.box,
+            gap_threshold_px=case.gap_threshold_px,
             visible_text=case.visible_text,
             expected=case.expected,
             reviewed_on=case.reviewed_on,
@@ -149,7 +152,7 @@ def _measure(case: TypographyCase) -> tuple[object, object]:
         case.box,
         tuple(_column_profile(mask, case.box)),
         case.visible_text,
-        result.x_height_px,
+        case.gap_threshold_px,
     )
     return result, words
 
@@ -175,8 +178,9 @@ def test_manifest_records_the_licence_decision_for_every_case() -> None:
         assert case.provenance == "synthetic_derivative"
         assert case.fixture_sha256 != case.source_sha256
         assert "copies no source pixels" in case.transform
-        assert case.reviewed_on == "2026-09-03"
+        assert case.reviewed_on == "2026-09-04"
         assert case.review_method == "model-reviewed"
+        assert case.gap_threshold_px >= 2
 
 
 def test_manifest_covers_both_measured_and_excluded_lines() -> None:

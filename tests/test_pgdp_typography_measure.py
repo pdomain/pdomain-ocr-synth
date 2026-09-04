@@ -14,14 +14,18 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+from pdomain_ocr_synth.pgdp.image_measurement import _otsu_threshold as _grayscale_otsu_threshold
 from pdomain_ocr_synth.pgdp.typography_measure import (
     LineTypographyExclusion,
     LineTypographyMeasurement,
-    LineWordExclusion,
     LineWordMeasurement,
+    _otsu_threshold,
+    derive_word_gap_threshold,
     measure_baseline_pitches,
     measure_line_typography,
     measure_line_words,
+    word_gap_lengths,
+    x_height_gap_threshold,
 )
 
 if TYPE_CHECKING:
@@ -272,28 +276,155 @@ def _build_word_line(
     return canvas, box, profile, tuple(boxes)
 
 
-@pytest.mark.parametrize("x_height_px", [8, 12, 20, 28, 40, 80])
-def test_word_gap_threshold_derives_from_measured_x_height(x_height_px: int) -> None:
-    """The plan's gap threshold, `max(2, round(0.25 * x_height_px))`, spans 2 to 20 px
-    across this sweep. A gap one px short of it must bridge into a single run; a gap at
-    it must split into two, proving the threshold tracks x-height rather than a constant.
+@pytest.mark.parametrize("gap_threshold_px", [2, 3, 5, 8, 13, 20])
+def test_word_runs_split_at_the_caller_supplied_gap_threshold(gap_threshold_px: int) -> None:
+    """A gap one px short of the supplied threshold must bridge into a single run and a gap at
+    it must split into two, for any threshold the caller hands down.
     """
 
-    threshold = max(2, round(0.25 * x_height_px))
-
     bridged_mask, bridged_box, bridged_profile, _ = _build_word_line(
-        [threshold - 1], word_height_px=x_height_px
+        [gap_threshold_px - 1], word_height_px=20
     )
-    bridged = measure_line_words(bridged_mask, bridged_box, bridged_profile, "oneword", x_height_px)
-    assert isinstance(bridged, LineWordMeasurement)
+    bridged = measure_line_words(
+        bridged_mask, bridged_box, bridged_profile, "oneword", gap_threshold_px
+    )
     assert bridged.word_run_count == 1
 
     split_mask, split_box, split_profile, _ = _build_word_line(
-        [threshold], word_height_px=x_height_px
+        [gap_threshold_px], word_height_px=20
     )
-    split = measure_line_words(split_mask, split_box, split_profile, "two words", x_height_px)
-    assert isinstance(split, LineWordMeasurement)
+    split = measure_line_words(split_mask, split_box, split_profile, "two words", gap_threshold_px)
     assert split.word_run_count == 2
+
+
+def test_the_gap_threshold_no_longer_tracks_the_line_x_height() -> None:
+    """One line, two thresholds, two answers. The v1 rule would have derived 5 px from this
+    line's own 20 px x-height and split the 10 px gap; the caller's 12 px threshold bridges it.
+    """
+
+    mask, box, profile, _ = _build_word_line([10], word_height_px=20)
+
+    assert x_height_gap_threshold(20) == 5
+    assert measure_line_words(mask, box, profile, "two words", 5).word_run_count == 2
+    assert measure_line_words(mask, box, profile, "oneword", 12).word_run_count == 1
+
+
+def test_measure_line_words_rejects_a_threshold_below_the_shipped_minimum() -> None:
+    mask, box, profile, _ = _build_word_line([10], word_height_px=20)
+
+    with pytest.raises(ValueError, match="at least the shipped minimum"):
+        _ = measure_line_words(mask, box, profile, "two words", 1)
+
+
+def test_word_gap_lengths_counts_only_gaps_bounded_by_ink() -> None:
+    profile = (0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0)
+
+    assert word_gap_lengths(profile) == (3,)
+
+
+def _bimodal_gap_counts() -> dict[int, int]:
+    """Letter gaps around 3 px and word gaps around 13 px, the shape the corpus shows."""
+
+    letters = {2: 8000, 3: 30000, 4: 12000, 5: 2000}
+    valley = {6: 300, 7: 200, 8: 200, 9: 400}
+    words = {10: 1500, 11: 3000, 12: 6000, 13: 6000, 14: 3000, 15: 1200}
+    return {**letters, **valley, **words}
+
+
+def test_otsu_gap_threshold_lands_in_the_valley_between_the_two_populations() -> None:
+    derived = derive_word_gap_threshold(_bimodal_gap_counts())
+
+    assert derived.rule == "otsu-gap-histogram"
+    assert derived.threshold_px is not None
+    assert 5 <= derived.threshold_px <= 10
+    assert derived.valley_ratio is not None
+    assert derived.valley_ratio < 0.5
+    assert derived.sample_count == 73800
+
+
+@pytest.mark.parametrize(
+    ("name", "gap_counts"),
+    [
+        ("uniform", dict.fromkeys(range(1, 65), 1000)),
+        (
+            "one_hump",
+            {length: max(1, 20000 - 400 * abs(length - 8) ** 2) for length in range(1, 40)},
+        ),
+        (
+            "geometric_decay",
+            {length: max(1, round(50000 * 0.85**length)) for length in range(1, 65)},
+        ),
+    ],
+)
+def test_gap_threshold_falls_back_when_the_gaps_are_one_population(
+    name: str, gap_counts: dict[int, int]
+) -> None:
+    """Otsu will split a single hump down its middle, so a shallow valley must be refused.
+
+    Each shape here has one mode. Measured, the five corpus books score 0.104 to 0.152 on the
+    valley ratio and these score at or above 1.0, so the 0.5 floor sits between them.
+    """
+
+    derived = derive_word_gap_threshold(gap_counts)
+
+    assert derived.rule == "x-height-ratio", name
+    assert derived.threshold_px is None
+    assert derived.valley_ratio is not None
+    assert derived.valley_ratio > 0.5
+
+
+def test_gap_threshold_falls_back_when_the_book_carries_too_few_gaps() -> None:
+    derived = derive_word_gap_threshold({3: 20, 13: 20})
+
+    assert derived.rule == "x-height-ratio"
+    assert derived.threshold_px is None
+    assert derived.sample_count == 40
+
+
+def test_gap_threshold_falls_back_when_every_gap_is_the_same_length() -> None:
+    derived = derive_word_gap_threshold({4: 5000})
+
+    assert derived.rule == "x-height-ratio"
+    assert derived.threshold_px is None
+    assert derived.valley_ratio is None
+
+
+def test_gaps_wider_than_the_histogram_maximum_do_not_move_the_split() -> None:
+    """Line-end and paragraph whitespace is clamped into one tail bin rather than left to drag
+    the inter-word class mean, so adding a few very wide gaps must not move the threshold.
+    """
+
+    counts = _bimodal_gap_counts()
+    widened = {**counts, 300: 40, 900: 40, 4000: 20}
+
+    assert (
+        derive_word_gap_threshold(widened).threshold_px
+        == derive_word_gap_threshold(counts).threshold_px
+    )
+
+
+def test_the_gap_otsu_search_matches_the_shipped_grayscale_one() -> None:
+    """Word segmentation runs its own copy of Otsu so the Gate 2 grayscale path is untouched.
+    The two must agree exactly, or the corpus thresholds measured with one would not hold.
+    """
+
+    histograms = [
+        tuple(_bimodal_gap_counts().get(level, 0) for level in range(65)),
+        tuple(1000 for _ in range(65)),
+        tuple(max(1, round(50000 * 0.85**level)) for level in range(65)),
+        (0, 0, 0, 9000, 1000) + (0,) * 60,
+        (0,) * 5 + (5000,) + (0,) * 59,
+    ]
+    for histogram in histograms:
+        assert _otsu_threshold(histogram) == _grayscale_otsu_threshold(histogram)
+
+
+def test_the_x_height_fallback_keeps_the_v1_rule() -> None:
+    assert x_height_gap_threshold(0) == 2
+    assert x_height_gap_threshold(4) == 2
+    assert x_height_gap_threshold(11) == 3
+    assert x_height_gap_threshold(18) == 5
+    assert x_height_gap_threshold(80) == 20
 
 
 def test_measure_line_words_binds_runs_to_words_when_counts_agree() -> None:
@@ -301,7 +432,7 @@ def test_measure_line_words_binds_runs_to_words_when_counts_agree() -> None:
     x_height_px = 20
     mask, box, profile, expected_boxes = _build_word_line(gaps, word_height_px=x_height_px)
 
-    result = measure_line_words(mask, box, profile, "alpha beta gamma", x_height_px)
+    result = measure_line_words(mask, box, profile, "alpha beta gamma", 5)
 
     assert isinstance(result, LineWordMeasurement)
     assert result.word_run_count == 3
@@ -320,7 +451,7 @@ def test_measure_line_words_records_disagreement_without_word_rows() -> None:
     x_height_px = 20
     mask, box, profile, _ = _build_word_line(gaps, word_height_px=x_height_px)
 
-    result = measure_line_words(mask, box, profile, "alpha beta", x_height_px)
+    result = measure_line_words(mask, box, profile, "alpha beta", 5)
 
     assert isinstance(result, LineWordMeasurement)
     assert result.word_run_count == 3
@@ -329,19 +460,10 @@ def test_measure_line_words_records_disagreement_without_word_rows() -> None:
     assert result.words == ()
 
 
-def test_measure_line_words_reports_x_height_unavailable() -> None:
-    mask, box, profile, _ = _build_word_line((10,), word_height_px=20)
-
-    result = measure_line_words(mask, box, profile, "alpha beta", None)
-
-    assert isinstance(result, LineWordExclusion)
-    assert result.reason == "x_height_unavailable"
-
-
 def test_source_word_count_collapses_whitespace_runs() -> None:
     mask, box, profile, _ = _build_word_line((10,), word_height_px=20)
 
-    result = measure_line_words(mask, box, profile, "alpha   beta", 20)
+    result = measure_line_words(mask, box, profile, "alpha   beta", 5)
 
     assert isinstance(result, LineWordMeasurement)
     assert result.source_word_count == 2

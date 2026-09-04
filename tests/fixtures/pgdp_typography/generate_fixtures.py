@@ -8,7 +8,9 @@ than against round numbers.
 
 The manifest records the real scan's `source_sha256` beside the fixture's own
 `fixture_sha256`. The two must differ, which is the licence rule made checkable: a committed
-fixture that hashed to a real scan would be a copy of it.
+fixture that hashed to a real scan would be a copy of it. It also records the
+`gap_threshold_px` each case was measured at, because under `ink-profile-word-runs/v2` that
+value comes from the book's own gap distribution and cannot be recovered from the drawing.
 """
 
 from __future__ import annotations
@@ -24,9 +26,19 @@ from PIL import Image
 FIXTURE_ROOT = Path(__file__).parent
 MARGIN_PX = 12
 LETTER_SPACING_PX = 2
-GAP_THRESHOLD_RATIO = 0.25
-GAP_THRESHOLD_MINIMUM_PX = 2
-"""Mirrors ``typography_measure``'s own half-up rounding, not Python's banker's rounding."""
+BOOK_GAP_THRESHOLD_PX = {
+    "projectID609bfa0449bdf": 10,
+    "projectID64a479f51ce5b": 6,
+    "projectID603d7d5e04ca0": 8,
+    "projectID657550412c8dc": 15,
+}
+"""Each book's own measured word-gap threshold under ``ink-profile-word-runs/v2``.
+
+Derived by Otsu over the whole book's pooled gap-length histogram in the ``alignment-t2``
+reports, the same value the shipped pipeline computes. A case is measured at its own book's
+threshold so the fixture meets the rule the corpus run actually applies to that book, not a
+round number.
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,8 +209,8 @@ def draw(spec: CaseSpec) -> DrawnLine:
     """Draw one line of vertical strokes with a known baseline, x-height, and word gaps.
 
     Letters sit two pixels apart and words `gap_px` apart. That separation matters: the word
-    detector treats a blank run of `max(2, round(0.25 * x_height))` columns as a gap, so a
-    letter spacing at or above that threshold would split every letter into its own word.
+    detector treats a blank run of the book's own gap threshold as a word break, so a letter
+    spacing at or above that threshold would split every letter into its own word.
     """
 
     pitch = spec.stroke_width_px + LETTER_SPACING_PX
@@ -234,10 +246,7 @@ def draw(spec: CaseSpec) -> DrawnLine:
             x += spec.gap_px
 
     box = (MARGIN_PX, MARGIN_PX, MARGIN_PX + width, image.height - MARGIN_PX)
-    gap_threshold = max(
-        GAP_THRESHOLD_MINIMUM_PX,
-        math.floor(GAP_THRESHOLD_RATIO * spec.x_height_px + 0.5),
-    )
+    gap_threshold = BOOK_GAP_THRESHOLD_PX[spec.project_id]
     if gap_threshold <= LETTER_SPACING_PX:
         raise ValueError(f"Letter spacing would split every letter: {spec.case_id}")
     word_run_count = spec.word_count if spec.gap_px >= gap_threshold else 1
@@ -284,6 +293,7 @@ def main() -> None:
                     "It copies no source pixels and no PGDP transcription."
                 ),
                 "box": list(drawn.box),
+                "gap_threshold_px": BOOK_GAP_THRESHOLD_PX[spec.project_id],
                 "visible_text": " ".join(f"w{index}" for index in range(source_word_count)),
                 "expected": {
                     "measured": abs(spec.skew_degrees) <= 1.0 and drawn.drawn_width_px >= 600,
@@ -296,7 +306,7 @@ def main() -> None:
                     "source_word_count": source_word_count,
                     "words_reconciled": drawn.word_run_count == source_word_count,
                 },
-                "reviewed_on": "2026-09-03",
+                "reviewed_on": "2026-09-04",
                 "review_method": "model-reviewed",
             }
         )

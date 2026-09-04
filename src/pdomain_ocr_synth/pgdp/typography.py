@@ -17,6 +17,7 @@ Nothing here opens a font, renders text, or leaves the `source` frame.
 
 from __future__ import annotations
 
+from collections import Counter
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -41,10 +42,13 @@ from pdomain_ocr_synth.pgdp.typography_measure import (
     TYPOGRAPHY_MEASURE_METHODS,
     WORD_SEGMENTATION_METHODS,
     LineTypographyMeasurement,
-    LineWordMeasurement,
+    WordGapThreshold,
+    derive_word_gap_threshold,
     measure_baseline_pitches,
     measure_line_typography,
     measure_line_words,
+    word_gap_lengths,
+    x_height_gap_threshold,
 )
 from pdomain_ocr_synth.pgdp.typography_models import (
     DEFAULT_EVIDENCE_PAGES_PER_BOOK,
@@ -133,7 +137,16 @@ def build_typography_report(
             "word_segmentation": WORD_SEGMENTATION_METHODS["algorithm"],
             **TYPOGRAPHY_POOLING_METHODS,
         },
-        thresholds={**TYPOGRAPHY_MEASURE_METHODS, **WORD_SEGMENTATION_METHODS},
+        thresholds={
+            **TYPOGRAPHY_MEASURE_METHODS,
+            **WORD_SEGMENTATION_METHODS,
+            "word_gap_threshold_px_by_book": {
+                book.project_id: book.extensions["word_gap_threshold_px"] for book in books
+            },
+            "word_gap_threshold_rule_by_book": {
+                book.project_id: book.extensions["word_gap_threshold_rule"] for book in books
+            },
+        },
         evidence_pages_per_book=evidence_pages,
         books=books,
     )
@@ -165,6 +178,7 @@ def _measure_project(
             for template in project_profile.page_templates
         }
     )
+    book_gap, page_gaps = _word_gap_thresholds(project)
     diagnostics: list[ProfileDiagnostic] = []
     pages: list[PageTypography] = []
     evidence_remaining = evidence_pages
@@ -178,6 +192,8 @@ def _measure_project(
             measurement=measurements.get(page.page_name),
             text_left_by_class=text_left_by_class,
             wants_evidence=evidence_remaining > 0,
+            book_gap=book_gap,
+            page_gap=page_gaps.get(page.page_name),
         )
         if measured.evidence_sampled:
             evidence_remaining -= 1
@@ -202,7 +218,44 @@ def _measure_project(
         skew_slope_median=pooled.skew.median,
         skew_slope_mad=pooled.skew.median_absolute_deviation,
         diagnostics=tuple(diagnostics),
+        extensions={
+            "word_gap_threshold_px": book_gap.threshold_px,
+            "word_gap_threshold_rule": book_gap.rule,
+            "word_gap_valley_ratio": book_gap.valley_ratio,
+            "word_gap_sample_count": book_gap.sample_count,
+        },
     )
+
+
+def _word_gap_thresholds(
+    project: ProjectAlignment,
+) -> tuple[WordGapThreshold, dict[str, WordGapThreshold]]:
+    """One book's word-gap threshold and every accepted page's own, from stored ink alone.
+
+    This runs before any scan is opened. Every gap length it counts comes from the
+    `horizontal_ink_profile` the alignment report already carries, so the whole pre-pass costs
+    one walk of a report that is being read anyway.
+
+    The book value is what segmentation uses. Page values are recorded as evidence only: they
+    measure within 1 point of the book value in every book, so a per-page threshold would buy
+    nothing and would make one page's short line count move another page's word boxes.
+    """
+
+    book_counts: Counter[int] = Counter()
+    page_counts_by_name: dict[str, WordGapThreshold] = {}
+    for page in project.pages:
+        if not page.accepted:
+            continue
+        counts: Counter[int] = Counter()
+        for _, _, candidate, visible_text in _matched_lines(page):
+            if not visible_text.split() or not candidate.horizontal_ink_profile:
+                continue
+            counts.update(word_gap_lengths(candidate.horizontal_ink_profile))
+        if not counts:
+            continue
+        page_counts_by_name[page.page_name] = derive_word_gap_threshold(counts)
+        book_counts.update(counts)
+    return derive_word_gap_threshold(book_counts), page_counts_by_name
 
 
 def _measure_page(
@@ -213,20 +266,33 @@ def _measure_page(
     measurement: PageMeasurement | None,
     text_left_by_class: Mapping[str, int],
     wants_evidence: bool,
+    book_gap: WordGapThreshold,
+    page_gap: WordGapThreshold | None,
 ) -> PageTypography:
     page_class = "unknown" if measurement is None else measurement.page_class
+    gap_evidence = _page_gap_evidence(page_gap)
     if measurement is None:
-        return _excluded_page(page, page_class=page_class, exclusions=("profile_page_missing",))
+        return _excluded_page(
+            page,
+            page_class=page_class,
+            extensions=gap_evidence,
+            exclusions=("profile_page_missing",),
+        )
     source_frame = page.source_frame
     foreground_bounds = _foreground_bounds(measurement)
     if source_frame is None or foreground_bounds is None:
         return _excluded_page(
-            page, page_class=page_class, exclusions=("foreground_bounds_unavailable",)
+            page,
+            page_class=page_class,
+            extensions=gap_evidence,
+            exclusions=("foreground_bounds_unavailable",),
         )
 
     image_path = _resolve_scan(root, project_id=project_id, measurement=measurement)
     if image_path is None:
-        return _excluded_page(page, page_class=page_class, exclusions=("image_missing",))
+        return _excluded_page(
+            page, page_class=page_class, extensions=gap_evidence, exclusions=("image_missing",)
+        )
 
     snapshot_sha256: str | None = None
     try:
@@ -234,13 +300,17 @@ def _measure_page(
             snapshot_sha256 = snapshot.sha256
             if snapshot.sha256 != page.scan_sha256:
                 return _excluded_page(
-                    page, page_class=page_class, exclusions=("scan_hash_mismatch",)
+                    page,
+                    page_class=page_class,
+                    extensions=gap_evidence,
+                    exclusions=("scan_hash_mismatch",),
                 )
             rebuilt_threshold = measure_image_snapshot(snapshot).grayscale_threshold
             if rebuilt_threshold != measurement.grayscale_threshold:
                 return _excluded_page(
                     page,
                     page_class=page_class,
+                    extensions=gap_evidence,
                     exclusions=("mask_mismatch",),
                     evidence=(
                         {
@@ -257,6 +327,7 @@ def _measure_page(
         return _excluded_page(
             page,
             page_class=page_class,
+            extensions=gap_evidence,
             exclusions=("image_unreadable",),
             diagnostics=(
                 ProfileDiagnostic(
@@ -270,19 +341,29 @@ def _measure_page(
 
     try:
         if sha256_file(image_path) != snapshot_sha256:
-            return _excluded_page(page, page_class=page_class, exclusions=("source_changed",))
+            return _excluded_page(
+                page, page_class=page_class, extensions=gap_evidence, exclusions=("source_changed",)
+            )
     except OSError:
-        return _excluded_page(page, page_class=page_class, exclusions=("source_changed",))
+        return _excluded_page(
+            page, page_class=page_class, extensions=gap_evidence, exclusions=("source_changed",)
+        )
 
     matched = _matched_lines(page)
     mismatch = _mask_mismatch(mask, matched)
     if mismatch is not None:
         return _excluded_page(
-            page, page_class=page_class, exclusions=("mask_mismatch",), evidence=(mismatch,)
+            page,
+            page_class=page_class,
+            extensions=gap_evidence,
+            exclusions=("mask_mismatch",),
+            evidence=(mismatch,),
         )
 
     text_left = text_left_by_class.get(page_class)
-    lines, pitches = _measure_lines(mask, matched=matched, text_left=text_left)
+    lines, pitches = _measure_lines(
+        mask, matched=matched, text_left=text_left, gap_threshold_px=book_gap.threshold_px
+    )
     pooling = pool_page(page.page_name, lines, pitches)
     return PageTypography(
         page_name=page.page_name,
@@ -299,7 +380,24 @@ def _measure_page(
         estimates=pooling.estimates,
         skew_slope_median=pooling.skew.median,
         skew_slope_mad=pooling.skew.median_absolute_deviation,
+        extensions=gap_evidence,
     )
+
+
+def _page_gap_evidence(page_gap: WordGapThreshold | None) -> dict[str, object]:
+    """One page's own Otsu split, recorded so a later slice can see within-book variation.
+
+    Segmentation never reads these: the book value is what runs. A page whose matched lines
+    carry no gap at all gets no keys rather than a fabricated zero.
+    """
+
+    if page_gap is None:
+        return {}
+    return {
+        "word_gap_otsu_threshold_px": page_gap.threshold_px,
+        "word_gap_otsu_valley_ratio": page_gap.valley_ratio,
+        "word_gap_sample_count": page_gap.sample_count,
+    }
 
 
 def _measure_lines(
@@ -307,6 +405,7 @@ def _measure_lines(
     *,
     matched: Sequence[tuple[int, int, WireLineCandidate, str]],
     text_left: int | None,
+    gap_threshold_px: int | None,
 ) -> tuple[tuple[LineTypography, ...], tuple[int, ...]]:
     results: list[tuple[int, LineTypographyMeasurement | LineTypographyExclusion]] = []
     lines: list[LineTypography] = []
@@ -323,6 +422,7 @@ def _measure_lines(
                 visible_text=visible_text,
                 result=result,
                 text_left=text_left,
+                gap_threshold_px=gap_threshold_px,
             )
         )
     pitches = tuple(pitch.pitch_px for pitch in measure_baseline_pitches(results))
@@ -338,6 +438,7 @@ def _line_row(
     visible_text: str,
     result: LineTypographyMeasurement | LineTypographyExclusion,
     text_left: int | None,
+    gap_threshold_px: int | None,
 ) -> LineTypography:
     """One matched line's wire row, measured or excluded.
 
@@ -359,12 +460,12 @@ def _line_row(
             segment_count=result.segment_count,
             exclusions=(result.reason,),
         )
-    words = measure_line_words(
-        mask, box, candidate.horizontal_ink_profile, visible_text, result.x_height_px
+    threshold = (
+        x_height_gap_threshold(result.x_height_px) if gap_threshold_px is None else gap_threshold_px
     )
-    reconciled = words if isinstance(words, LineWordMeasurement) else None
-    if reconciled is None:
-        raise RuntimeError("A measured line must always produce a word segmentation.")
+    reconciled = measure_line_words(
+        mask, box, candidate.horizontal_ink_profile, visible_text, threshold
+    )
     return LineTypography(
         candidate_ordinal=candidate_ordinal,
         source_ordinal=source_ordinal,
@@ -461,6 +562,7 @@ def _excluded_page(
     *,
     page_class: str,
     exclusions: tuple[str, ...],
+    extensions: Mapping[str, object],
     evidence: tuple[Mapping[str, object], ...] = (),
     diagnostics: tuple[ProfileDiagnostic, ...] = (),
 ) -> PageTypography:
@@ -477,6 +579,7 @@ def _excluded_page(
         exclusions=exclusions,
         exclusion_evidence=evidence,
         diagnostics=diagnostics,
+        extensions=extensions,
     )
 
 

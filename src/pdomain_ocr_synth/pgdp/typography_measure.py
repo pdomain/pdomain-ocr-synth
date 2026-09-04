@@ -25,11 +25,11 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 Bounds = tuple[int, int, int, int]
 LineExclusionReason = Literal["insufficient_segments", "skew_exceeds_maximum"]
-WordExclusionReason = Literal["x_height_unavailable"]
+WordGapRule = Literal["otsu-gap-histogram", "x-height-ratio"]
 
 TYPOGRAPHY_MEASURE_METHODS: dict[str, float | int | str] = {
     "algorithm": "segment-vertical-projection/v1",
@@ -45,13 +45,34 @@ _MINIMUM_USABLE_SEGMENTS = 3
 _MAXIMUM_SKEW_SLOPE = 0.02
 
 WORD_SEGMENTATION_METHODS: dict[str, float | int | str] = {
-    "algorithm": "ink-profile-word-runs/v1",
+    "algorithm": "ink-profile-word-runs/v2",
     "gap_threshold_minimum_px": 2,
+    "gap_histogram_maximum_px": 64,
+    "gap_histogram_minimum_samples": 64,
+    "gap_valley_ratio_maximum": 0.5,
     "gap_threshold_x_height_ratio": 0.25,
 }
 
 _GAP_THRESHOLD_MINIMUM_PX = 2
 _GAP_THRESHOLD_X_HEIGHT_RATIO = 0.25
+_GAP_HISTOGRAM_MAXIMUM_PX = 64
+"""Gaps wider than this are line-end and paragraph whitespace, not letter or word spacing.
+
+Clamping them into one tail bin keeps a handful of very wide gaps from dragging the
+inter-word class mean upward and pulling the split with it.
+"""
+_GAP_HISTOGRAM_MINIMUM_SAMPLES = 64
+"""One sample per usable histogram bin. Below that the distribution cannot be read at all."""
+_GAP_VALLEY_RATIO_MAXIMUM = 0.5
+"""How shallow the valley at the split may be before the histogram is not two populations.
+
+The ratio is the count at the chosen threshold over the smaller of the two class peaks, so a
+real valley scores near zero and a single hump scores near one. Otsu's own separability was
+tried first and rejected: it scores 0.65 to 0.75 on a uniform, a single Gaussian, and a
+geometric decay, against 0.83 to 0.85 on the real books, so it does not separate the two cases.
+Valley depth does. Measured, the five books score 0.104 to 0.152 and the same synthetic
+unimodal shapes score 1.00 to 1.18, so this floor sits between them with margin on both sides.
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,10 +183,34 @@ class LineWordMeasurement:
 
 
 @dataclass(frozen=True, slots=True)
-class LineWordExclusion:
-    """Why one matched line got no word segmentation at all."""
+class WordGapThreshold:
+    """One book's word-gap threshold, the rule that produced it, and its evidence.
 
-    reason: WordExclusionReason = "x_height_unavailable"
+    `threshold_px` is `None` exactly when `rule` is `x-height-ratio`: Otsu found no genuine
+    two-population split in the book's own gap lengths, so there is no book-wide value and the
+    caller must fall back to `x_height_gap_threshold` per line. `valley_ratio` is `None` only
+    when the split leaves one side empty, which is no split at all.
+    """
+
+    rule: WordGapRule
+    threshold_px: int | None
+    valley_ratio: float | None
+    sample_count: int
+
+    def __post_init__(self) -> None:
+        if self.sample_count < 0:
+            raise ValueError("sample_count must be nonnegative.")
+        if self.valley_ratio is not None and (
+            not math.isfinite(self.valley_ratio) or self.valley_ratio < 0.0
+        ):
+            raise ValueError("valley_ratio must be a nonnegative finite number or null.")
+        if self.rule == "otsu-gap-histogram":
+            if self.threshold_px is None:
+                raise ValueError("An Otsu-derived threshold must carry a pixel value.")
+            if self.threshold_px < _GAP_THRESHOLD_MINIMUM_PX:
+                raise ValueError("threshold_px must be at least the shipped minimum.")
+        elif self.threshold_px is not None:
+            raise ValueError("An x-height fallback carries no book-wide pixel value.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,36 +296,32 @@ def measure_line_words(
     box: Bounds,
     horizontal_ink_profile: Sequence[float],
     visible_text: str,
-    x_height_px: int | None,
-) -> LineWordMeasurement | LineWordExclusion:
+    gap_threshold_px: int,
+) -> LineWordMeasurement:
     """Segment word runs from a matched line's stored ink profile and reconcile them
     against its aligned transcription.
 
     `horizontal_ink_profile` is the box-width-normalized column profile
     `alignment_image.LineCandidate` already stores, so finding runs needs no image; `mask`
     is `alignment_image.build_candidate_mask`'s page ink mask, consulted only to draw each
-    reconciled word's own row projection. `x_height_px` is `None` when
-    `measure_line_typography` produced no measurement for this line: a gap threshold
-    cannot be derived from an unmeasured x-height, so word segmentation is skipped
-    entirely rather than falling back to a fixed pixel constant that would not scale
-    across books.
+    reconciled word's own row projection. `gap_threshold_px` is supplied by the caller
+    rather than derived here, because the value that separates letter gaps from word gaps
+    is a property of the book's own gap distribution and cannot be read off one line: see
+    `derive_word_gap_threshold`.
 
     `source_word_count` is `len(visible_text.split())`. Splitting with no argument
     collapses runs of whitespace and drops leading and trailing whitespace, so repeated
     spaces in the transcription never inflate the count with phantom empty words.
     """
 
-    if x_height_px is None:
-        return LineWordExclusion(reason="x_height_unavailable")
+    if gap_threshold_px < _GAP_THRESHOLD_MINIMUM_PX:
+        raise ValueError("gap_threshold_px must be at least the shipped minimum.")
 
     x_start, _, x_end, _ = box
     width = x_end - x_start
     if len(horizontal_ink_profile) != width:
         raise ValueError("horizontal_ink_profile length must match the line box width.")
 
-    gap_threshold_px = max(
-        _GAP_THRESHOLD_MINIMUM_PX, _round_half_up(_GAP_THRESHOLD_X_HEIGHT_RATIO * x_height_px)
-    )
     runs = _find_word_runs(horizontal_ink_profile, gap_threshold_px)
     source_word_count = len(visible_text.split())
     words_reconciled = len(runs) == source_word_count
@@ -305,6 +346,76 @@ def measure_line_words(
         source_word_count=source_word_count,
         words_reconciled=True,
         words=words,
+    )
+
+
+def word_gap_lengths(profile: Sequence[float]) -> tuple[int, ...]:
+    """Every zero-ink column run strictly inside one line's ink, longest to shortest order aside.
+
+    Leading and trailing blank columns are not gaps between anything, so only runs bounded by
+    ink on both sides are counted.
+    """
+
+    ink_columns = [index for index, value in enumerate(profile) if value > 0.0]
+    return tuple(
+        later - earlier - 1
+        for earlier, later in itertools.pairwise(ink_columns)
+        if later - earlier - 1 > 0
+    )
+
+
+def derive_word_gap_threshold(gap_counts: Mapping[int, int]) -> WordGapThreshold:
+    """Split one book's pooled gap lengths into letter gaps and word gaps by Otsu.
+
+    Intra-word letter gaps and inter-word gaps are two populations with a valley between
+    them, and Otsu finds that valley from the counts alone without ever being shown a
+    reconciliation rate. Measured over 17,205 matched lines in five books, the shipped
+    `0.25 * x_height` rule sat below the swept optimum in every one of them, by 1 px in the
+    best case and 6 px in the worst, so it split inside words at ordinary letter gaps.
+
+    Otsu assumes two populations and will split a single hump down the middle if handed one,
+    so the split is checked before it is used: the count at the threshold must fall to at most
+    `_GAP_VALLEY_RATIO_MAXIMUM` of the smaller class peak. A book that fails that check, or
+    that carries too few gaps to read a distribution at all, gets the `x-height-ratio` rule
+    and the caller falls back to `x_height_gap_threshold` per line.
+    """
+
+    histogram = [0] * (_GAP_HISTOGRAM_MAXIMUM_PX + 1)
+    for length, count in gap_counts.items():
+        if length <= 0:
+            raise ValueError("A gap length must be positive.")
+        if count < 0:
+            raise ValueError("A gap count must be nonnegative.")
+        histogram[min(length, _GAP_HISTOGRAM_MAXIMUM_PX)] += count
+
+    sample_count = sum(histogram)
+    threshold = _otsu_threshold(tuple(histogram))
+    valley_ratio = _valley_ratio(tuple(histogram), threshold)
+    bimodal = (
+        sample_count >= _GAP_HISTOGRAM_MINIMUM_SAMPLES
+        and valley_ratio is not None
+        and valley_ratio <= _GAP_VALLEY_RATIO_MAXIMUM
+    )
+    if not bimodal:
+        return WordGapThreshold(
+            rule="x-height-ratio",
+            threshold_px=None,
+            valley_ratio=valley_ratio,
+            sample_count=sample_count,
+        )
+    return WordGapThreshold(
+        rule="otsu-gap-histogram",
+        threshold_px=max(_GAP_THRESHOLD_MINIMUM_PX, threshold),
+        valley_ratio=valley_ratio,
+        sample_count=sample_count,
+    )
+
+
+def x_height_gap_threshold(x_height_px: int) -> int:
+    """The v1 gap rule, kept as the fallback when a book's gaps are not two populations."""
+
+    return max(
+        _GAP_THRESHOLD_MINIMUM_PX, _round_half_up(_GAP_THRESHOLD_X_HEIGHT_RATIO * x_height_px)
     )
 
 
@@ -337,6 +448,53 @@ def measure_baseline_pitches(
             )
         )
     return tuple(pitches)
+
+
+def _otsu_threshold(histogram: tuple[int, ...]) -> int:
+    """Otsu's threshold over an integer histogram.
+
+    This is `image_measurement._otsu_threshold`'s search, unchanged and compared against it by
+    test: the same cross-multiplied integer comparison, so no float rounding can move the
+    split. It is duplicated rather than imported because the grayscale path it lives on is
+    verified byte-exactly by Gate 2 and must not be reshaped to serve a second caller.
+    """
+
+    total = sum(histogram)
+    weighted_total = sum(level * count for level, count in enumerate(histogram))
+    background_count = 0
+    background_total = 0
+    best_threshold = 0
+    best_numerator = 0
+    best_denominator = 1
+    for threshold, count in enumerate(histogram):
+        background_count += count
+        background_total += threshold * count
+        foreground_count = total - background_count
+        if background_count == 0 or foreground_count == 0:
+            continue
+        foreground_total = weighted_total - background_total
+        difference = background_total * foreground_count - foreground_total * background_count
+        numerator = difference * difference
+        denominator = background_count * foreground_count
+        if numerator * best_denominator > best_numerator * denominator:
+            best_threshold = threshold
+            best_numerator = numerator
+            best_denominator = denominator
+    return best_threshold
+
+
+def _valley_ratio(histogram: tuple[int, ...], threshold: int) -> float | None:
+    """How deep the split sits below the smaller of the two class peaks, or `None` if empty.
+
+    A histogram of two populations dips to near zero between them, so this runs near zero; a
+    single hump split down the middle keeps its peak count at the split, so this runs near one.
+    """
+
+    lower_peak = max(histogram[: threshold + 1], default=0)
+    upper_peak = max(histogram[threshold + 1 :], default=0)
+    if lower_peak == 0 or upper_peak == 0:
+        return None
+    return histogram[threshold] / min(lower_peak, upper_peak)
 
 
 def _find_word_runs(profile: Sequence[float], gap_threshold_px: int) -> tuple[tuple[int, int], ...]:
