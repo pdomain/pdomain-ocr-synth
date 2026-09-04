@@ -130,6 +130,21 @@ doc's flag table, and `--geometry` did not. It was caught on the next look, fixe
 and the commit amended before any push, so the remote never saw it. Use
 `set -o pipefail` when gating on a piped command.
 
+## Gate 4 was human-reviewed on 2026-09-04
+
+CT read all 21 sheets and judged all 210 lines correct, 1.0000 against the 0.95
+threshold, where the model pass had scored 208 of 210. Per-line verdicts are in
+`.m15d-evidence/gate4-review.csv` and scored by `score_gate4.py`.
+
+The pass raised one observation worth keeping, because the next reviewer will see
+it too: a single row of ink sits past each rule on 11 to 16 percent of ink
+columns, most visible on the book whose 10 to 12 px x-height is the smallest in
+the corpus. That is round-letter overshoot, not estimator bias. The rate is the
+same at both rules, moving the baseline down a row would misalign 78 percent of
+columns instead of 13, and all 34 synthetic fixtures show a signed error of
+exactly zero because they are flat bars with no round letters. Measured in
+`.m15d-evidence/overshoot.json`.
+
 ## Added after this handoff was first written
 
 Both items the resume steps named as mine to do are done, and both are recorded
@@ -155,10 +170,6 @@ were removed as redundant, since `typography-*-a` is now exactly that run.
 sitting a pixel over the threshold, which is at the noise floor of any single
 global threshold. Moving the threshold trades one error for another.
 
-**Gate 4 of M15d is still model-reviewed.** Whether the 210 sheets in
-`.m15d-evidence/gate4-sheets/` want a human pass is the one item that needs CT
-rather than more measurement.
-
 **Books outside the five** have no geometry record and run exactly as today.
 
 ## Still not implemented
@@ -178,8 +189,8 @@ run at most two per call.
 
 ## Resume steps
 
-1. Decide whether Gate 4 wants a human pass. This is the one item that needs you
-   rather than more measurement.
+1. Nothing here is blocked on you. Gate 4's human pass was done on 2026-09-04
+   and every other open item is closed or deliberately parked.
 2. Done on 2026-09-04. The report now carries `word_gap_count`,
    `word_run_error_count`, and `word_gap_error_rate` per page and per book. Per-gap
    accuracy reads 0.923 to 0.972 against Gate 6's 0.593 to 0.805. Verified confined
@@ -197,4 +208,6 @@ run at most two per call.
 - `/workspaces/pdomain/.m15d-evidence/witness-gates.json` — every witness gate number
 - `/workspaces/pdomain/.m15d-evidence/confidence-floor.json` — why no floor ships
 - `/workspaces/pdomain/.m15d-evidence/per-gap-accuracy.json` — per-gap against per-line
+- `/workspaces/pdomain/.m15d-evidence/gate4-review.csv` — the human verdict, per line
+- `/workspaces/pdomain/.m15d-evidence/overshoot.json` — why ink sits past both rules
 - `/workspaces/pdomain/.m15d-evidence/gates.json` — the M15d v2 gate numbers

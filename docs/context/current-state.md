@@ -84,9 +84,11 @@ roughly 150,000 word records.
 
 All eight gates pass. Two runs per book were byte-identical. The estimator
 recovers known geometry within 1 px on all 34 synthetic fixtures and 8 reviewed
-ones. Of 210 rendered line crops across three books, 208 were judged correct by
-a model reading them and none was judged wrong; the two remaining are
-all-capital lines carrying no lowercase to measure an x-height rule against. The
+ones. Of 210 rendered line crops across three books, CT judged all 210 correct on
+2026-09-04, where an earlier model pass had scored 208 and judged none wrong. The
+human pass noted a single row of ink past each rule on 11 to 16 percent of ink
+columns; that is round-letter overshoot rather than estimator bias, and it is
+measured and argued in the M15d plan. The
 MAD of per-page x-height medians is 0 in every book, well inside the 0.08
 ceiling. No corpus report names anything the design treats as latent.
 

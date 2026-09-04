@@ -365,7 +365,7 @@ Every gate below was measured on the t2 corpus report. Evidence lives in
 | 1. Determinism | 5 of 5 books byte-identical across two runs | pass |
 | 2. Mask reproduction | 665 measured pages, 17,205 matched candidates verified, 0 `mask_mismatch` | pass |
 | 3. Synthetic estimator | 34 of 34 fixtures within 1 px, plus 8 reviewed fixtures | pass |
-| 4. Reviewed line correctness | 208 of 210 judged correct, 0 incorrect | pass |
+| 4. Reviewed line correctness | 210 of 210 human-reviewed correct on 2026-09-04 | pass |
 | 5. Book-level stability | relative MAD 0.000 in all 5 books, ceiling 0.08 | pass |
 | 6. Word reconciliation | 0.620, 0.539, 0.520 pass; 0.476 and 0.208 fail | 3 of 5, fixed below |
 | 7. Latent discipline | 0 violations across all 5 corpus reports | pass |
@@ -377,13 +377,33 @@ from the rebuilt mask, and every rebuilt Otsu threshold equalled the recorded on
 claim that the two stages share one definition of ink holds on the whole corpus, not only on
 fixtures.
 
-**Gate 4 was model-reviewed, as decision 7 settled.** 210 matched lines from three books were
-rendered by `render_line_typography_overlay` at 3x on a 460 px window, ten to a sheet, and
-read. 208 were correct: the baseline lay on the visible baseline and the x-height rule on the
-lowercase tops. None was wrong. The remaining two are all-capital and small-capital lines that
-carry no lowercase at all, so the "within 2 px of the lowercase top" half of the criterion has
-nothing to measure against; both baselines were correct. Counting those two as failures gives
-0.9905, which clears the 0.95 threshold without needing the charitable reading.
+**Gate 4 was model-reviewed first, then human-reviewed on 2026-09-04.** 210 matched lines from
+three books were rendered by `render_line_typography_overlay` at 3x on a 460 px window, ten to a
+sheet, and read. The model pass called 208 correct and none wrong, holding back two all-capital
+and small-capital lines that carry no lowercase for the x-height half of the criterion to measure
+against. CT read all 21 sheets and judged all 210 correct, which is 1.0000 against the 0.95
+threshold. Verdicts are recorded per line in `.m15d-evidence/gate4-review.csv` and scored by
+`score_gate4.py`.
+
+**The human pass raised one observation, and it is the estimator behaving correctly.** A single
+row of ink sits past each rule on a minority of columns, most visible on
+`projectID64a479f51ce5b`, whose 10 to 12 px x-height is the smallest in the corpus so one pixel
+is a tenth of the letter. Measured over every ink column on a sample of lines from all five books:
+
+| rule | on the rule | one row past | three or more past |
+| --- | ---: | ---: | ---: |
+| baseline | 0.756 to 0.827 | 0.126 to 0.150 | 0.043 to 0.069 |
+| x-height top | 0.640 to 0.703 | 0.106 to 0.160 | 0.137 to 0.182 |
+
+That is round-letter overshoot. `o e c s a` are cut slightly past both rules so they look
+optically level with flat-topped and flat-bottomed letters, and the estimator takes the sharpest
+drop in the ink profile, which is where the flat majority sits. Three things say it is not a bias.
+The rate is the same at both rules, while a bias would show at one or in one direction. Moving the
+baseline down a row would leave about 78 percent of columns a row above it instead of 13 percent a
+row below, which is strictly worse. And all 34 synthetic fixtures show a signed error of exactly
+zero rather than plus or minus one, because they are drawn as flat vertical bars with no round
+letters to overshoot. The three-or-more column differs between the rules exactly as English letter
+frequency predicts: many more ascenders and capitals than descenders.
 
 **Gate 5 passes with room that looks suspicious and is not.** The MAD of per-page x-height
 medians is exactly 0 in all five books. Per-page medians are integers, and a page of body text
@@ -583,7 +603,9 @@ All eight settled by CT on 2026-09-03. The plan is approved for execution.
    seed than about the code.
 7. **Gate 4 is judged by a model reading rendered crops,** recorded explicitly as model-reviewed
    rather than signed off row by row. Same method as both prior M15b precision measurements, and
-   repeatable whenever the estimator changes.
+   repeatable whenever the estimator changes. **Superseded on 2026-09-04:** CT read all 21 sheets
+   and the gate now carries a human verdict of 210 of 210. The model method stays the default for
+   re-running the gate after an estimator change.
 8. **Twelve evidence pages per book.**
 
 ## Final review and handoff
