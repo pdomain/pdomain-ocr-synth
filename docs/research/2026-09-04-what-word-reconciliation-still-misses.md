@@ -205,10 +205,10 @@ not tested.
 
 1. Put to CT whether the reported quality of word boxes should be per-gap rather than per-line.
    Gate 6 itself should stay as it is; it did its job.
-2. Scope the OCR witness pass
-   [the hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) already proposed. It is now
-   worth 10 to 31 percent of the residual, not the 4 to 5 percentage points that finding could
-   bound it at, and a leading run that no F2 word claims is exactly what OCR would identify.
+2. Done on 2026-09-04. See [the OCR witness
+   plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md). It needs no OCR
+   engine in this repo: the doctr records already exist for all five books, and the witness
+   reproduces this document's fragment share book by book within 0.016 to 0.089.
 3. Leave threshold jitter alone. Three books are at the noise floor of any single global
    threshold, and moving it trades one error for another.
 
@@ -220,3 +220,5 @@ not tested.
   above, and much larger than either document first estimated.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
   — Gate 6 and its 0.50 floor.
+- [PGDP OCR witness for continuation fragments](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
+  — the plan scoped from this measurement.

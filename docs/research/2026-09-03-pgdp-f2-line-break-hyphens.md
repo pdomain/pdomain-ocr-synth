@@ -166,11 +166,12 @@ to what ink is on the line.
    supports the mechanism across the corpus nor refutes it there. The leading-run width test was
    not repeated. See [what word reconciliation still
    misses](2026-09-04-what-word-reconciliation-still-misses.md).
-3. Scope an OCR witness pass, now worth 10 to 31 percent of the residual rather than the 4 to 5
-   percentage points this document could bound it at. F2 stays the label and ink projection stays
-   the geometry; OCR supplies only correspondence, telling us a line's leading run is a
-   continuation fragment. A `continuation_fragment` flag with a stated one-token tolerance is then
-   a rule with a reason rather than a tolerance widened until things pass.
+3. Scoped on 2026-09-04 as [the OCR witness
+   plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md). F2 stays the label
+   and ink projection stays the geometry; OCR supplies only correspondence, telling us a line's
+   leading run is a continuation fragment. The pass needs no OCR engine in this repo, because the
+   project's own fine-tuned doctr records already cover all five corpus books and pin to the same
+   page hashes this repo pins to.
 
 ## Related
 
@@ -178,6 +179,8 @@ to what ink is on the line.
   — the finding that replaced this one as the explanation of over-split.
 - [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md)
   — where this mechanism was confirmed directly and measured across all five books.
+- [PGDP OCR witness for continuation fragments](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
+  — the witness pass this finding asked for, scoped and measured for feasibility.
 - [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
   — Gate 6 and the gap-threshold sweep.
 - [PGDP typography and structure synthesis design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)

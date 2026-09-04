@@ -185,9 +185,11 @@ from F2 alone can be blind to exactly the thing being looked for.
 1. Decide whether Gate 4 wants a human pass. Nothing else here is blocked on you.
 2. Decide whether reported word-box quality should be per-gap rather than
    per-line. Gate 6 itself should stay as it is; it did its job.
-3. Decide whether to scope the OCR witness pass the hyphen finding proposes. It is
-   now worth 10 to 31 percent of the residual rather than the 4 to 5 percentage
-   points that finding could bound it at.
+3. Approve or reject [the OCR witness
+   plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md),
+   scoped on 2026-09-04. It carries four open decisions and needs no OCR engine,
+   model, or new dependency in this repo: the project's own fine-tuned doctr
+   records already cover all five books and pin to the same page hashes.
 
 ## Pointers
 
