@@ -7,7 +7,8 @@ owner: CT
 branch: master
 scope: pgdp-synthesis
 worktree: /workspaces/pdomain/pdomain-ocr-synth
-base_commit: "3b135a7df68aa9544674757444822dc86562f4a9"
+base_commit: "24df257"
+pushed: true
 supersedes: "2026-09-03-031500-m15d-typography-shipped-partial.md"
 handoff_reason: milestone_complete
 host: claude-code
@@ -29,12 +30,19 @@ book's own pooled gap-length histogram. A pre-pass builds that histogram from th
 `horizontal_ink_profile` values the alignment report already carries, so it opens
 no image and costs one walk of a report being read anyway.
 
-Two commits, both gated on `make ci AI=1`.
+Four commits, each gated on `make ci AI=1`.
 
 | commit | what |
 | --- | --- |
 | `3b135a7` | the v2 rule, its guard, the orchestration pre-pass, the tests, the regenerated fixtures |
-| this one | the plan, both research docs, `current-state.md`, and this handoff |
+| `85b388f` | the plan, both research docs, `current-state.md`, and this handoff |
+| `1b2c093` | the residual attributed, as its own research finding |
+| `24df257` | the line-break hyphen mechanism reinstated, correcting `1b2c093` |
+
+**`master` was pushed to `origin` on 2026-09-04**, carrying these four plus the
+fifteen earlier M15d commits that had been sitting local. The remote reported that
+the push bypassed its required `ci` status check, so nothing ran CI on GitHub;
+every commit passed `make ci AI=1` locally before it landed.
 
 ## Every gate, re-measured
 
@@ -150,7 +158,7 @@ Font candidates, inverse rendering, typeface ranking, rectification, rectified
 frames, change-point detection over page index, and any point-size or leading
 claim. None of it is started.
 
-This repo still has unpushed commits on `master`. Nothing here was pushed.
+`master` is pushed and clean as of `24df257`. Nothing is left uncommitted.
 
 ## Two corrections a later reader still needs
 
@@ -161,6 +169,16 @@ page-classification fixes; it accepts 665 pages against the wholebook set's 367.
 **Background corpus runs get killed in this container.** Run each book in the
 foreground, one shell call per book. The five books take about 2.5 minutes per
 pass. `run_all.sh` in the evidence directory has the commands.
+
+## One correction inside this handoff's own life
+
+This handoff first recorded that the hyphen mechanism showed no consistent effect
+and that the wide-gap regime was unidentified. Both were wrong and both were
+corrected in `24df257` on the same day. The sequence is worth keeping because the
+method is the lesson: three statistical proxies built from F2 text failed or
+misled, and rendering 24 of the offending lines and reading them settled the cause
+in one pass. F2 has already erased part of what the ink shows, so a control built
+from F2 alone can be blind to exactly the thing being looked for.
 
 ## Resume steps
 
