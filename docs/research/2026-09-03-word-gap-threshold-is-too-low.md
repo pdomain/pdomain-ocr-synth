@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-03
-Last verified: 2026-09-03
+Last verified: 2026-09-04
 Kind: research
 ---
 
@@ -14,12 +14,13 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-03
-- **Last verified:** 2026-09-03
+- **Last verified:** 2026-09-04
 - **Provenance:** measured on 2026-09-03 over 17,205 matched lines in the five whole-book
   `alignment-t2-*` reports, sweeping the gap threshold from 2 to 20 px per book and comparing
   against an Otsu split of each page's own gap-length distribution
-- **Disposition:** Active finding. Identifies the cause of M15d Gate 6 and proposes the fix.
-  Not yet implemented.
+- **Disposition:** Active finding, shipped on 2026-09-04 as `ink-profile-word-runs/v2`. One
+  conclusion below is overturned by the implementation measurement: the fix did not have to be
+  per-page. See "What shipped, and what it corrected."
 - **Read when:** changing word segmentation, reading Gate 6, or judging whether the reconciliation
   ceiling is real.
 - **Search terms:** word gap, threshold, over-split, Gate 6, Otsu, reconciliation, ink profile.
@@ -30,8 +31,8 @@ Find why M15d's word reconciliation fails Gate 6 in two of five books.
 
 The shipped gap threshold, `max(2, round(0.25 * x_height_px))`, is too low in every book. It
 splits inside words at ordinary letter gaps, which is what the measured over-split has been
-reporting all along. Raising it to a value derived from each page's own gap distribution lifts
-reconciliation from 0.217 to 0.814 in the worst book and clears the 0.50 floor in all five.
+reporting all along. Raising it to a value derived from the book's own gap distribution lifts
+reconciliation from 0.208 to 0.800 in the worst book and clears the 0.50 floor in all five.
 
 **This reverses an earlier claim.** The
 [hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) concluded that the threshold was not
@@ -82,16 +83,19 @@ estimator was wrong.
 absolute threshold across all books pooled, which averages over books whose optima differ from 5
 to 11 px. Per page, the detector reaches 0.81.
 
-**The fix is per-page, not per-book.** The Otsu threshold varies within a book, from 6 to 19 px in
-`projectID657550412c8dc`, and a per-book constant would give up part of the gain. It also avoids
-adding a hand-tuned per-book term, which would be tuning to the gate.
+**The fix is per-page, not per-book. Overturned on 2026-09-04.** The Otsu threshold does vary
+within a book, from 6 to 19 px in `projectID657550412c8dc`. But measured head to head over the
+same lines, a per-book Otsu threshold scores 0.811, 0.741, 0.620, 0.803, 0.783 against per-page's
+0.802, 0.751, 0.608, 0.814, 0.790: book-level wins in three of five books and no difference
+exceeds 1.1 points. The within-book variation is real and does not cost anything, so the shipped
+rule is book-level. Neither rule is hand-tuned, so the argument against a per-book term never
+applied to a per-book Otsu split.
 
 ## What this does NOT establish
 
-**It is not implemented.** Everything above is measured by re-running detection over stored ink
-profiles. Changing `typography_measure` moves `WORD_SEGMENTATION_METHODS` to a v2 algorithm
-version, invalidates the committed corpus numbers, and needs the reviewed fixtures regenerated.
-That is a decision for CT, not a silent change.
+**It was not implemented when this was written.** Everything in the sections above is measured by
+re-running detection over stored ink profiles, not by the shipped pipeline. It shipped on
+2026-09-04; see "What shipped, and what it corrected."
 
 **Exact run-to-word agreement is still not the right target.** Even at each book's optimum, 16 to
 39 percent of lines disagree. PGDP text is fallible and so is gap detection, so some disagreement
@@ -105,13 +109,33 @@ per-line x-height the pipeline uses, so the shipped column is an approximation o
 behaviour, not a replay of it. The measured corpus rates it approximates are 0.620, 0.539, 0.476,
 0.208, and 0.520.
 
+## What shipped, and what it corrected
+
+`ink-profile-word-runs/v2` landed on 2026-09-04 with a **book-level** Otsu threshold, not a
+per-page one, for the reason recorded above. Measured book thresholds are 10, 6, 8, 15, and 9 px.
+Gate 6 on the re-run corpus is 0.805, 0.742, 0.593, 0.800, and 0.782 against the 0.50 floor, so
+every book clears it. Gates 1 through 5, 7, and 8 came back unchanged.
+
+Two things this finding did not settle had to be settled to ship.
+
+**Otsu needed a bimodality guard, and its own separability could not provide one.** Otsu splits a
+single hump down the middle if handed one, so the split has to be checked. Separability, the
+between-class variance ratio, looks like the natural check and is not: it scores 0.65 to 0.75 on a
+uniform, a single Gaussian, and a geometric decay against 0.83 to 0.85 on the real books, so it
+does not separate them. Valley depth does, the count at the threshold over the smaller class peak.
+The books score 0.104 to 0.152 and the same synthetic shapes score 1.00 to 1.18, so the shipped
+floor sits at 0.5 with margin either side. The guard fired on no book and on 14 of 665 pages, all
+of which are recorded as evidence and never used for segmentation.
+
+**Gaps wider than 64 px are clamped into one tail bin.** Line-end and paragraph whitespace is not
+letter or word spacing, and left uncapped it drags the inter-word class mean and pulls the split
+with it.
+
 ## Next steps
 
-1. Put the change to CT: move word segmentation to a `v2` algorithm version with a per-page
-   Otsu-derived gap threshold, regenerate the reviewed fixtures, and re-run the corpus.
-2. Re-measure Gate 6 afterwards and record whether the remaining disagreement is over-split,
-   under-split, or genuine F2 error.
-3. Keep the [hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) separate. It is a true fact
+1. Attribute the residual disagreement. Over the evidence-sampled pages it is mostly over-split in
+   four books and mostly under-split in `projectID657550412c8dc`, and no cause is established.
+2. Keep the [hyphen finding](2026-09-03-pgdp-f2-line-break-hyphens.md) separate. It is a true fact
    about F2 with a much smaller effect than first claimed.
 
 ## Related

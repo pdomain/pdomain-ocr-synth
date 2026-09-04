@@ -1,8 +1,8 @@
 ---
-Status: partial
+Status: complete
 Owner: CT
 Created: 2026-09-02
-Last verified: 2026-09-03
+Last verified: 2026-09-04
 Kind: plan
 ---
 
@@ -11,14 +11,15 @@ Kind: plan
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** partial
+- **Status:** complete
 - **Owner:** CT
 - **Created:** 2026-09-02
-- **Last verified:** 2026-09-03
+- **Last verified:** 2026-09-04
 - **Provenance:** authored from the PGDP typography design, the shipped M15a/M15b implementation and wire contracts, the
   whole-book yield-gate design, and the 2026-09-02 handoff
-- **Disposition:** Partial as of 2026-09-03. All eight tasks landed and seven of eight gates pass;
-  Gate 6 fails in two of five books and has a recorded follow-up.
+- **Disposition:** Complete as of 2026-09-04. All eight tasks landed and all eight gates pass.
+  Gate 6 failed in two books under word segmentation v1 and passes in all five under v2, which
+  derives the gap threshold from each book's own gap-length distribution.
 - **Read when:** implementing or reviewing scan-derived typographic measurement before any font candidate exists.
 - **Search terms:** PGDP, M15, typography, x-height, baseline, word gap, stroke width, pooled book style, inverse
   rendering.
@@ -366,7 +367,7 @@ Every gate below was measured on the t2 corpus report. Evidence lives in
 | 3. Synthetic estimator | 34 of 34 fixtures within 1 px, plus 8 reviewed fixtures | pass |
 | 4. Reviewed line correctness | 208 of 210 judged correct, 0 incorrect | pass |
 | 5. Book-level stability | relative MAD 0.000 in all 5 books, ceiling 0.08 | pass |
-| 6. Word reconciliation | 0.620, 0.539, 0.520 pass; 0.476 and 0.208 fail | 3 of 5 |
+| 6. Word reconciliation | 0.620, 0.539, 0.520 pass; 0.476 and 0.208 fail | 3 of 5, fixed below |
 | 7. Latent discipline | 0 violations across all 5 corpus reports | pass |
 | 8. Sample-size answer | measured per book, below | pass |
 
@@ -407,16 +408,61 @@ x-height, which is the widest spacing in the corpus, so the detector is not unde
 Over-splitting on wide inter-letter spacing is the likelier cause, and the follow-up should
 measure the split direction per book before changing the threshold. **Follow-up required:**
 measure over-split against under-split counts per book for the two failing books, and decide
-whether the gap threshold needs a per-book term. This plan stays `partial` until that lands.
+whether the gap threshold needs a per-book term. This plan stayed `partial` until that landed;
+it landed on 2026-09-04 and is measured below.
 
 **That follow-up ran on 2026-09-03 and found the cause.** The shipped threshold,
 `max(2, round(0.25 * x_height_px))`, is below the optimum in all five books, by 1 px at best and
-6 px at worst, so it splits inside words at ordinary letter gaps. Deriving it per page from that
-page's own gap-length distribution lifts the worst book from 0.217 to 0.814 and clears the 0.50
-floor in all five: 0.802, 0.751, 0.608, 0.814, 0.790. See
-[the word-gap threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md). The fix
-is not implemented, because it moves word segmentation to a v2 algorithm version and invalidates
-the corpus numbers and fixtures recorded here.
+6 px at worst, so it splits inside words at ordinary letter gaps. See
+[the word-gap threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md).
+
+## Measured on 2026-09-04: Gate 6 passes in all five books under word segmentation v2
+
+Word segmentation moved to `ink-profile-word-runs/v2`, which derives one gap threshold per book
+by Otsu over the book's own pooled gap-length histogram, and the corpus was re-run. Gate 6 now
+passes everywhere.
+
+| book | gap threshold | reconciled / measured | v2 rate | v1 rate |
+| --- | ---: | ---: | ---: | ---: |
+| projectID609bfa0449bdf | 10 px | 3636 / 4515 | 0.805 | 0.620 |
+| projectID64a479f51ce5b | 6 px | 2129 / 2868 | 0.742 | 0.539 |
+| projectID603d7d5e04ca0 | 8 px | 2107 / 3553 | 0.593 | 0.476 |
+| projectID657550412c8dc | 15 px | 2838 / 3546 | 0.800 | 0.208 |
+| projectID67a80fde44d34 | 9 px | 597 / 763 | 0.782 | 0.520 |
+
+**Gates 1 through 5, 7 and 8 came back unchanged, which is the check that the edit stayed inside
+word segmentation.** Both passes are still byte-identical in all five books. Gate 2 still verifies
+17,205 matched candidates across 665 pages with zero `mask_mismatch`. Gate 5's relative MAD is
+still exactly 0.000 in every book, and every pooled x-height is the same integer as before. Gate 4
+was not re-reviewed and did not need to be: re-rendering all 21 review sheets from the v2 reports
+produced files byte-identical to the ones the 208-of-210 verdict was given on, because the overlay
+draws the line box, the baseline, and the x-height rule and no word boxes. Gate 3 passes on the
+regenerated fixtures.
+
+**The book-level threshold is what ships, and per-page was measured against it rather than
+assumed.** Book-level scores 0.811, 0.741, 0.620, 0.803, 0.783 over every matched line with a
+profile; per-page scores 0.802, 0.751, 0.608, 0.814, 0.790 on the same lines. Book-level wins in
+three books, per-page in two, and every difference is under 1.1 points. This corrects the research
+finding's conclusion that the fix had to be per-page. Per-page values are recorded in each page's
+`extensions` as evidence, and their within-book range is 4 to 12, 4 to 7, 4 to 10, 6 to 19, and 8
+to 10 px.
+
+**Otsu assumes two populations, so the split is checked before it is used.** The count at the
+threshold must fall to at most half the smaller class peak. Otsu's own separability was tried
+first and rejected: it scores 0.65 to 0.75 on a uniform, a single Gaussian, and a geometric decay
+against 0.83 to 0.85 on the real books, so it does not tell the two cases apart. Valley depth
+does, scoring 0.104 to 0.152 on the books and 1.00 to 1.18 on the same synthetic shapes. The guard
+fired on no book and on 14 of 665 pages, all of them evidence-only.
+
+**What is left is the residual disagreement, not the threshold.** Over the evidence-sampled pages,
+which carry per-line rows, the surviving disagreement is mostly over-split in four books and
+mostly under-split in projectID657550412c8dc. Exact agreement with a fallible F2 word count is not
+the right long-run target, and the residual has not been attributed to a cause.
+
+**Gate 8's word-gap answer improved and the other three did not move.** Word gap now settles in
+every book, at 5, 50, 5, 30, and 5 body pages, where under v1 one book did not converge within 100
+pages. x-height, baseline pitch, and stroke width settle at exactly the same page counts as
+before, which is the same evidence that the geometry estimator is untouched.
 
 An earlier hypothesis, that [F2's silent rejoining of line-break
 hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md) drove the over-split, was tested and

@@ -1,6 +1,6 @@
 ---
 kind: handoff
-status: "active"
+status: "retired"
 created: "2026-09-03"
 created_at: "2026-09-03T03:15:00Z"
 owner: CT
@@ -10,10 +10,15 @@ worktree: /workspaces/pdomain/pdomain-ocr-synth
 base_commit: "cfc0444ea9ea17f5142df717f4bc89eb1746e877"
 supersedes: "2026-09-02-210255-m15b-residuals-fixed-and-contracts-decision.md"
 handoff_reason: milestone_partial
+superseded_by: "2026-09-04-014500-m15d-word-gap-v2-complete.md"
 host: claude-code
 ---
 
 # M15d ships font-free typography; one gate fails in two books
+
+> **Retired on 2026-09-04.** Gate 6 was fixed by `ink-profile-word-runs/v2` and every gate
+> number below for word reconciliation is superseded. See
+> [the current handoff](2026-09-04-014500-m15d-word-gap-v2-complete.md).
 
 ## Goal
 

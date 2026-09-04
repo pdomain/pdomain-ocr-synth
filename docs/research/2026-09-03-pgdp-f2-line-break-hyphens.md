@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-03
-Last verified: 2026-09-03
+Last verified: 2026-09-04
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-03
-- **Last verified:** 2026-09-03
+- **Last verified:** 2026-09-04
 - **Provenance:** measured on 2026-09-03 over 41,708 F2 lines in the five whole-book PGDP projects
   under `/workspaces/pdomain-data/pgdp-corpus`, against the M15d word-reconciliation results
 - **Disposition:** Active finding, with its predicted consequence retracted on 2026-09-03. The F2
@@ -92,8 +92,9 @@ share, is 0.957 on over-split lines against 1.017 on exact ones in that book, an
 
 **The real cause was something else.** The shipped gap threshold is too low in every book and
 splits inside words at ordinary letter gaps. See
-[the word-gap threshold finding](2026-09-03-word-gap-threshold-is-too-low.md), which lifts the
-worst book from 0.217 to 0.814. An earlier version of this document claimed the threshold was not
+[the word-gap threshold finding](2026-09-03-word-gap-threshold-is-too-low.md), which shipped on
+2026-09-04 and lifted the worst book from 0.208 to 0.800. An earlier version of this document
+claimed the threshold was not
 the problem and argued against raising it. That was wrong, and backwards: a threshold that is too
 low is exactly what produces a high over-split rate.
 
@@ -123,8 +124,11 @@ to what ink is on the line.
 1. Done on 2026-09-03, and it refuted the mechanism. Both the page-boundary control and the
    leading-run width test came back negative, and the cause was
    [the gap threshold](2026-09-03-word-gap-threshold-is-too-low.md).
-2. Re-test this finding after the threshold fix lands. With over-splitting removed, a residual
-   one-per-break bias would become visible if it exists at all.
+2. Re-test this finding now that the threshold fix has landed. It shipped on 2026-09-04 as
+   `ink-profile-word-runs/v2` and Gate 6 now reads 0.805, 0.742, 0.593, 0.800, 0.782. Over-split
+   still dominates the residual in four of the five books over the evidence-sampled pages, so a
+   one-per-break bias would now be visible if it exists. Not run: the page-boundary control and the
+   leading-run width test were not repeated under v2.
 3. Scope an OCR witness pass. F2 stays the label and ink projection stays the geometry; OCR supplies
    only correspondence, telling us a line's leading run is a continuation fragment. A
    `continuation_fragment` flag with a stated one-token tolerance is then a rule with a reason rather

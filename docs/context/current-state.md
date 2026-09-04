@@ -6,7 +6,7 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-08-24
+- **Last verified:** 2026-09-04
 - **Provenance:** authored from repository evidence, the 2026-08-24 local PGDP alignment review,
   earlier ranking and geometry-profile corpus runs, tests, plans, CI, and the 2026-08-24 PGDP
   architecture promotion and plan retirement
@@ -62,7 +62,7 @@ signed off by a person.
 
 ## PGDP font-free typography
 
-M15d ships `typography-pgdp` and remains partial. The local-only command reads a
+M15d ships `typography-pgdp` and is complete. The local-only command reads a
 `pgdp-alignment/v3` report together with the `pgdp-profile/v2` profile that
 alignment recorded, rebuilds each accepted page's ink mask, and measures per
 line: baseline row, x-height, ascender and descender extents, stroke width,
@@ -82,29 +82,42 @@ measured pages of each book, defaulting to 12. Pooled estimates and per-page
 aggregates cover every accepted page, which keeps a five-book run from emitting
 roughly 150,000 word records.
 
-Seven of the eight gates pass. Two runs per book were byte-identical. The
-estimator recovers known geometry within 1 px on all 34 synthetic fixtures and
-8 reviewed ones. Of 210 rendered line crops across three books, 208 were judged
-correct by a model reading them and none was judged wrong; the two remaining are
+All eight gates pass. Two runs per book were byte-identical. The estimator
+recovers known geometry within 1 px on all 34 synthetic fixtures and 8 reviewed
+ones. Of 210 rendered line crops across three books, 208 were judged correct by
+a model reading them and none was judged wrong; the two remaining are
 all-capital lines carrying no lowercase to measure an x-height rule against. The
 MAD of per-page x-height medians is 0 in every book, well inside the 0.08
 ceiling. No corpus report names anything the design treats as latent.
 
-Word reconciliation fails the 0.50 floor in two of five books: 0.620, 0.539, and
-0.520 pass, 0.476 and 0.208 do not. The failure is recorded rather than
-weakened. The book at 0.208 has the corpus's widest word spacing at 25 px
-against a 4 to 5 px threshold, so over-splitting is the likelier cause than
-under-splitting, and the follow-up must measure the split direction per book
-before changing the threshold.
+Word reconciliation clears the 0.50 floor in all five books: 0.805, 0.742,
+0.593, 0.800, 0.782. It did not under word segmentation v1, which failed in two
+books at 0.476 and 0.208. The cause, found on 2026-09-03, was the gap threshold
+itself: `max(2, round(0.25 * x_height_px))` sits below the optimum in all five
+books, so it split inside words at ordinary letter gaps. See [the word-gap
+threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md).
 
-The cause was found on 2026-09-03. The shipped gap threshold,
-`max(2, round(0.25 * x_height_px))`, is below the optimum in all five books, so
-it splits inside words at ordinary letter gaps. Deriving it per page from that
-page's own gap-length distribution lifts the worst book from 0.217 to 0.814 and
-clears the 0.50 floor everywhere. See [the word-gap threshold
-finding](../research/2026-09-03-word-gap-threshold-is-too-low.md). It is not
-implemented, because it moves word segmentation to a v2 algorithm version and
-invalidates the recorded corpus numbers and fixtures.
+`ink-profile-word-runs/v2` shipped on 2026-09-04 and fixed it. A pre-pass builds
+each book's gap-length histogram from the `horizontal_ink_profile` values the
+alignment report already carries, so it opens no image, and Otsu splits that
+histogram into letter gaps and word gaps. Measured book thresholds are 10, 6, 8,
+15, and 9 px. Because Otsu will split a single hump down the middle, the split
+is checked before use: the count at the threshold must fall to at most half the
+smaller class peak, or the book falls back to the v1 x-height rule per line and
+records which rule ran. The guard fired on no book and on 14 of 665 pages, all
+evidence-only.
+
+The report contract did not change. `pgdp-typography/v1` and its schema are
+exactly as they were; only the method string inside `methods` moved to v2. Each
+book's chosen threshold is in the report's `thresholds` and each page's own Otsu
+split is in that page's `extensions`. Gates 1 through 5, 7, and 8 came back
+unchanged, which is what confines the edit to word segmentation: the 21 Gate 4
+review sheets re-render byte-identical.
+
+What remains open is the residual disagreement, not the threshold. Over the
+evidence-sampled pages it is mostly over-split in four books and mostly
+under-split in `projectID657550412c8dc`, with no cause established. Exact
+agreement with a fallible F2 word count was never the right long-run target.
 
 A separate finding, that [F2 silently rejoins line-break
 hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md), is a true fact
@@ -114,9 +127,10 @@ its predicted consequences were tested and failed.
 The sample-size question the 30-page admission minimum depends on now has a
 partial answer. Pooled x-height, baseline pitch, and stroke width settle within
 0.5 px at 5 body pages in four books and 20 in the fifth, so 30 is comfortably
-sufficient for those three. Word gap is the unstable one: one book needs 50
-pages and another has not settled at 100. `MINIMUM_ACCEPTED_PAGES_PER_BOOK`
-stays at 30.
+sufficient for those three. Word gap is the unstable one, though less so under
+v2: it now settles in every book, at 5, 50, 5, 30, and 5 body pages, where under
+v1 one book did not converge within 100. `MINIMUM_ACCEPTED_PAGES_PER_BOOK` stays
+at 30, and font fitting is still an uncalibrated consumer.
 
 Font candidates, inverse rendering, typeface ranking, rectification, rectified
 frames, change-point detection, and any point-size or leading claim remain
