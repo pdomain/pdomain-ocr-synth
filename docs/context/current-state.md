@@ -144,6 +144,22 @@ v2: it now settles in every book, at 5, 50, 5, 30, and 5 body pages, where under
 v1 one book did not converge within 100. `MINIMUM_ACCEPTED_PAGES_PER_BOOK` stays
 at 30, and font fitting is still an uncalibrated consumer.
 
+`typography-pgdp` also takes an optional `--geometry` OCR record, added on
+2026-09-04. Without it the command behaves exactly as before, byte for byte on
+all five books. With it, each matched line records what the recognizer read
+where its first ink run sits and whether that run is a continuation fragment
+the transcription does not carry. Nothing in this repo runs OCR or opens a
+model: it reads the records `pdomain-source-data` already produced with the
+project's own fine-tuned DocTR checkpoints, so the base install stays
+torch-free.
+
+The witness flags 893 lines across the corpus, 3.7 to 7.1 percent of matched
+lines, and discounting them lifts agreement with the transcription by 3.0 to
+7.0 points, to 0.860, 0.772, 0.632, 0.870, and 0.847. That is reported beside
+Gate 6 and does not replace it. Two methods that share no evidence agree on the
+fragment rate within 1.1 points. See [the witness
+plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md).
+
 Font candidates, inverse rendering, typeface ranking, rectification, rectified
 frames, change-point detection, and any point-size or leading claim remain
 unimplemented.

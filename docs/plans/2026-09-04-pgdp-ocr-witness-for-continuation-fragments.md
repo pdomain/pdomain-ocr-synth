@@ -1,5 +1,5 @@
 ---
-Status: proposed
+Status: complete
 Owner: CT
 Created: 2026-09-04
 Last verified: 2026-09-04
@@ -11,7 +11,7 @@ Kind: plan
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** proposed
+- **Status:** complete
 - **Owner:** CT
 - **Created:** 2026-09-04
 - **Last verified:** 2026-09-04
@@ -19,7 +19,9 @@ Kind: plan
   [what word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md),
   with feasibility measured against the existing `geometry-v1` doctr records for all five corpus
   books
-- **Disposition:** Proposed, not approved. Four open decisions listed at the end.
+- **Disposition:** Complete as of 2026-09-04. All seven tasks landed and all seven gates pass.
+  Three of the four open decisions were taken as recommended; the confidence floor was left
+  unset and is recorded as still unmeasured.
 - **Read when:** implementing the OCR witness, or judging whether a line's leading ink run is a
   continuation fragment.
 - **Search terms:** OCR witness, continuation fragment, doctr, geometry-v1, line-break hyphen,
@@ -102,28 +104,28 @@ leading run reads `tunities`. Against `uncle, Robert Faunthorpe`, it reads `tion
 
 ## Tasks
 
-- [ ] **1. Read the geometry record.** A `pgdp-ocr-witness` reader parsing one book's JSONL into
+- [x] **1. Read the geometry record.** A `pgdp-ocr-witness` reader parsing one book's JSONL into
   validated frozen records: page name, `image_sha256`, image size, recognizer identity, and words
   carrying pixel boxes and confidences. Reject an unknown `schema_version` rather than guessing at
   it. No torch, no doctr, no network.
-- [ ] **2. Verify provenance before use.** Each accepted page's `image_sha256` must equal the
+- [x] **2. Verify provenance before use.** Each accepted page's `image_sha256` must equal the
   alignment report's `scan_sha256` for that page. A page that disagrees gets no witness and is
   recorded as such, on the same reasoning as `mask_mismatch`: a witness read from a different scan
   would be wrong in a way no later gate could see.
-- [ ] **3. Correspond runs to words.** Given a matched line's box and its ink runs, pick for each
+- [x] **3. Correspond runs to words.** Given a matched line's box and its ink runs, pick for each
   run the recognized word with the largest horizontal overlap whose box shares the line's row
   band. Emit the text and confidence, or nothing when no word overlaps.
-- [ ] **4. Decide `continuation_fragment`.** A line is flagged when its leading run's OCR text does
+- [x] **4. Decide `continuation_fragment`.** A line is flagged when its leading run's OCR text does
   not match F2's first word under alphanumeric-lowercase normalization. Record the two strings
   alongside the flag, so a reader can judge the call rather than trust it.
-- [ ] **5. Wire it as an optional input.** `typography-pgdp --geometry <book>.jsonl`. Without the
+- [x] **5. Wire it as an optional input.** `typography-pgdp --geometry <book>.jsonl`. Without the
   flag the command behaves exactly as today. With it, each line row carries the flag and its
   evidence in `extensions`, each book carries the flagged count, and the report records the
   geometry file's own sha256 and the recognizer's name, version, and `config_sha256`.
-- [ ] **6. Report a second number, change no gate.** Add `reconciled_after_witness`, the share of
+- [x] **6. Report a second number, change no gate.** Add `reconciled_after_witness`, the share of
   measured lines that reconcile once a flagged line's leading run is discounted. Gate 6 keeps its
   definition and its value.
-- [ ] **7. Run the corpus and measure every gate below.**
+- [x] **7. Run the corpus and measure every gate below.**
 
 ## Acceptance gates
 
@@ -144,6 +146,61 @@ be read as either a defect or a bad seed.
 6. **Gate 6 is unmoved.** Word reconciliation still reads 0.805, 0.742, 0.593, 0.800, 0.782.
 7. **Latent discipline.** The denylist and estimate-shape check still passes with the new keys.
 
+## Measured on 2026-09-04: every gate
+
+Each book was run three times: twice with `--geometry` for determinism, and once without it to
+check the change is confined. Evidence is in `/workspaces/pdomain/.m15d-evidence/`
+(`witness-gates.json` and the fifteen reports).
+
+| Gate | Result | Verdict |
+| --- | --- | ---: |
+| 1. Determinism | 5 of 5 books byte-identical across two runs | pass |
+| 2. No perturbation without the flag | 5 of 5 byte-identical to the committed v2 reports | pass |
+| 3. Page provenance | 0 `scan_hash_mismatch` pages; witness covers 0.998 to 1.000 of measured lines | pass |
+| 4. Control accuracy | 0.970 to 0.990 against a 0.95 floor | pass |
+| 5. Agreement with the repair test | 0.0006 to 0.0107 apart against a 0.10 ceiling | pass |
+| 6. Gate 6 unmoved | 0.805, 0.742, 0.593, 0.800, 0.782, unchanged | pass |
+| 7. Latent discipline | 0 violations across all 5 witness reports | pass |
+
+**Gate 2 is the one that had to be exact, and is.** A run without `--geometry` reproduces the
+committed v2 report byte for byte in every book, so the witness reaches nothing it was not given.
+
+**Gate 5 is the interesting one.** Two methods that share no evidence agree on the fragment rate
+to within 1.1 points. The repair test fits run widths against F2 character counts and never looks
+at a pixel; the witness reads the ink and never looks at a run width.
+
+| book | witness | repair test | difference |
+| --- | ---: | ---: | ---: |
+| projectID609bfa0449bdf | 0.0522 | 0.0528 | -0.0006 |
+| projectID64a479f51ce5b | 0.0371 | 0.0332 | +0.0039 |
+| projectID603d7d5e04ca0 | 0.0431 | 0.0396 | +0.0035 |
+| projectID657550412c8dc | 0.0705 | 0.0597 | +0.0107 |
+| projectID67a80fde44d34 | 0.0688 | 0.0676 | +0.0012 |
+
+**What the witness is worth.** It flags 893 lines across the corpus, 3.7 to 7.1 percent of matched
+lines. Discounting them lifts agreement with the transcription by 3.0 to 7.0 points.
+
+| book | flagged lines | Gate 6 | reconciled after witness | gain |
+| --- | ---: | ---: | ---: | ---: |
+| projectID609bfa0449bdf | 264 | 0.805 | 0.860 | +5.5 |
+| projectID64a479f51ce5b | 113 | 0.742 | 0.772 | +3.0 |
+| projectID603d7d5e04ca0 | 196 | 0.593 | 0.632 | +3.9 |
+| projectID657550412c8dc | 263 | 0.800 | 0.870 | +7.0 |
+| projectID67a80fde44d34 | 57 | 0.782 | 0.847 | +6.5 |
+
+## Decisions taken
+
+Three of the four were taken as recommended on 2026-09-04. The fourth was not.
+
+1. **Production stays where it is.** This consumes the records and records the recognizer's
+   name, version, and `config_sha256` plus the file's own sha256, so a regeneration at another
+   revision is visible rather than silent.
+2. **Extensions, not a v2 contract.** `pgdp-typography/v1` and its schema are unchanged.
+3. **`reconciled_after_witness` is reported, not gated.** Gate 6 keeps its definition and value.
+4. **No confidence floor, and the reason is recorded.** Still unmeasured. Shipping without one
+   was chosen over inventing a number, and the per-word confidence is carried on every line row
+   so a floor can be calibrated later from the data rather than guessed.
+
 ## Open decisions
 
 **1. Who owns regenerating the geometry records.** They were produced by `pdomain-source-data` on
@@ -163,9 +220,10 @@ a tripwire for a broken detector. Redefining it to absorb a known cause would ma
 that cause returning.
 
 **4. A confidence floor.** A low-confidence OCR read is weak evidence, and treating it as none may
-be right. **Not measured.** The records carry per-word confidence and the observed values span
-0.70 to 0.9997, but no floor has been calibrated against the flag's accuracy. Measure before
-choosing, or ship with no floor and record why.
+be right. **Still not measured, and shipped without one.** The records carry per-word confidence
+and the observed values span 0.70 to 0.9997, but no floor has been calibrated against the flag's
+accuracy. Every line row carries the confidence, so the calibration can be done from the shipped
+reports whenever it matters.
 
 ## What this does not do
 

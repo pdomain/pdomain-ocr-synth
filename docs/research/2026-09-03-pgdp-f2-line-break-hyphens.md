@@ -166,12 +166,12 @@ to what ink is on the line.
    supports the mechanism across the corpus nor refutes it there. The leading-run width test was
    not repeated. See [what word reconciliation still
    misses](2026-09-04-what-word-reconciliation-still-misses.md).
-3. Scoped on 2026-09-04 as [the OCR witness
+3. Shipped on 2026-09-04 as [the OCR witness
    plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md). F2 stays the label
-   and ink projection stays the geometry; OCR supplies only correspondence, telling us a line's
-   leading run is a continuation fragment. The pass needs no OCR engine in this repo, because the
-   project's own fine-tuned doctr records already cover all five corpus books and pin to the same
-   page hashes this repo pins to.
+   and ink projection stays the geometry; OCR supplies only correspondence. It needed no OCR
+   engine in this repo, because the project's own fine-tuned DocTR records already cover all five
+   corpus books and pin to the same page hashes. It flags 893 lines, 3.7 to 7.1 percent of matched
+   lines, which is this finding's mechanism measured a third time and by a third method.
 
 ## Related
 

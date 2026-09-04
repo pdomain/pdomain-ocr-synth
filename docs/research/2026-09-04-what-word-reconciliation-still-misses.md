@@ -205,10 +205,10 @@ not tested.
 
 1. Put to CT whether the reported quality of word boxes should be per-gap rather than per-line.
    Gate 6 itself should stay as it is; it did its job.
-2. Done on 2026-09-04. See [the OCR witness
-   plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md). It needs no OCR
-   engine in this repo: the doctr records already exist for all five books, and the witness
-   reproduces this document's fragment share book by book within 0.016 to 0.089.
+2. Shipped on 2026-09-04. See [the OCR witness
+   plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md). It needed no OCR
+   engine in this repo: the DocTR records already exist for all five books. On the same
+   denominator the shipped witness and this document's repair test agree within 0.0006 to 0.0107.
 3. Leave threshold jitter alone. Three books are at the noise floor of any single global
    threshold, and moving it trades one error for another.
 
