@@ -188,14 +188,50 @@ the review sheets the label gates were read from.
 | 4. Lowercase coverage | all 26 per book | no book misses a letter | pass |
 | 4b. Digit coverage | 20 per book | 83 to 1,879 per book | pass |
 | 5. Yield floor | 50 per accepted page | 87 to 547 | pass |
-| 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 651 sheets byte for byte | pass |
+| 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 808 sheets byte for byte | pass |
 | 7. Latent discipline | none | no manifest or row key claims font identity, point size, advance, side bearing or tracking | pass |
+
+Gate 3's sample is the first 30 rows per character in page order, not a random draw, so it reads
+each book's earliest pages. That is how it missed the pooled faces, and re-drawing it at random is
+the cheapest way to strengthen it.
 
 Gate 3 is model-reviewed, not human-reviewed. Sheets of 30 samples each for `a e h n o s t` were
 rendered from the scans at 7x and read by eye; the six errors are a `g` labelled `a`, a `Th`
 labelled `h`, an `re` labelled `e`, a `th` labelled `h`, a `ho` labelled `o`, and a near-empty
 cell labelled `t`. All six are residual coincidences inside pure-alphanumeric words, where one
 letter broke into two runs while another pair touched. The sheets are kept so CT can confirm.
+
+## What review found after the gates passed, and what it cost
+
+**Faces were pooled under one character, and now they are not.** PGDP transcribes small capitals
+in mixed case, so `<sc>Lowther Street</sc>` yields the letters `Lowther Street` and a capital `O`
+landed in the lowercase `o` bucket carrying a lowercase label. Nothing comparing a label to a
+character could see it: the character was right and only the letterform was wrong, which is why
+every gate passed over it. Rows now carry `label_style`, and coverage and the atlas are keyed by
+it, so `atlas/transcribed/small_caps/U+0065-000.png` holds capital `E` forms and the roman grid
+holds lowercase `e`.
+
+**The evidence was already in the alignment report.** Every page carries a style run per `<i>`,
+`<b>` and `<sc>` span, matching F2 exactly. The command reads no extra input.
+
+**Measured, the contamination was far smaller than a first estimate suggested.** Dividing each
+book's F2-wide styled characters by its F2-wide total put `projectID657550412c8dc` at 15.8 percent
+styled. The inventory does not draw from F2 at large: it draws from accepted pages' matched,
+reconciled, separable words, and that book's styled text is almost all front matter the alignment
+never accepted. Only 52 of its 3,232 style runs fall on an accepted page. The real figures:
+
+| book | italic glyphs | small-cap glyphs | styled share of transcribed |
+| --- | ---: | ---: | ---: |
+| projectID603d7d5e04ca0 | 118 | 607 | 0.0569 |
+| projectID64a479f51ce5b | 192 | 83 | 0.0090 |
+| projectID609bfa0449bdf | 30 | 22 | 0.0008 |
+| projectID657550412c8dc | 49 | 0 | 0.0006 |
+| projectID67a80fde44d34 | 0 | 0 | 0.0000 |
+
+The separation is still right, and it is now measured rather than assumed. It does not catch
+unmarked styling: `projectID609bfa0449bdf` p060 prints `LOWTHER STREET` in small capitals with a
+proofer's unresolved query `[**mark place in <sc>?]` and no markup, so those 11 capital
+letterforms still sit in lowercase buckets labelled roman. Only review finds that class.
 
 ## Decisions taken
 
