@@ -211,12 +211,27 @@ Checking every line against the recognizer, accepted pages included, took the po
 0.980 to 0.987 and `projectID603d7d5e04ca0` from 0.943 to 0.962. That book is still under the 0.98
 floor, so the gate fails there and the plan does not close on it.
 
-**What the line check fixed, and what it did not.** The wrong-ink bindings are gone: those lines
-scored 0.00 to 0.17 word agreement against the recognizer and are now rejected, at a cost of 1.4 to
-11.1 percent of matched lines per book. What remains in the sample is capitals labelled lowercase,
-boxes holding two letters, and single-letter confusions. Capitals are the largest remaining class
-and the `flat_ascender` flag misses the worst of them: a one-letter word like `A` has no x-height
-letter to compare against, so no ratio exists.
+**What the line check fixed.** The wrong-ink bindings are gone: those lines scored 0.00 to 0.17
+word agreement against the recognizer and are now rejected, at a cost of 1.4 to 11.1 percent of
+matched lines per book.
+
+**What remains is flagged, all of it.** A second measure closed the rest. An x-height letter that
+runs at least 1.35 times the median height of its line's own x-height letters is flagged
+`overtall`, which catches a box holding several letters and a capital where the label says
+lowercase. The reference has to be the line's own ink: normalised by the line's *fitted* x-height
+the tail runs to 5.33 and 13 of 16 outliers are correctly labelled glyphs on lines whose estimate
+was wrong, so it measures the estimator. Against the line's own letters the median is 1.00, the
+95th percentile 1.02 to 1.08, and 12 of 16 outliers are genuine label errors.
+
+Filtering `flat_ascender` and `overtall` together, the same random sample of
+`projectID603d7d5e04ca0` reads **210 of 210 correct**, against 0.962 unfiltered. The two flags
+cover 0.28 to 2.64 percent of glyphs per book, 0.79 percent across the corpus.
+
+**So the gate's verdict now depends on what it measures.** Read against the inventory as shipped
+it is 0.962 and fails. Read against the inventory with its own quality flags applied it is 1.000
+in the sample. Every error the review found is flagged, which was not true before. Redefining the
+gate to measure the filtered inventory would be weakening it without CT's say-so, so it stays open
+with both numbers recorded. What is no longer true is that this book has an unfindable defect.
 
 **Reviewing the queue found a worse defect than the one it was built for.** Classifying the first
 20 of `projectID603d7d5e04ca0`'s 180 flat words: 7 are small capitals PGDP never marked, 3 are bad
@@ -230,10 +245,11 @@ in three books of five. They are a pre-existing defect on accepted pages that no
 surfaced, because word-level agreement against the OCR read scores 0.9965 and a shifted binding
 still reads as a real word somewhere on the line.
 
-The follow-up is a slice of its own: connected-component shape evidence, or a per-character height
-model fitted to the book, to separate a capital form from a lowercase one without depending on
-markup that is not there. Until then a consumer wanting 0.98 on this book should drop
-`flat_ascender` glyphs and accept 0.971, or use the other four books, which pass at 0.981 to 1.000.
+One class stays invisible to both flags: small capitals, which sit at x-height by definition and
+so are neither flat nor overtall when they fill a whole line. Those need shape evidence,
+connected-component or otherwise, and are a slice of their own. A consumer wanting the highest
+label correctness available today should drop `flat_ascender` and `overtall` glyphs, which costs
+under 1 percent of the corpus.
 
 Gate 3 is model-reviewed, not human-reviewed. Sheets of 30 samples each for `a e h n o s t` were
 rendered from the scans at 7x and read by eye; the six errors are a `g` labelled `a`, a `Th`

@@ -91,7 +91,7 @@ Nine of ten pass. Full numbers in `/workspaces/pdomain/.m15f-evidence/gate-summa
 | --- | --- | ---: |
 | 1. Determinism | 5 of 5 inventory trees byte-identical across two runs, 900 atlas sheets included | pass |
 | 2. Provenance | every row unique on page, tier, line, word and ordinal; a mismatched profile refused | pass |
-| 3. Labels, `transcribed` | 1,050 glyphs drawn at random, 14 wrong, 0.987 pooled; per book 1.000, 1.000, 0.990, **0.962**, 0.981 | **fail on one book** |
+| 3. Labels, `transcribed` | 1,050 glyphs drawn at random, 14 wrong, 0.987 pooled; per book 1.000, 1.000, 0.990, **0.962**, 0.981. With `flat_ascender` and `overtall` filtered the worst book reads 1.000 | **fail on one book, unfiltered** |
 | 3b. Labels, `recognized` | 340 furniture glyphs reviewed, 0 wrong, 1.000, floor 0.90 | pass |
 | 3c. Labels, recognizer-admitted | 420 glyphs on non-accepted pages, 5 wrong, 0.988, floor 0.98 | pass |
 | 4. Lowercase coverage | all 26 in every book | pass |
@@ -106,9 +106,16 @@ The first pass sampled the first 30 rows per character in page order, so it read
 earliest pages and scored 0.994. Drawn at random under seed 20260905 the same 1,050 glyphs gave 21
 wrong, and after the line check 14: pooled 0.987, with `projectID603d7d5e04ca0` at 0.962.
 
-What remains in that book is capitals labelled lowercase, from small capitals PGDP never marked.
-`flat_ascender` misses the worst of them, because a one-letter word like `A` has no x-height
-letter to compare against and so gets no ratio at all.
+What remained in that book was capitals labelled lowercase and boxes holding several letters. A
+second measure, `overtall`, now flags an x-height letter running at least 1.35 times the median
+height of its line's own x-height letters. Filtering `flat_ascender` and `overtall` together, the
+same random sample reads **210 of 210 correct** against 0.962 unfiltered, at a cost of 0.79 percent
+of the corpus.
+
+So the gate's verdict depends on what it measures: 0.962 against the inventory as shipped, 1.000
+against the inventory with its own flags applied. Redefining it to measure the filtered inventory
+would be weakening it without your say-so, so it stays open with both numbers recorded. What is no
+longer true is that this book has an unfindable defect.
 
 ## What the five books yield
 
@@ -239,11 +246,12 @@ a call is comfortable.
 
 ## Resume steps
 
-1. **Decide what to do about Gate 3 on `projectID603d7d5e04ca0`.** It reads 0.962
-   against a 0.98 floor. The other four books pass at 0.981 to 1.000. The
-   remaining errors are capitals labelled lowercase, so the options are a
-   shape-based separator, a per-character height model fitted to the book, or
-   accepting the book at a stated lower number.
+1. **Decide what Gate 3 measures.** It reads 0.962 against the inventory as
+   shipped and 1.000 with `flat_ascender` and `overtall` filtered, on the same
+   random sample of the worst book. Filtering costs 0.79 percent of the corpus.
+   Either the gate measures the filtered inventory and passes, or the flagged
+   glyphs stop being emitted at all, or the book is accepted at a stated lower
+   number. That call is yours; I did not want to redefine the gate to pass it.
 2. **Work the flat-ascender queues.** 490 words across the five books, in each
    manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book>
    <start> <count>` renders them as labelled crops. The wrong-ink class is
