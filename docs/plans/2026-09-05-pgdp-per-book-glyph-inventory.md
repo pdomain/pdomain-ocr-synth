@@ -187,8 +187,9 @@ the review sheets the label gates were read from.
 | 3b. Label correctness, `recognized` | 0.90 over 100+ | 340 furniture glyphs reviewed across two books, 0 wrong, 1.000 | pass |
 | 4. Lowercase coverage | all 26 per book | no book misses a letter | pass |
 | 4b. Digit coverage | 20 per book | 83 to 1,879 per book | pass |
-| 5. Yield floor | 50 per accepted page | 87 to 547 | pass |
-| 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 808 sheets byte for byte | pass |
+| 5. Yield floor | 50 per harvested page | 68 to 308 | pass |
+| 3c. Label correctness, recognizer-admitted | 0.98 | 420 glyphs reviewed across two books on non-accepted pages, 5 wrong, 0.988 | pass |
+| 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 900 sheets byte for byte | pass |
 | 7. Latent discipline | none | no manifest or row key claims font identity, point size, advance, side bearing or tracking | pass |
 
 Gate 3's sample is the first 30 rows per character in page order, not a random draw, so it reads
@@ -232,6 +233,29 @@ The separation is still right, and it is now measured rather than assumed. It do
 unmarked styling: `projectID609bfa0449bdf` p060 prints `LOWTHER STREET` in small capitals with a
 proofer's unresolved query `[**mark place in <sc>?]` and no markup, so those 11 capital
 letterforms still sit in lowercase buckets labelled roman. Only review finds that class.
+
+## Every page is harvested, not only the accepted ones
+
+**Page acceptance turned out to be a poor proxy for whether one line bound to the right text.**
+Measured against the recognizer over three books, lines excluded only for alignment score agree
+about as well as accepted ones: `normalized_cost_exceeds_maximum` scores 0.937 to 0.962 and
+`uniqueness_margin_below_minimum` 0.887 to 0.934, against 0.926 to 0.976 for accepted. Lines on
+illustration pages score 0.560 to 0.683, which is what the page filter was really earning.
+
+So a line on a non-accepted page is admitted when the recognizer reads at least four of every
+five of its transcription words inside its own box. That needs `--geometry`; without it those
+pages are skipped as before. The recognizer only ever rejects, and the label stays the
+transcription's.
+
+The result is 1,367 of 1,385 pages harvested against 665, and 258,790 `transcribed` glyphs
+against 198,589, a 30 percent gain. Reviewed on the newly admitted population alone, 420 glyphs
+across two books, 5 were wrong, 0.988 against the same 0.98 floor.
+
+**Furniture stays on accepted pages.** Harvesting every page first pushed the `recognized` tier
+from 8,739 glyphs to 165,670, because on a page alignment did not accept most words fall outside
+every matched line simply because few lines matched. That stops meaning the running head and the
+folio and starts meaning ordinary body text, which is not what the tier documents and not what its
+review covers. Extending it is a separate decision with its own measurement to do first.
 
 ## Decisions taken
 
