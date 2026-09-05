@@ -270,7 +270,17 @@ the line's own letters the median is 1.00 and the 95th percentile 1.02 to 1.08,
 and 12 of 16 outliers reviewed were genuine label errors. It cannot see small
 capitals, whose whole point is to sit at x-height.
 
-Both flags are observations, not verdicts: it says the ink is flatter than the
+A glyph narrower than 0.6 times its character's usual width in the book is
+flagged `narrow`. A letter built from two strokes joined high up breaks under a
+light impression: the arch fails and the stem becomes its own ink run, and the
+word can still be cut if some other pair happened to touch, so one glyph carries
+half a letter. `h` is the usual casualty, at 12.5 percent of them in
+`projectID67a80fde44d34`; `m`, `n` and `r` follow, and `T` loses its arms the
+same way. This is the one measure taken across the whole book, because a
+half-cut letter looks unremarkable beside its neighbours and only the
+character's usual width elsewhere gives it away.
+
+All three flags are observations, not verdicts: it says the ink is flatter than the
 label predicts, not why. The causes found so far are small capitals PGDP never
 marked, a word bound to the wrong ink, and a badly cut glyph box. Only looking
 settles which, so the manifest carries a bounded queue of suspects rather than

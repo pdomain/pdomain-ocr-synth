@@ -26,6 +26,7 @@ Bounds = tuple[int, int, int, int]
 GlyphQualityFlag = Literal[
     "ascends",
     "flat_ascender",
+    "narrow",
     "overtall",
     "descends",
     "short_of_baseline",
@@ -41,6 +42,8 @@ GLYPH_QUALITY_METHODS: dict[str, float | int | str] = {
     "ascender_flatness_maximum": 1.10,
     "overtall_ratio_minimum": 1.35,
     "overtall_line_sample_minimum": 4,
+    "narrow_ratio_maximum": 0.6,
+    "narrow_character_sample_minimum": 30,
 }
 
 _ROW_EXTENT_TOLERANCE_PX: Final = 1
@@ -223,3 +226,37 @@ def is_overtall(character: str, height: int, reference: float | None) -> bool:
     if reference is None or character not in X_HEIGHT_CHARACTERS:
         return False
     return height / reference >= _OVERTALL_RATIO_MINIMUM
+
+
+_NARROW_RATIO_MAXIMUM: Final = 0.6
+"""How narrow a glyph may run against its character's usual width in the book before it is flagged.
+
+A letter built from two strokes joined high up breaks under a light impression: the arch fails and
+the stem is left as its own ink run. The word can still be cut if some other pair of letters
+touched, so the counts agree and one glyph carries only half a letter. Measured, `h` is the usual
+casualty, at 12.5 percent of them in projectID67a80fde44d34 and the worst character in three more
+books; `m`, `n` and `r` follow, and `T` loses its arms the same way.
+
+The reference is the median width of that character in that style across the book, so it needs no
+per-line estimate. At 0.6 this flags 0.17 to 1.31 percent of glyphs, and nine or ten of ten
+reviewed are genuinely half a letter: the `T` of `ETC.` reduced to its stem, the `n` of `furnish`
+to its left leg.
+"""
+
+_NARROW_CHARACTER_SAMPLE_MINIMUM: Final = 30
+"""How many of a character a book needs before its median width is worth comparing against."""
+
+
+def character_width_reference(widths: Sequence[int]) -> float | None:
+    """One character's usual width in a book, or `None` when the book carries too few of it."""
+
+    if len(widths) < _NARROW_CHARACTER_SAMPLE_MINIMUM:
+        return None
+    reference = median(widths)
+    return reference if reference > 0 else None
+
+
+def is_narrow(width: int, reference: float | None) -> bool:
+    """Whether a glyph is too narrow to be the whole letter its label names."""
+
+    return reference is not None and width < _NARROW_RATIO_MAXIMUM * reference

@@ -57,6 +57,8 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     GLYPH_QUALITY_METHODS,
     LineBand,
     ascender_is_flat,
+    character_width_reference,
+    is_narrow,
     is_overtall,
     line_x_height_reference,
     measure_glyph_quality,
@@ -399,8 +401,9 @@ def _harvest_project(
                     line_x_height_spread_px=_x_height_spread(harvest.line_x_heights),
                 )
             )
+    flagged_rows = _flag_narrow(rows)
     flags: Counter[str] = Counter()
-    for row in rows:
+    for row in flagged_rows:
         flags.update(row.flags)
     return GlyphHarvest(
         project_id=project.project_id,
@@ -411,7 +414,7 @@ def _harvest_project(
         profile_sha256=profile_sha256,
         methods=_methods(witness=witness),
         thresholds=_thresholds(gap, witness=witness),
-        rows=tuple(rows),
+        rows=tuple(flagged_rows),
         pages=tuple(pages),
         page_count=page_count,
         accepted_page_count=accepted,
@@ -895,3 +898,27 @@ def _x_height_spread(x_heights: Sequence[int]) -> int | None:
     if len(x_heights) < _PAGE_X_HEIGHT_SAMPLE_MINIMUM:
         return None
     return max(x_heights) - min(x_heights)
+
+
+def _flag_narrow(rows: Sequence[GlyphRow]) -> tuple[GlyphRow, ...]:
+    """Flag any glyph far narrower than its character usually runs in this book.
+
+    This is the one measure that needs the whole book: a half-cut letter looks unremarkable beside
+    its neighbours on the line, and only the character's usual width elsewhere gives it away. So it
+    runs once over the finished rows rather than per line.
+    """
+
+    widths: dict[tuple[str, str | None], list[int]] = {}
+    for row in rows:
+        widths.setdefault((row.character, row.label_style), []).append(row.box[2] - row.box[0])
+    reference = {
+        key: value
+        for key, sample in widths.items()
+        if (value := character_width_reference(sample)) is not None
+    }
+    return tuple(
+        replace(row, flags=(*row.flags, "narrow"))
+        if is_narrow(row.box[2] - row.box[0], reference.get((row.character, row.label_style)))
+        else row
+        for row in rows
+    )

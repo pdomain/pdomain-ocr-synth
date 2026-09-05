@@ -12,6 +12,8 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     GlyphQuality,
     LineBand,
     ascender_is_flat,
+    character_width_reference,
+    is_narrow,
     is_overtall,
     line_x_height_reference,
     measure_glyph_quality,
@@ -190,3 +192,22 @@ def test_only_x_height_letters_are_judged_this_way() -> None:
 
 def test_no_reference_means_no_judgement() -> None:
     assert not is_overtall("o", 40, None)
+
+
+def test_a_character_needs_thirty_samples_to_set_a_width_reference() -> None:
+    assert character_width_reference([19] * 29) is None
+    assert character_width_reference([19] * 30) == 19
+
+
+def test_half_a_letter_reads_narrow() -> None:
+    assert is_narrow(9, 19.0)
+    assert is_narrow(8, 19.0)
+
+
+def test_a_whole_letter_does_not() -> None:
+    assert not is_narrow(19, 19.0)
+    assert not is_narrow(12, 19.0)
+
+
+def test_no_reference_means_no_narrow_judgement() -> None:
+    assert not is_narrow(2, None)
