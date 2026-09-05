@@ -108,9 +108,11 @@ Mask = np.ndarray[tuple[int, int], np.dtype[np.bool]]
 FLAT_WORD_REVIEW_LIMIT: Final = 200
 """How many suspected words the manifest names. The count is always exact; the list is a queue.
 
-Two hundred is what one person can look through in a sitting. Measured, no book of the five comes
-close to it, so the cap has never truncated anything and exists so a pathological book cannot
-write a manifest larger than its own inventory.
+Two hundred is what one person can look through in a sitting. Measured, the five books queue 11 to
+188 words, so the cap has never truncated one. The queue is ordered by page rather than by how
+flat a word reads, so a book that did hit the cap would still show every failure type instead of
+only its worst cuts: the flattest words are badly cut boxes, while unmarked small capitals sit
+near 1.00 and would be the first thing a flatness-ordered truncation dropped.
 """
 
 
@@ -247,7 +249,6 @@ class GlyphHarvest:
                     for word in sorted(
                         self.flat_words,
                         key=lambda word: (
-                            word.ascender_flatness,
                             natural_page_key(word.page_name),
                             word.line_ordinal,
                             word.word_ordinal,
