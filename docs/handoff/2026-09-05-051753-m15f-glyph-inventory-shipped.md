@@ -20,7 +20,7 @@ host: claude-code
 `glyphs-pgdp` cuts a labelled per-character glyph inventory from a book's own
 scans and writes it as a directory: `glyphs.jsonl`, one row per glyph, plus
 `manifest.json` and a per-character atlas. All eight tasks of
-[the plan](../plans/2026-09-05-pgdp-per-book-glyph-inventory.md) shipped and
+`docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md` shipped and
 every gate passes, so it moves from `proposed` to `complete`.
 
 Nothing in this repo runs OCR, opens a font, renders text, or leaves the
@@ -195,11 +195,11 @@ a call is comfortable.
 
 ## Pointers
 
-- [the glyph inventory plan](../plans/2026-09-05-pgdp-per-book-glyph-inventory.md)
-- [the OCR witness plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
-- [the M15d plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
-- [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md)
-- [previous handoff](2026-09-04-093000-ocr-witness-shipped.md)
+- Glyph inventory plan: `docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md`
+- OCR witness plan: `docs/plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md`
+- M15d plan: `docs/plans/2026-09-02-pgdp-font-free-typographic-observables.md`
+- What word reconciliation still misses: `docs/research/2026-09-04-what-word-reconciliation-still-misses.md`
+- Previous handoff: `docs/_archive/handoff/2026-09-04-093000-ocr-witness-shipped.md`
 - `schemas/pgdp-glyphs-v1.schema.json` — the manifest contract
 - `schemas/pgdp-glyphs-row-v1.schema.json` — the per-glyph row contract
 - `docs/usage/recipe-workflow.md` — the `glyphs-pgdp` flag table and what it does

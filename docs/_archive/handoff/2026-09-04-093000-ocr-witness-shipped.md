@@ -27,7 +27,7 @@ the largest named cause of what word reconciliation still misses, at 10 to 31
 percent of each book's disagreement.
 
 All seven gates of
-[the plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
+`docs/plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md`
 pass, so it moves from `proposed` to `complete`.
 
 ## The scope collapsed once the workspace was checked
@@ -203,12 +203,12 @@ run at most two per call.
 
 ## Pointers
 
-- [the OCR witness plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
-- [the M15d plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
-- [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md)
-- [F2 line-break hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
-- [Word-gap threshold is too low](../research/2026-09-03-word-gap-threshold-is-too-low.md)
-- [previous handoff](2026-09-04-014500-m15d-word-gap-v2-complete.md)
+- OCR witness plan: `docs/plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md`
+- M15d plan: `docs/plans/2026-09-02-pgdp-font-free-typographic-observables.md`
+- What word reconciliation still misses: `docs/research/2026-09-04-what-word-reconciliation-still-misses.md`
+- F2 line-break hyphens: `docs/research/2026-09-03-pgdp-f2-line-break-hyphens.md`
+- Word-gap threshold is too low: `docs/research/2026-09-03-word-gap-threshold-is-too-low.md`
+- Previous handoff: `docs/handoff/2026-09-04-014500-m15d-word-gap-v2-complete.md`
 - `/workspaces/pdomain/.m15d-evidence/witness-gates.json` — every witness gate number
 - `/workspaces/pdomain/.m15d-evidence/confidence-floor.json` — why no floor ships
 - `/workspaces/pdomain/.m15d-evidence/per-gap-accuracy.json` — per-gap against per-line
