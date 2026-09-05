@@ -250,7 +250,17 @@ height, and so does a word bound to the wrong ink. Calibrated against the words
 PGDP itself marks `<sc>`, a cut at 1.10 catches 74 of 76 while flagging 1.8
 percent of roman words in the same book.
 
-The flag is an observation, not a verdict: it says the ink is flatter than the
+An x-height letter that runs at least 1.35 times the median height of its
+line's other x-height letters is flagged `overtall`. That catches a box holding
+several letters, or a capital where the label says lowercase. The reference is
+the line's own ink, not its fitted x-height: normalised by the fitted value the
+tail runs to 5.33 and most outliers are correctly labelled glyphs on lines whose
+estimate was wrong, which measures the estimator rather than the glyph. Against
+the line's own letters the median is 1.00 and the 95th percentile 1.02 to 1.08,
+and 12 of 16 outliers reviewed were genuine label errors. It cannot see small
+capitals, whose whole point is to sit at x-height.
+
+Both flags are observations, not verdicts: it says the ink is flatter than the
 label predicts, not why. The causes found so far are small capitals PGDP never
 marked, a word bound to the wrong ink, and a badly cut glyph box. Only looking
 settles which, so the manifest carries a bounded queue of suspects rather than

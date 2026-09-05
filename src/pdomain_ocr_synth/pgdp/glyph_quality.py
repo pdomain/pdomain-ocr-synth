@@ -26,6 +26,7 @@ Bounds = tuple[int, int, int, int]
 GlyphQualityFlag = Literal[
     "ascends",
     "flat_ascender",
+    "overtall",
     "descends",
     "short_of_baseline",
     "sparse_ink",
@@ -38,6 +39,8 @@ GLYPH_QUALITY_METHODS: dict[str, float | int | str] = {
     "row_extent_tolerance_px": 1,
     "sparse_ink_density_maximum": 0.15,
     "ascender_flatness_maximum": 1.10,
+    "overtall_ratio_minimum": 1.35,
+    "overtall_line_sample_minimum": 4,
 }
 
 _ROW_EXTENT_TOLERANCE_PX: Final = 1
@@ -182,3 +185,41 @@ def ascender_is_flat(flatness: float | None) -> bool:
     """Whether a word's ink is flatter than its label predicts."""
 
     return flatness is not None and flatness < _ASCENDER_FLATNESS_MAXIMUM
+
+
+_OVERTALL_RATIO_MINIMUM: Final = 1.35
+"""How much taller than its line's own x-height letters a glyph may run before it is flagged.
+
+The reference is the median height of the line's own x-height-only letters, not the line's fitted
+x-height. Fitting was tried first and fails: normalised by the fitted value the tail runs to 5.33
+and 13 of 16 outliers are correctly labelled glyphs on lines whose x-height estimate was wrong, so
+it measures the estimator rather than the glyph. Against the line's own ink the same books read a
+median of 1.00 and a 95th percentile of 1.02 to 1.08, and 12 of 16 outliers are genuine label
+errors: a box holding several letters, or a capital where the label says lowercase.
+
+At 1.35 this flags 0.03 to 1.2 percent of x-height glyphs, most in the book whose labels measure
+worst. It cannot see small capitals, whose whole point is to sit at x-height.
+"""
+
+_OVERTALL_LINE_SAMPLE_MINIMUM: Final = 4
+"""How many x-height letters a line needs before its median is worth comparing against."""
+
+
+def line_x_height_reference(heights_by_character: Sequence[tuple[str, int]]) -> float | None:
+    """The median height of a line's own x-height-only letters, or `None` if too few to trust."""
+
+    heights = [
+        height for character, height in heights_by_character if character in X_HEIGHT_CHARACTERS
+    ]
+    if len(heights) < _OVERTALL_LINE_SAMPLE_MINIMUM:
+        return None
+    reference = median(heights)
+    return reference if reference > 0 else None
+
+
+def is_overtall(character: str, height: int, reference: float | None) -> bool:
+    """Whether an x-height letter runs taller than its line's other x-height letters."""
+
+    if reference is None or character not in X_HEIGHT_CHARACTERS:
+        return False
+    return height / reference >= _OVERTALL_RATIO_MINIMUM

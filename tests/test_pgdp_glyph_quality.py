@@ -12,6 +12,8 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     GlyphQuality,
     LineBand,
     ascender_is_flat,
+    is_overtall,
+    line_x_height_reference,
     measure_glyph_quality,
     word_ascender_flatness,
 )
@@ -161,3 +163,30 @@ def test_a_word_with_no_x_height_letter_cannot_be_judged() -> None:
 
 def test_a_zero_x_height_is_refused_rather_than_divided_by() -> None:
     assert word_ascender_flatness([("h", 26), ("o", 0)]) is None
+
+
+def test_a_line_needs_four_x_height_letters_to_set_a_reference() -> None:
+    assert line_x_height_reference([("a", 17), ("o", 17), ("e", 17)]) is None
+    assert line_x_height_reference([("a", 17), ("o", 17), ("e", 17), ("n", 17)]) == 17
+
+
+def test_ascenders_do_not_count_toward_the_reference() -> None:
+    assert line_x_height_reference([("h", 26), ("d", 26), ("l", 26), ("t", 26)]) is None
+
+
+def test_a_glyph_matching_its_line_is_not_overtall() -> None:
+    assert not is_overtall("o", 17, 17.0)
+    assert not is_overtall("o", 22, 17.0)
+
+
+def test_a_box_holding_two_letters_reads_overtall() -> None:
+    assert is_overtall("o", 26, 17.0)
+
+
+def test_only_x_height_letters_are_judged_this_way() -> None:
+    assert not is_overtall("h", 26, 17.0)
+    assert not is_overtall("p", 26, 17.0)
+
+
+def test_no_reference_means_no_judgement() -> None:
+    assert not is_overtall("o", 40, None)

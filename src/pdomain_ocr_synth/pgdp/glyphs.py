@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import tempfile
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
@@ -56,6 +56,8 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     GLYPH_QUALITY_METHODS,
     LineBand,
     ascender_is_flat,
+    is_overtall,
+    line_x_height_reference,
     measure_glyph_quality,
     word_ascender_flatness,
 )
@@ -525,6 +527,7 @@ def _harvest_page(
         )
         if not words.words_reconciled:
             continue
+        line_rows: list[GlyphRow] = []
         band = LineBand(
             box=box,
             baseline_row_px=measured.baseline_row_px,
@@ -561,7 +564,7 @@ def _harvest_page(
                         ascender_flatness=flatness if flatness is not None else 0.0,
                     )
                 )
-            rows.extend(
+            line_rows.extend(
                 _glyph_row(
                     mask,
                     page_name=page.page_name,
@@ -579,6 +582,7 @@ def _harvest_page(
                 )
                 for glyph, style in zip(cut.glyphs, styles, strict=True)
             )
+        rows.extend(_flag_overtall(line_rows))
 
     furniture_rows, furniture_words, furniture_skipped = _harvest_furniture(
         mask,
@@ -827,3 +831,23 @@ def _write_bytes(path: Path, payload: bytes) -> None:
     except OSError:
         temporary_path.unlink(missing_ok=True)
         raise
+
+
+def _flag_overtall(line_rows: Sequence[GlyphRow]) -> tuple[GlyphRow, ...]:
+    """Flag any x-height letter on this line that runs taller than the line's other ones.
+
+    The comparison is made once the whole line is cut, because the reference is the line's own
+    median x-height letter and a single word rarely carries enough of them to form one.
+    """
+
+    reference = line_x_height_reference(
+        [(row.character, row.box[3] - row.box[1]) for row in line_rows]
+    )
+    if reference is None:
+        return tuple(line_rows)
+    return tuple(
+        replace(row, flags=(*row.flags, "overtall"))
+        if is_overtall(row.character, row.box[3] - row.box[1], reference)
+        else row
+        for row in line_rows
+    )
