@@ -112,6 +112,8 @@ class GlyphRow:
     bottom_offset_px: int | None = None
     flags: tuple[str, ...] = ()
     label_confidence: float | None = None
+    label_style: str | None = None
+    source_line_ordinal: int | None = None
 
     def __post_init__(self) -> None:
         if len(self.character) != 1:
@@ -141,6 +143,12 @@ class GlyphRow:
             raise ValueError("label_confidence must be a share between zero and one.")
         if self.label_tier == "transcribed" and self.label_confidence is not None:
             raise ValueError("A transcribed label is a human proofer's and carries no confidence.")
+        if self.label_style is not None and not self.label_style:
+            raise ValueError("label_style must be a nonempty name or null.")
+        if self.label_tier == "recognized" and self.label_style is not None:
+            raise ValueError("A recognized label has no F2 markup to take a style from.")
+        if self.source_line_ordinal is not None and self.source_line_ordinal < 0:
+            raise ValueError("source_line_ordinal must be nonnegative.")
 
     @property
     def identity(self) -> tuple[str, str, int, int, int]:
@@ -173,10 +181,12 @@ class GlyphRow:
             "glyph_ordinal": self.glyph_ordinal,
             "ink_density": self.ink_density,
             "label_confidence": self.label_confidence,
+            "label_style": self.label_style,
             "label_tier": self.label_tier,
             "line_ordinal": self.line_ordinal,
             "page_name": self.page_name,
             "row_extent_px": self.row_extent_px,
+            "source_line_ordinal": self.source_line_ordinal,
             "top_offset_px": self.top_offset_px,
             "word_ordinal": self.word_ordinal,
         }
@@ -204,11 +214,17 @@ class GlyphRow:
 
 @dataclass(frozen=True, slots=True)
 class CharacterCoverage:
-    """How many glyphs one character carries on one tier."""
+    """How many glyphs one character carries on one tier in one style.
+
+    Style is part of the key, not a tally beside it. A small-capital `O` and a lowercase `o` are
+    different letterforms under the same character, so pooling them would report coverage the
+    inventory does not actually have.
+    """
 
     character: str
     label_tier: LabelTier
     glyph_count: int
+    label_style: str | None = None
 
     def __post_init__(self) -> None:
         if len(self.character) != 1:
@@ -216,12 +232,15 @@ class CharacterCoverage:
         _require_tier(self.label_tier, name="label_tier")
         if self.glyph_count <= 0:
             raise ValueError("A coverage row counts at least one glyph.")
+        if self.label_style is not None and not self.label_style:
+            raise ValueError("label_style must be a nonempty name or null.")
 
     def to_dict(self) -> dict[str, JsonValue]:
         return {
             "character": self.character,
             "code_point": f"U+{ord(self.character):04X}",
             "glyph_count": self.glyph_count,
+            "label_style": self.label_style,
             "label_tier": self.label_tier,
         }
 
@@ -264,6 +283,7 @@ class AtlasSheet:
     cell_height_px: int
     sha256: str
     clipped_cell_count: int = 0
+    label_style: str | None = None
 
     def __post_init__(self) -> None:
         if len(self.character) != 1:
@@ -279,6 +299,8 @@ class AtlasSheet:
             raise ValueError("An atlas cell must have positive width and height.")
         if not 0 <= self.clipped_cell_count <= self.cell_count:
             raise ValueError("clipped_cell_count may not exceed the sheet's cell count.")
+        if self.label_style is not None and not self.label_style:
+            raise ValueError("label_style must be a nonempty name or null.")
         _require_sha256(self.sha256, name="sha256")
 
     def to_dict(self) -> dict[str, JsonValue]:
@@ -288,6 +310,7 @@ class AtlasSheet:
             "cell_width_px": self.cell_width_px,
             "character": self.character,
             "clipped_cell_count": self.clipped_cell_count,
+            "label_style": self.label_style,
             "label_tier": self.label_tier,
             "path": self.path,
             "sha256": self.sha256,
@@ -324,6 +347,8 @@ class GlyphManifest:
     geometry_label: str | None = None
     geometry_sha256: str | None = None
     ocr_recognizer: Mapping[str, str] | None = None
+    f2_label: str | None = None
+    f2_sha256: str | None = None
     schema_version: int = GLYPHS_SCHEMA_VERSION
     algorithm_version: str = GLYPHS_ALGORITHM_VERSION
     extensions: Mapping[str, object] = field(default_factory=dict)
@@ -355,6 +380,12 @@ class GlyphManifest:
             _require_sha256(self.geometry_sha256, name="geometry_sha256")
         if self.geometry_label is None and self.ocr_recognizer is not None:
             raise ValueError("A recognizer identity requires the geometry record that carries it.")
+        if (self.f2_label is None) != (self.f2_sha256 is None):
+            raise ValueError("An F2 source is named and hashed together or not at all.")
+        if self.f2_label is not None:
+            _require_file_label(self.f2_label, name="f2_label")
+        if self.f2_sha256 is not None:
+            _require_sha256(self.f2_sha256, name="f2_sha256")
         for name, count in (
             ("accepted_page_count", self.accepted_page_count),
             ("harvested_page_count", self.harvested_page_count),
@@ -393,7 +424,12 @@ class GlyphManifest:
         object.__setattr__(
             self,
             "coverage",
-            tuple(sorted(self.coverage, key=lambda row: (row.label_tier, row.character))),
+            tuple(
+                sorted(
+                    self.coverage,
+                    key=lambda row: (row.label_tier, row.label_style or "", row.character),
+                )
+            ),
         )
         object.__setattr__(
             self,
@@ -430,6 +466,8 @@ class GlyphManifest:
             "alignment_sha256": self.alignment_sha256,
             "atlas": [sheet.to_dict() for sheet in self.atlas],
             "coverage": [row.to_dict() for row in self.coverage],
+            "f2_label": self.f2_label,
+            "f2_sha256": self.f2_sha256,
             "furniture_word_count": self.furniture_word_count,
             "geometry_label": self.geometry_label,
             "geometry_sha256": self.geometry_sha256,
@@ -534,6 +572,8 @@ class GlyphRowInput(_WireModel):
     bottom_offset_px: StrictInt | None = None
     flags: tuple[StrictStr, ...] = ()
     label_confidence: StrictFloat | None = Field(default=None, ge=0.0, le=1.0)
+    label_style: StrictStr | None = Field(default=None, min_length=1)
+    source_line_ordinal: StrictInt | None = Field(default=None, ge=0)
 
     @model_validator(mode="before")
     @classmethod
@@ -555,6 +595,8 @@ class GlyphRowInput(_WireModel):
             bottom_offset_px=self.bottom_offset_px,
             flags=self.flags,
             label_confidence=self.label_confidence,
+            label_style=self.label_style,
+            source_line_ordinal=self.source_line_ordinal,
         )
 
 
@@ -562,10 +604,14 @@ class CharacterCoverageInput(_WireModel):
     character: StrictStr = Field(min_length=1, max_length=1)
     label_tier: Literal["transcribed", "recognized"]
     glyph_count: StrictInt = Field(gt=0)
+    label_style: StrictStr | None = Field(default=None, min_length=1)
 
     def to_domain(self) -> CharacterCoverage:
         return CharacterCoverage(
-            character=self.character, label_tier=self.label_tier, glyph_count=self.glyph_count
+            character=self.character,
+            label_tier=self.label_tier,
+            glyph_count=self.glyph_count,
+            label_style=self.label_style,
         )
 
 
@@ -594,6 +640,7 @@ class AtlasSheetInput(_WireModel):
     cell_height_px: StrictInt = Field(gt=0)
     sha256: StrictStr = Field(min_length=64, max_length=64)
     clipped_cell_count: StrictInt = Field(default=0, ge=0)
+    label_style: StrictStr | None = Field(default=None, min_length=1)
 
     def to_domain(self) -> AtlasSheet:
         return AtlasSheet(
@@ -606,6 +653,7 @@ class AtlasSheetInput(_WireModel):
             cell_height_px=self.cell_height_px,
             sha256=self.sha256,
             clipped_cell_count=self.clipped_cell_count,
+            label_style=self.label_style,
         )
 
 
@@ -637,6 +685,8 @@ class GlyphManifestInput(_WireModel):
     geometry_label: StrictStr | None = None
     geometry_sha256: StrictStr | None = Field(default=None, min_length=64, max_length=64)
     ocr_recognizer: dict[str, StrictStr] | None = None
+    f2_label: StrictStr | None = Field(default=None, min_length=1)
+    f2_sha256: StrictStr | None = Field(default=None, min_length=64, max_length=64)
 
     @model_validator(mode="before")
     @classmethod
@@ -672,6 +722,8 @@ class GlyphManifestInput(_WireModel):
             geometry_label=self.geometry_label,
             geometry_sha256=self.geometry_sha256,
             ocr_recognizer=self.ocr_recognizer,
+            f2_label=self.f2_label,
+            f2_sha256=self.f2_sha256,
             schema_version=self.schema_version,
             algorithm_version=self.algorithm_version,
             extensions=extensions,

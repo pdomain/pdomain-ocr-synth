@@ -39,25 +39,40 @@ def inventory(fixture: Fixture, tmp_path_factory: pytest.TempPathFactory) -> Pat
     return directory
 
 
-def test_a_sheet_path_names_the_character_by_code_point() -> None:
-    assert sheet_path(tier="transcribed", character="e", ordinal=0) == (
-        "atlas/transcribed/U+0065-000.png"
+def test_a_sheet_path_names_the_tier_the_style_and_the_character() -> None:
+    assert sheet_path(tier="transcribed", style="roman", character="e", ordinal=0) == (
+        "atlas/transcribed/roman/U+0065-000.png"
+    )
+    assert sheet_path(tier="transcribed", style="small_caps", character="o", ordinal=2) == (
+        "atlas/transcribed/small_caps/U+006F-002.png"
     )
 
 
-def test_every_character_gets_a_sheet(inventory: Path) -> None:
+def test_every_character_and_style_gets_a_sheet(inventory: Path) -> None:
     manifest = GlyphManifest.from_json((inventory / "manifest.json").read_bytes())
-    characters = {(row.label_tier, row.character) for row in manifest.coverage}
-    assert {(sheet.label_tier, sheet.character) for sheet in manifest.atlas} == characters
+    buckets = {(row.label_tier, row.label_style, row.character) for row in manifest.coverage}
+    assert {
+        (sheet.label_tier, sheet.label_style, sheet.character) for sheet in manifest.atlas
+    } == buckets
 
 
 def test_a_sheet_holds_one_cell_per_glyph(inventory: Path) -> None:
     manifest = GlyphManifest.from_json((inventory / "manifest.json").read_bytes())
-    cells_by_character = {(sheet.label_tier, sheet.character): 0 for sheet in manifest.atlas}
+    cells: dict[tuple[str, str | None, str], int] = {}
     for sheet in manifest.atlas:
-        cells_by_character[sheet.label_tier, sheet.character] += sheet.cell_count
+        key = (sheet.label_tier, sheet.label_style, sheet.character)
+        cells[key] = cells.get(key, 0) + sheet.cell_count
     for row in manifest.coverage:
-        assert cells_by_character[row.label_tier, row.character] == row.glyph_count
+        assert cells[row.label_tier, row.label_style, row.character] == row.glyph_count
+
+
+def test_no_sheet_mixes_two_styles_of_one_character(inventory: Path) -> None:
+    manifest = GlyphManifest.from_json((inventory / "manifest.json").read_bytes())
+    styles = {sheet.label_style for sheet in manifest.atlas if sheet.label_tier == "transcribed"}
+    assert "italic" in styles
+    assert "roman" in styles
+    for sheet in manifest.atlas:
+        assert sheet.label_style is None or sheet.label_style in sheet.path
 
 
 def test_every_sheet_lands_on_disk_with_the_hash_the_manifest_records(inventory: Path) -> None:

@@ -5,6 +5,10 @@ every `e` in the book is on one grid, where a glyph carrying the wrong label or 
 middle of a letter stands out from its neighbours. That is what the label-correctness gate is
 reviewed against, built in rather than bolted on.
 
+One grid per character **per style**, because a small-capital `O` and a lowercase `o` share a
+character and not a letterform; pooling them would put a capital in the lowercase grid, which is
+exactly the defect the grids exist to make visible.
+
 One file per character, not per glyph. A file per glyph is 10,000 files a book and about three
 million across the 286-project corpus; per character is 50 to 90 grids a book, sharded so no sheet
 grows past the repository's own large-file limit.
@@ -55,6 +59,8 @@ _CELLS_PER_SHEET_MAXIMUM: Final = 1024
 _CELL_EXTENT_PERCENTILE: Final = 0.95
 _GUTTER_PX: Final = 1
 _GUTTER_VALUE: Final = 160
+UNKNOWN_STYLE: Final = "unknown-style"
+"""Directory name for glyphs with no trusted style source, which is the whole recognized tier."""
 _PAPER_VALUE: Final = 255
 
 
@@ -83,7 +89,7 @@ def render_atlas(
     root = Path(corpus_root).expanduser().resolve()
     crops = _crop_rows(rows, root=root, pages=pages)
     sheets: list[RenderedSheet] = []
-    for (tier, character), indexed in sorted(_group(rows, crops).items()):
+    for (tier, style, character), indexed in sorted(_group(rows, crops).items()):
         cell_width, cell_height = cell_extent(indexed)
         for ordinal, start in enumerate(range(0, len(indexed), _CELLS_PER_SHEET_MAXIMUM)):
             block = indexed[start : start + _CELLS_PER_SHEET_MAXIMUM]
@@ -92,9 +98,12 @@ def render_atlas(
                 RenderedSheet(
                     sheet=AtlasSheet(
                         character=character,
+                        label_style=None if style == UNKNOWN_STYLE else style,
                         label_tier="recognized" if tier == "recognized" else "transcribed",
                         sheet_ordinal=ordinal,
-                        path=sheet_path(tier=tier, character=character, ordinal=ordinal),
+                        path=sheet_path(
+                            tier=tier, style=style, character=character, ordinal=ordinal
+                        ),
                         cell_count=len(block),
                         cell_width_px=cell_width,
                         cell_height_px=cell_height,
@@ -107,10 +116,10 @@ def render_atlas(
     return tuple(sheets)
 
 
-def sheet_path(*, tier: str, character: str, ordinal: int) -> str:
+def sheet_path(*, tier: str, style: str, character: str, ordinal: int) -> str:
     """Where one sheet sits inside the inventory directory."""
 
-    return f"{GLYPHS_ATLAS_DIRECTORY}/{tier}/U+{ord(character):04X}-{ordinal:03d}.png"
+    return f"{GLYPHS_ATLAS_DIRECTORY}/{tier}/{style}/U+{ord(character):04X}-{ordinal:03d}.png"
 
 
 def write_atlas(sheets: Sequence[RenderedSheet], directory: str | Path) -> tuple[AtlasSheet, ...]:
@@ -199,10 +208,14 @@ def _grayscale(image: Image.Image) -> Image.Image:
 def _group(
     rows: Sequence[GlyphRow],
     crops: Sequence[np.ndarray[tuple[int, int], np.dtype[np.uint8]]],
-) -> Mapping[tuple[str, str], list[np.ndarray[tuple[int, int], np.dtype[np.uint8]]]]:
-    grouped: dict[tuple[str, str], list[np.ndarray[tuple[int, int], np.dtype[np.uint8]]]] = {}
+) -> Mapping[tuple[str, str, str], list[np.ndarray[tuple[int, int], np.dtype[np.uint8]]]]:
+    """Bucket crops by tier, style and character, which is what one grid may hold."""
+
+    grouped: dict[tuple[str, str, str], list[np.ndarray[tuple[int, int], np.dtype[np.uint8]]]] = {}
     for row, crop in zip(rows, crops, strict=True):
-        grouped.setdefault((row.label_tier, row.character), []).append(crop)
+        grouped.setdefault(
+            (row.label_tier, row.label_style or UNKNOWN_STYLE, row.character), []
+        ).append(crop)
     return grouped
 
 

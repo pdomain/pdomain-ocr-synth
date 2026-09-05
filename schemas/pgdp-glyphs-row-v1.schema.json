@@ -111,6 +111,32 @@
       ],
       "default": null,
       "title": "Label Confidence"
+    },
+    "label_style": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Label Style"
+    },
+    "source_line_ordinal": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Line Ordinal"
     }
   },
   "required": [

@@ -27,6 +27,7 @@ import numpy as np
 
 from pdomain_ocr_synth.pgdp.alignment_image import build_candidate_mask
 from pdomain_ocr_synth.pgdp.alignment_models import AlignmentReport
+from pdomain_ocr_synth.pgdp.f2 import F2LoadError
 from pdomain_ocr_synth.pgdp.glyph_atlas import render_atlas, write_atlas
 from pdomain_ocr_synth.pgdp.glyph_cut import (
     GLYPH_CUT_METHODS,
@@ -54,6 +55,13 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     LineBand,
     measure_glyph_quality,
 )
+from pdomain_ocr_synth.pgdp.glyph_style import (
+    GLYPH_STYLE_METHODS,
+    BookStyle,
+    GlyphStyleError,
+    read_book_style,
+    styles_for_word,
+)
 from pdomain_ocr_synth.pgdp.image_measurement import (
     measure_image_snapshot,
     open_image_snapshot,
@@ -61,6 +69,7 @@ from pdomain_ocr_synth.pgdp.image_measurement import (
 from pdomain_ocr_synth.pgdp.ocr_witness import BookWitness, read_book_witness
 from pdomain_ocr_synth.pgdp.ordering import natural_page_key
 from pdomain_ocr_synth.pgdp.paths import (
+    UnsafePathError,
     corpus_relative_path,
     require_canonical_relative_reference,
     resolve_image_candidate,
@@ -137,6 +146,9 @@ class GlyphHarvest:
     geometry_label: str | None = None
     geometry_sha256: str | None = None
     ocr_recognizer: Mapping[str, str] | None = None
+    f2_label: str | None = None
+    f2_sha256: str | None = None
+    style_source: str = "f2_unavailable"
     furniture_skipped_page_count: int = 0
 
     def render(self) -> str:
@@ -151,12 +163,14 @@ class GlyphHarvest:
     ) -> GlyphManifest:
         """The manifest describing this harvest, once its rows have been written and hashed."""
 
-        counts: Counter[tuple[str, str]] = Counter()
+        counts: Counter[tuple[str, str | None, str]] = Counter()
         for row in self.rows:
-            counts[row.label_tier, row.character] += 1
+            counts[row.label_tier, row.label_style, row.character] += 1
         by_tier: Counter[str] = Counter()
-        for (tier, _), count in counts.items():
+        by_style: Counter[str] = Counter()
+        for (tier, style, _), count in counts.items():
             by_tier[tier] += count
+            by_style[style or "unknown"] += count
         return GlyphManifest(
             tool_version=self.tool_version,
             project_id=self.project_id,
@@ -179,8 +193,9 @@ class GlyphHarvest:
                     character=character,
                     label_tier="recognized" if tier == "recognized" else "transcribed",
                     glyph_count=count,
+                    label_style=style,
                 )
-                for (tier, character), count in counts.items()
+                for (tier, style, character), count in counts.items()
             ),
             quality_flag_counts=self.quality_flag_counts,
             word_reject_counts=self.word_reject_counts,
@@ -190,7 +205,13 @@ class GlyphHarvest:
             geometry_label=self.geometry_label,
             geometry_sha256=self.geometry_sha256,
             ocr_recognizer=self.ocr_recognizer,
-            extensions={"furniture_skipped_page_count": self.furniture_skipped_page_count},
+            f2_label=self.f2_label,
+            f2_sha256=self.f2_sha256,
+            extensions={
+                "furniture_skipped_page_count": self.furniture_skipped_page_count,
+                "glyph_count_by_style": dict(sorted(by_style.items())),
+                "style_source": self.style_source,
+            },
         )
 
 
@@ -236,12 +257,15 @@ def build_glyph_inventory(
         if geometry_path is None
         else read_book_witness(geometry_path, project_id=project.project_id)
     )
+    book_style, style_source = _read_style(root, project=project)
     gap = book_word_gap_threshold(project)
     return _harvest_project(
         root,
         project=project,
         project_profile=project_profile,
         witness=witness,
+        book_style=book_style,
+        style_source=style_source,
         gap=gap,
         tool_version=tool_version,
         alignment_label=alignment_file.name,
@@ -257,6 +281,8 @@ def _harvest_project(
     project: ProjectAlignment,
     project_profile: ProjectProfile,
     witness: BookWitness | None,
+    book_style: BookStyle | None,
+    style_source: str,
     gap: WordGapThreshold,
     tool_version: str,
     alignment_label: str,
@@ -281,6 +307,7 @@ def _harvest_project(
             measurement=measurements.get(page.page_name),
             gap=gap,
             page_witness=None if witness is None else witness.page(page.page_name),
+            book_style=book_style,
         )
         word_rejects.update(harvest.word_rejects)
         reconciled += harvest.reconciled_words
@@ -311,7 +338,7 @@ def _harvest_project(
         alignment_sha256=alignment_sha256,
         profile_label=profile_label,
         profile_sha256=profile_sha256,
-        methods=_methods(witness=witness),
+        methods=_methods(witness=witness, book_style=book_style),
         thresholds=_thresholds(gap, witness=witness),
         rows=tuple(rows),
         pages=tuple(pages),
@@ -326,11 +353,14 @@ def _harvest_project(
         geometry_label=None if witness is None else witness.label,
         geometry_sha256=None if witness is None else witness.sha256,
         ocr_recognizer=None if witness is None else witness.recognizer.to_dict(),
+        f2_label=None if book_style is None else book_style.label,
+        f2_sha256=None if book_style is None else book_style.sha256,
+        style_source=style_source,
         furniture_skipped_page_count=furniture_skipped,
     )
 
 
-def _methods(*, witness: BookWitness | None) -> dict[str, object]:
+def _methods(*, witness: BookWitness | None, book_style: BookStyle | None) -> dict[str, object]:
     methods: dict[str, object] = {
         "algorithm_version": GLYPHS_ALGORITHM_VERSION,
         "line_measurement": TYPOGRAPHY_MEASURE_METHODS["algorithm"],
@@ -340,6 +370,8 @@ def _methods(*, witness: BookWitness | None) -> dict[str, object]:
     }
     if witness is not None:
         methods["furniture_selection"] = FURNITURE_METHODS["algorithm"]
+    if book_style is not None:
+        methods["glyph_style"] = GLYPH_STYLE_METHODS["algorithm"]
     return methods
 
 
@@ -368,6 +400,7 @@ def _harvest_page(
     measurement: PageMeasurement | None,
     gap: WordGapThreshold,
     page_witness: PageWitness | None,
+    book_style: BookStyle | None,
 ) -> _PageHarvest:
     if measurement is None:
         return _PageHarvest(exclusion="profile_page_missing")
@@ -402,7 +435,7 @@ def _harvest_page(
     rejects: Counter[str] = Counter()
     reconciled = separable = 0
     line_boxes: list[Bounds] = []
-    for candidate_ordinal, _source_ordinal, candidate, visible_text in matched:
+    for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
         box = _box(candidate.box)
         line_boxes.append(box)
         measured = measure_line_typography(mask, box)
@@ -432,6 +465,14 @@ def _harvest_page(
                 rejects[f"transcribed:{cut.reason}"] += 1
                 continue
             separable += 1
+            styles = styles_for_word(
+                book_style,
+                page_name=page.page_name,
+                source_ordinal=source_ordinal,
+                visible_text=visible_text,
+                word_ordinal=word_ordinal,
+                positions=[glyph.ordinal for glyph in cut.glyphs],
+            )
             rows.extend(
                 _glyph_row(
                     mask,
@@ -444,8 +485,10 @@ def _harvest_page(
                     box=glyph.box,
                     band=band,
                     label_confidence=None,
+                    label_style=style,
+                    source_line_ordinal=source_ordinal,
                 )
-                for glyph in cut.glyphs
+                for glyph, style in zip(cut.glyphs, styles, strict=True)
             )
 
     furniture_rows, furniture_words, furniture_skipped = _harvest_furniture(
@@ -533,6 +576,8 @@ def _glyph_row(
     box: Bounds,
     band: LineBand | None,
     label_confidence: float | None,
+    label_style: str | None = None,
+    source_line_ordinal: int | None = None,
 ) -> GlyphRow:
     quality = measure_glyph_quality(mask, box=box, line=band)
     return GlyphRow(
@@ -549,6 +594,8 @@ def _glyph_row(
         bottom_offset_px=quality.bottom_offset_px,
         flags=quality.flags,
         label_confidence=label_confidence,
+        label_style=label_style,
+        source_line_ordinal=source_line_ordinal,
     )
 
 
@@ -678,3 +725,20 @@ def _write_bytes(path: Path, payload: bytes) -> None:
     except OSError:
         temporary_path.unlink(missing_ok=True)
         raise
+
+
+def _read_style(root: Path, *, project: ProjectAlignment) -> tuple[BookStyle | None, str]:
+    """Read the book's F2 markup, pinned by the hash alignment recorded on every page.
+
+    A book that cannot be pinned gets no style rather than a guess, and the reason is recorded so
+    a reader can tell an unstyled inventory from an unverified one. This follows the OCR witness,
+    which drops the enrichment on a hash mismatch and counts it rather than failing the run.
+    """
+
+    digests = {page.f2_sha256 for page in project.pages if page.f2_sha256 is not None}
+    if len(digests) != 1:
+        return None, "f2_hash_ambiguous"
+    try:
+        return read_book_style(root, project_id=project.project_id, f2_sha256=digests.pop()), "f2"
+    except (GlyphStyleError, F2LoadError, UnsafePathError, ValueError):
+        return None, "f2_unavailable"

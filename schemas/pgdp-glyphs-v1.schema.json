@@ -53,6 +53,19 @@
           "minimum": 0,
           "title": "Clipped Cell Count",
           "type": "integer"
+        },
+        "label_style": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label Style"
         }
       },
       "required": [
@@ -89,6 +102,19 @@
           "exclusiveMinimum": 0,
           "title": "Glyph Count",
           "type": "integer"
+        },
+        "label_style": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label Style"
         }
       },
       "required": [
@@ -319,6 +345,33 @@
       ],
       "default": null,
       "title": "Ocr Recognizer"
+    },
+    "f2_label": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "F2 Label"
+    },
+    "f2_sha256": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "F2 Sha256"
     }
   },
   "required": [

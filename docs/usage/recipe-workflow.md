@@ -205,6 +205,22 @@ separable, and every one of them bound its labels to the wrong ink. The
 remaining rejections are letters that touch, and the manifest records how many
 failed and why rather than dropping them silently.
 
+Every glyph names the face it was printed in, taken from PGDP's own `<i>`,
+`<b>` and `<sc>` markup. This matters most for small capitals: PGDP transcribes
+them in mixed case, so `<sc>Lowther Street</sc>` yields the letters `Lowther
+Street` and a capital `O` would otherwise land in the lowercase `o` bucket
+carrying a lowercase label, which no check comparing a label to a character can
+see. Coverage and the atlas are keyed by style, so a style is never pooled with
+another under one character.
+
+`label_style` is `roman` when the transcription marks no style and `null` when
+no style source could be trusted, which is every glyph on the `recognized` tier.
+The F2 file is refused unless it hashes to the `f2_sha256` the alignment
+recorded, and each line is checked against the alignment's own `visible_text`
+before an offset from it is used. A book that cannot be pinned harvests without
+style rather than failing, and the manifest's `style_source` says which
+happened.
+
 Quality is recorded and never enforced. Each row carries where its rows sit
 against the line's x-height top and baseline, whether it reaches the line box's
 own top or bottom row, and its ink density. The reference is the line box, not

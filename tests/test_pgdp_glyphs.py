@@ -111,6 +111,28 @@ def _draw_running_head(image: Image.Image) -> tuple[tuple[str, tuple[int, int, i
     return tuple(boxes)
 
 
+ITALIC_LINE = 1
+ITALIC_WORD = 1
+
+
+def _f2_page(line_texts: tuple[str, ...]) -> str:
+    """The F2 transcription for a drawn page, with one word marked italic.
+
+    The visible text must match the alignment's own line by line, because that agreement is what
+    the style join checks before it trusts an offset.
+    """
+
+    lines: list[str] = []
+    for index, text in enumerate(line_texts):
+        if index != ITALIC_LINE:
+            lines.append(text)
+            continue
+        words = text.split()
+        words[ITALIC_WORD] = f"<i>{words[ITALIC_WORD]}</i>"
+        lines.append(" ".join(words))
+    return "\n".join(lines) + "\n"
+
+
 def _source_line(ordinal: int, text: str, byte_start: int) -> WireSourceLine:
     encoded = len(text.encode("utf-8"))
     content_end = byte_start + encoded
@@ -156,9 +178,8 @@ def build_glyph_fixture(tmp_path: Path) -> Fixture:
     head = _draw_running_head(image)
     for line, text in enumerate(line_texts):
         _draw_line(image, text, top=FIRST_LINE_TOP + line * LINE_PITCH)
-    (project / "rounds" / "F2.json").write_text(
-        json.dumps({"p2.png": "placeholder", "p10.png": "placeholder"}), encoding="utf-8"
-    )
+    f2_pages = {name: _f2_page(line_texts) for name in ("p2.png", "p10.png")}
+    (project / "rounds" / "F2.json").write_text(json.dumps(f2_pages), encoding="utf-8")
     for name in ("p2.png", "p10.png"):
         image.save(project / name)
 
@@ -193,11 +214,13 @@ def build_glyph_fixture(tmp_path: Path) -> Fixture:
         == 0
     )
     alignment_path = tmp_path / "alignment.json"
+    f2_sha256 = sha256((project / "rounds" / "F2.json").read_bytes()).hexdigest()
     scan_hashes = _write_accepted_alignment(
         corpus_root=corpus_root,
         profile_path=profile_path,
         alignment_path=alignment_path,
         line_texts=line_texts,
+        f2_sha256=f2_sha256,
     )
     geometry_path = tmp_path / "geometry.jsonl"
     _write_geometry(geometry_path, head=head, scan_hashes=scan_hashes)
@@ -210,6 +233,7 @@ def _write_accepted_alignment(
     profile_path: Path,
     alignment_path: Path,
     line_texts: tuple[str, ...],
+    f2_sha256: str,
 ) -> dict[str, str]:
     profile_bytes = profile_path.read_bytes()
     profile = ProfileReport.from_json(profile_bytes)
@@ -266,7 +290,7 @@ def _write_accepted_alignment(
         pages.append(
             PageAlignment(
                 page_name=measurement.page_name,
-                f2_sha256="a" * 64,
+                f2_sha256=f2_sha256,
                 scan_sha256=measurement.sha256,
                 source_frame=source_frame,
                 source_lines=tuple(source_lines),
@@ -511,3 +535,73 @@ def test_the_inventory_may_not_be_written_inside_the_corpus(fixture: Fixture) ->
         _ = write_glyph_inventory(
             _harvest(fixture), fixture.corpus_root / "inventory", fixture.corpus_root
         )
+
+
+def test_body_glyphs_carry_the_style_f2_marks_them_with(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    italic_word = fixture.line_texts[ITALIC_LINE].split()[ITALIC_WORD]
+    italic = [row for row in harvest.rows if row.label_style == "italic"]
+    assert {row.character for row in italic} == set(italic_word)
+    assert len(italic) == 2 * len(italic_word)
+
+
+def test_an_unmarked_word_reads_roman_rather_than_unknown(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    roman = [row for row in harvest.rows if row.label_style == "roman"]
+    assert len(roman) == len(harvest.rows) - 2 * len(
+        fixture.line_texts[ITALIC_LINE].split()[ITALIC_WORD]
+    )
+
+
+def test_every_transcribed_glyph_names_its_source_line(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    assert all(row.source_line_ordinal is not None for row in harvest.rows)
+
+
+def test_a_recognized_glyph_takes_no_style_from_f2(fixture: Fixture) -> None:
+    harvest = _harvest(fixture)
+    recognized = [row for row in harvest.rows if row.label_tier == "recognized"]
+    assert recognized
+    assert all(row.label_style is None for row in recognized)
+    assert all(row.source_line_ordinal is None for row in recognized)
+
+
+def test_the_manifest_records_where_the_style_came_from(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    manifest = harvest.manifest(rows_label="glyphs.jsonl", rows_sha256="a" * 64)
+    assert manifest.extensions["style_source"] == "f2"
+    assert manifest.f2_label == "F2.json"
+    assert manifest.f2_sha256 is not None
+    counts = manifest.extensions["glyph_count_by_style"]
+    assert isinstance(counts, dict)
+    assert set(counts) == {"italic", "roman"}
+
+
+def test_coverage_splits_a_character_by_style(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    manifest = harvest.manifest(rows_label="glyphs.jsonl", rows_sha256="a" * 64)
+    italic_word = fixture.line_texts[ITALIC_LINE].split()[ITALIC_WORD]
+    shared = {row.character for row in manifest.coverage if row.label_style == "italic"} & {
+        row.character for row in manifest.coverage if row.label_style == "roman"
+    }
+    assert shared, "the fixture should share at least one character between the two styles"
+    assert set(italic_word) <= {
+        row.character for row in manifest.coverage if row.label_style == "italic"
+    }
+
+
+def test_an_f2_that_does_not_hash_to_the_recorded_value_yields_no_style(
+    fixture: Fixture, tmp_path: Path
+) -> None:
+    payload = json.loads(fixture.alignment_path.read_text(encoding="utf-8"))
+    for project in payload["projects"]:
+        for page in project["pages"]:
+            page["f2_sha256"] = "b" * 64
+    path = tmp_path / "wrong-f2.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    harvest = build_glyph_inventory(
+        fixture.corpus_root, path, fixture.profile_path, tool_version="0.0.0"
+    )
+    assert harvest.style_source == "f2_unavailable"
+    assert all(row.label_style is None for row in harvest.rows)
+    assert harvest.f2_sha256 is None
