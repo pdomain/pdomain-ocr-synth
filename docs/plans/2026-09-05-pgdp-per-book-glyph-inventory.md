@@ -216,6 +216,18 @@ class: filtering it out lifts the book from 0.943 to 0.971 and removes every cap
 the sample, at a cost of 3.0 percent of its glyphs. That is a consumer-side workaround, not a fix,
 and 0.971 is still under the floor.
 
+**Reviewing the queue found a worse defect than the one it was built for.** Classifying the first
+20 of `projectID603d7d5e04ca0`'s 180 flat words: 7 are small capitals PGDP never marked, 3 are bad
+cuts or false positives, and **10 are a word bound to the wrong ink entirely** — `They` cut from
+WILL, `and` from `side,`, `being` from `morning,`, `off` from `her`, `of` from a quotation mark.
+Every glyph in such a word carries the wrong character.
+
+Those bindings are not caused by harvesting every page. The flat-word rate per admitted line on
+recognizer-admitted lines is 0.0037 to 0.0216, against 0.0061 to 0.0496 on accepted lines: lower
+in three books of five. They are a pre-existing defect on accepted pages that no gate had
+surfaced, because word-level agreement against the OCR read scores 0.9965 and a shifted binding
+still reads as a real word somewhere on the line.
+
 The follow-up is a slice of its own: connected-component shape evidence, or a per-character height
 model fitted to the book, to separate a capital form from a lowercase one without depending on
 markup that is not there. Until then a consumer wanting 0.98 on this book should drop
