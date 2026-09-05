@@ -84,10 +84,10 @@ def render_atlas(
     crops = _crop_rows(rows, root=root, pages=pages)
     sheets: list[RenderedSheet] = []
     for (tier, character), indexed in sorted(_group(rows, crops).items()):
-        cell_width, cell_height = _cell_extent(indexed)
+        cell_width, cell_height = cell_extent(indexed)
         for ordinal, start in enumerate(range(0, len(indexed), _CELLS_PER_SHEET_MAXIMUM)):
             block = indexed[start : start + _CELLS_PER_SHEET_MAXIMUM]
-            payload, clipped = _render_sheet(block, cell_width=cell_width, cell_height=cell_height)
+            payload, clipped = render_sheet(block, cell_width=cell_width, cell_height=cell_height)
             sheets.append(
                 RenderedSheet(
                     sheet=AtlasSheet(
@@ -206,9 +206,11 @@ def _group(
     return grouped
 
 
-def _cell_extent(
+def cell_extent(
     crops: Sequence[np.ndarray[tuple[int, int], np.dtype[np.uint8]]],
 ) -> tuple[int, int]:
+    """The cell one character's grid uses: its 95th-percentile width and height."""
+
     widths = sorted(int(crop.shape[1]) for crop in crops)
     heights = sorted(int(crop.shape[0]) for crop in crops)
     return max(1, _percentile(widths)), max(1, _percentile(heights))
@@ -219,12 +221,14 @@ def _percentile(values: Sequence[int]) -> int:
     return values[index]
 
 
-def _render_sheet(
+def render_sheet(
     crops: Sequence[np.ndarray[tuple[int, int], np.dtype[np.uint8]]],
     *,
     cell_width: int,
     cell_height: int,
 ) -> tuple[bytes, int]:
+    """One grid of glyph crops as PNG bytes, with how many were centre-cropped to fit."""
+
     columns = min(_COLUMNS, len(crops))
     rows_of_cells = -(-len(crops) // columns)
     width = columns * (cell_width + _GUTTER_PX) + _GUTTER_PX
