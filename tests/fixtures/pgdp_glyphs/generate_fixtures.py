@@ -5,10 +5,12 @@ self-authored: it copies no source pixels and no PGDP transcription. Each case r
 stroke and x-height geometry measured on a named real page, so the column-run cut meets the
 shapes the corpus contains rather than round numbers.
 
-Three cases, one per outcome the cut can reach. A separable word yields one glyph per letter. A
-word whose letters touch yields fewer runs than letters and is refused. A word whose ink breaks
-inside a letter yields more runs than letters and is refused just as firmly, because the direction
-of the disagreement does not make the binding safe.
+Four cases. A separable word yields one glyph per letter. A word whose letters touch yields fewer
+runs than characters and is refused. A word whose ink breaks inside a letter yields more runs than
+characters and is refused just as firmly, because the direction of the disagreement does not make
+the binding safe. And a word carrying an apostrophe that stands clear of its neighbours cuts, with
+the mark counted as a position and left unlabelled: that is the case a letters-only count got
+wrong, binding every character after the mark to the wrong ink.
 
 The manifest records the real scan's `source_sha256` beside the fixture's own `fixture_sha256`.
 The two must differ, which is the licence rule made checkable: a committed fixture that hashed to
@@ -39,6 +41,8 @@ class LetterSpec:
     character: str
     spacing_px: int
     bars: int = 1
+    raised: bool = False
+    """A mark that sits above the x-height band, the way an apostrophe does."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,6 +129,29 @@ CASES = (
             "transcription."
         ),
     ),
+    CaseSpec(
+        case_id="punctuated-dont",
+        project_id="projectID609bfa0449bdf",
+        page_name="p014.png",
+        source_sha256="ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d",
+        stroke_px=4,
+        x_height_px=15,
+        ascender_px=8,
+        descender_px=6,
+        letters=(
+            LetterSpec("d", 0),
+            LetterSpec("o", 3),
+            LetterSpec("n", 3),
+            LetterSpec("\u2019", 3, raised=True),  # RIGHT SINGLE QUOTATION MARK
+            LetterSpec("t", 3),
+        ),
+        transform=(
+            "Self-authored PBM recreating the body geometry measured on "
+            "projectID609bfa0449bdf/p014.png: 15 px x-height on a 4 px stroke, with an apostrophe "
+            "standing clear of the letters on either side. It copies no source pixels and no PGDP "
+            "transcription."
+        ),
+    ),
 )
 
 _ASCENDERS = frozenset("bdfhklt")
@@ -152,6 +179,9 @@ def _draw(case: CaseSpec) -> tuple[np.ndarray[tuple[int, int], np.dtype[np.bool]
             top -= case.ascender_px
         if letter.character in _DESCENDERS:
             bottom += case.descender_px
+        if letter.raised:
+            top -= case.ascender_px
+            bottom = top + max(2, case.ascender_px // 2)
         for bar in range(letter.bars):
             left = x + bar * (case.stroke_px + _BAR_GAP_PX)
             mask[top:bottom, left : left + case.stroke_px] = True
@@ -177,7 +207,7 @@ def _expected_cut(
     return {
         "visible_text": text,
         "run_count": cut.run_count,
-        "letter_count": cut.letter_count,
+        "position_count": cut.position_count,
         "separable": cut.separable,
         "reason": cut.reason,
         "glyphs": [

@@ -1,10 +1,11 @@
 """Reviewed synthetic word fixtures for the column-run glyph cut.
 
 Each case recreates the stroke and x-height geometry measured on a named real page and covers one
-of the three outcomes the cut can reach: a word whose letters are clear of one another, a word
-whose letters touch, and a word whose ink breaks inside a letter. None of the bitmaps copies
-source pixels or PGDP text, which the manifest records as `provenance` and this file checks by
-requiring every `fixture_sha256` to differ from its page's `source_sha256`.
+outcome the cut can reach: characters clear of one another, characters that touch, ink broken
+inside a letter, and a word carrying an apostrophe that stands clear, which is counted as a
+position and left unlabelled. None of the bitmaps copies source pixels or PGDP text, which the
+manifest records as `provenance` and this file checks by requiring every `fixture_sha256` to
+differ from its page's `source_sha256`.
 
 Regenerate with `uv run python tests/fixtures/pgdp_glyphs/generate_fixtures.py`.
 """
@@ -43,7 +44,7 @@ class _ExpectedPayload(BaseModel):
 
     visible_text: StrictStr
     run_count: StrictInt
-    letter_count: StrictInt
+    position_count: StrictInt
     separable: StrictBool
     reason: StrictStr | None
     glyphs: tuple[_GlyphPayload, ...]
@@ -112,9 +113,9 @@ def test_a_fixture_never_hashes_to_the_scan_it_recreates(case: GlyphCase) -> Non
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case.case_id)
 def test_the_cut_reaches_the_reviewed_outcome(case: GlyphCase) -> None:
     cut = cut_word_glyphs(_mask(case), box=case.box, text=case.expected.visible_text)
-    assert (cut.run_count, cut.letter_count) == (
+    assert (cut.run_count, cut.position_count) == (
         case.expected.run_count,
-        case.expected.letter_count,
+        case.expected.position_count,
     )
     assert cut.separable == case.expected.separable
     assert cut.reason == case.expected.reason
@@ -128,18 +129,40 @@ def test_the_cut_yields_the_reviewed_glyph_boxes(case: GlyphCase) -> None:
     ]
 
 
-def test_the_three_reviewed_outcomes_are_all_covered() -> None:
+def test_the_four_reviewed_outcomes_are_all_covered() -> None:
     outcomes = {
-        (case.expected.separable, case.expected.run_count > case.expected.letter_count)
+        (
+            case.expected.separable,
+            case.expected.run_count > case.expected.position_count,
+            len(case.expected.glyphs) < case.expected.position_count,
+        )
         for case in CASES
     }
-    assert outcomes == {(True, False), (False, False), (False, True)}
+    assert outcomes == {
+        (True, False, False),
+        (True, False, True),
+        (False, False, True),
+        (False, True, True),
+    }
 
 
-def test_a_separable_case_cuts_one_glyph_per_letter() -> None:
-    case = next(case for case in CASES if case.expected.separable)
-    assert len(case.expected.glyphs) == case.expected.letter_count
-    assert "".join(glyph.character for glyph in case.expected.glyphs) == case.expected.visible_text
+@pytest.mark.parametrize(
+    "case", [case for case in CASES if case.expected.separable], ids=lambda case: case.case_id
+)
+def test_a_separable_case_labels_every_alphanumeric_and_no_mark(case: GlyphCase) -> None:
+    expected = "".join(character for character in case.expected.visible_text if character.isalnum())
+    assert "".join(glyph.character for glyph in case.expected.glyphs) == expected
+    assert [glyph.ordinal for glyph in case.expected.glyphs] == [
+        position
+        for position, character in enumerate(case.expected.visible_text)
+        if character.isalnum()
+    ]
+
+
+def test_a_word_carrying_a_mark_cuts_it_and_leaves_it_unlabelled() -> None:
+    case = next(case for case in CASES if case.case_id == "punctuated-dont")
+    assert case.expected.separable
+    assert len(case.expected.glyphs) == case.expected.position_count - 1
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case.case_id)

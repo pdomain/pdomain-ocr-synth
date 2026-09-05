@@ -63,26 +63,26 @@ def test_a_touching_word_is_refused_and_records_both_counts() -> None:
     cut = cut_word_glyphs(_mask(_TWO_TOUCHING_LETTERS), box=(0, 0, 10, 4), text="in")
     assert cut.glyphs == ()
     assert cut.reason == "run_count_disagrees"
-    assert (cut.run_count, cut.letter_count) == (1, 2)
+    assert (cut.run_count, cut.position_count) == (1, 2)
 
 
 def test_a_word_that_splits_into_too_many_runs_is_refused() -> None:
     cut = cut_word_glyphs(_mask(_THREE_SEPARATE_LETTERS), box=(0, 0, 10, 5), text="in")
     assert cut.reason == "run_count_disagrees"
-    assert (cut.run_count, cut.letter_count) == (3, 2)
+    assert (cut.run_count, cut.position_count) == (3, 2)
     assert not cut.separable
 
 
 def test_a_word_that_splits_into_too_few_runs_is_refused() -> None:
     cut = cut_word_glyphs(_mask(_THREE_SEPARATE_LETTERS), box=(0, 0, 10, 5), text="ashy")
     assert cut.reason == "run_count_disagrees"
-    assert (cut.run_count, cut.letter_count) == (3, 4)
+    assert (cut.run_count, cut.position_count) == (3, 4)
 
 
 def test_a_word_with_no_labelled_letter_is_refused() -> None:
     cut = cut_word_glyphs(_mask(_THREE_SEPARATE_LETTERS), box=(0, 0, 10, 5), text="---")
     assert cut.reason == "no_labelled_letters"
-    assert cut.letter_count == 0
+    assert cut.position_count == 3
 
 
 def test_a_box_with_no_ink_is_refused() -> None:
@@ -121,7 +121,7 @@ def test_a_cut_may_not_carry_glyphs_and_a_reason_together() -> None:
     with pytest.raises(ValueError, match="exactly when it names no reason"):
         _ = WordCut(
             run_count=1,
-            letter_count=1,
+            position_count=1,
             glyphs=(GlyphCut(character="a", ordinal=0, box=(0, 0, 1, 1)),),
             reason="no_ink",
         )

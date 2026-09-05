@@ -196,10 +196,14 @@ so a consumer can take digits from `recognized` while training characters only
 on `transcribed`.
 
 A glyph is cut only when the word's box splits at blank columns into exactly as
-many ink runs as the word has alphanumeric characters. Measured over the five
-aligned books, that holds for 0.256 to 0.799 of reconciled words; the rest fail
-because letters touch, and the manifest records how many failed and why rather
-than dropping them silently.
+many ink runs as the word has printing characters. Punctuation is counted and
+not labelled: a comma or an apostrophe makes its own ink run as readily as a
+letter, so counting letters alone lets a word match by coincidence when one mark
+stands alone and one letter pair touches. Measured over four books, that
+coincidence covered 1.4 to 15.4 percent of the words a letters-only rule called
+separable, and every one of them bound its labels to the wrong ink. The
+remaining rejections are letters that touch, and the manifest records how many
+failed and why rather than dropping them silently.
 
 Quality is recorded and never enforced. Each row carries where its rows sit
 against the line's x-height top and baseline, whether it reaches the line box's

@@ -2,14 +2,25 @@
 
 A word box drawn by `typography_measure.measure_line_words` is tight to one word's ink, and its
 label is the transcription word alignment matched to that line. Splitting the box at every column
-carrying no ink gives one run per letter whenever the letters do not touch, so the run count and
-the label's letter count can be compared. They agree or they do not, and this refuses to guess:
-binding four runs to five letters in order would misattribute a box to the wrong character and
-poison every page later rendered from it.
+carrying no ink gives one run per printed character whenever they do not touch, so the run count
+and the word's own character count can be compared. They agree or they do not, and this refuses to
+guess: binding four runs to five characters in order would misattribute a box to the wrong
+character and poison every page later rendered from it.
 
-Measured over the five aligned books, the counts agree for 0.256 to 0.799 of reconciled words.
-The rest fail because letters touch, which is a property of the printing rather than a defect
-here, so a rejected word records the two counts and the reason rather than disappearing.
+**Every printing character counts, and only the alphanumerics are labelled.** A comma or an
+apostrophe makes its own ink run as readily as a letter does, so counting letters alone lets a
+word match by coincidence: one mark standing alone adds a run while one touching letter pair
+removes one, and the two cancel. Measured over four books on 40 pages each, that coincidence
+accounted for 1.4 to 15.4 percent of the words a letters-only rule called separable, and in not
+one of them did the ink actually carry one run per printed character. Those words shifted every
+label in them by a position. Counting all printing characters removes them and, in three of the
+four books, raises the yield as well, because a word whose punctuation stands cleanly apart now
+cuts instead of being refused.
+
+Measured over the five aligned books, the counts agree for roughly a quarter to four fifths of
+reconciled words. The rest fail because characters touch, which is a property of the printing
+rather than a defect here, so a rejected word records the two counts and the reason rather than
+disappearing.
 """
 
 from __future__ import annotations
@@ -23,14 +34,20 @@ Bounds = tuple[int, int, int, int]
 CutRejectReason = Literal["no_labelled_letters", "no_ink", "run_count_disagrees"]
 
 GLYPH_CUT_METHODS: dict[str, float | int | str] = {
-    "algorithm": "blank-column-runs/v1",
-    "label_character_class": "alphanumeric",
+    "algorithm": "blank-column-runs/v2",
+    "counted_character_class": "printing",
+    "labelled_character_class": "alphanumeric",
 }
 
 
 @dataclass(frozen=True, slots=True)
 class GlyphCut:
-    """One glyph's character and its half-open box in the `source` frame."""
+    """One glyph's character and its half-open box in the `source` frame.
+
+    `ordinal` is the character's position among the word's printing characters, so a word whose
+    second character is a quotation mark emits its first letter at 0 and its next at 2. The gap is
+    the evidence that a mark was cut and deliberately left unlabelled.
+    """
 
     character: str
     ordinal: int
@@ -55,31 +72,39 @@ class WordCut:
     """
 
     run_count: int
-    letter_count: int
+    position_count: int
     glyphs: tuple[GlyphCut, ...] = ()
     reason: CutRejectReason | None = None
 
     def __post_init__(self) -> None:
-        if self.run_count < 0 or self.letter_count < 0:
+        if self.run_count < 0 or self.position_count < 0:
             raise ValueError("A cut's counts must be nonnegative.")
         object.__setattr__(self, "glyphs", tuple(self.glyphs))
         if (self.reason is None) != bool(self.glyphs):
             raise ValueError("A cut carries glyphs exactly when it names no reason.")
-        if self.glyphs and len(self.glyphs) != self.letter_count:
-            raise ValueError("A separable word emits one glyph per labelled letter.")
+        if self.glyphs and self.run_count != self.position_count:
+            raise ValueError("A separable word has one ink run per printing character.")
+        if len(self.glyphs) > self.position_count:
+            raise ValueError("A word cannot emit more glyphs than it has printing characters.")
 
     @property
     def separable(self) -> bool:
         return self.reason is None
 
 
-def label_letters(text: str) -> str:
-    """The characters of a word this can label, in order.
+def label_positions(text: str) -> str:
+    """Every printing character of a word, in order, whitespace dropped.
 
-    Alphanumerics only. PGDP punctuation is carried by the transcription but rarely makes an ink
-    run of its own: a comma or an apostrophe touches the letter beside it far more often than not,
-    so counting it would reject the word rather than label the mark.
+    These are the positions the ink runs are counted against. A mark is counted because it prints;
+    it is not labelled because a per-character inventory of a book's type is about its letters and
+    figures, and a comma cut from a word box is not a sample of anything a later stage will set.
     """
+
+    return "".join(character for character in text if not character.isspace())
+
+
+def label_letters(text: str) -> str:
+    """The characters of a word this labels: its alphanumerics, in order."""
 
     return "".join(character for character in text if character.isalnum())
 
@@ -90,31 +115,37 @@ def cut_word_glyphs(
     box: Bounds,
     text: str,
 ) -> WordCut:
-    """Split one word's box at its blank columns and label the runs left to right.
+    """Split one word's box at its blank columns and bind the runs to its characters in order.
 
     `mask` is the full-page ink mask `alignment_image.build_candidate_mask` builds and `box` is a
     half-open box in that same frame. Each glyph's columns come from the run; its rows are
-    measured fresh from the run's own projection, so the box is tight to that glyph's ink.
+    measured fresh from the run's own projection, so the box is tight to that glyph's ink. A run
+    that lands on a punctuation position is cut and discarded, not labelled.
     """
 
-    letters = label_letters(text)
+    positions = label_positions(text)
     x_start, y_start, x_end, y_end = box
     runs = ink_column_runs(mask[y_start:y_end, x_start:x_end])
-    if not letters:
-        return WordCut(run_count=len(runs), letter_count=0, reason="no_labelled_letters")
+    if not label_letters(text):
+        return WordCut(
+            run_count=len(runs), position_count=len(positions), reason="no_labelled_letters"
+        )
     if not runs:
-        return WordCut(run_count=0, letter_count=len(letters), reason="no_ink")
-    if len(runs) != len(letters):
-        return WordCut(run_count=len(runs), letter_count=len(letters), reason="run_count_disagrees")
+        return WordCut(run_count=0, position_count=len(positions), reason="no_ink")
+    if len(runs) != len(positions):
+        return WordCut(
+            run_count=len(runs), position_count=len(positions), reason="run_count_disagrees"
+        )
     glyphs = tuple(
         GlyphCut(
             character=character,
             ordinal=ordinal,
             box=_run_box(mask, box=box, run=run),
         )
-        for ordinal, (character, run) in enumerate(zip(letters, runs, strict=True))
+        for ordinal, (character, run) in enumerate(zip(positions, runs, strict=True))
+        if character.isalnum()
     )
-    return WordCut(run_count=len(runs), letter_count=len(letters), glyphs=glyphs)
+    return WordCut(run_count=len(runs), position_count=len(positions), glyphs=glyphs)
 
 
 def ink_column_runs(
