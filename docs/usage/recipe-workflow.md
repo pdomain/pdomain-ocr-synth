@@ -201,7 +201,10 @@ than one book.
 Glyphs carry one of two label tiers and the two never mix. A `transcribed`
 glyph comes from a word on a line reconciled against PGDP F2, so its character
 is a human proofer's. A `recognized` glyph comes from a word outside every
-matched line, which is where the running head and the folio sit; proofers strip
+matched line **on an accepted page**, which is where the running head and the
+folio sit; on a page alignment did not accept, most words fall outside every
+matched line simply because few lines matched, so the tier would stop meaning
+furniture and start meaning ordinary body text; proofers strip
 both from F2, so the only label available is the OCR read that `--geometry`
 supplies, and the row carries that read's confidence. Every row names its tier,
 so a consumer can take digits from `recognized` while training characters only

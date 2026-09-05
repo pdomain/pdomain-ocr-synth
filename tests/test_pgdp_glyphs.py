@@ -510,7 +510,15 @@ def test_the_running_head_is_harvested_as_the_recognized_tier(fixture: Fixture) 
     harvest = _harvest(fixture)
     recognized = [row for row in harvest.rows if row.label_tier == "recognized"]
     assert "".join(sorted({row.character for row in recognized})) == "14BEHKOT"
-    assert harvest.furniture_word_count == 2 * len(HEAD_TEXT)
+    assert harvest.furniture_word_count == len(HEAD_TEXT)
+
+
+def test_furniture_is_taken_from_accepted_pages_only(fixture: Fixture) -> None:
+    """On a page alignment did not accept, `outside every matched line` is not furniture."""
+
+    harvest = _harvest(fixture)
+    recognized = {row.page_name for row in harvest.rows if row.label_tier == "recognized"}
+    assert recognized == {ACCEPTED_PAGE}
 
 
 def test_a_recognized_row_carries_the_reads_own_confidence(fixture: Fixture) -> None:

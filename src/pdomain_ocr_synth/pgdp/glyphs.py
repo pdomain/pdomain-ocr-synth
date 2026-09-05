@@ -578,7 +578,7 @@ def _harvest_page(
         mask,
         page_name=page.page_name,
         scan_sha256=page.scan_sha256,
-        page_witness=page_witness,
+        page_witness=page_witness if page.accepted else None,
         matched_line_boxes=line_boxes,
         rejects=rejects,
     )
@@ -606,7 +606,14 @@ def _harvest_furniture(
     matched_line_boxes: Sequence[Bounds],
     rejects: Counter[str],
 ) -> tuple[tuple[GlyphRow, ...], int, bool]:
-    """Cut the running head and the folio, whose only label is the recognizer's read."""
+    """Cut the running head and the folio, whose only label is the recognizer's read.
+
+    Accepted pages only. On a page alignment did not accept, most words fall outside every matched
+    line simply because few lines matched, so "outside every matched line" stops meaning furniture
+    and starts meaning ordinary body text. Harvesting that would put a hundred thousand
+    OCR-labelled body glyphs into a tier whose whole description is the running head and the
+    folio, and whose review has only ever covered running heads.
+    """
 
     if page_witness is None or scan_sha256 is None:
         return (), 0, False
