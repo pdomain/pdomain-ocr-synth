@@ -1,5 +1,5 @@
 ---
-Status: proposed
+Status: complete
 Owner: CT
 Created: 2026-09-05
 Last verified: 2026-09-05
@@ -11,14 +11,16 @@ Kind: plan
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** proposed
+- **Status:** complete
 - **Owner:** CT
 - **Created:** 2026-09-05
 - **Last verified:** 2026-09-05
 - **Provenance:** scoped on 2026-09-05, with coverage measured by harvesting all 665 accepted
-  pages of the five aligned books
-- **Disposition:** Proposed. All three open decisions were taken by CT on 2026-09-05, and one of
-  them forced a two-tier label design; see "Decisions taken".
+  pages of the five aligned books, then shipped and re-measured the same day
+- **Disposition:** Complete. All eight tasks shipped and every gate passes. All three open
+  decisions were taken by CT on 2026-09-05, and one of them forced a two-tier label design; see
+  "Decisions taken". Review of the first corpus run overturned the scoping rule for what a word's
+  ink runs are counted against; see "What the corpus run changed".
 - **Read when:** building or consuming the glyph inventory, or asking what synthesis can render
   in a book's own type.
 - **Search terms:** glyph inventory, per-book, harvest, atlas, coverage, synthesis, M15f.
@@ -50,7 +52,28 @@ this from being a model trained on its own output.
 Furniture is different and is kept in a separate tier, because proofers strip running heads and
 page numbers from F2 entirely, so nothing there has a human label. See "Decisions taken".
 
-## Measured on 2026-09-05: what the five books yield
+## What the corpus run changed
+
+**Punctuation prints, so it is counted.** The scoping pass counted a word's ink runs against its
+alphanumeric characters alone. A comma or an apostrophe makes its own run as readily as a letter,
+so that let a word match by coincidence: one mark standing alone adds a run while one touching
+letter pair removes one, and the two cancel. Every label in such a word then bound to the wrong
+ink. Measured over four books on 40 pages each, the coincidence covered 1.4 to 15.4 percent of the
+words the letters-only rule called separable, and in not one of those 927 cases did the ink
+actually carry one run per printed character. Visual review of 210 glyphs in
+`projectID609bfa0449bdf` found seven wrong labels, among them a `t` and an apostrophe both
+labelled `n`.
+
+Runs are now counted against every printing character and only the alphanumerics are labelled, so
+a mark is cut and discarded rather than shifting its neighbours. In three of the four measured
+books this also raised the yield, because a word whose punctuation stands cleanly apart now cuts
+instead of being refused. The shipped rule is `blank-column-runs/v2`.
+
+The scoping numbers below were reproduced exactly before the rule changed, which is how the
+defect was isolated rather than confused with a regression. The shipped numbers are in
+"Measured on 2026-09-05: what shipped".
+
+## Measured at scoping: what the five books yield under the letters-only rule
 
 Every accepted page of all five books was harvested. A glyph is cut when, inside a reconciled
 word's box, the count of ink runs separated by a blank column equals the word's letter count, so
@@ -64,7 +87,28 @@ every glyph in that word is separable with a known label.
 | projectID603d7d5e04ca0 | 177 | 13,663 | 77 | 0.256 | 61 | 12,351 | 1,285 | 27 |
 | projectID67a80fde44d34 | 32 | 10,654 | 333 | 0.601 | 49 | 10,455 | 197 | 2 |
 
-187,839 glyphs from 665 pages, at roughly 1.6 seconds a page.
+187,839 glyphs from 665 pages, at roughly 1.6 seconds a page. The shipped command reproduced
+every one of these counts exactly before the counting rule changed.
+
+## Measured on 2026-09-05: what shipped
+
+The same 665 accepted pages, harvested by `glyphs-pgdp` under `blank-column-runs/v2` with the
+`recognized` tier on.
+
+| book | pages | glyphs | transcribed | recognized | per page | separable | digits | reviewed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| projectID657550412c8dc | 155 | 84,733 | 82,321 | 2,412 | 547 | 0.886 | 564 | 1.000 |
+| projectID609bfa0449bdf | 226 | 64,417 | 61,692 | 2,725 | 285 | 0.543 | 563 | 1.000 |
+| projectID64a479f51ce5b | 75 | 31,578 | 30,669 | 909 | 421 | 0.355 | 1,879 | 0.990 |
+| projectID603d7d5e04ca0 | 177 | 15,367 | 12,748 | 2,619 | 87 | 0.248 | 306 | 0.981 |
+| projectID67a80fde44d34 | 32 | 11,233 | 11,159 | 74 | 351 | 0.624 | 83 | 1.000 |
+
+207,328 glyphs from 665 pages in 8 minutes 10 seconds, 198,589 on the `transcribed` tier and
+8,739 on `recognized`. Every page of every book harvested; none was excluded.
+
+**Furniture closed the digit gap, as measured.** `projectID609bfa0449bdf` yields 8 digits from
+body prose across 226 pages and 555 from its running heads and folios. Recognition confidence on
+the `recognized` tier runs 0.77 to 0.85 mean.
 
 Four things follow.
 
@@ -110,52 +154,48 @@ the Gate 4 trick, built in rather than bolted on.
 
 ## Tasks
 
-- [ ] **0. Harvest furniture through the OCR witness.** Words outside every matched line box get
+- [x] **0. Harvest furniture through the OCR witness.** Words outside every matched line box get
   their label and box from the `geometry-v1` record, tagged `recognized`. The page's
   `image_sha256` must match the alignment's `scan_sha256` first, the same check the witness makes.
-- [ ] **1. Cut glyphs from a reconciled word.** Given a word box and its transcription word, split
+- [x] **1. Cut glyphs from a reconciled word.** Given a word box and its transcription word, split
   by blank columns and emit one record per glyph when the counts agree. Emit nothing and record
   the reason when they do not.
-- [ ] **2. Quality flags, recorded not enforced.** Whether the glyph's row extent agrees with the
+- [x] **2. Quality flags, recorded not enforced.** Whether the glyph's row extent agrees with the
   line's measured x-height, ascender and descender; whether it touches the **line** box edge;
   its ink density. Not the word box: a word box is tight to its own ink, so its tallest and
   lowest glyphs always touch it, which makes a word-box test meaningless.
-- [ ] **3. The `pgdp-glyphs/v1` contract and its schema.** Input hashes, method version, per-
+- [x] **3. The `pgdp-glyphs/v1` contract and its schema.** Input hashes, method version, per-
   character counts, quality tallies, and the per-glyph JSONL.
-- [ ] **4. The `glyphs-pgdp` command.** Refuses a profile that does not hash to the alignment's
+- [x] **4. The `glyphs-pgdp` command.** Refuses a profile that does not hash to the alignment's
   recorded value, the same as `typography-pgdp`.
-- [ ] **5. The per-character atlas renderer,** deterministic and regenerable from the JSONL alone.
-- [ ] **6. Reviewed fixtures** covering a separable word, a touching word, and a word whose
+- [x] **5. The per-character atlas renderer,** deterministic and regenerable from the JSONL alone.
+- [x] **6. Reviewed fixtures** covering a separable word, a touching word, and a word whose
   letters split into the wrong count.
-- [ ] **7. Harvest all five books, both tiers, and measure every gate below.**
+- [x] **7. Harvest all five books, both tiers, and measure every gate below.**
 
 ## Acceptance gates
 
-Each carries its 2026-09-05 seed where one was measured.
+All nine pass, measured on 2026-09-05 over the whole five-book corpus. Evidence is in
+`/workspaces/pdomain/.m15f-evidence/`: `gate-summary.json`, one `gates-<book>.json` per book, and
+the review sheets the label gates were read from.
 
-1. **Determinism.** Two runs over identical inputs produce byte-identical JSONL and manifest.
-   Uncalibrated.
-2. **Provenance.** Every glyph row resolves to one page, line, word and ordinal, and the
-   command refuses a profile that does not match the alignment's recorded hash. Uncalibrated,
-   must be exact.
-3. **Label correctness, `transcribed` tier.** A reviewed sample of at least 200 glyphs across at
-   least three books, rendered as atlas grids, at least 0.98 carrying the character the manifest
-   claims. Higher than Gate 4's 0.95 because a mislabelled glyph poisons every page rendered from
-   it. Uncalibrated.
-3b. **Label correctness, `recognized` tier.** The same review over at least 100 furniture glyphs,
-   at least 0.90. Set lower deliberately: the label is an OCR read at 0.77 to 0.82 mean
-   confidence, not a human transcription, and pretending otherwise would hide the difference the
-   tier exists to record. Uncalibrated.
-4. **Lowercase coverage.** All 26 lowercase present in every book. Measured: true in all five.
-4b. **Digit coverage.** With furniture harvested, every book emits at least 20 digit glyphs.
-   Measured available: 65 to 560 digit characters per book in furniture, so the floor has margin
-   and no book fails on availability.
-5. **Yield floor.** At least 50 glyphs per accepted page. Measured 77 to 458, so the floor has
-   margin, and the book that would fail it first is `projectID603d7d5e04ca0`.
-6. **Atlas reproduction.** Re-rendering the atlas from the JSONL reproduces it byte for byte.
-   Uncalibrated, must be exact.
-7. **Latent discipline.** No key claims font identity, point size, advance, side bearing or
-   tracking. The inventory records observed ink, never a typeface.
+| Gate | Floor | Measured | Verdict |
+| --- | --- | --- | --- |
+| 1. Determinism | byte-identical | five of five inventory directories identical across two runs, atlas PNGs included | pass |
+| 2. Provenance | exact | every row unique on page, tier, line, word and glyph ordinal; every row's page in the manifest table; a profile that does not hash to the alignment's value is refused | pass |
+| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs reviewed as atlas grids across all five books, 6 wrong, 0.994; per book 1.000, 1.000, 0.990, 0.981, 1.000 | pass |
+| 3b. Label correctness, `recognized` | 0.90 over 100+ | 340 furniture glyphs reviewed across two books, 0 wrong, 1.000 | pass |
+| 4. Lowercase coverage | all 26 per book | no book misses a letter | pass |
+| 4b. Digit coverage | 20 per book | 83 to 1,879 per book | pass |
+| 5. Yield floor | 50 per accepted page | 87 to 547 | pass |
+| 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 651 sheets byte for byte | pass |
+| 7. Latent discipline | none | no manifest or row key claims font identity, point size, advance, side bearing or tracking | pass |
+
+Gate 3 is model-reviewed, not human-reviewed. Sheets of 30 samples each for `a e h n o s t` were
+rendered from the scans at 7x and read by eye; the six errors are a `g` labelled `a`, a `Th`
+labelled `h`, an `re` labelled `e`, a `th` labelled `h`, a `ho` labelled `o`, and a near-empty
+cell labelled `t`. All six are residual coincidences inside pure-alphanumeric words, where one
+letter broke into two runs while another pair touched. The sheets are kept so CT can confirm.
 
 ## Decisions taken
 
@@ -193,7 +233,8 @@ digits from `recognized` while training characters only on `transcribed`. The sa
 never "no OCR labels"; it is that you always know which is which.
 
 **3. A thin book emits and declares.** A floor that silently drops books hides what it dropped,
-which is the reasoning Gate 6 was written under.
+which is the reasoning Gate 6 was written under. No book came close to the floor: the thinnest,
+`projectID603d7d5e04ca0`, yields 87 glyphs an accepted page against a floor of 50.
 
 ## What this does not do
 
@@ -211,7 +252,14 @@ setting never does.
 
 It does not fix separability. Connected-component labelling would rescue touching letters and
 lift `projectID603d7d5e04ca0` most, but the column-run baseline is measured first so the
-improvement can be scored against it.
+improvement can be scored against it. That book separates 0.248 of its reconciled words and is
+where the headroom is.
+
+It does not remove the last coincidence. A pure-alphanumeric word can still match by luck when one
+letter breaks into two runs while another pair touches, which is where all six reviewed label
+errors came from, at roughly 0.006 of reviewed glyphs. Refusing a word whose glyph widths vary
+implausibly against the book's own distribution would catch most of them, and is worth its own
+slice once there is a reason to want a tighter number than 0.994.
 
 It reaches only books with alignment reports: five of 286. Alignment is the bottleneck this sits
 behind.
