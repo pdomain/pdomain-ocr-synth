@@ -222,5 +222,7 @@ behind.
   — the word boxes this cuts from, and the latent discipline it inherits.
 - [PGDP OCR witness for continuation fragments](2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
   — the same provenance pattern, and the reason reconciliation is trustworthy.
+- `/workspaces/pdomain/.m15f-evidence/` — the measured per-book coverage this plan is written
+  against, and `next-loop-prompt.md`, the execution brief for an unattended run.
 - [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md)
   — why a reconciled word is a safe place to cut from.
