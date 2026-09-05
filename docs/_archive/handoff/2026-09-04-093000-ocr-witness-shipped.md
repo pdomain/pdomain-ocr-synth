@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-04"
+kind: archive
+status: retired
 created_at: "2026-09-04T09:30:00Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "2311ba8"
 supersedes: "2026-09-04-014500-m15d-word-gap-v2-complete.md"
-handoff_reason: milestone_complete
-host: claude-code
+handoff_reason: "milestone_complete"
+host: "claude-code"
+created: "2026-09-04"
+last_verified: "2026-09-05"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-05-051753-m15f-glyph-inventory-shipped.md`.**
+
 
 # The OCR witness ships, and it needed no OCR engine
 
