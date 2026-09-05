@@ -18,9 +18,12 @@ host: claude-code
 ## Read this first
 
 **Gate 3 fails on one book and the plan does not close.** Everything below shipped and works, but
-`projectID603d7d5e04ca0` reads 0.943 label correctness against a 0.98 floor once the review sample
-is drawn at random instead of in page order. Four books pass at 0.981 to 1.000. Details in
-"Gate 3 fails on one book" below and in the plan.
+`projectID603d7d5e04ca0` reads 0.962 label correctness against a 0.98 floor. Four books pass at
+0.981 to 1.000 and the pooled figure is 0.987. Details in "Gate 3 fails on one book" below.
+
+The wrong-ink bindings found in this session are fixed: every line is now checked against the
+recognizer, accepted pages included, which took that book from 0.943 to 0.962 and the pool from
+0.980 to 0.987. What remains is capitals labelled lowercase.
 
 ## What changed
 
@@ -88,7 +91,7 @@ Nine of ten pass. Full numbers in `/workspaces/pdomain/.m15f-evidence/gate-summa
 | --- | --- | ---: |
 | 1. Determinism | 5 of 5 inventory trees byte-identical across two runs, 900 atlas sheets included | pass |
 | 2. Provenance | every row unique on page, tier, line, word and ordinal; a mismatched profile refused | pass |
-| 3. Labels, `transcribed` | 1,050 glyphs drawn at random, 21 wrong, 0.980 pooled; per book 1.000, 0.990, 0.981, **0.943**, 0.986 | **fail on one book** |
+| 3. Labels, `transcribed` | 1,050 glyphs drawn at random, 14 wrong, 0.987 pooled; per book 1.000, 1.000, 0.990, **0.962**, 0.981 | **fail on one book** |
 | 3b. Labels, `recognized` | 340 furniture glyphs reviewed, 0 wrong, 1.000, floor 0.90 | pass |
 | 3c. Labels, recognizer-admitted | 420 glyphs on non-accepted pages, 5 wrong, 0.988, floor 0.98 | pass |
 | 4. Lowercase coverage | all 26 in every book | pass |
@@ -100,12 +103,12 @@ Nine of ten pass. Full numbers in `/workspaces/pdomain/.m15f-evidence/gate-summa
 ## Gate 3 fails on one book
 
 The first pass sampled the first 30 rows per character in page order, so it read only each book's
-earliest pages and scored 0.994. Drawn at random under seed 20260905 the same 1,050 glyphs give 21
-wrong, 0.980 pooled, and `projectID603d7d5e04ca0` at 0.943.
+earliest pages and scored 0.994. Drawn at random under seed 20260905 the same 1,050 glyphs gave 21
+wrong, and after the line check 14: pooled 0.987, with `projectID603d7d5e04ca0` at 0.962.
 
-Nearly all that book's errors are capitals labelled lowercase. Filtering `flat_ascender` glyphs
-lifts it to 0.971 and removes every capital-form error in the sample, at a cost of 3.0 percent of
-its glyphs. That is a consumer-side workaround and still under the floor.
+What remains in that book is capitals labelled lowercase, from small capitals PGDP never marked.
+`flat_ascender` misses the worst of them, because a one-letter word like `A` has no x-height
+letter to compare against and so gets no ratio at all.
 
 ## What the five books yield
 
@@ -236,22 +239,20 @@ a call is comfortable.
 
 ## Resume steps
 
-1. **Decide what to do about Gate 3 on `projectID603d7d5e04ca0`.** It reads 0.943
-   against a 0.98 floor, 0.971 with `flat_ascender` filtered. The other four books
-   pass. Options are a shape-based separator for capitals, a per-character height
-   model fitted to the book, or accepting the book at a stated lower number.
-2. **Work the flat-ascender queues.** 516 words across the five books, in each
-   manifest's `flat_ascender_words`. The first 20 of one book split 7 unmarked
-   small caps, 10 wrong-ink bindings and 3 bad cuts, so the remainder is worth a
-   pass. `.m15f-evidence/render_flat_queue.py <book> <start> <count>` renders them
-   as labelled crops.
-3. **The wrong-ink bindings need their own slice.** They are the most serious
-   defect found and they sit on accepted pages, so they are not an artifact of
-   anything this milestone changed.
-4. If you want Gate 3 human-reviewed rather than model-reviewed, the random
+1. **Decide what to do about Gate 3 on `projectID603d7d5e04ca0`.** It reads 0.962
+   against a 0.98 floor. The other four books pass at 0.981 to 1.000. The
+   remaining errors are capitals labelled lowercase, so the options are a
+   shape-based separator, a per-character height model fitted to the book, or
+   accepting the book at a stated lower number.
+2. **Work the flat-ascender queues.** 490 words across the five books, in each
+   manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book>
+   <start> <count>` renders them as labelled crops. The wrong-ink class is
+   largely gone from them now, so what is left should be mostly small capitals
+   and bad cuts.
+3. If you want Gate 3 human-reviewed rather than model-reviewed, the random
    sheets are in `.m15f-evidence/review-*-random.png`; the M15d precedent is
    `gate4-review.csv`.
-5. Decide whether the corpus atlases belong in the repo. That is the question the
+4. Decide whether the corpus atlases belong in the repo. That is the question the
    plan's decision 1 says should be answered before the second book lands, and
    five books have now landed.
 

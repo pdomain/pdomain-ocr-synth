@@ -184,7 +184,7 @@ the review sheets the label gates were read from.
 | --- | --- | --- | --- |
 | 1. Determinism | byte-identical | five of five inventory directories identical across two runs, atlas PNGs included | pass |
 | 2. Provenance | exact | every row unique on page, tier, line, word and glyph ordinal; every row's page in the manifest table; a profile that does not hash to the alignment's value is refused | pass |
-| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs drawn at random across all five books, 21 wrong, 0.980 pooled; per book 1.000, 0.990, 0.981, **0.943**, 0.986 | **fail on one book** |
+| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs drawn at random across all five books, 14 wrong, 0.987 pooled; per book 1.000, 1.000, 0.990, **0.962**, 0.981 | **fail on one book** |
 | 3b. Label correctness, `recognized` | 0.90 over 100+ | 340 furniture glyphs reviewed across two books, 0 wrong, 1.000 | pass |
 | 4. Lowercase coverage | all 26 per book | no book misses a letter | pass |
 | 4b. Digit coverage | 20 per book | 83 to 1,879 per book | pass |
@@ -199,22 +199,24 @@ the review sheets the label gates were read from.
 character in page order, so it read only each book's earliest pages. Drawn at random under a fixed
 seed, the same 1,050 glyphs give 21 wrong instead of 6:
 
-| book | wrong, random | wrong, in page order | rate | verdict |
+| book | wrong before the line check | after | rate | verdict |
 | --- | ---: | ---: | ---: | --- |
 | projectID657550412c8dc | 0 | 0 | 1.000 | pass |
-| projectID67a80fde44d34 | 3 | 0 | 0.986 | pass |
-| projectID609bfa0449bdf | 2 | 0 | 0.990 | pass |
-| projectID64a479f51ce5b | 4 | 2 | 0.981 | pass |
-| projectID603d7d5e04ca0 | 12 | 4 | **0.943** | **fail** |
+| projectID609bfa0449bdf | 2 | 0 | 1.000 | pass |
+| projectID64a479f51ce5b | 4 | 2 | 0.990 | pass |
+| projectID67a80fde44d34 | 3 | 4 | 0.981 | pass |
+| projectID603d7d5e04ca0 | 12 | 8 | **0.962** | **fail** |
 
-Pooled it reads 0.980, exactly on the floor. `projectID603d7d5e04ca0` is 0.943 against a floor of
-0.98, so the gate fails there and the plan does not close on it.
+Checking every line against the recognizer, accepted pages included, took the pooled figure from
+0.980 to 0.987 and `projectID603d7d5e04ca0` from 0.943 to 0.962. That book is still under the 0.98
+floor, so the gate fails there and the plan does not close on it.
 
-**Nearly all of that book's errors are capitals labelled lowercase**, from small capitals PGDP
-never marked, plus a few boxes holding two letters. The `flat_ascender` flag catches the first
-class: filtering it out lifts the book from 0.943 to 0.971 and removes every capital-form error in
-the sample, at a cost of 3.0 percent of its glyphs. That is a consumer-side workaround, not a fix,
-and 0.971 is still under the floor.
+**What the line check fixed, and what it did not.** The wrong-ink bindings are gone: those lines
+scored 0.00 to 0.17 word agreement against the recognizer and are now rejected, at a cost of 1.4 to
+11.1 percent of matched lines per book. What remains in the sample is capitals labelled lowercase,
+boxes holding two letters, and single-letter confusions. Capitals are the largest remaining class
+and the `flat_ascender` flag misses the worst of them: a one-letter word like `A` has no x-height
+letter to compare against, so no ratio exists.
 
 **Reviewing the queue found a worse defect than the one it was built for.** Classifying the first
 20 of `projectID603d7d5e04ca0`'s 180 flat words: 7 are small capitals PGDP never marked, 3 are bad
