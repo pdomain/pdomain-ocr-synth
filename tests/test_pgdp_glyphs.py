@@ -30,7 +30,9 @@ from pdomain_ocr_synth.pgdp.alignment_models import (
     ProjectAlignment,
     WireLineCandidate,
     WireSourceLine,
+    WireStyleRun,
 )
+from pdomain_ocr_synth.pgdp.alignment_source import tokenize_source_page
 from pdomain_ocr_synth.pgdp.glyphs import build_glyph_inventory, write_glyph_inventory
 from pdomain_ocr_synth.pgdp.image_measurement import open_image_snapshot
 from pdomain_ocr_synth.pgdp.profile_models import ProfileReport
@@ -133,23 +135,49 @@ def _f2_page(line_texts: tuple[str, ...]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _source_line(ordinal: int, text: str, byte_start: int) -> WireSourceLine:
-    encoded = len(text.encode("utf-8"))
-    content_end = byte_start + encoded
-    return WireSourceLine(
-        ordinal=ordinal,
-        byte_start=byte_start,
-        byte_end=content_end + 1,
-        content_byte_start=byte_start,
-        content_byte_end=content_end,
-        separator_byte_start=content_end,
-        separator_byte_end=content_end + 1,
-        original_text=text,
-        separator_text="\n",
-        visible_text=text,
-        matching_eligible=True,
-        style_fitting_eligible=True,
+def _tokenized_lines(
+    f2_text: str, page_name: str
+) -> tuple[tuple[WireSourceLine, ...], tuple[WireStyleRun, ...]]:
+    """Source lines and style runs exactly as the aligner derives them from F2.
+
+    Synthesizing these by hand would let the fixture disagree with the tokenizer about where a
+    style span sits, which is the one thing the style join depends on.
+    """
+
+    page = tokenize_source_page(page_name, f2_text)
+    lines = tuple(
+        WireSourceLine(
+            ordinal=line.ordinal,
+            byte_start=line.byte_start,
+            byte_end=line.byte_end,
+            content_byte_start=line.content_byte_start,
+            content_byte_end=line.content_byte_end,
+            separator_byte_start=line.separator_byte_start,
+            separator_byte_end=line.separator_byte_end,
+            original_text=line.original_text,
+            separator_text=page.source_utf8[
+                line.separator_byte_start : line.separator_byte_end
+            ].decode("utf-8"),
+            visible_text=line.visible_text,
+            operation_ordinals=line.operation_ordinals,
+            formatting_span_ids=line.formatting_span_ids,
+            continued_block_ids=line.continued_block_ids,
+            matching_eligible=line.matching_eligible,
+            style_fitting_eligible=line.style_fitting_eligible,
+        )
+        for line in page.lines
     )
+    runs = tuple(
+        WireStyleRun(
+            kind=run.kind,
+            normalized_start=run.normalized_start,
+            normalized_end=run.normalized_end,
+            byte_start=run.byte_start,
+            byte_end=run.byte_end,
+        )
+        for run in page.style_runs
+    )
+    return lines, runs
 
 
 def build_glyph_fixture(tmp_path: Path) -> Fixture:
@@ -220,6 +248,7 @@ def build_glyph_fixture(tmp_path: Path) -> Fixture:
         profile_path=profile_path,
         alignment_path=alignment_path,
         line_texts=line_texts,
+        f2_pages=f2_pages,
         f2_sha256=f2_sha256,
     )
     geometry_path = tmp_path / "geometry.jsonl"
@@ -233,6 +262,7 @@ def _write_accepted_alignment(
     profile_path: Path,
     alignment_path: Path,
     line_texts: tuple[str, ...],
+    f2_pages: dict[str, str],
     f2_sha256: str,
 ) -> dict[str, str]:
     profile_bytes = profile_path.read_bytes()
@@ -254,10 +284,12 @@ def _write_accepted_alignment(
                 ink_bands=measurement.ink_bands,
                 furniture_band_ordinals=measurement.furniture_band_ordinals,
             )
+        source_lines, style_runs = _tokenized_lines(
+            f2_pages[measurement.page_name], measurement.page_name
+        )
+        by_visible = {line.visible_text: line.ordinal for line in source_lines}
         candidates: list[WireLineCandidate] = []
-        source_lines: list[WireSourceLine] = []
         operations: list[AlignmentOperation] = []
-        byte_offset = 0
         for ordinal, candidate in enumerate(extraction.candidates):
             candidates.append(
                 WireLineCandidate(
@@ -276,13 +308,13 @@ def _write_accepted_alignment(
             line_index = round((candidate.box[1] - FIRST_LINE_TOP) / LINE_PITCH)
             if not 0 <= line_index < LINE_COUNT:
                 continue
-            text = line_texts[line_index]
-            source_lines.append(_source_line(len(source_lines), text, byte_offset))
-            byte_offset = source_lines[-1].byte_end
+            source_ordinal = by_visible.get(line_texts[line_index])
+            if source_ordinal is None:
+                continue
             operations.append(
                 AlignmentOperation(
                     kind="match",
-                    source_ordinal=source_lines[-1].ordinal,
+                    source_ordinal=source_ordinal,
                     candidate_ordinal=ordinal,
                     cost=0.0,
                 )
@@ -293,7 +325,7 @@ def _write_accepted_alignment(
                 f2_sha256=f2_sha256,
                 scan_sha256=measurement.sha256,
                 source_frame=source_frame,
-                source_lines=tuple(source_lines),
+                source_lines=source_lines,
                 formatting_spans=(),
                 candidates=tuple(candidates),
                 operations=tuple(operations),
@@ -308,6 +340,7 @@ def _write_accepted_alignment(
                 state="accepted",
                 accepted=True,
                 exclusions=(),
+                style_runs=style_runs,
             )
         )
     report = AlignmentReport(
@@ -566,15 +599,13 @@ def test_a_recognized_glyph_takes_no_style_from_f2(fixture: Fixture) -> None:
     assert all(row.source_line_ordinal is None for row in recognized)
 
 
-def test_the_manifest_records_where_the_style_came_from(fixture: Fixture) -> None:
+def test_the_manifest_counts_glyphs_by_style(fixture: Fixture) -> None:
     harvest = _harvest(fixture, geometry=False)
     manifest = harvest.manifest(rows_label="glyphs.jsonl", rows_sha256="a" * 64)
-    assert manifest.extensions["style_source"] == "f2"
-    assert manifest.f2_label == "F2.json"
-    assert manifest.f2_sha256 is not None
     counts = manifest.extensions["glyph_count_by_style"]
     assert isinstance(counts, dict)
     assert set(counts) == {"italic", "roman"}
+    assert manifest.extensions["styled_line_count"] == 2
 
 
 def test_coverage_splits_a_character_by_style(fixture: Fixture) -> None:
@@ -590,18 +621,16 @@ def test_coverage_splits_a_character_by_style(fixture: Fixture) -> None:
     }
 
 
-def test_an_f2_that_does_not_hash_to_the_recorded_value_yields_no_style(
+def test_an_alignment_carrying_no_style_runs_reads_every_glyph_roman(
     fixture: Fixture, tmp_path: Path
 ) -> None:
     payload = json.loads(fixture.alignment_path.read_text(encoding="utf-8"))
     for project in payload["projects"]:
         for page in project["pages"]:
-            page["f2_sha256"] = "b" * 64
-    path = tmp_path / "wrong-f2.json"
+            page["style_runs"] = []
+    path = tmp_path / "unstyled.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     harvest = build_glyph_inventory(
         fixture.corpus_root, path, fixture.profile_path, tool_version="0.0.0"
     )
-    assert harvest.style_source == "f2_unavailable"
-    assert all(row.label_style is None for row in harvest.rows)
-    assert harvest.f2_sha256 is None
+    assert {row.label_style for row in harvest.rows} == {"roman"}

@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import json
-from hashlib import sha256
-from pathlib import Path
-
-import pytest
-
+from pdomain_ocr_synth.pgdp.alignment_models import (
+    AlignmentOperation,
+    PageAlignment,
+    ProjectAlignment,
+    WireSourceLine,
+    WireStyleRun,
+)
+from pdomain_ocr_synth.pgdp.alignment_source import tokenize_source_page
 from pdomain_ocr_synth.pgdp.glyph_style import (
     ROMAN,
-    GlyphStyleError,
-    read_book_style,
+    read_alignment_style,
     styles_for_word,
     word_character_offsets,
 )
@@ -19,13 +20,72 @@ from pdomain_ocr_synth.pgdp.glyph_style import (
 _PAGE = "p001.png"
 
 
-def _corpus(tmp_path: Path, pages: dict[str, str]) -> tuple[Path, str]:
-    project = tmp_path / "corpus" / "projectIDone"
-    (project / "rounds").mkdir(parents=True)
-    payload = json.dumps(pages)
-    (project / "rounds" / "F2.json").write_text(payload, encoding="utf-8")
-    digest = sha256((project / "rounds" / "F2.json").read_bytes()).hexdigest()
-    return tmp_path / "corpus", digest
+def _book(f2_text: str) -> ProjectAlignment:
+    """One page aligned from F2 text, built the way the aligner builds it."""
+
+    page = tokenize_source_page(_PAGE, f2_text)
+    lines = tuple(
+        WireSourceLine(
+            ordinal=line.ordinal,
+            byte_start=line.byte_start,
+            byte_end=line.byte_end,
+            content_byte_start=line.content_byte_start,
+            content_byte_end=line.content_byte_end,
+            separator_byte_start=line.separator_byte_start,
+            separator_byte_end=line.separator_byte_end,
+            original_text=line.original_text,
+            separator_text=page.source_utf8[
+                line.separator_byte_start : line.separator_byte_end
+            ].decode("utf-8"),
+            visible_text=line.visible_text,
+            operation_ordinals=line.operation_ordinals,
+            formatting_span_ids=line.formatting_span_ids,
+            continued_block_ids=line.continued_block_ids,
+            matching_eligible=line.matching_eligible,
+            style_fitting_eligible=line.style_fitting_eligible,
+        )
+        for line in page.lines
+    )
+    runs = tuple(
+        WireStyleRun(
+            kind=run.kind,
+            normalized_start=run.normalized_start,
+            normalized_end=run.normalized_end,
+            byte_start=run.byte_start,
+            byte_end=run.byte_end,
+        )
+        for run in page.style_runs
+    )
+    operations = tuple(
+        AlignmentOperation(
+            kind="skip_text", source_ordinal=line.ordinal, candidate_ordinal=None, cost=0.0
+        )
+        for line in lines
+        if line.matching_eligible and line.visible_text.strip()
+    )
+    aligned = PageAlignment(
+        page_name=_PAGE,
+        f2_sha256="a" * 64,
+        scan_sha256=None,
+        source_frame=None,
+        source_lines=lines,
+        formatting_spans=(),
+        candidates=(),
+        operations=operations,
+        total_cost=0.0,
+        second_best_cost=None,
+        normalized_cost=0.0,
+        matched_count=0,
+        matched_ratio=0.0,
+        uniqueness_margin=0.0,
+        mean_width_residual=None,
+        mean_indentation_residual=None,
+        state="excluded",
+        accepted=False,
+        exclusions=("no_candidates",),
+        style_runs=runs,
+    )
+    return ProjectAlignment(project_id="projectIDone", pages=(aligned,))
 
 
 def test_word_offsets_survive_collapsed_whitespace() -> None:
@@ -34,9 +94,8 @@ def test_word_offsets_survive_collapsed_whitespace() -> None:
     assert word_character_offsets("   ") == ()
 
 
-def test_an_unmarked_line_reads_roman(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "plain words here\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_an_unmarked_line_reads_roman() -> None:
+    style = read_alignment_style(_book("plain words here\n"))
     assert (
         styles_for_word(
             style,
@@ -50,9 +109,8 @@ def test_an_unmarked_line_reads_roman(tmp_path: Path) -> None:
     )
 
 
-def test_an_italic_word_reads_italic(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "plain <i>words</i> here\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_an_italic_word_reads_italic() -> None:
+    style = read_alignment_style(_book("plain <i>words</i> here\n"))
     assert (
         styles_for_word(
             style,
@@ -66,9 +124,8 @@ def test_an_italic_word_reads_italic(tmp_path: Path) -> None:
     )
 
 
-def test_small_caps_are_named_rather_than_folded_into_roman(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "<sc>Lowther Street</sc>, November\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_small_caps_are_named_rather_than_folded_into_roman() -> None:
+    style = read_alignment_style(_book("<sc>Lowther Street</sc>, November\n"))
     visible = "Lowther Street, November"
     assert (
         styles_for_word(
@@ -91,9 +148,8 @@ def test_small_caps_are_named_rather_than_folded_into_roman(tmp_path: Path) -> N
     ) == (ROMAN,)
 
 
-def test_a_style_ending_mid_word_only_covers_its_own_characters(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "<i>ab</i>cd\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_a_style_ending_mid_word_only_covers_its_own_characters() -> None:
+    style = read_alignment_style(_book("<i>ab</i>cd\n"))
     assert styles_for_word(
         style,
         page_name=_PAGE,
@@ -104,9 +160,8 @@ def test_a_style_ending_mid_word_only_covers_its_own_characters(tmp_path: Path) 
     ) == ("italic", "italic", ROMAN, ROMAN)
 
 
-def test_nested_styles_are_reported_together(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "<sc><i>both</i></sc>\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_nested_styles_are_reported_together() -> None:
+    style = read_alignment_style(_book("<sc><i>both</i></sc>\n"))
     assert styles_for_word(
         style,
         page_name=_PAGE,
@@ -117,11 +172,10 @@ def test_nested_styles_are_reported_together(tmp_path: Path) -> None:
     ) == ("italic+small_caps",)
 
 
-def test_a_proofer_note_mentioning_a_tag_is_not_a_tag(tmp_path: Path) -> None:
+def test_a_proofer_note_mentioning_a_tag_is_not_a_tag() -> None:
     """The `<sc>` inside a proofer's query is text, and the note never reaches the visible line."""
 
-    root, digest = _corpus(tmp_path, {_PAGE: "Lowther Street[**mark place in <sc>?], November\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+    style = read_alignment_style(_book("Lowther Street[**mark place in <sc>?], November\n"))
     visible = "Lowther Street, November"
     assert style.line_agrees(_PAGE, 0, visible)
     assert (
@@ -137,9 +191,8 @@ def test_a_proofer_note_mentioning_a_tag_is_not_a_tag(tmp_path: Path) -> None:
     )
 
 
-def test_a_line_that_does_not_match_the_alignment_yields_no_style(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "plain <i>words</i> here\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_a_line_that_does_not_match_the_alignment_yields_no_style() -> None:
+    style = read_alignment_style(_book("plain <i>words</i> here\n"))
     assert styles_for_word(
         style,
         page_name=_PAGE,
@@ -161,9 +214,8 @@ def test_no_style_source_yields_none_rather_than_roman() -> None:
     ) == (None,)
 
 
-def test_a_word_ordinal_past_the_line_yields_no_style(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "two words\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
+def test_a_word_ordinal_past_the_line_yields_no_style() -> None:
+    style = read_alignment_style(_book("two words\n"))
     assert styles_for_word(
         style,
         page_name=_PAGE,
@@ -174,20 +226,13 @@ def test_a_word_ordinal_past_the_line_yields_no_style(tmp_path: Path) -> None:
     ) == (None,)
 
 
-def test_an_f2_that_does_not_hash_to_the_recorded_value_is_refused(tmp_path: Path) -> None:
-    root, _digest = _corpus(tmp_path, {_PAGE: "plain words\n"})
-    with pytest.raises(GlyphStyleError, match="not the aligned"):
-        _ = read_book_style(root, project_id="projectIDone", f2_sha256="c" * 64)
+def test_the_book_reports_how_many_lines_carry_style() -> None:
+    style = read_alignment_style(_book("plain <i>words</i> here\nno markup here\n"))
+    assert style.styled_line_count == 1
+    assert style.project_id == "projectIDone"
 
 
-def test_a_missing_f2_is_refused(tmp_path: Path) -> None:
-    project = tmp_path / "corpus" / "projectIDone"
-    (project / "rounds").mkdir(parents=True)
-    with pytest.raises(GlyphStyleError, match="Could not read the F2 source"):
-        _ = read_book_style(tmp_path / "corpus", project_id="projectIDone", f2_sha256="c" * 64)
-
-
-def test_the_book_records_the_file_it_read(tmp_path: Path) -> None:
-    root, digest = _corpus(tmp_path, {_PAGE: "plain words\n"})
-    style = read_book_style(root, project_id="projectIDone", f2_sha256=digest)
-    assert (style.label, style.sha256, style.project_id) == ("F2.json", digest, "projectIDone")
+def test_a_report_with_no_style_runs_still_reads_roman() -> None:
+    style = read_alignment_style(_book("plain words here\n"))
+    assert style.styled_line_count == 0
+    assert style.style_at(_PAGE, 0, character_offset=0) == ROMAN

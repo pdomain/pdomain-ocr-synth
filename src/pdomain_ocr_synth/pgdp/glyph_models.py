@@ -347,8 +347,6 @@ class GlyphManifest:
     geometry_label: str | None = None
     geometry_sha256: str | None = None
     ocr_recognizer: Mapping[str, str] | None = None
-    f2_label: str | None = None
-    f2_sha256: str | None = None
     schema_version: int = GLYPHS_SCHEMA_VERSION
     algorithm_version: str = GLYPHS_ALGORITHM_VERSION
     extensions: Mapping[str, object] = field(default_factory=dict)
@@ -380,12 +378,6 @@ class GlyphManifest:
             _require_sha256(self.geometry_sha256, name="geometry_sha256")
         if self.geometry_label is None and self.ocr_recognizer is not None:
             raise ValueError("A recognizer identity requires the geometry record that carries it.")
-        if (self.f2_label is None) != (self.f2_sha256 is None):
-            raise ValueError("An F2 source is named and hashed together or not at all.")
-        if self.f2_label is not None:
-            _require_file_label(self.f2_label, name="f2_label")
-        if self.f2_sha256 is not None:
-            _require_sha256(self.f2_sha256, name="f2_sha256")
         for name, count in (
             ("accepted_page_count", self.accepted_page_count),
             ("harvested_page_count", self.harvested_page_count),
@@ -466,8 +458,6 @@ class GlyphManifest:
             "alignment_sha256": self.alignment_sha256,
             "atlas": [sheet.to_dict() for sheet in self.atlas],
             "coverage": [row.to_dict() for row in self.coverage],
-            "f2_label": self.f2_label,
-            "f2_sha256": self.f2_sha256,
             "furniture_word_count": self.furniture_word_count,
             "geometry_label": self.geometry_label,
             "geometry_sha256": self.geometry_sha256,
@@ -685,8 +675,6 @@ class GlyphManifestInput(_WireModel):
     geometry_label: StrictStr | None = None
     geometry_sha256: StrictStr | None = Field(default=None, min_length=64, max_length=64)
     ocr_recognizer: dict[str, StrictStr] | None = None
-    f2_label: StrictStr | None = Field(default=None, min_length=1)
-    f2_sha256: StrictStr | None = Field(default=None, min_length=64, max_length=64)
 
     @model_validator(mode="before")
     @classmethod
@@ -722,8 +710,6 @@ class GlyphManifestInput(_WireModel):
             geometry_label=self.geometry_label,
             geometry_sha256=self.geometry_sha256,
             ocr_recognizer=self.ocr_recognizer,
-            f2_label=self.f2_label,
-            f2_sha256=self.f2_sha256,
             schema_version=self.schema_version,
             algorithm_version=self.algorithm_version,
             extensions=extensions,

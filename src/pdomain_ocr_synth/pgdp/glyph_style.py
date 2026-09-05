@@ -6,34 +6,30 @@ lands in the lowercase `o` bucket carrying a lowercase label. Nothing that compa
 character can see that, because the character is right and only the letterform is wrong. Italic is
 the same problem one degree milder.
 
-The markup is already in the corpus and the tokenizer already parses it: `alignment_source`
-produces a `StyleRun` per `<i>`, `<b>` and `<sc>` span with offsets into the page's visible text.
-This module reads the same `rounds/F2.json` the alignment read, refuses it unless it hashes to the
-`f2_sha256` that alignment recorded, re-derives those runs, and checks every line it uses against
-the alignment's own recorded `visible_text` before trusting an offset from it.
+The evidence is already in the alignment report. Every page carries a `style_run` per `<i>`, `<b>`
+and `<sc>` span with offsets into that page's normalized visible text, so nothing here reads the
+corpus, re-parses a transcription, or takes a second input. A page's line offsets are rebuilt from
+its own source lines, each line separator normalizing to a single newline; that reconstruction was
+checked against the tokenizer on all 1,385 pages of the five aligned books and matched every one.
 
 `None` and `"roman"` are different answers. `"roman"` means the transcription marks no style on
 that glyph. `None` means no style source could be trusted for it, which is every glyph on the
-`recognized` tier and every glyph on a page whose lines did not verify.
+`recognized` tier.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import sha256
-from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
-
-from pdomain_ocr_synth.pgdp.alignment_source import tokenize_source_page
-from pdomain_ocr_synth.pgdp.f2 import load_f2
-from pdomain_ocr_synth.pgdp.paths import resolve_project_directory
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from pdomain_ocr_synth.pgdp.alignment_models import PageAlignment, ProjectAlignment
+
 GLYPH_STYLE_METHODS: dict[str, float | int | str] = {
-    "algorithm": "f2-style-runs/v1",
+    "algorithm": "alignment-style-runs/v1",
     "style_source": "pgdp-f2-markup",
 }
 
@@ -52,29 +48,25 @@ STYLE_NAMES: Final = MappingProxyType(
 )
 """F2 tag names spelled out. `gesperrt` is letter-spaced setting, which PGDP marks as `<g>`."""
 
-F2_RELATIVE_PATH: Final = "rounds/F2.json"
-
-
-class GlyphStyleError(ValueError):
-    """The F2 source handed to this stage is not the one the alignment report recorded."""
-
 
 @dataclass(frozen=True, slots=True)
 class BookStyle:
-    """One book's F2 style spans, keyed by page name and source-line ordinal.
+    """One book's style spans, keyed by page name and source-line ordinal.
 
-    Spans are half-open character ranges relative to the start of that line's visible text, which
-    is the same string the alignment report carries for the line.
+    Spans are half-open character ranges relative to the start of that line's own visible text,
+    which is the same string the alignment report carries for the line.
     """
 
     project_id: str
-    label: str
-    sha256: str
     spans: Mapping[tuple[str, int], tuple[tuple[int, int, str], ...]]
     visible: Mapping[tuple[str, int], str]
 
+    @property
+    def styled_line_count(self) -> int:
+        return len(self.spans)
+
     def line_agrees(self, page_name: str, ordinal: int, visible_text: str) -> bool:
-        """Whether the re-derived line is the one the alignment report recorded."""
+        """Whether the line asked about is the one the report carries at that ordinal."""
 
         return self.visible.get((page_name, ordinal)) == visible_text
 
@@ -91,38 +83,15 @@ class BookStyle:
         return "+".join(kinds) if kinds else ROMAN
 
 
-def read_book_style(corpus_root: str | Path, *, project_id: str, f2_sha256: str) -> BookStyle:
-    """Read one book's F2 markup, refusing any file that is not the aligned one.
+def read_alignment_style(project: ProjectAlignment) -> BookStyle:
+    """Build one book's style lookup from the alignment report it was aligned into."""
 
-    The hash is the whole `rounds/F2.json` file's, which is exactly what `alignment.py` records on
-    every page of the book, so a changed transcription cannot silently restyle an inventory.
-    """
-
-    root = Path(corpus_root).expanduser().resolve()
-    project_directory = resolve_project_directory(corpus_root=root, project_id=project_id)
-    source = project_directory / F2_RELATIVE_PATH
-    try:
-        payload = source.read_bytes()
-    except OSError as error:
-        raise GlyphStyleError(f"Could not read the F2 source: {source}") from error
-    digest = sha256(payload).hexdigest()
-    if digest != f2_sha256:
-        wrong = f"hashes to {digest}, not the aligned {f2_sha256}"
-        raise GlyphStyleError(f"F2 source {source.name} {wrong}.")
-
-    parsed = load_f2(source)
     spans: dict[tuple[str, int], tuple[tuple[int, int, str], ...]] = {}
     visible: dict[tuple[str, int], str] = {}
-    for parsed_page in parsed.pages:
-        page = tokenize_source_page(parsed_page.name, parsed_page.source_text)
-        page_name = parsed_page.name
-        offsets = _operation_offsets(tuple(len(op.output) for op in page.operations))
-        for line in page.lines:
-            if not line.operation_ordinals:
-                continue
-            start = offsets[line.operation_ordinals[0]]
-            end = start + len(line.visible_text)
-            visible[page_name, line.ordinal] = line.visible_text
+    for page in project.pages:
+        for ordinal, start, line_visible in _line_offsets(page):
+            end = start + len(line_visible)
+            visible[page.page_name, ordinal] = line_visible
             covering = tuple(
                 (
                     max(0, run.normalized_start - start),
@@ -133,11 +102,9 @@ def read_book_style(corpus_root: str | Path, *, project_id: str, f2_sha256: str)
                 if run.normalized_start < end and run.normalized_end > start
             )
             if covering:
-                spans[page_name, line.ordinal] = covering
+                spans[page.page_name, ordinal] = covering
     return BookStyle(
-        project_id=project_id,
-        label=source.name,
-        sha256=digest,
+        project_id=project.project_id,
         spans=MappingProxyType(spans),
         visible=MappingProxyType(visible),
     )
@@ -190,8 +157,16 @@ def styles_for_word(
     )
 
 
-def _operation_offsets(lengths: tuple[int, ...]) -> tuple[int, ...]:
-    offsets = [0]
-    for length in lengths:
-        offsets.append(offsets[-1] + length)
+def _line_offsets(page: PageAlignment) -> tuple[tuple[int, int, str], ...]:
+    """Each source line's ordinal, offset in the page's visible text, and its own visible text.
+
+    A line separator is one or two source bytes but always normalizes to a single newline, so its
+    contribution to the offset is one character whenever the line has a separator at all.
+    """
+
+    offsets: list[tuple[int, int, str]] = []
+    position = 0
+    for line in page.source_lines:
+        offsets.append((line.ordinal, position, line.visible_text))
+        position += len(line.visible_text) + (1 if line.separator_text else 0)
     return tuple(offsets)

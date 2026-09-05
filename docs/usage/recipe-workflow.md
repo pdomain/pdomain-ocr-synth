@@ -215,11 +215,9 @@ another under one character.
 
 `label_style` is `roman` when the transcription marks no style and `null` when
 no style source could be trusted, which is every glyph on the `recognized` tier.
-The F2 file is refused unless it hashes to the `f2_sha256` the alignment
-recorded, and each line is checked against the alignment's own `visible_text`
-before an offset from it is used. A book that cannot be pinned harvests without
-style rather than failing, and the manifest's `style_source` says which
-happened.
+The evidence comes from the alignment report itself, which already carries a
+style run per span, so the command reads no extra input and re-parses no
+transcription.
 
 Quality is recorded and never enforced. Each row carries where its rows sit
 against the line's x-height top and baseline, whether it reaches the line box's
