@@ -158,6 +158,53 @@ original scan frame. The command does not infer baselines, reading order across
 columns, typography, font identity, semantics, rotation, or dewarping, and it
 does not use OCR output as verification.
 
+## Cut a glyph inventory
+
+```bash
+pdomain-ocr-synth glyphs-pgdp /path/to/pgdp-corpus \
+  --alignment ./pgdp-alignment.json \
+  --profile ./pgdp-profile.json \
+  --geometry ./geometry-v1.jsonl \
+  --output ./pgdp-glyphs/
+```
+
+`glyphs-pgdp` cuts one book's glyphs from its own scans and writes an inventory
+directory: `glyphs.jsonl`, one row per glyph, and `manifest.json`, the
+provenance and per-character coverage. The JSONL is the authority.
+
+An inventory is per book. X-heights run 10 to 18 px across the five aligned
+corpus books and glyph pixel sizes scale with them, so a pooled inventory would
+be a chimera of sizes; the command refuses an alignment report covering more
+than one book.
+
+Glyphs carry one of two label tiers and the two never mix. A `transcribed`
+glyph comes from a word on a line reconciled against PGDP F2, so its character
+is a human proofer's. A `recognized` glyph comes from a word outside every
+matched line, which is where the running head and the folio sit; proofers strip
+both from F2, so the only label available is the OCR read that `--geometry`
+supplies, and the row carries that read's confidence. Every row names its tier,
+so a consumer can take digits from `recognized` while training characters only
+on `transcribed`.
+
+A glyph is cut only when the word's box splits at blank columns into exactly as
+many ink runs as the word has alphanumeric characters. Measured over the five
+aligned books, that holds for 0.256 to 0.799 of reconciled words; the rest fail
+because letters touch, and the manifest records how many failed and why rather
+than dropping them silently.
+
+Quality is recorded and never enforced. Each row carries where its rows sit
+against the line's x-height top and baseline, whether it reaches the line box's
+own top or bottom row, and its ink density. The reference is the line box, not
+the word box: a word box is tight to its own ink, so its tallest and lowest
+glyphs always touch it.
+
+The command refuses to run unless the profile hashes to the value the alignment
+report recorded, the same check `typography-pgdp` makes. A page whose geometry
+`image_sha256` disagrees with the alignment's `scan_sha256` yields no furniture,
+and the manifest counts those pages. The output directory gets an empty
+`.nobackup` marker, because the whole inventory can be rebuilt from the corpus
+and the two reports.
+
 ## Validate and render
 
 ```bash
@@ -241,6 +288,7 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `profile-pgdp <corpus_root>` | Measure selected local PGDP scan geometry |
 | `align-pgdp <corpus_root>` | Align PGDP F2 source lines with measured scan lines |
 | `typography-pgdp <corpus_root>` | Measure font-free typographic observables from an alignment |
+| `glyphs-pgdp <corpus_root>` | Cut a per-book labelled glyph inventory from an alignment |
 
 ## Render-family options
 
@@ -423,6 +471,20 @@ alignment report, and it opens no font, renders no text, and never leaves the
 | `--output PATH` | Write the required `pgdp-typography/v1` JSON report here; it must be outside the corpus root, differ from both inputs, and not name a directory |
 | `--evidence-pages N` | Emit per-line and per-word rows for this many measured pages per book (default 12) |
 | `--geometry PATH` | Optional OCR geometry JSONL for this book. Marks a line whose first ink run is a continuation fragment the transcription does not carry |
+
+### `glyphs-pgdp <corpus_root>`
+
+The `corpus_root` positional argument is the local PGDP corpus directory. The
+command cuts one book's glyph inventory from its own scans and writes it as a
+directory. It opens no font, renders no text, runs no OCR, and never leaves the
+`source` coordinate frame.
+
+| Flag | Meaning |
+|------|---------|
+| `--alignment PATH` | Read this required `pgdp-alignment/v3` JSON report; it must cover exactly one book |
+| `--profile PATH` | Read this required `pgdp-profile/v2` JSON report; it must hash to the value the alignment recorded |
+| `--output PATH` | Write the required `pgdp-glyphs/v1` inventory directory here; it must be outside the corpus root and must not name a file |
+| `--geometry PATH` | Optional OCR geometry JSONL for this book. Harvests the running head and the folio as the `recognized` label tier |
 
 ## Audit log schema
 

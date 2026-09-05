@@ -360,6 +360,12 @@ def _measure_project(
     )
 
 
+def book_word_gap_threshold(project: ProjectAlignment) -> WordGapThreshold:
+    """One book's word-gap threshold, for a stage that needs word boxes but not a full report."""
+
+    return _word_gap_thresholds(project)[0]
+
+
 def _word_gap_thresholds(
     project: ProjectAlignment,
 ) -> tuple[WordGapThreshold, dict[str, WordGapThreshold]]:
@@ -380,7 +386,7 @@ def _word_gap_thresholds(
         if not page.accepted:
             continue
         counts: Counter[int] = Counter()
-        for _, _, candidate, visible_text in _matched_lines(page):
+        for _, _, candidate, visible_text in matched_lines(page):
             if not visible_text.split() or not candidate.horizontal_ink_profile:
                 continue
             counts.update(word_gap_lengths(candidate.horizontal_ink_profile))
@@ -487,7 +493,7 @@ def _measure_page(
             page, page_class=page_class, extensions=gap_evidence, exclusions=("source_changed",)
         )
 
-    matched = _matched_lines(page)
+    matched = matched_lines(page)
     mismatch = _mask_mismatch(mask, matched)
     if mismatch is not None:
         return _excluded_page(
@@ -706,7 +712,7 @@ def _witness_first_run(
     )
 
 
-def _matched_lines(
+def matched_lines(
     page: PageAlignment,
 ) -> tuple[tuple[int, int, WireLineCandidate, str], ...]:
     """Every match operation as `(candidate_ordinal, source_ordinal, candidate, text)`.

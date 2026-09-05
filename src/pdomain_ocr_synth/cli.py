@@ -391,6 +391,35 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    p_glyphs_pgdp = subparsers.add_parser(
+        "glyphs-pgdp",
+        help="cut a per-book labelled glyph inventory from an alignment report",
+    )
+    _ = p_glyphs_pgdp.add_argument("corpus_root", help="local PGDP corpus root directory")
+    _ = p_glyphs_pgdp.add_argument(
+        "--alignment",
+        required=True,
+        help="M15b source-line alignment JSON path for one book",
+    )
+    _ = p_glyphs_pgdp.add_argument(
+        "--profile",
+        required=True,
+        help="M15a source-geometry profile JSON path the alignment recorded",
+    )
+    _ = p_glyphs_pgdp.add_argument(
+        "--output",
+        required=True,
+        help="write the pgdp-glyphs/v1 inventory directory here",
+    )
+    _ = p_glyphs_pgdp.add_argument(
+        "--geometry",
+        default=None,
+        help=(
+            "optional OCR geometry JSONL for this book; harvests the running head and folio "
+            "as the recognized label tier"
+        ),
+    )
+
     return parser
 
 
@@ -1765,6 +1794,55 @@ def _cmd_typography_pgdp(
     return 0
 
 
+def _cmd_glyphs_pgdp(
+    corpus_root: str,
+    *,
+    alignment: str,
+    profile: str,
+    output: str,
+    geometry: str | None = None,
+) -> int:
+    """Cut one book's labelled glyph inventory and write it as a directory."""
+
+    from pdomain_ocr_synth.pgdp.glyphs import build_glyph_inventory, write_glyph_inventory
+
+    root = Path(corpus_root).expanduser()
+    if not root.exists():
+        print(f"error: corpus root does not exist: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    if not root.is_dir():
+        print(f"error: corpus root is not a directory: {root}", file=sys.stderr)
+        return USAGE_EXIT
+    alignment_path = Path(alignment).expanduser()
+    profile_path = Path(profile).expanduser()
+    output_path = Path(output).expanduser()
+    if output_path.exists() and not output_path.is_dir():
+        print(f"error: glyph inventory output is not a directory: {output_path}", file=sys.stderr)
+        return DESTINATION_EXIT
+    geometry_path = None if geometry is None else Path(geometry).expanduser()
+    try:
+        harvest = build_glyph_inventory(
+            root,
+            alignment_path,
+            profile_path,
+            tool_version=__version__,
+            geometry_path=geometry_path,
+        )
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return VALIDATION_EXIT
+    try:
+        manifest = write_glyph_inventory(harvest, output_path, root)
+    except (OSError, ValueError, ExceptionGroup) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return DESTINATION_EXIT
+    print(f"glyphs: {manifest.glyph_count}")
+    for tier, count in sorted(manifest.glyph_count_by_tier.items()):
+        print(f"  {tier}: {count}")
+    print(f"pages harvested: {manifest.harvested_page_count}/{manifest.accepted_page_count}")
+    return 0
+
+
 def _cmd_align_pgdp(corpus_root: str, *, profile: str, output: str) -> int:
     """Align local PGDP source lines and write a snapshot-safe report."""
 
@@ -1894,6 +1972,13 @@ _IMPLEMENTED_DISPATCH = {
         profile=args.profile,
         output=args.output,
         evidence_pages=args.evidence_pages,
+        geometry=args.geometry,
+    ),
+    "glyphs-pgdp": lambda args: _cmd_glyphs_pgdp(
+        args.corpus_root,
+        alignment=args.alignment,
+        profile=args.profile,
+        output=args.output,
         geometry=args.geometry,
     ),
 }
