@@ -13,7 +13,14 @@ handoff_reason: stopping
 host: claude-code
 ---
 
-# The glyph inventory ships, and reviewing it changed the cutting rule
+# The glyph inventory ships, and every review of it found something
+
+## Read this first
+
+**Gate 3 fails on one book and the plan does not close.** Everything below shipped and works, but
+`projectID603d7d5e04ca0` reads 0.943 label correctness against a 0.98 floor once the review sample
+is drawn at random instead of in page order. Four books pass at 0.981 to 1.000. Details in
+"Gate 3 fails on one book" below and in the plan.
 
 ## What changed
 
@@ -74,37 +81,58 @@ rather than a divergence to stop on.
 
 ## Every gate, measured on 2026-09-05
 
-Full numbers in `/workspaces/pdomain/.m15f-evidence/gate-summary.json`.
+Nine of ten pass. Full numbers in `/workspaces/pdomain/.m15f-evidence/gate-summary.json` and
+`gate3-random-review.json`.
 
 | Gate | Result | Verdict |
 | --- | --- | ---: |
-| 1. Determinism | 5 of 5 inventory trees byte-identical across two runs, atlas PNGs included | pass |
+| 1. Determinism | 5 of 5 inventory trees byte-identical across two runs, 900 atlas sheets included | pass |
 | 2. Provenance | every row unique on page, tier, line, word and ordinal; a mismatched profile refused | pass |
-| 3. Labels, `transcribed` | 0.994 over 1,050 reviewed glyphs, worst book 0.981, floor 0.98 | pass |
-| 3b. Labels, `recognized` | 1.000 over 340 reviewed furniture glyphs, floor 0.90 | pass |
-| 4. Lowercase coverage | all 26 in every book, none missing | pass |
-| 4b. Digit coverage | 83 to 1,879 per book, floor 20 | pass |
-| 5. Yield floor | 87 to 547 glyphs per accepted page, floor 50 | pass |
-| 6. Atlas reproduction | all 651 sheets re-rendered byte for byte from the JSONL | pass |
-| 7. Latent discipline | 0 violations in any manifest or row | pass |
+| 3. Labels, `transcribed` | 1,050 glyphs drawn at random, 21 wrong, 0.980 pooled; per book 1.000, 0.990, 0.981, **0.943**, 0.986 | **fail on one book** |
+| 3b. Labels, `recognized` | 340 furniture glyphs reviewed, 0 wrong, 1.000, floor 0.90 | pass |
+| 3c. Labels, recognizer-admitted | 420 glyphs on non-accepted pages, 5 wrong, 0.988, floor 0.98 | pass |
+| 4. Lowercase coverage | all 26 in every book | pass |
+| 4b. Digit coverage | 128 to 2,837 per book, floor 20 | pass |
+| 5. Yield floor | 68 to 308 glyphs per harvested page, floor 50 | pass |
+| 6. Atlas reproduction | all 900 sheets re-rendered byte for byte from the JSONL | pass |
+| 7. Latent discipline | 0 violations | pass |
+
+## Gate 3 fails on one book
+
+The first pass sampled the first 30 rows per character in page order, so it read only each book's
+earliest pages and scored 0.994. Drawn at random under seed 20260905 the same 1,050 glyphs give 21
+wrong, 0.980 pooled, and `projectID603d7d5e04ca0` at 0.943.
+
+Nearly all that book's errors are capitals labelled lowercase. Filtering `flat_ascender` glyphs
+lifts it to 0.971 and removes every capital-form error in the sample, at a cost of 3.0 percent of
+its glyphs. That is a consumer-side workaround and still under the floor.
 
 ## What the five books yield
 
-| book | pages | glyphs | transcribed | recognized | per page | separable | digits |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| projectID657550412c8dc | 155 | 84,733 | 82,321 | 2,412 | 547 | 0.886 | 564 |
-| projectID609bfa0449bdf | 226 | 64,417 | 61,692 | 2,725 | 285 | 0.543 | 563 |
-| projectID64a479f51ce5b | 75 | 31,578 | 30,669 | 909 | 421 | 0.355 | 1,879 |
-| projectID603d7d5e04ca0 | 177 | 15,367 | 12,748 | 2,619 | 87 | 0.248 | 306 |
-| projectID67a80fde44d34 | 32 | 11,233 | 11,159 | 74 | 351 | 0.624 | 83 |
+Every page is harvested now, not only the 665 alignment accepted.
 
-207,328 glyphs from 665 pages in 8 minutes 10 seconds. No page was excluded in
-any book.
+| book | pages | glyphs | transcribed | recognized | per page | separable |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| projectID657550412c8dc | 298/312 | 91,887 | 89,475 | 2,412 | 308 | 0.883 |
+| projectID609bfa0449bdf | 308/312 | 70,441 | 67,716 | 2,725 | 229 | 0.537 |
+| projectID64a479f51ce5b | 237/237 | 52,646 | 51,737 | 909 | 222 | 0.358 |
+| projectID603d7d5e04ca0 | 426/426 | 28,824 | 26,205 | 2,619 | 68 | 0.246 |
+| projectID67a80fde44d34 | 98/98 | 23,731 | 23,657 | 74 | 242 | 0.617 |
 
-**Furniture closed the digit gap exactly as the scoping predicted.**
-`projectID609bfa0449bdf` yields 8 digits from 226 pages of body prose and 555
-from its running heads and folios. Mean recognition confidence on the
-`recognized` tier runs 0.77 to 0.85.
+267,529 glyphs from 1,367 of 1,385 pages, 258,790 on the `transcribed` tier against 198,589 when
+only accepted pages were harvested.
+
+**A line on a non-accepted page is admitted when the recognizer agrees with its transcription.**
+Page acceptance is a page-level judgement and a poor proxy for whether one line bound to the right
+text: lines excluded only for alignment score agree at 0.887 to 0.962 against 0.926 to 0.976 for
+accepted, while lines on illustration pages agree at 0.560 to 0.683. The bar is four of every five
+transcription words read inside the line's own box. It needs `--geometry`, and the recognizer only
+ever rejects.
+
+**Furniture stays on accepted pages.** Harvesting every page first pushed the `recognized` tier to
+165,670 glyphs, because on a page where few lines matched most words fall outside every matched
+line. That stops meaning the running head and starts meaning body text, which the tier does not
+document and its review does not cover.
 
 ## Gate 3 is model-reviewed, not human-reviewed
 
@@ -153,6 +181,29 @@ policy the plan's decision 1 already flags as due.
 **The output directory gets a `.nobackup` marker,** because the whole inventory
 rebuilds from the corpus and the two reports.
 
+## The flat-ascender queue, and what it found
+
+A word whose ascender letters run no taller than its x-height letters is flagged `flat_ascender`
+and queued in the manifest. In lowercase an ascender runs about half again the x-height, 1.46 to
+1.58 at the median; small capitals and wrong-ink bindings both score 1.00. Calibrated on the 76
+words PGDP marks `<sc>` in `projectID603d7d5e04ca0`, a cut at 1.10 catches 74.
+
+The queues are small: 33, 32, 68, 180 and 203 words a book, 0.2 to 2.8 percent of separable words.
+
+**Classifying the first 20 of the 180 in `projectID603d7d5e04ca0` found something worse than small
+caps.** 7 are unmarked small capitals, 3 are bad cuts, and **10 are a word bound to the wrong ink
+entirely**: `They` cut from WILL, `and` from `side,`, `being` from `morning,`, `off` from `her`.
+Every glyph in such a word carries the wrong character, and nothing had surfaced it, because
+word-level agreement against the OCR read scores 0.9965 when a shifted binding still reads as a
+real word somewhere on the line.
+
+Those bindings sit on accepted pages at the same rate as on recognizer-admitted ones, so
+harvesting every page did not cause them.
+
+The queue on `projectID657550412c8dc` hit its 200-entry cap at 203, the first truncation. The
+count stays exact and the queue is ordered by page, not by flatness, so truncation does not
+preferentially drop the entries near 1.00 where small capitals sit.
+
 ## Still open
 
 **The last coincidence.** A pure-alphanumeric word can still match by luck when
@@ -185,13 +236,24 @@ a call is comfortable.
 
 ## Resume steps
 
-1. Nothing is blocked on you. Every task shipped and every gate passes.
-2. If you want Gate 3 human-reviewed rather than model-reviewed, the sheets are
-   in `.m15f-evidence/` and named per book; the M15d precedent for that is
+1. **Decide what to do about Gate 3 on `projectID603d7d5e04ca0`.** It reads 0.943
+   against a 0.98 floor, 0.971 with `flat_ascender` filtered. The other four books
+   pass. Options are a shape-based separator for capitals, a per-character height
+   model fitted to the book, or accepting the book at a stated lower number.
+2. **Work the flat-ascender queues.** 516 words across the five books, in each
+   manifest's `flat_ascender_words`. The first 20 of one book split 7 unmarked
+   small caps, 10 wrong-ink bindings and 3 bad cuts, so the remainder is worth a
+   pass. `.m15f-evidence/render_flat_queue.py <book> <start> <count>` renders them
+   as labelled crops.
+3. **The wrong-ink bindings need their own slice.** They are the most serious
+   defect found and they sit on accepted pages, so they are not an artifact of
+   anything this milestone changed.
+4. If you want Gate 3 human-reviewed rather than model-reviewed, the random
+   sheets are in `.m15f-evidence/review-*-random.png`; the M15d precedent is
    `gate4-review.csv`.
-3. Decide whether the corpus atlases belong in the repo. That is the question
-   the plan's decision 1 says should be answered before the second book lands,
-   and five books have now landed.
+5. Decide whether the corpus atlases belong in the repo. That is the question the
+   plan's decision 1 says should be answered before the second book lands, and
+   five books have now landed.
 
 ## Pointers
 
@@ -205,6 +267,9 @@ a call is comfortable.
 - `docs/usage/recipe-workflow.md` — the `glyphs-pgdp` flag table and what it does
 - `tests/fixtures/pgdp_glyphs/` — the four reviewed cut outcomes and their atlas
 - `/workspaces/pdomain/.m15f-evidence/gate-summary.json` — every gate number
+- `/workspaces/pdomain/.m15f-evidence/gate3-random-review.json` — the random-sample Gate 3 result
+- `/workspaces/pdomain/.m15f-evidence/flat-queue-review.json` — what the flat queue holds
+- `/workspaces/pdomain/.m15f-evidence/nonaccepted-agreement-<book>.json` — why every page is harvested
 - `/workspaces/pdomain/.m15f-evidence/gates-<book>.json` — one book's own numbers
 - `/workspaces/pdomain/.m15f-evidence/punctuation-risk-<book>.json` — why the rule changed
 - `/workspaces/pdomain/.m15f-evidence/label-agreement-<book>.json` — F2 against the read, per word
