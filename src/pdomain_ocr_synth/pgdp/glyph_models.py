@@ -260,7 +260,10 @@ class AtlasSheet:
     sheet_ordinal: int
     path: str
     cell_count: int
+    cell_width_px: int
+    cell_height_px: int
     sha256: str
+    clipped_cell_count: int = 0
 
     def __post_init__(self) -> None:
         if len(self.character) != 1:
@@ -272,12 +275,19 @@ class AtlasSheet:
             raise ValueError("An atlas path must be relative to the inventory directory.")
         if self.cell_count <= 0:
             raise ValueError("An atlas sheet holds at least one cell.")
+        if self.cell_width_px <= 0 or self.cell_height_px <= 0:
+            raise ValueError("An atlas cell must have positive width and height.")
+        if not 0 <= self.clipped_cell_count <= self.cell_count:
+            raise ValueError("clipped_cell_count may not exceed the sheet's cell count.")
         _require_sha256(self.sha256, name="sha256")
 
     def to_dict(self) -> dict[str, JsonValue]:
         return {
             "cell_count": self.cell_count,
+            "cell_height_px": self.cell_height_px,
+            "cell_width_px": self.cell_width_px,
             "character": self.character,
+            "clipped_cell_count": self.clipped_cell_count,
             "label_tier": self.label_tier,
             "path": self.path,
             "sha256": self.sha256,
@@ -580,7 +590,10 @@ class AtlasSheetInput(_WireModel):
     sheet_ordinal: StrictInt = Field(ge=0)
     path: StrictStr = Field(min_length=1)
     cell_count: StrictInt = Field(gt=0)
+    cell_width_px: StrictInt = Field(gt=0)
+    cell_height_px: StrictInt = Field(gt=0)
     sha256: StrictStr = Field(min_length=64, max_length=64)
+    clipped_cell_count: StrictInt = Field(default=0, ge=0)
 
     def to_domain(self) -> AtlasSheet:
         return AtlasSheet(
@@ -589,7 +602,10 @@ class AtlasSheetInput(_WireModel):
             sheet_ordinal=self.sheet_ordinal,
             path=self.path,
             cell_count=self.cell_count,
+            cell_width_px=self.cell_width_px,
+            cell_height_px=self.cell_height_px,
             sha256=self.sha256,
+            clipped_cell_count=self.clipped_cell_count,
         )
 
 

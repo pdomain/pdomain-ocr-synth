@@ -27,6 +27,7 @@ import numpy as np
 
 from pdomain_ocr_synth.pgdp.alignment_image import build_candidate_mask
 from pdomain_ocr_synth.pgdp.alignment_models import AlignmentReport
+from pdomain_ocr_synth.pgdp.glyph_atlas import render_atlas, write_atlas
 from pdomain_ocr_synth.pgdp.glyph_cut import (
     GLYPH_CUT_METHODS,
     crop_to_ink,
@@ -625,12 +626,17 @@ def _read_bytes(path: Path, *, label: str) -> bytes:
 
 
 def write_glyph_inventory(
-    harvest: GlyphHarvest, output_dir: str | Path, corpus_root: str | Path
+    harvest: GlyphHarvest,
+    output_dir: str | Path,
+    corpus_root: str | Path,
+    *,
+    atlas: bool = True,
 ) -> GlyphManifest:
-    """Write `glyphs.jsonl` and `manifest.json` into one inventory directory.
+    """Write `glyphs.jsonl`, the per-character atlas, and `manifest.json` into one directory.
 
     The rows are written first and hashed, so the manifest records the bytes on disk rather than a
-    hash of something that was rendered again.
+    hash of something that was rendered again. The atlas is rendered from those same rows, which
+    is what makes re-rendering it a check rather than a repetition.
     """
 
     directory = Path(output_dir).expanduser().resolve()
@@ -642,8 +648,15 @@ def write_glyph_inventory(
 
     rendered = harvest.render().encode("utf-8")
     _write_bytes(directory / GLYPHS_ROWS_FILENAME, rendered)
+    sheets = (
+        write_atlas(render_atlas(harvest.rows, corpus_root=root, pages=harvest.pages), directory)
+        if atlas
+        else ()
+    )
     manifest = harvest.manifest(
-        rows_label=GLYPHS_ROWS_FILENAME, rows_sha256=sha256(rendered).hexdigest()
+        rows_label=GLYPHS_ROWS_FILENAME,
+        rows_sha256=sha256(rendered).hexdigest(),
+        atlas=sheets,
     )
     write_report(manifest, directory / GLYPHS_MANIFEST_FILENAME, root)
     return manifest

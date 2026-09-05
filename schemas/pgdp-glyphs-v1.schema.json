@@ -32,11 +32,27 @@
           "title": "Cell Count",
           "type": "integer"
         },
+        "cell_width_px": {
+          "exclusiveMinimum": 0,
+          "title": "Cell Width Px",
+          "type": "integer"
+        },
+        "cell_height_px": {
+          "exclusiveMinimum": 0,
+          "title": "Cell Height Px",
+          "type": "integer"
+        },
         "sha256": {
           "maxLength": 64,
           "minLength": 64,
           "title": "Sha256",
           "type": "string"
+        },
+        "clipped_cell_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Clipped Cell Count",
+          "type": "integer"
         }
       },
       "required": [
@@ -45,6 +61,8 @@
         "sheet_ordinal",
         "path",
         "cell_count",
+        "cell_width_px",
+        "cell_height_px",
         "sha256"
       ],
       "title": "AtlasSheetInput",

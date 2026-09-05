@@ -419,6 +419,12 @@ def build_parser() -> argparse.ArgumentParser:
             "as the recognized label tier"
         ),
     )
+    _ = p_glyphs_pgdp.add_argument(
+        "--no-atlas",
+        dest="atlas",
+        action="store_false",
+        help="write the JSONL and manifest without rendering the per-character atlas",
+    )
 
     return parser
 
@@ -1800,6 +1806,7 @@ def _cmd_glyphs_pgdp(
     alignment: str,
     profile: str,
     output: str,
+    atlas: bool = True,
     geometry: str | None = None,
 ) -> int:
     """Cut one book's labelled glyph inventory and write it as a directory."""
@@ -1832,7 +1839,7 @@ def _cmd_glyphs_pgdp(
         print(f"error: {error}", file=sys.stderr)
         return VALIDATION_EXIT
     try:
-        manifest = write_glyph_inventory(harvest, output_path, root)
+        manifest = write_glyph_inventory(harvest, output_path, root, atlas=atlas)
     except (OSError, ValueError, ExceptionGroup) as error:
         print(f"error: {error}", file=sys.stderr)
         return DESTINATION_EXIT
@@ -1840,6 +1847,7 @@ def _cmd_glyphs_pgdp(
     for tier, count in sorted(manifest.glyph_count_by_tier.items()):
         print(f"  {tier}: {count}")
     print(f"pages harvested: {manifest.harvested_page_count}/{manifest.accepted_page_count}")
+    print(f"atlas sheets: {len(manifest.atlas)}")
     return 0
 
 
@@ -1979,6 +1987,7 @@ _IMPLEMENTED_DISPATCH = {
         alignment=args.alignment,
         profile=args.profile,
         output=args.output,
+        atlas=args.atlas,
         geometry=args.geometry,
     ),
 }

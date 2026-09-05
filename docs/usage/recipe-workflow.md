@@ -123,6 +123,15 @@ from the accepted pages of a `pgdp-alignment/v3` report, then pools them per
 page, per book, and per page class into a deterministic `pgdp-typography/v1`
 report.
 
+The atlas is a render of the JSONL, not a second source. One grid per
+character per tier holds every sample of that character in the book, sharded at
+1,024 cells a sheet, so opening `atlas/transcribed/U+0065-000.png` shows every
+`e` at once and a bad cut is obvious next to its neighbours. Cells are the
+character's 95th-percentile extent and nothing is scaled; a larger glyph is
+centre-cropped and its sheet records how many that happened to. Re-rendering
+from the JSONL reproduces every sheet byte for byte, which is what makes the
+atlas safe to ship. `--no-atlas` skips the render.
+
 The command refuses to run unless the profile hashes to the value the alignment
 report recorded, so the two inputs are provably the pair that produced each
 other. On every page it rebuilds the same ink mask the alignment extractor
@@ -197,6 +206,15 @@ against the line's x-height top and baseline, whether it reaches the line box's
 own top or bottom row, and its ink density. The reference is the line box, not
 the word box: a word box is tight to its own ink, so its tallest and lowest
 glyphs always touch it.
+
+The atlas is a render of the JSONL, not a second source. One grid per
+character per tier holds every sample of that character in the book, sharded at
+1,024 cells a sheet, so opening `atlas/transcribed/U+0065-000.png` shows every
+`e` at once and a bad cut is obvious next to its neighbours. Cells are the
+character's 95th-percentile extent and nothing is scaled; a larger glyph is
+centre-cropped and its sheet records how many that happened to. Re-rendering
+from the JSONL reproduces every sheet byte for byte, which is what makes the
+atlas safe to ship. `--no-atlas` skips the render.
 
 The command refuses to run unless the profile hashes to the value the alignment
 report recorded, the same check `typography-pgdp` makes. A page whose geometry
@@ -485,6 +503,7 @@ directory. It opens no font, renders no text, runs no OCR, and never leaves the
 | `--profile PATH` | Read this required `pgdp-profile/v2` JSON report; it must hash to the value the alignment recorded |
 | `--output PATH` | Write the required `pgdp-glyphs/v1` inventory directory here; it must be outside the corpus root and must not name a file |
 | `--geometry PATH` | Optional OCR geometry JSONL for this book. Harvests the running head and the folio as the `recognized` label tier |
+| `--no-atlas` | Write the JSONL and manifest without rendering the per-character atlas |
 
 ## Audit log schema
 

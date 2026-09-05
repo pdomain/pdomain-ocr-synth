@@ -196,6 +196,8 @@ def test_an_atlas_sheet_path_must_stay_inside_the_inventory() -> None:
             sheet_ordinal=0,
             path="../U+0065-000.png",
             cell_count=4,
+            cell_width_px=8,
+            cell_height_px=14,
             sha256=_SHA,
         )
 
