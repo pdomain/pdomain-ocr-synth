@@ -253,6 +253,9 @@ class GlyphPage:
     scan_sha256: str
     source_path: str
     glyph_count: int
+    page_state: str = "accepted"
+    admitted_line_count: int = 0
+    recognizer_admitted_line_count: int = 0
 
     def __post_init__(self) -> None:
         if not self.page_name or not self.source_path:
@@ -260,11 +263,22 @@ class GlyphPage:
         _require_sha256(self.scan_sha256, name="scan_sha256")
         if self.glyph_count < 0:
             raise ValueError("glyph_count must be nonnegative.")
+        if not self.page_state:
+            raise ValueError("page_state must name the alignment state the page was in.")
+        if self.admitted_line_count < 0 or self.recognizer_admitted_line_count < 0:
+            raise ValueError("A page's admitted line counts must be nonnegative.")
+        if self.recognizer_admitted_line_count > self.admitted_line_count:
+            raise ValueError("A page cannot admit more lines by recognizer than in total.")
+        if self.page_state == "accepted" and self.recognizer_admitted_line_count:
+            raise ValueError("An accepted page's lines are admitted by its own alignment gate.")
 
     def to_dict(self) -> dict[str, JsonValue]:
         return {
+            "admitted_line_count": self.admitted_line_count,
             "glyph_count": self.glyph_count,
             "page_name": self.page_name,
+            "page_state": self.page_state,
+            "recognizer_admitted_line_count": self.recognizer_admitted_line_count,
             "scan_sha256": self.scan_sha256,
             "source_path": self.source_path,
         }
@@ -332,6 +346,7 @@ class GlyphManifest:
     rows_sha256: str
     methods: Mapping[str, object]
     thresholds: Mapping[str, object]
+    page_count: int
     accepted_page_count: int
     harvested_page_count: int
     reconciled_word_count: int
@@ -379,6 +394,7 @@ class GlyphManifest:
         if self.geometry_label is None and self.ocr_recognizer is not None:
             raise ValueError("A recognizer identity requires the geometry record that carries it.")
         for name, count in (
+            ("page_count", self.page_count),
             ("accepted_page_count", self.accepted_page_count),
             ("harvested_page_count", self.harvested_page_count),
             ("reconciled_word_count", self.reconciled_word_count),
@@ -387,8 +403,8 @@ class GlyphManifest:
         ):
             if count < 0:
                 raise ValueError(f"{name} must be nonnegative.")
-        if self.harvested_page_count > self.accepted_page_count:
-            raise ValueError("A book cannot harvest more pages than it accepted.")
+        if self.harvested_page_count > self.page_count:
+            raise ValueError("A book cannot harvest more pages than it has.")
         if self.separable_word_count > self.reconciled_word_count:
             raise ValueError("A book cannot separate more words than it reconciled.")
         object.__setattr__(
@@ -464,6 +480,7 @@ class GlyphManifest:
             "glyph_count": self.glyph_count,
             "glyph_count_by_tier": dict(self.glyph_count_by_tier),
             "harvested_page_count": self.harvested_page_count,
+            "page_count": self.page_count,
             "methods": _mapping_dict(self.methods),
             "ocr_recognizer": None if self.ocr_recognizer is None else dict(self.ocr_recognizer),
             "page_exclusion_counts": dict(self.page_exclusion_counts),
@@ -610,6 +627,9 @@ class GlyphPageInput(_WireModel):
     scan_sha256: StrictStr = Field(min_length=64, max_length=64)
     source_path: StrictStr = Field(min_length=1)
     glyph_count: StrictInt = Field(ge=0)
+    page_state: StrictStr = Field(default="accepted", min_length=1)
+    admitted_line_count: StrictInt = Field(default=0, ge=0)
+    recognizer_admitted_line_count: StrictInt = Field(default=0, ge=0)
 
     def to_domain(self) -> GlyphPage:
         return GlyphPage(
@@ -617,6 +637,9 @@ class GlyphPageInput(_WireModel):
             scan_sha256=self.scan_sha256,
             source_path=self.source_path,
             glyph_count=self.glyph_count,
+            page_state=self.page_state,
+            admitted_line_count=self.admitted_line_count,
+            recognizer_admitted_line_count=self.recognizer_admitted_line_count,
         )
 
 
@@ -660,6 +683,7 @@ class GlyphManifestInput(_WireModel):
     rows_sha256: StrictStr = Field(min_length=64, max_length=64)
     methods: dict[str, JsonValue] = Field(default_factory=dict)
     thresholds: dict[str, JsonValue] = Field(default_factory=dict)
+    page_count: StrictInt = Field(ge=0)
     accepted_page_count: StrictInt = Field(ge=0)
     harvested_page_count: StrictInt = Field(ge=0)
     reconciled_word_count: StrictInt = Field(ge=0)
@@ -695,6 +719,7 @@ class GlyphManifestInput(_WireModel):
             rows_sha256=self.rows_sha256,
             methods=self.methods,
             thresholds=self.thresholds,
+            page_count=self.page_count,
             accepted_page_count=self.accepted_page_count,
             harvested_page_count=self.harvested_page_count,
             reconciled_word_count=self.reconciled_word_count,

@@ -35,6 +35,9 @@ from pdomain_ocr_synth.pgdp.glyph_cut import (
 )
 from pdomain_ocr_synth.pgdp.glyph_furniture import (
     FURNITURE_METHODS,
+    LINE_ADMISSION_METHODS,
+    line_is_admissible,
+    line_word_agreement,
     page_furniture_words,
     witness_matches_scan,
 )
@@ -154,6 +157,8 @@ class _PageHarvest:
     source_path: str | None = None
     furniture_skipped: bool = False
     flat_words: tuple[_FlatWord, ...] = ()
+    admitted_lines: int = 0
+    recognizer_admitted_lines: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,6 +175,7 @@ class GlyphHarvest:
     thresholds: Mapping[str, object]
     rows: tuple[GlyphRow, ...] = ()
     pages: tuple[GlyphPage, ...] = ()
+    page_count: int = 0
     accepted_page_count: int = 0
     harvested_page_count: int = 0
     reconciled_word_count: int = 0
@@ -216,6 +222,7 @@ class GlyphHarvest:
             rows_sha256=rows_sha256,
             methods=self.methods,
             thresholds=self.thresholds,
+            page_count=self.page_count,
             accepted_page_count=self.accepted_page_count,
             harvested_page_count=self.harvested_page_count,
             reconciled_word_count=self.reconciled_word_count,
@@ -337,12 +344,15 @@ def _harvest_project(
     pages: list[GlyphPage] = []
     word_rejects: Counter[str] = Counter()
     exclusions: Counter[str] = Counter()
-    accepted = harvested = reconciled = separable = furniture = furniture_skipped = 0
+    page_count = accepted = harvested = reconciled = separable = 0
+    furniture = furniture_skipped = 0
     flat_words: list[_FlatWord] = []
     for page in sorted(project.pages, key=lambda page: natural_page_key(page.page_name)):
-        if not page.accepted:
+        page_count += 1
+        accepted += int(page.accepted)
+        if not page.accepted and witness is None:
+            exclusions["no_recognizer_to_admit_page"] += 1
             continue
-        accepted += 1
         harvest = _harvest_page(
             root,
             project_id=project.project_id,
@@ -370,6 +380,9 @@ def _harvest_project(
                     scan_sha256=page.scan_sha256,
                     source_path=harvest.source_path,
                     glyph_count=len(harvest.rows),
+                    page_state=page.state,
+                    admitted_line_count=harvest.admitted_lines,
+                    recognizer_admitted_line_count=harvest.recognizer_admitted_lines,
                 )
             )
     flags: Counter[str] = Counter()
@@ -386,6 +399,7 @@ def _harvest_project(
         thresholds=_thresholds(gap, witness=witness),
         rows=tuple(rows),
         pages=tuple(pages),
+        page_count=page_count,
         accepted_page_count=accepted,
         harvested_page_count=harvested,
         reconciled_word_count=reconciled,
@@ -413,6 +427,7 @@ def _methods(*, witness: BookWitness | None) -> dict[str, object]:
     }
     if witness is not None:
         methods["furniture_selection"] = FURNITURE_METHODS["algorithm"]
+        methods["line_admission"] = LINE_ADMISSION_METHODS["algorithm"]
     methods["glyph_style"] = GLYPH_STYLE_METHODS["algorithm"]
     return methods
 
@@ -426,6 +441,7 @@ def _thresholds(gap: WordGapThreshold, *, witness: BookWitness | None) -> dict[s
     ]
     if witness is not None:
         sources.append(FURNITURE_METHODS)
+        sources.append(LINE_ADMISSION_METHODS)
     thresholds: dict[str, object] = {
         name: value for source in sources for name, value in source.items() if name != "algorithm"
     }
@@ -476,11 +492,20 @@ def _harvest_page(
     rows: list[GlyphRow] = []
     rejects: Counter[str] = Counter()
     suspects: list[_FlatWord] = []
-    reconciled = separable = 0
+    reconciled = separable = admitted = recognizer_admitted = 0
     line_boxes: list[Bounds] = []
     for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
         box = _box(candidate.box)
         line_boxes.append(box)
+        if not page.accepted:
+            if page_witness is None:
+                continue
+            if not line_is_admissible(
+                line_word_agreement(page_witness, box=box, visible_text=visible_text)
+            ):
+                continue
+            recognizer_admitted += 1
+        admitted += 1
         measured = measure_line_typography(mask, box)
         if not isinstance(measured, LineTypographyMeasurement):
             continue
@@ -567,6 +592,8 @@ def _harvest_page(
         source_path=measurement.source_path,
         furniture_skipped=furniture_skipped,
         flat_words=tuple(suspects),
+        admitted_lines=admitted,
+        recognizer_admitted_lines=recognizer_admitted,
     )
 
 

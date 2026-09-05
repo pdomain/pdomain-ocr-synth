@@ -1846,7 +1846,7 @@ def _cmd_glyphs_pgdp(
     print(f"glyphs: {manifest.glyph_count}")
     for tier, count in sorted(manifest.glyph_count_by_tier.items()):
         print(f"  {tier}: {count}")
-    print(f"pages harvested: {manifest.harvested_page_count}/{manifest.accepted_page_count}")
+    print(f"pages harvested: {manifest.harvested_page_count}/{manifest.page_count}")
     print(f"atlas sheets: {len(manifest.atlas)}")
     return 0
 

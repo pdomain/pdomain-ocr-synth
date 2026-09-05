@@ -148,6 +148,24 @@
           "minimum": 0,
           "title": "Glyph Count",
           "type": "integer"
+        },
+        "page_state": {
+          "default": "accepted",
+          "minLength": 1,
+          "title": "Page State",
+          "type": "string"
+        },
+        "admitted_line_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Admitted Line Count",
+          "type": "integer"
+        },
+        "recognizer_admitted_line_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Recognizer Admitted Line Count",
+          "type": "integer"
         }
       },
       "required": [
@@ -227,6 +245,11 @@
       },
       "title": "Thresholds",
       "type": "object"
+    },
+    "page_count": {
+      "minimum": 0,
+      "title": "Page Count",
+      "type": "integer"
     },
     "accepted_page_count": {
       "minimum": 0,
@@ -358,6 +381,7 @@
     "profile_sha256",
     "rows_label",
     "rows_sha256",
+    "page_count",
     "accepted_page_count",
     "harvested_page_count",
     "reconciled_word_count",

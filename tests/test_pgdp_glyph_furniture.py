@@ -10,6 +10,8 @@ import pytest
 from pdomain_ocr_synth.pgdp.glyph_furniture import (
     FurnitureScanMismatchError,
     FurnitureWord,
+    line_is_admissible,
+    line_word_agreement,
     page_furniture_words,
     witness_matches_scan,
 )
@@ -123,3 +125,51 @@ def test_a_furniture_word_ordinal_must_be_nonnegative() -> None:
         _ = FurnitureWord(
             text="14", box=(10, 10, 20, 20), confidence=None, line_index=-1, word_index=0
         )
+
+
+def test_a_line_the_recognizer_reads_the_same_way_agrees_fully() -> None:
+    page = _page(
+        _word("wandering", (100, 300, 200, 340)),
+        _word("alone", (210, 300, 280, 340), word_index=1),
+    )
+    agreement = line_word_agreement(page, box=(90, 295, 900, 345), visible_text="wandering alone")
+    assert agreement == 1.0
+    assert line_is_admissible(agreement)
+
+
+def test_a_line_bound_to_different_text_disagrees_and_is_refused() -> None:
+    page = _page(_word("something", (100, 300, 200, 340)))
+    agreement = line_word_agreement(
+        page, box=(90, 295, 900, 345), visible_text="wandering alone entirely"
+    )
+    assert agreement == 0.0
+    assert not line_is_admissible(agreement)
+
+
+def test_agreement_ignores_case_and_punctuation() -> None:
+    page = _page(_word("Wandering,", (100, 300, 200, 340)))
+    assert line_word_agreement(page, box=(90, 295, 900, 345), visible_text="wandering") == 1.0
+
+
+def test_a_read_outside_the_line_box_does_not_count() -> None:
+    page = _page(_word("wandering", (100, 60, 200, 100)))
+    assert line_word_agreement(page, box=(90, 295, 900, 345), visible_text="wandering") == 0.0
+
+
+def test_a_line_with_no_words_is_no_evidence_rather_than_disagreement() -> None:
+    assert line_word_agreement(_page(), box=(0, 0, 10, 10), visible_text="   ") is None
+    assert not line_is_admissible(None)
+
+
+def test_the_admission_bar_sits_at_four_words_in_five() -> None:
+    page = _page(
+        _word("one", (100, 300, 130, 340)),
+        _word("two", (140, 300, 170, 340), word_index=1),
+        _word("three", (180, 300, 220, 340), word_index=2),
+        _word("four", (230, 300, 260, 340), word_index=3),
+    )
+    agreement = line_word_agreement(
+        page, box=(90, 295, 900, 345), visible_text="one two three four five"
+    )
+    assert agreement == pytest.approx(0.8)
+    assert line_is_admissible(agreement)

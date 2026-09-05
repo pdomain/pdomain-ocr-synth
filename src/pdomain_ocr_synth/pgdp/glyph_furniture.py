@@ -118,3 +118,50 @@ def _intersection_area(box: Bounds, other: Bounds) -> int:
     if width <= 0 or height <= 0:
         return 0
     return width * height
+
+
+LINE_ADMISSION_METHODS: dict[str, float | int | str] = {
+    "algorithm": "recognizer-line-agreement/v1",
+    "line_word_agreement_minimum": 0.8,
+    "word_overlap_ratio_minimum": 0.5,
+}
+
+_LINE_WORD_AGREEMENT_MINIMUM: Final = 0.8
+"""How much of a line's transcription the recognizer must also read there to admit the line.
+
+Page acceptance is a page-level judgement and a poor proxy for whether one line bound to the right
+text. Measured over three books, lines on accepted pages score 0.926 to 0.976 at this bar, and
+lines excluded only for alignment score do about as well: `normalized_cost_exceeds_maximum` runs
+0.937 to 0.962 and `uniqueness_margin_below_minimum` 0.887 to 0.934. Lines on illustration pages
+do not, at 0.560 to 0.683, which is what this keeps out.
+
+The recognizer only ever rejects here. The label stays the transcription's.
+"""
+
+
+def line_word_agreement(page: PageWitness, *, box: Bounds, visible_text: str) -> float | None:
+    """What share of a line's transcription words the recognizer also read inside its box.
+
+    `None` when the line carries no word to check, which is no evidence rather than disagreement.
+    """
+
+    words = visible_text.split()
+    if not words:
+        return None
+    read = {
+        _normalized(word.text)
+        for word in page.words
+        if _claimed_by_a_matched_line(word.box, (box,))
+    }
+    read.discard("")
+    return sum(1 for word in words if _normalized(word) in read) / len(words)
+
+
+def line_is_admissible(agreement: float | None) -> bool:
+    """Whether the recognizer agrees enough to admit a line its page was not accepted for."""
+
+    return agreement is not None and agreement >= _LINE_WORD_AGREEMENT_MINIMUM
+
+
+def _normalized(text: str) -> str:
+    return "".join(character for character in text.lower() if character.isalnum())

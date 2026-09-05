@@ -201,4 +201,4 @@ def test_the_command_reports_what_it_cut(
     printed = capsys.readouterr().out
     assert "glyphs:" in printed
     assert "transcribed:" in printed
-    assert "pages harvested: 2/2" in printed
+    assert "pages harvested: 1/2" in printed

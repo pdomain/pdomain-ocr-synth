@@ -68,8 +68,9 @@ def _manifest() -> GlyphManifest:
         rows_sha256="c" * 64,
         methods={"algorithm_version": GLYPHS_ALGORITHM_VERSION},
         thresholds={"word_gap_threshold_px": 9},
+        page_count=40,
         accepted_page_count=32,
-        harvested_page_count=30,
+        harvested_page_count=34,
         reconciled_word_count=900,
         separable_word_count=540,
         furniture_word_count=117,
@@ -152,9 +153,55 @@ def test_coverage_must_agree_with_the_tier_counts() -> None:
         _ = replace(_manifest(), glyph_count_by_tier={"transcribed": 2, "recognized": 1})
 
 
-def test_a_book_may_not_harvest_more_pages_than_it_accepted() -> None:
-    with pytest.raises(ValueError, match="more pages than it accepted"):
-        _ = replace(_manifest(), harvested_page_count=40)
+def test_a_book_may_not_harvest_more_pages_than_it_has() -> None:
+    with pytest.raises(ValueError, match="more pages than it has"):
+        _ = replace(_manifest(), harvested_page_count=41)
+
+
+def test_a_book_may_harvest_more_pages_than_it_accepted() -> None:
+    """A line on a non-accepted page is admitted on its own evidence, not its page's."""
+
+    assert _manifest().harvested_page_count > _manifest().accepted_page_count
+
+
+def test_an_accepted_page_may_not_claim_recognizer_admitted_lines() -> None:
+    with pytest.raises(ValueError, match="admitted by its own alignment gate"):
+        _ = GlyphPage(
+            page_name="p010.png",
+            scan_sha256=_SHA,
+            source_path="projectIDabc/p010.png",
+            glyph_count=4,
+            page_state="accepted",
+            admitted_line_count=3,
+            recognizer_admitted_line_count=1,
+        )
+
+
+def test_a_page_may_not_admit_more_lines_by_recognizer_than_in_total() -> None:
+    with pytest.raises(ValueError, match="more lines by recognizer than in total"):
+        _ = GlyphPage(
+            page_name="p011.png",
+            scan_sha256=_SHA,
+            source_path="projectIDabc/p011.png",
+            glyph_count=4,
+            page_state="excluded",
+            admitted_line_count=1,
+            recognizer_admitted_line_count=2,
+        )
+
+
+def test_an_excluded_page_records_how_its_lines_got_in() -> None:
+    page = GlyphPage(
+        page_name="p012.png",
+        scan_sha256=_SHA,
+        source_path="projectIDabc/p012.png",
+        glyph_count=9,
+        page_state="excluded",
+        admitted_line_count=4,
+        recognizer_admitted_line_count=4,
+    )
+    assert page.to_dict()["page_state"] == "excluded"
+    assert page.to_dict()["recognizer_admitted_line_count"] == 4
 
 
 def test_a_book_may_not_separate_more_words_than_it_reconciled() -> None:

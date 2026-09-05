@@ -51,6 +51,8 @@ BASELINE_OFFSET = 30
 ASCENDER_TOP_OFFSET = 2
 DESCENDER_BOTTOM_OFFSET = 38
 HEAD_TOP = 16
+ACCEPTED_PAGE = "p10.png"
+"""The fixture accepts one page and excludes the other, so both admission paths run."""
 HEAD_TEXT = ("THE", "BOOK", "14")
 
 _ASCENDERS = frozenset("bdfhklt")
@@ -96,10 +98,19 @@ def _draw_word(image: Image.Image, word: str, *, x: int, top: int) -> int:
     return x + len(word) * LETTER_PITCH - (LETTER_PITCH - LETTER_WIDTH)
 
 
-def _draw_line(image: Image.Image, text: str, *, top: int) -> None:
+def _draw_line(
+    image: Image.Image, text: str, *, top: int
+) -> tuple[tuple[str, tuple[int, int, int, int]], ...]:
+    """Draw one line and report where each word landed, so the fixture can read it back."""
+
+    boxes: list[tuple[str, tuple[int, int, int, int]]] = []
     x = TEXT_LEFT
     for word in text.split():
-        x = _draw_word(image, word, x=x, top=top) + WORD_GAP_PX
+        start = x
+        x = _draw_word(image, word, x=x, top=top)
+        boxes.append((word, (start - 1, top, x + 1, top + DESCENDER_BOTTOM_OFFSET)))
+        x += WORD_GAP_PX
+    return tuple(boxes)
 
 
 def _draw_running_head(image: Image.Image) -> tuple[tuple[str, tuple[int, int, int, int]], ...]:
@@ -204,8 +215,9 @@ def build_glyph_fixture(tmp_path: Path) -> Fixture:
     line_texts = tuple(_line_text(line) for line in range(LINE_COUNT))
     image = Image.new("L", (1100, 460), color=255)
     head = _draw_running_head(image)
+    body: list[tuple[str, tuple[int, int, int, int]]] = []
     for line, text in enumerate(line_texts):
-        _draw_line(image, text, top=FIRST_LINE_TOP + line * LINE_PITCH)
+        body.extend(_draw_line(image, text, top=FIRST_LINE_TOP + line * LINE_PITCH))
     f2_pages = {name: _f2_page(line_texts) for name in ("p2.png", "p10.png")}
     (project / "rounds" / "F2.json").write_text(json.dumps(f2_pages), encoding="utf-8")
     for name in ("p2.png", "p10.png"):
@@ -252,7 +264,7 @@ def build_glyph_fixture(tmp_path: Path) -> Fixture:
         f2_sha256=f2_sha256,
     )
     geometry_path = tmp_path / "geometry.jsonl"
-    _write_geometry(geometry_path, head=head, scan_hashes=scan_hashes)
+    _write_geometry(geometry_path, head=head, body=tuple(body), scan_hashes=scan_hashes)
     return Fixture(corpus_root, profile_path, alignment_path, geometry_path, line_texts)
 
 
@@ -337,9 +349,11 @@ def _write_accepted_alignment(
                 uniqueness_margin=1.0,
                 mean_width_residual=0.0,
                 mean_indentation_residual=0.0,
-                state="accepted",
-                accepted=True,
-                exclusions=(),
+                state="accepted" if measurement.page_name == ACCEPTED_PAGE else "excluded",
+                accepted=measurement.page_name == ACCEPTED_PAGE,
+                exclusions=()
+                if measurement.page_name == ACCEPTED_PAGE
+                else ("uniqueness_margin_below_minimum",),
                 style_runs=style_runs,
             )
         )
@@ -361,6 +375,7 @@ def _write_geometry(
     path: Path,
     *,
     head: tuple[tuple[str, tuple[int, int, int, int]], ...],
+    body: tuple[tuple[str, tuple[int, int, int, int]], ...],
     scan_hashes: dict[str, str],
 ) -> None:
     records = [
@@ -390,7 +405,7 @@ def _write_geometry(
                         "line_index": 0,
                         "word_index": index,
                     }
-                    for index, (text, box) in enumerate(head)
+                    for index, (text, box) in enumerate((*head, *body))
                 ],
             },
             sort_keys=True,
@@ -415,12 +430,36 @@ def _harvest(fixture: Fixture, *, geometry: bool = True) -> object:
     )
 
 
-def test_the_drawn_pages_yield_one_glyph_per_transcribed_letter(fixture: Fixture) -> None:
+def test_the_accepted_page_yields_one_glyph_per_transcribed_letter(fixture: Fixture) -> None:
     harvest = _harvest(fixture, geometry=False)
-    expected = 2 * sum(len(text.replace(" ", "")) for text in fixture.line_texts)
+    expected = sum(len(text.replace(" ", "")) for text in fixture.line_texts)
     transcribed = [row for row in harvest.rows if row.label_tier == "transcribed"]
     assert len(transcribed) == expected
+    assert {row.page_name for row in transcribed} == {ACCEPTED_PAGE}
     assert harvest.separable_word_count == harvest.reconciled_word_count
+
+
+def test_without_a_recognizer_a_non_accepted_page_yields_nothing(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    assert harvest.page_count == 2
+    assert harvest.accepted_page_count == 1
+    assert harvest.harvested_page_count == 1
+
+
+def test_a_recognizer_admits_the_non_accepted_page(fixture: Fixture) -> None:
+    harvest = _harvest(fixture)
+    assert harvest.harvested_page_count == 2
+    assert {row.page_name for row in harvest.rows} == {"p2.png", "p10.png"}
+
+
+def test_the_manifest_records_how_each_page_got_in(fixture: Fixture) -> None:
+    manifest = _harvest(fixture).manifest(rows_label="glyphs.jsonl", rows_sha256="a" * 64)
+    by_name = {page.page_name: page for page in manifest.pages}
+    assert by_name[ACCEPTED_PAGE].page_state == "accepted"
+    assert by_name[ACCEPTED_PAGE].recognizer_admitted_line_count == 0
+    other = next(page for name, page in by_name.items() if name != ACCEPTED_PAGE)
+    assert other.page_state == "excluded"
+    assert other.recognizer_admitted_line_count == other.admitted_line_count > 0
 
 
 def test_every_glyph_carries_the_character_the_transcription_gave_it(fixture: Fixture) -> None:
@@ -575,13 +614,13 @@ def test_body_glyphs_carry_the_style_f2_marks_them_with(fixture: Fixture) -> Non
     italic_word = fixture.line_texts[ITALIC_LINE].split()[ITALIC_WORD]
     italic = [row for row in harvest.rows if row.label_style == "italic"]
     assert {row.character for row in italic} == set(italic_word)
-    assert len(italic) == 2 * len(italic_word)
+    assert len(italic) == len(italic_word)
 
 
 def test_an_unmarked_word_reads_roman_rather_than_unknown(fixture: Fixture) -> None:
     harvest = _harvest(fixture, geometry=False)
     roman = [row for row in harvest.rows if row.label_style == "roman"]
-    assert len(roman) == len(harvest.rows) - 2 * len(
+    assert len(roman) == len(harvest.rows) - len(
         fixture.line_texts[ITALIC_LINE].split()[ITALIC_WORD]
     )
 
