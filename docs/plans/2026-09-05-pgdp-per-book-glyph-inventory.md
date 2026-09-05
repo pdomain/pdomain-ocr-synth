@@ -1,5 +1,5 @@
 ---
-Status: complete
+Status: shipped-gate-open
 Owner: CT
 Created: 2026-09-05
 Last verified: 2026-09-05
@@ -11,13 +11,14 @@ Kind: plan
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** complete
+- **Status:** shipped-gate-open
 - **Owner:** CT
 - **Created:** 2026-09-05
 - **Last verified:** 2026-09-05
 - **Provenance:** scoped on 2026-09-05, with coverage measured by harvesting all 665 accepted
   pages of the five aligned books, then shipped and re-measured the same day
-- **Disposition:** Complete. All eight tasks shipped and every gate passes. All three open
+- **Disposition:** Shipped, with Gate 3 open. All eight tasks shipped and nine of ten gates pass;
+  Gate 3 fails on one book under a random sample. See "Gate 3 fails on one book". All three open
   decisions were taken by CT on 2026-09-05, and one of them forced a two-tier label design; see
   "Decisions taken". Review of the first corpus run overturned the scoping rule for what a word's
   ink runs are counted against; see "What the corpus run changed".
@@ -183,7 +184,7 @@ the review sheets the label gates were read from.
 | --- | --- | --- | --- |
 | 1. Determinism | byte-identical | five of five inventory directories identical across two runs, atlas PNGs included | pass |
 | 2. Provenance | exact | every row unique on page, tier, line, word and glyph ordinal; every row's page in the manifest table; a profile that does not hash to the alignment's value is refused | pass |
-| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs reviewed as atlas grids across all five books, 6 wrong, 0.994; per book 1.000, 1.000, 0.990, 0.981, 1.000 | pass |
+| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs drawn at random across all five books, 21 wrong, 0.980 pooled; per book 1.000, 0.990, 0.981, **0.943**, 0.986 | **fail on one book** |
 | 3b. Label correctness, `recognized` | 0.90 over 100+ | 340 furniture glyphs reviewed across two books, 0 wrong, 1.000 | pass |
 | 4. Lowercase coverage | all 26 per book | no book misses a letter | pass |
 | 4b. Digit coverage | 20 per book | 83 to 1,879 per book | pass |
@@ -192,9 +193,33 @@ the review sheets the label gates were read from.
 | 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 900 sheets byte for byte | pass |
 | 7. Latent discipline | none | no manifest or row key claims font identity, point size, advance, side bearing or tracking | pass |
 
-Gate 3's sample is the first 30 rows per character in page order, not a random draw, so it reads
-each book's earliest pages. That is how it missed the pooled faces, and re-drawing it at random is
-the cheapest way to strengthen it.
+## Gate 3 fails on one book
+
+**Re-drawing the sample at random changed the answer.** The first pass took the first 30 rows per
+character in page order, so it read only each book's earliest pages. Drawn at random under a fixed
+seed, the same 1,050 glyphs give 21 wrong instead of 6:
+
+| book | wrong, random | wrong, in page order | rate | verdict |
+| --- | ---: | ---: | ---: | --- |
+| projectID657550412c8dc | 0 | 0 | 1.000 | pass |
+| projectID67a80fde44d34 | 3 | 0 | 0.986 | pass |
+| projectID609bfa0449bdf | 2 | 0 | 0.990 | pass |
+| projectID64a479f51ce5b | 4 | 2 | 0.981 | pass |
+| projectID603d7d5e04ca0 | 12 | 4 | **0.943** | **fail** |
+
+Pooled it reads 0.980, exactly on the floor. `projectID603d7d5e04ca0` is 0.943 against a floor of
+0.98, so the gate fails there and the plan does not close on it.
+
+**Nearly all of that book's errors are capitals labelled lowercase**, from small capitals PGDP
+never marked, plus a few boxes holding two letters. The `flat_ascender` flag catches the first
+class: filtering it out lifts the book from 0.943 to 0.971 and removes every capital-form error in
+the sample, at a cost of 3.0 percent of its glyphs. That is a consumer-side workaround, not a fix,
+and 0.971 is still under the floor.
+
+The follow-up is a slice of its own: connected-component shape evidence, or a per-character height
+model fitted to the book, to separate a capital form from a lowercase one without depending on
+markup that is not there. Until then a consumer wanting 0.98 on this book should drop
+`flat_ascender` glyphs and accept 0.971, or use the other four books, which pass at 0.981 to 1.000.
 
 Gate 3 is model-reviewed, not human-reviewed. Sheets of 30 samples each for `a e h n o s t` were
 rendered from the scans at 7x and read by eye; the six errors are a `g` labelled `a`, a `Th`
