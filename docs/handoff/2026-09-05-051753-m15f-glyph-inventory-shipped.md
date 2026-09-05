@@ -252,15 +252,21 @@ a call is comfortable.
    Either the gate measures the filtered inventory and passes, or the flagged
    glyphs stop being emitted at all, or the book is accepted at a stated lower
    number. That call is yours; I did not want to redefine the gate to pass it.
-2. **Work the flat-ascender queues.** 490 words across the five books, in each
+2. **Two page-level signals are now recorded and unused.** The manifest's page
+   table carries each page's `page_class`, its lines' x-height median, and their
+   spread. Spread over about 8 px marks a mixed-size page and is 43 to 67
+   percent chapter openings; an elevated median marks heavy inking, not a bigger
+   size, and is where glyphs merge. Feeding either back into page classification
+   is a slice of its own.
+3. **Work the flat-ascender queues.** 490 words across the five books, in each
    manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book>
    <start> <count>` renders them as labelled crops. The wrong-ink class is
    largely gone from them now, so what is left should be mostly small capitals
    and bad cuts.
-3. If you want Gate 3 human-reviewed rather than model-reviewed, the random
+4. If you want Gate 3 human-reviewed rather than model-reviewed, the random
    sheets are in `.m15f-evidence/review-*-random.png`; the M15d precedent is
    `gate4-review.csv`.
-4. Decide whether the corpus atlases belong in the repo. That is the question the
+5. Decide whether the corpus atlases belong in the repo. That is the question the
    plan's decision 1 says should be answered before the second book lands, and
    five books have now landed.
 
@@ -278,6 +284,7 @@ a call is comfortable.
 - `/workspaces/pdomain/.m15f-evidence/gate-summary.json` — every gate number
 - `/workspaces/pdomain/.m15f-evidence/gate3-random-review.json` — the random-sample Gate 3 result
 - `/workspaces/pdomain/.m15f-evidence/flat-queue-review.json` — what the flat queue holds
+- `/workspaces/pdomain/.m15f-evidence/quality-filter-cost.json` — what filtering the flags costs
 - `/workspaces/pdomain/.m15f-evidence/nonaccepted-agreement-<book>.json` — why every page is harvested
 - `/workspaces/pdomain/.m15f-evidence/gates-<book>.json` — one book's own numbers
 - `/workspaces/pdomain/.m15f-evidence/punctuation-risk-<book>.json` — why the rule changed
