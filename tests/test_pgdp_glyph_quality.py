@@ -11,7 +11,9 @@ import pytest
 from pdomain_ocr_synth.pgdp.glyph_quality import (
     GlyphQuality,
     LineBand,
+    ascender_is_flat,
     measure_glyph_quality,
+    word_ascender_flatness,
 )
 
 _LINE = LineBand(box=(0, 10, 100, 30), baseline_row_px=24, x_height_top_row_px=16)
@@ -127,3 +129,35 @@ def test_an_empty_glyph_box_is_refused() -> None:
         _ = measure_glyph_quality(
             np.zeros((40, 100), dtype=np.bool_), box=(20, 16, 20, 25), line=None
         )
+
+
+def test_ordinary_lowercase_runs_its_ascenders_half_again_the_x_height() -> None:
+    assert word_ascender_flatness([("t", 26), ("h", 26), ("e", 17)]) == pytest.approx(26 / 17)
+    assert not ascender_is_flat(word_ascender_flatness([("t", 26), ("h", 26), ("e", 17)]))
+
+
+def test_a_word_set_in_small_capitals_reads_flat() -> None:
+    flatness = word_ascender_flatness(
+        [("l", 19), ("o", 19), ("w", 18), ("t", 19), ("h", 19), ("e", 19), ("r", 19)]
+    )
+    assert flatness == pytest.approx(1.0)
+    assert ascender_is_flat(flatness)
+
+
+def test_a_word_bound_to_the_wrong_ink_reads_flat() -> None:
+    """`the` cut from ink that actually reads `man`: no ascender where the label promises one."""
+
+    assert ascender_is_flat(word_ascender_flatness([("t", 17), ("h", 18), ("e", 17)]))
+
+
+def test_a_word_with_no_ascender_cannot_be_judged() -> None:
+    assert word_ascender_flatness([("o", 17), ("a", 17)]) is None
+    assert not ascender_is_flat(None)
+
+
+def test_a_word_with_no_x_height_letter_cannot_be_judged() -> None:
+    assert word_ascender_flatness([("t", 26), ("h", 26)]) is None
+
+
+def test_a_zero_x_height_is_refused_rather_than_divided_by() -> None:
+    assert word_ascender_flatness([("h", 26), ("o", 0)]) is None

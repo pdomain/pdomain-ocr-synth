@@ -14,13 +14,18 @@ books, which measured nothing but that definition.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final, Literal
+from statistics import median
+from typing import TYPE_CHECKING, Final, Literal
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 Bounds = tuple[int, int, int, int]
 GlyphQualityFlag = Literal[
     "ascends",
+    "flat_ascender",
     "descends",
     "short_of_baseline",
     "sparse_ink",
@@ -29,9 +34,10 @@ GlyphQualityFlag = Literal[
 ]
 
 GLYPH_QUALITY_METHODS: dict[str, float | int | str] = {
-    "algorithm": "line-band-agreement/v1",
+    "algorithm": "line-band-agreement/v2",
     "row_extent_tolerance_px": 1,
     "sparse_ink_density_maximum": 0.15,
+    "ascender_flatness_maximum": 1.10,
 }
 
 _ROW_EXTENT_TOLERANCE_PX: Final = 1
@@ -43,6 +49,24 @@ round-half-up of a median lands on either side of a true edge by up to a pixel o
 
 _SPARSE_INK_DENSITY_MAXIMUM: Final = 0.15
 """Below this share of ink in its own box, a cut is more likely a speck than a letter."""
+
+ASCENDER_CHARACTERS: Final = frozenset("bdfhklt")
+X_HEIGHT_CHARACTERS: Final = frozenset("acemnorsuvwxz")
+_ASCENDER_FLATNESS_MAXIMUM: Final = 1.10
+"""How short a word's tallest ascender may run, against its own x-height letters, before the
+word's ink stops matching what its label claims.
+
+In ordinary lowercase an ascender runs about half again the x-height: measured over the five
+books, roman words score 1.46 to 1.58 at the median. A word set in small capitals scores 1.00,
+because every capital is the same height, and so does a word bound to the wrong ink. Calibrated
+against the 76 words PGDP itself marks `<sc>` in projectID603d7d5e04ca0, a cut at 1.10 catches 74
+of them while flagging 1.8 percent of roman words there and 0.27 percent in
+projectID609bfa0449bdf.
+
+This is an observation, not a verdict. The flag says the ink is flatter than the label predicts;
+it does not say why, and the causes seen so far are unmarked small capitals, a word bound to the
+wrong ink, and a badly cut glyph box.
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,3 +155,30 @@ def measure_glyph_quality(
         bottom_offset_px=bottom_offset,
         flags=tuple(flags),
     )
+
+
+def word_ascender_flatness(heights_by_character: Sequence[tuple[str, int]]) -> float | None:
+    """How tall one word's ascenders run against its own x-height letters, or `None`.
+
+    `None` when the word carries no ascender letter or no x-height letter, which is most short
+    words and every word this cannot say anything about.
+    """
+
+    ascenders = [
+        height for character, height in heights_by_character if character in ASCENDER_CHARACTERS
+    ]
+    x_heights = [
+        height for character, height in heights_by_character if character in X_HEIGHT_CHARACTERS
+    ]
+    if not ascenders or not x_heights:
+        return None
+    reference = median(x_heights)
+    if reference <= 0:
+        return None
+    return max(ascenders) / reference
+
+
+def ascender_is_flat(flatness: float | None) -> bool:
+    """Whether a word's ink is flatter than its label predicts."""
+
+    return flatness is not None and flatness < _ASCENDER_FLATNESS_MAXIMUM

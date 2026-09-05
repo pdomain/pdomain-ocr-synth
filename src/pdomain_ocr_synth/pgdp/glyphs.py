@@ -21,7 +21,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import numpy as np
 
@@ -52,7 +52,9 @@ from pdomain_ocr_synth.pgdp.glyph_models import (
 from pdomain_ocr_synth.pgdp.glyph_quality import (
     GLYPH_QUALITY_METHODS,
     LineBand,
+    ascender_is_flat,
     measure_glyph_quality,
+    word_ascender_flatness,
 )
 from pdomain_ocr_synth.pgdp.glyph_style import (
     GLYPH_STYLE_METHODS,
@@ -103,6 +105,39 @@ if TYPE_CHECKING:
 Bounds = tuple[int, int, int, int]
 Mask = np.ndarray[tuple[int, int], np.dtype[np.bool]]
 
+FLAT_WORD_REVIEW_LIMIT: Final = 200
+"""How many suspected words the manifest names. The count is always exact; the list is a queue.
+
+Two hundred is what one person can look through in a sitting. Measured, no book of the five comes
+close to it, so the cap has never truncated anything and exists so a pathological book cannot
+write a manifest larger than its own inventory.
+"""
+
+
+@dataclass(frozen=True, slots=True)
+class _FlatWord:
+    """One word whose ink runs flatter than its label predicts, kept for review.
+
+    The causes seen so far are unmarked small capitals, a word bound to the wrong ink, and a badly
+    cut glyph box. Which one it is can only be settled by looking, so this records the suspicion
+    and never changes a label.
+    """
+
+    page_name: str
+    line_ordinal: int
+    word_ordinal: int
+    text: str
+    ascender_flatness: float
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "ascender_flatness": round(self.ascender_flatness, 4),
+            "line_ordinal": self.line_ordinal,
+            "page_name": self.page_name,
+            "text": self.text,
+            "word_ordinal": self.word_ordinal,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class _PageHarvest:
@@ -116,6 +151,7 @@ class _PageHarvest:
     exclusion: str | None = None
     source_path: str | None = None
     furniture_skipped: bool = False
+    flat_words: tuple[_FlatWord, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +181,7 @@ class GlyphHarvest:
     ocr_recognizer: Mapping[str, str] | None = None
     styled_line_count: int = 0
     furniture_skipped_page_count: int = 0
+    flat_words: tuple[_FlatWord, ...] = ()
 
     def render(self) -> str:
         return render_rows(self.rows)
@@ -204,6 +241,19 @@ class GlyphHarvest:
                 "furniture_skipped_page_count": self.furniture_skipped_page_count,
                 "glyph_count_by_style": dict(sorted(by_style.items())),
                 "styled_line_count": self.styled_line_count,
+                "flat_ascender_word_count": len(self.flat_words),
+                "flat_ascender_words": [
+                    word.to_dict()
+                    for word in sorted(
+                        self.flat_words,
+                        key=lambda word: (
+                            word.ascender_flatness,
+                            natural_page_key(word.page_name),
+                            word.line_ordinal,
+                            word.word_ordinal,
+                        ),
+                    )[:FLAT_WORD_REVIEW_LIMIT]
+                ],
             },
         )
 
@@ -287,6 +337,7 @@ def _harvest_project(
     word_rejects: Counter[str] = Counter()
     exclusions: Counter[str] = Counter()
     accepted = harvested = reconciled = separable = furniture = furniture_skipped = 0
+    flat_words: list[_FlatWord] = []
     for page in sorted(project.pages, key=lambda page: natural_page_key(page.page_name)):
         if not page.accepted:
             continue
@@ -310,6 +361,7 @@ def _harvest_project(
             continue
         harvested += 1
         rows.extend(harvest.rows)
+        flat_words.extend(harvest.flat_words)
         if harvest.source_path is not None and page.scan_sha256 is not None:
             pages.append(
                 GlyphPage(
@@ -340,6 +392,7 @@ def _harvest_project(
         furniture_word_count=furniture,
         quality_flag_counts=dict(flags),
         word_reject_counts=dict(word_rejects),
+        flat_words=tuple(flat_words),
         page_exclusion_counts=dict(exclusions),
         geometry_label=None if witness is None else witness.label,
         geometry_sha256=None if witness is None else witness.sha256,
@@ -421,6 +474,7 @@ def _harvest_page(
 
     rows: list[GlyphRow] = []
     rejects: Counter[str] = Counter()
+    suspects: list[_FlatWord] = []
     reconciled = separable = 0
     line_boxes: list[Bounds] = []
     for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
@@ -461,6 +515,20 @@ def _harvest_page(
                 word_ordinal=word_ordinal,
                 positions=[glyph.ordinal for glyph in cut.glyphs],
             )
+            flatness = word_ascender_flatness(
+                [(glyph.character, glyph.box[3] - glyph.box[1]) for glyph in cut.glyphs]
+            )
+            flat = ascender_is_flat(flatness)
+            if flat:
+                suspects.append(
+                    _FlatWord(
+                        page_name=page.page_name,
+                        line_ordinal=candidate_ordinal,
+                        word_ordinal=word_ordinal,
+                        text=text,
+                        ascender_flatness=flatness if flatness is not None else 0.0,
+                    )
+                )
             rows.extend(
                 _glyph_row(
                     mask,
@@ -475,6 +543,7 @@ def _harvest_page(
                     label_confidence=None,
                     label_style=style,
                     source_line_ordinal=source_ordinal,
+                    flat_ascender=flat,
                 )
                 for glyph, style in zip(cut.glyphs, styles, strict=True)
             )
@@ -496,6 +565,7 @@ def _harvest_page(
         word_rejects=dict(rejects),
         source_path=measurement.source_path,
         furniture_skipped=furniture_skipped,
+        flat_words=tuple(suspects),
     )
 
 
@@ -566,8 +636,10 @@ def _glyph_row(
     label_confidence: float | None,
     label_style: str | None = None,
     source_line_ordinal: int | None = None,
+    flat_ascender: bool = False,
 ) -> GlyphRow:
     quality = measure_glyph_quality(mask, box=box, line=band)
+    flags = (*quality.flags, "flat_ascender") if flat_ascender else quality.flags
     return GlyphRow(
         character=character,
         label_tier="recognized" if label_tier == "recognized" else "transcribed",
@@ -580,7 +652,7 @@ def _glyph_row(
         row_extent_px=quality.row_extent_px,
         top_offset_px=quality.top_offset_px,
         bottom_offset_px=quality.bottom_offset_px,
-        flags=quality.flags,
+        flags=flags,
         label_confidence=label_confidence,
         label_style=label_style,
         source_line_ordinal=source_line_ordinal,

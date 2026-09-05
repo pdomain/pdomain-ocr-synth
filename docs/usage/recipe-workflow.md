@@ -219,6 +219,20 @@ The evidence comes from the alignment report itself, which already carries a
 style run per span, so the command reads no extra input and re-parses no
 transcription.
 
+A word whose ink runs flatter than its label predicts is flagged `flat_ascender`
+and listed in the manifest for review. In ordinary lowercase an ascender runs
+about half again the x-height, 1.46 to 1.58 at the median across the five books.
+A word set in small capitals scores 1.00, because every capital is the same
+height, and so does a word bound to the wrong ink. Calibrated against the words
+PGDP itself marks `<sc>`, a cut at 1.10 catches 74 of 76 while flagging 1.8
+percent of roman words in the same book.
+
+The flag is an observation, not a verdict: it says the ink is flatter than the
+label predicts, not why. The causes found so far are small capitals PGDP never
+marked, a word bound to the wrong ink, and a badly cut glyph box. Only looking
+settles which, so the manifest carries a bounded queue of suspects rather than
+acting on them.
+
 Quality is recorded and never enforced. Each row carries where its rows sit
 against the line's x-height top and baseline, whether it reaches the line box's
 own top or bottom row, and its ink density. The reference is the line box, not
