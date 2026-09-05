@@ -166,6 +166,45 @@
           "minimum": 0,
           "title": "Recognizer Admitted Line Count",
           "type": "integer"
+        },
+        "page_class": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Class"
+        },
+        "line_x_height_median_px": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line X Height Median Px"
+        },
+        "line_x_height_spread_px": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line X Height Spread Px"
         }
       },
       "required": [

@@ -256,6 +256,9 @@ class GlyphPage:
     page_state: str = "accepted"
     admitted_line_count: int = 0
     recognizer_admitted_line_count: int = 0
+    page_class: str | None = None
+    line_x_height_median_px: int | None = None
+    line_x_height_spread_px: int | None = None
 
     def __post_init__(self) -> None:
         if not self.page_name or not self.source_path:
@@ -271,11 +274,22 @@ class GlyphPage:
             raise ValueError("A page cannot admit more lines by recognizer than in total.")
         if self.page_state == "accepted" and self.recognizer_admitted_line_count:
             raise ValueError("An accepted page's lines are admitted by its own alignment gate.")
+        if self.page_class is not None and not self.page_class:
+            raise ValueError("page_class must be a nonempty name or null.")
+        if self.line_x_height_median_px is not None and self.line_x_height_median_px <= 0:
+            raise ValueError("line_x_height_median_px must be positive.")
+        if self.line_x_height_spread_px is not None and self.line_x_height_spread_px < 0:
+            raise ValueError("line_x_height_spread_px must be nonnegative.")
+        if (self.line_x_height_median_px is None) != (self.line_x_height_spread_px is None):
+            raise ValueError("A page's x-height median and spread are recorded together.")
 
     def to_dict(self) -> dict[str, JsonValue]:
         return {
             "admitted_line_count": self.admitted_line_count,
             "glyph_count": self.glyph_count,
+            "line_x_height_median_px": self.line_x_height_median_px,
+            "line_x_height_spread_px": self.line_x_height_spread_px,
+            "page_class": self.page_class,
             "page_name": self.page_name,
             "page_state": self.page_state,
             "recognizer_admitted_line_count": self.recognizer_admitted_line_count,
@@ -630,6 +644,9 @@ class GlyphPageInput(_WireModel):
     page_state: StrictStr = Field(default="accepted", min_length=1)
     admitted_line_count: StrictInt = Field(default=0, ge=0)
     recognizer_admitted_line_count: StrictInt = Field(default=0, ge=0)
+    page_class: StrictStr | None = Field(default=None, min_length=1)
+    line_x_height_median_px: StrictInt | None = Field(default=None, gt=0)
+    line_x_height_spread_px: StrictInt | None = Field(default=None, ge=0)
 
     def to_domain(self) -> GlyphPage:
         return GlyphPage(
@@ -640,6 +657,9 @@ class GlyphPageInput(_WireModel):
             page_state=self.page_state,
             admitted_line_count=self.admitted_line_count,
             recognizer_admitted_line_count=self.recognizer_admitted_line_count,
+            page_class=self.page_class,
+            line_x_height_median_px=self.line_x_height_median_px,
+            line_x_height_spread_px=self.line_x_height_spread_px,
         )
 
 

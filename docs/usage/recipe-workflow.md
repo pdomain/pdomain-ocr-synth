@@ -199,7 +199,17 @@ Those lines score 0.00 to 0.17 while the lines around them score above 0.8. The
 check costs 2.4 to 7.4 percent of accepted lines and the manifest counts what it
 rejected. The recognizer only ever rejects, and the label stays the
 transcription's. The manifest's page table records each page's alignment state
-and how many of its lines were admitted that way.
+and how many of its lines were admitted that way, plus what the profile calls
+the page and its lines' x-height median and spread.
+
+Those last two separate two different problems. A page whose line x-heights
+spread more than about 8 px mixes type sizes: measured, 43 to 67 percent of such
+pages are chapter openings against a 2 to 7 percent base rate, and glyphs on
+chapter openings are flagged about three times as often as glyphs elsewhere. A
+page whose median runs above the book's is not a bigger size at all. The tallest
+in `projectID603d7d5e04ca0` is ordinary verse printed with heavy ink that has
+spread every letter, which is also why glyphs there merge and get flagged. One
+signal is for classification, the other for quality.
 
 An inventory is per book. X-heights run 10 to 18 px across the five aligned
 corpus books and glyph pixel sizes scale with them, so a pooled inventory would

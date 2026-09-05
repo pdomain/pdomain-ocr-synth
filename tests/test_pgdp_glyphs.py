@@ -716,3 +716,18 @@ def test_the_recognizer_check_applies_to_accepted_pages_too(fixture: Fixture) ->
 def test_without_a_recognizer_accepted_lines_are_not_checked(fixture: Fixture) -> None:
     harvest = _harvest(fixture, geometry=False)
     assert harvest.rejected_line_count == 0
+
+
+def test_the_page_table_carries_what_the_profile_calls_each_page(fixture: Fixture) -> None:
+    manifest = _harvest(fixture).manifest(rows_label="glyphs.jsonl", rows_sha256="a" * 64)
+    classes = {page.page_class for page in manifest.pages}
+    assert classes
+    assert all(name is not None for name in classes)
+
+
+def test_the_page_table_carries_its_line_x_height_median_and_spread(fixture: Fixture) -> None:
+    manifest = _harvest(fixture).manifest(rows_label="glyphs.jsonl", rows_sha256="a" * 64)
+    for page in manifest.pages:
+        assert page.line_x_height_median_px is not None
+        assert page.line_x_height_spread_px is not None
+        assert page.line_x_height_median_px > 0

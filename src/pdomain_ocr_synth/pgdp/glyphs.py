@@ -21,6 +21,7 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from hashlib import sha256
 from pathlib import Path
+from statistics import median
 from typing import TYPE_CHECKING, Final
 
 import numpy as np
@@ -110,6 +111,9 @@ if TYPE_CHECKING:
 Bounds = tuple[int, int, int, int]
 Mask = np.ndarray[tuple[int, int], np.dtype[np.bool]]
 
+_PAGE_X_HEIGHT_SAMPLE_MINIMUM: Final = 5
+"""How many measured lines a page needs before its x-height median and spread mean anything."""
+
 FLAT_WORD_REVIEW_LIMIT: Final = 200
 """How many suspected words the manifest names. The count is always exact; the list is a queue.
 
@@ -157,6 +161,7 @@ class _PageHarvest:
     word_rejects: Mapping[str, int] = field(default_factory=dict)
     exclusion: str | None = None
     source_path: str | None = None
+    line_x_heights: tuple[int, ...] = ()
     furniture_skipped: bool = False
     flat_words: tuple[_FlatWord, ...] = ()
     admitted_lines: int = 0
@@ -389,6 +394,9 @@ def _harvest_project(
                     page_state=page.state,
                     admitted_line_count=harvest.admitted_lines,
                     recognizer_admitted_line_count=harvest.recognizer_admitted_lines,
+                    page_class=_page_class(measurements.get(page.page_name)),
+                    line_x_height_median_px=_x_height_median(harvest.line_x_heights),
+                    line_x_height_spread_px=_x_height_spread(harvest.line_x_heights),
                 )
             )
     flags: Counter[str] = Counter()
@@ -501,6 +509,7 @@ def _harvest_page(
     suspects: list[_FlatWord] = []
     reconciled = separable = admitted = recognizer_admitted = rejected_lines = 0
     line_boxes: list[Bounds] = []
+    x_heights: list[int] = []
     for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
         box = _box(candidate.box)
         line_boxes.append(box)
@@ -517,6 +526,7 @@ def _harvest_page(
         measured = measure_line_typography(mask, box)
         if not isinstance(measured, LineTypographyMeasurement):
             continue
+        x_heights.append(measured.x_height_px)
         threshold = (
             x_height_gap_threshold(measured.x_height_px)
             if gap.threshold_px is None
@@ -605,6 +615,7 @@ def _harvest_page(
         admitted_lines=admitted,
         recognizer_admitted_lines=recognizer_admitted,
         rejected_lines=rejected_lines,
+        line_x_heights=tuple(x_heights),
     )
 
 
@@ -851,3 +862,36 @@ def _flag_overtall(line_rows: Sequence[GlyphRow]) -> tuple[GlyphRow, ...]:
         else row
         for row in line_rows
     )
+
+
+def _page_class(measurement: PageMeasurement | None) -> str | None:
+    """What the profile calls this page, carried through so a consumer can filter on it.
+
+    Chapter openings mix type sizes, and glyphs on them are flagged about three times as often as
+    glyphs on ordinary pages, so a consumer training on one size wants to know which is which.
+    """
+
+    return None if measurement is None else measurement.page_class
+
+
+def _x_height_median(x_heights: Sequence[int]) -> int | None:
+    """The page's typical measured x-height, or `None` when too few lines measured.
+
+    A page whose median runs well above the book's is not a bigger type size. Looked at, the
+    tallest such page in projectID603d7d5e04ca0 is ordinary verse printed with heavy ink that has
+    spread every letter, which is also why glyphs there merge and get flagged.
+    """
+
+    return round(median(x_heights)) if len(x_heights) >= _PAGE_X_HEIGHT_SAMPLE_MINIMUM else None
+
+
+def _x_height_spread(x_heights: Sequence[int]) -> int | None:
+    """How far the page's line x-heights range, which is what marks a mixed-size page.
+
+    Measured, pages spreading more than 8 px are 43 to 67 percent chapter openings against a 2 to 7
+    percent base rate, so this is the signal a later page classifier wants.
+    """
+
+    if len(x_heights) < _PAGE_X_HEIGHT_SAMPLE_MINIMUM:
+        return None
+    return max(x_heights) - min(x_heights)
