@@ -263,9 +263,25 @@ a call is comfortable.
    <start> <count>` renders them as labelled crops. The wrong-ink class is
    largely gone from them now, so what is left should be mostly small capitals
    and bad cuts.
-4. If you want Gate 3 human-reviewed rather than model-reviewed, the random
-   sheets are in `.m15f-evidence/review-*-random.png`; the M15d precedent is
-   `gate4-review.csv`.
+4. **Gate 3 is one command to review yourself.** From the repo:
+
+   ```text
+   uv run python ../.m15f-evidence/gate3.py render
+   ```
+
+   That draws 30 glyphs each for `a e h n o s t` per book at random under seed
+   20260905 and writes 35 sheets plus one CSV a book, 1,050 cells in all. Every
+   cell is labelled `a1`, `a2` and so on and the CSV lists them in the same
+   order. Put anything in a cell's `wrong` column, then:
+
+   ```text
+   python3 ../.m15f-evidence/gate3.py score
+   ```
+
+   It prints each book against the 0.98 floor and writes `gate3-review.json`.
+   Add `--filtered` to both commands to measure the inventory with
+   `flat_ascender` and `overtall` glyphs dropped, which is the other number the
+   decision above turns on. Scoring needs only the standard library.
 5. Decide whether the corpus atlases belong in the repo. That is the question the
    plan's decision 1 says should be answered before the second book lands, and
    five books have now landed.
