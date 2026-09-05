@@ -186,10 +186,18 @@ Acceptance is a page-level judgement and a poor proxy for whether one line bound
 to the right text: measured over three books, lines excluded only for alignment
 score agree with the recognizer about as well as accepted ones, at 0.887 to
 0.962 against 0.926 to 0.976, while lines on illustration pages agree at 0.560
-to 0.683. So a line from a non-accepted page is admitted only when the
-recognizer reads at least four of every five of its transcription words inside
-its own box. That needs `--geometry`; without it, non-accepted pages are
-skipped. The recognizer only ever rejects, and the label stays the
+to 0.683. So every line is admitted only when the recognizer reads at
+least four of every five of its transcription words inside its own box. That
+needs `--geometry`; without it, non-accepted pages are skipped and accepted ones
+go unchecked as before.
+
+The check matters most on accepted pages, where nothing else looks. A line whose
+candidate box was matched to the wrong source line still reconciles by word
+count often enough to cut, and every glyph in it then carries the wrong
+character: `They` cut from WILL, `and` from `side,`, `being` from `morning,`.
+Those lines score 0.00 to 0.17 while the lines around them score above 0.8. The
+check costs 2.4 to 7.4 percent of accepted lines and the manifest counts what it
+rejected. The recognizer only ever rejects, and the label stays the
 transcription's. The manifest's page table records each page's alignment state
 and how many of its lines were admitted that way.
 

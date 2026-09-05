@@ -681,3 +681,38 @@ def test_an_alignment_carrying_no_style_runs_reads_every_glyph_roman(
         fixture.corpus_root, path, fixture.profile_path, tool_version="0.0.0"
     )
     assert {row.label_style for row in harvest.rows} == {"roman"}
+
+
+def test_the_recognizer_check_applies_to_accepted_pages_too(fixture: Fixture) -> None:
+    """A line matched to the wrong source line reconciles by count and mislabels every glyph."""
+
+    payload = json.loads(fixture.alignment_path.read_text(encoding="utf-8"))
+    for project in payload["projects"]:
+        for page in project["pages"]:
+            if page["page_name"] != ACCEPTED_PAGE:
+                continue
+            for line in page["source_lines"]:
+                if line["ordinal"] == 0:
+                    line["visible_text"] = " ".join(
+                        f"zz{index}" for index in range(len(line["visible_text"].split()))
+                    )
+    path = fixture.alignment_path.parent / "wrong-line.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    harvest = build_glyph_inventory(
+        fixture.corpus_root,
+        path,
+        fixture.profile_path,
+        tool_version="0.0.0",
+        geometry_path=fixture.geometry_path,
+    )
+    assert harvest.rejected_line_count > 0
+    assert not [
+        row
+        for row in harvest.rows
+        if row.page_name == ACCEPTED_PAGE and row.line_ordinal == 0 and row.character == "z"
+    ]
+
+
+def test_without_a_recognizer_accepted_lines_are_not_checked(fixture: Fixture) -> None:
+    harvest = _harvest(fixture, geometry=False)
+    assert harvest.rejected_line_count == 0

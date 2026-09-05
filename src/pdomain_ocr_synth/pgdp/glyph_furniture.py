@@ -133,7 +133,13 @@ Page acceptance is a page-level judgement and a poor proxy for whether one line 
 text. Measured over three books, lines on accepted pages score 0.926 to 0.976 at this bar, and
 lines excluded only for alignment score do about as well: `normalized_cost_exceeds_maximum` runs
 0.937 to 0.962 and `uniqueness_margin_below_minimum` 0.887 to 0.934. Lines on illustration pages
-do not, at 0.560 to 0.683, which is what this keeps out.
+do not, at 0.560 to 0.683.
+
+**Accepted lines are checked too.** A line whose candidate box was matched to the wrong source
+line still reconciles by word count often enough to cut, and every glyph in it then carries the
+wrong character: `They` cut from WILL, `and` from `side,`, `being` from `morning,`. Those lines
+score 0.00 to 0.17 here while the lines around them score above 0.8, so one check finds them.
+It costs 2.4 to 7.4 percent of accepted lines.
 
 The recognizer only ever rejects here. The label stays the transcription's.
 """

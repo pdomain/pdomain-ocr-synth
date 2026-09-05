@@ -159,6 +159,7 @@ class _PageHarvest:
     flat_words: tuple[_FlatWord, ...] = ()
     admitted_lines: int = 0
     recognizer_admitted_lines: int = 0
+    rejected_lines: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,6 +189,7 @@ class GlyphHarvest:
     geometry_sha256: str | None = None
     ocr_recognizer: Mapping[str, str] | None = None
     styled_line_count: int = 0
+    rejected_line_count: int = 0
     furniture_skipped_page_count: int = 0
     flat_words: tuple[_FlatWord, ...] = ()
 
@@ -250,6 +252,7 @@ class GlyphHarvest:
                 "furniture_skipped_page_count": self.furniture_skipped_page_count,
                 "glyph_count_by_style": dict(sorted(by_style.items())),
                 "styled_line_count": self.styled_line_count,
+                "recognizer_rejected_line_count": self.rejected_line_count,
                 "flat_ascender_word_count": len(self.flat_words),
                 "flat_ascender_words": [
                     word.to_dict()
@@ -345,7 +348,7 @@ def _harvest_project(
     word_rejects: Counter[str] = Counter()
     exclusions: Counter[str] = Counter()
     page_count = accepted = harvested = reconciled = separable = 0
-    furniture = furniture_skipped = 0
+    furniture = furniture_skipped = rejected_lines = 0
     flat_words: list[_FlatWord] = []
     for page in sorted(project.pages, key=lambda page: natural_page_key(page.page_name)):
         page_count += 1
@@ -373,6 +376,7 @@ def _harvest_project(
         harvested += 1
         rows.extend(harvest.rows)
         flat_words.extend(harvest.flat_words)
+        rejected_lines += harvest.rejected_lines
         if harvest.source_path is not None and page.scan_sha256 is not None:
             pages.append(
                 GlyphPage(
@@ -413,6 +417,7 @@ def _harvest_project(
         geometry_sha256=None if witness is None else witness.sha256,
         ocr_recognizer=None if witness is None else witness.recognizer.to_dict(),
         styled_line_count=book_style.styled_line_count,
+        rejected_line_count=rejected_lines,
         furniture_skipped_page_count=furniture_skipped,
     )
 
@@ -492,19 +497,20 @@ def _harvest_page(
     rows: list[GlyphRow] = []
     rejects: Counter[str] = Counter()
     suspects: list[_FlatWord] = []
-    reconciled = separable = admitted = recognizer_admitted = 0
+    reconciled = separable = admitted = recognizer_admitted = rejected_lines = 0
     line_boxes: list[Bounds] = []
     for candidate_ordinal, source_ordinal, candidate, visible_text in matched:
         box = _box(candidate.box)
         line_boxes.append(box)
-        if not page.accepted:
-            if page_witness is None:
-                continue
+        if page_witness is not None:
             if not line_is_admissible(
                 line_word_agreement(page_witness, box=box, visible_text=visible_text)
             ):
+                rejected_lines += 1
                 continue
-            recognizer_admitted += 1
+            recognizer_admitted += int(not page.accepted)
+        elif not page.accepted:
+            continue
         admitted += 1
         measured = measure_line_typography(mask, box)
         if not isinstance(measured, LineTypographyMeasurement):
@@ -594,6 +600,7 @@ def _harvest_page(
         flat_words=tuple(suspects),
         admitted_lines=admitted,
         recognizer_admitted_lines=recognizer_admitted,
+        rejected_lines=rejected_lines,
     )
 
 
