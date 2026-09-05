@@ -17,7 +17,8 @@ Kind: plan
 - **Last verified:** 2026-09-05
 - **Provenance:** scoped on 2026-09-05, with coverage measured by harvesting all 665 accepted
   pages of the five aligned books
-- **Disposition:** Proposed, not approved. Three open decisions at the end.
+- **Disposition:** Proposed. All three open decisions were taken by CT on 2026-09-05, and one of
+  them forced a two-tier label design; see "Decisions taken".
 - **Read when:** building or consuming the glyph inventory, or asking what synthesis can render
   in a book's own type.
 - **Search terms:** glyph inventory, per-book, harvest, atlas, coverage, synthesis, M15f.
@@ -42,9 +43,12 @@ positions give an empirical spacing distribution for the book, which is a measur
 rather than a claim about a typeface. And the ranking slice gets real shapes to score revival
 candidates against.
 
-**The labels come from F2, which is human-proofed, not from OCR.** A glyph is cut only from a
-word on an exactly reconciled line, so its character is the transcription's. That is what keeps
+**Body-text labels come from F2, which is human-proofed, not from OCR.** A glyph is cut only from
+a word on an exactly reconciled line, so its character is the transcription's. That is what keeps
 this from being a model trained on its own output.
+
+Furniture is different and is kept in a separate tier, because proofers strip running heads and
+page numbers from F2 entirely, so nothing there has a human label. See "Decisions taken".
 
 ## Measured on 2026-09-05: what the five books yield
 
@@ -68,10 +72,11 @@ Four things follow.
 `z` at 1, and accented rarities at 1. Lowercase is what body prose gives you and it gives it
 deeply.
 
-**Uppercase is thin and digits are nearly absent.** 197 to 1,743 uppercase samples per book, and
-`projectID609bfa0449bdf` contains **zero digits across 226 pages**. Page numbers live in the
-furniture bands the pipeline excludes on purpose. Any consumer needing digits cannot get them
-here.
+**Uppercase is thin, and digits are scarce in narrative prose rather than absent.** 197 to 1,743
+uppercase samples per book. `projectID609bfa0449bdf` yields **zero digits across 226 pages**, but
+its transcription contains only 22 digit characters in 5,053 matched lines, so that is scarcity,
+not a defect. A reference work fares far better: `projectID64a479f51ce5b` has 3,111 digit
+characters in F2 and yields 375. Furniture closes the gap; see "Decisions taken".
 
 **Yield varies nearly sixfold per page, and separability is why.** `projectID603d7d5e04ca0`
 separates only 0.256 of its words and yields 77 glyphs a page against
@@ -88,16 +93,15 @@ existing discipline rather than a new one.
 ```text
 glyphs-pgdp <corpus_root> --alignment a.json --profile p.json --out <dir>/
   manifest.json      pgdp-glyphs/v1: input hashes, method version, per-character
-                     coverage, quality tallies
-  glyphs.jsonl       one row per glyph: character, page, line ordinal, word ordinal,
-                     glyph ordinal, source-frame box, quality flags
+                     coverage per tier, quality tallies
+  glyphs.jsonl       one row per glyph: character, label tier, page, line ordinal,
+                     word ordinal, glyph ordinal, source-frame box, quality flags
   atlas/U+0065.png   derived: every 'e' in the book on one grid
 ```
 
-**Boxes are the contract; the atlas is a derived render.** Every other stage here emits a JSON
-report with hashes and treats images as build artifacts, the Gate 4 sheets included. Boxes keep
-the contract pure, re-cuttable and small; the atlas is regenerable when a self-contained artifact
-is wanted.
+**Boxes are the contract; the atlas is a derived render that also ships.** The JSONL stays the
+authority, re-cuttable from the corpus and small. The atlas is regenerated from it and committed,
+per decision 1, which makes the inventory usable without the corpus mounted.
 
 **One atlas per character, not per glyph.** A file per glyph is 10,000 files a book and three
 million across 286 projects. Per character is 50 to 90 files a book, and it is self-reviewing:
@@ -106,6 +110,9 @@ the Gate 4 trick, built in rather than bolted on.
 
 ## Tasks
 
+- [ ] **0. Harvest furniture through the OCR witness.** Words outside every matched line box get
+  their label and box from the `geometry-v1` record, tagged `recognized`. The page's
+  `image_sha256` must match the alignment's `scan_sha256` first, the same check the witness makes.
 - [ ] **1. Cut glyphs from a reconciled word.** Given a word box and its transcription word, split
   by blank columns and emit one record per glyph when the counts agree. Emit nothing and record
   the reason when they do not.
@@ -120,7 +127,7 @@ the Gate 4 trick, built in rather than bolted on.
 - [ ] **5. The per-character atlas renderer,** deterministic and regenerable from the JSONL alone.
 - [ ] **6. Reviewed fixtures** covering a separable word, a touching word, and a word whose
   letters split into the wrong count.
-- [ ] **7. Harvest all five books and measure every gate below.**
+- [ ] **7. Harvest all five books, both tiers, and measure every gate below.**
 
 ## Acceptance gates
 
@@ -131,10 +138,18 @@ Each carries its 2026-09-05 seed where one was measured.
 2. **Provenance.** Every glyph row resolves to one page, line, word and ordinal, and the
    command refuses a profile that does not match the alignment's recorded hash. Uncalibrated,
    must be exact.
-3. **Label correctness.** A reviewed sample of at least 200 glyphs across at least three books,
-   rendered as atlas grids, at least 0.98 carrying the character the manifest claims. Higher than
-   Gate 4's 0.95 because a mislabelled glyph poisons every page rendered from it. Uncalibrated.
+3. **Label correctness, `transcribed` tier.** A reviewed sample of at least 200 glyphs across at
+   least three books, rendered as atlas grids, at least 0.98 carrying the character the manifest
+   claims. Higher than Gate 4's 0.95 because a mislabelled glyph poisons every page rendered from
+   it. Uncalibrated.
+3b. **Label correctness, `recognized` tier.** The same review over at least 100 furniture glyphs,
+   at least 0.90. Set lower deliberately: the label is an OCR read at 0.77 to 0.82 mean
+   confidence, not a human transcription, and pretending otherwise would hide the difference the
+   tier exists to record. Uncalibrated.
 4. **Lowercase coverage.** All 26 lowercase present in every book. Measured: true in all five.
+4b. **Digit coverage.** With furniture harvested, every book emits at least 20 digit glyphs.
+   Measured available: 65 to 560 digit characters per book in furniture, so the floor has margin
+   and no book fails on availability.
 5. **Yield floor.** At least 50 glyphs per accepted page. Measured 77 to 458, so the floor has
    margin, and the book that would fail it first is `projectID603d7d5e04ca0`.
 6. **Atlas reproduction.** Re-rendering the atlas from the JSONL reproduces it byte for byte.
@@ -142,25 +157,53 @@ Each carries its 2026-09-05 seed where one was measured.
 7. **Latent discipline.** No key claims font identity, point size, advance, side bearing or
    tracking. The inventory records observed ink, never a typeface.
 
-## Open decisions
+## Decisions taken
 
-**1. Does the atlas ship, or stay local?** Licensing is settled, so this is a repo-hygiene call
-rather than a legal one. The committed-bytes rule was written for a reason and CT should set the
-line. Recommendation: keep the JSONL as the committed contract and treat atlases as local build
-artifacts, matching how the Gate 4 sheets are handled.
+All three were settled by CT on 2026-09-05. Two went against the recommendation, and one of those
+forced a design change.
 
-**2. Are digits worth harvesting from furniture?** They are absent from body prose, entirely so in
-one book. Getting them means reversing an exclusion the pipeline makes deliberately.
-Recommendation: do not. Record the gap in the manifest and let a consumer decide.
+**1. Atlases ship.** They are committed rather than kept as local build artifacts. Two
+consequences to size for: `check-added-large-files` is set to 1000 kB, so an atlas must be split
+per character and probably per size band to stay under it. And at the measured rate the full
+286-project corpus would reach roughly 16 million glyphs, so shipping atlases needs a stated
+policy well before then. Shipping the five aligned books is comfortable; shipping 286 is not, and
+that limit should be written down when the second book lands rather than discovered at the
+fiftieth.
 
-**3. Should a thin book refuse to emit?** Recommendation: emit and declare. A floor that silently
-drops books hides what it dropped, which is the same reasoning Gate 6 was written under.
+**2. Headers and page numbers are harvested, in a separate tier.** This was measured before it was
+written in, and the measurement changed the design. Proofers strip running heads from F2: across
+all five books there is **not one bare page-number line** in the transcription, while furniture
+bands run almost exactly one per accepted page. So furniture ink has no human label and can only
+be labelled by OCR.
+
+The `geometry-v1` records already cover it. Words falling outside every matched line box number
+117 to 1,082 per book, carrying **65 to 560 digit characters** each at 0.77 to 0.82 mean
+recognition confidence. `projectID609bfa0449bdf`, which yields no digits at all from body text,
+has 560 in its furniture. That is the digit gap closed.
+
+So the inventory carries two label tiers and never mixes them:
+
+| tier | source | label from | corpus scale |
+| --- | --- | --- | ---: |
+| `transcribed` | reconciled words on matched lines | F2, human-proofed | 187,839 glyphs |
+| `recognized` | words outside every matched line | DocTR `geometry-v1` | about 2,905 words |
+
+The manifest counts them separately and every glyph row names its tier, so a consumer can take
+digits from `recognized` while training characters only on `transcribed`. The safety property was
+never "no OCR labels"; it is that you always know which is which.
+
+**3. A thin book emits and declares.** A floor that silently drops books hides what it dropped,
+which is the reasoning Gate 6 was written under.
 
 ## What this does not do
 
 It does not build a font. No outlines, no autotracing, no shaping tables. For synthesis you
 compose at the measured size from samples taken at that size, and a traced outline would be
 noisier than the bitmap it came from.
+
+It does not label furniture from anything but OCR. There is no human transcription of a running
+head in this corpus, so the `recognized` tier cannot be promoted by better parsing, only by
+review.
 
 It does not render anything. Composing pages from an inventory is a later slice and needs its own
 sampling rule, because reusing one exemplar per character would look mechanical in a way real
