@@ -39,9 +39,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ui = [
-    "nicegui>=2.0",
-]
+# M11's preview UI is unbuilt and its framework changed on 2026-09-06. NiceGUI is
+# no longer the direction: the two repositories that justified it are retired, and
+# the workspace moved to FastAPI with a React single-page application served from
+# one wheel, as ``pdomain-ocr-labeler-spa`` and ``pdomain-ocr-trainer-spa`` do.
+# The ``nicegui>=2.0`` pin is removed rather than replaced, because M11's scope is
+# still open and declaring dependencies the repository cannot exercise would be a
+# claim it does not support. See ``docs/specs/11-preview-ui.md``.
 # Hugging Face publishing path. Kept optional so users who only run
 # ``pdomain-ocr-synth render`` (the local-only path) don't pull the SDK and
 # its transitive deps. Install with ``pip install pdomain-ocr-synth[publish]``

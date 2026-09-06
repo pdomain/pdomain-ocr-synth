@@ -22,6 +22,17 @@ VS Code with the recipe JSON Schema (free YAML editing, IntelliSense)
 is out of scope. Auth, publishing, and repository mutations other than
 the explicit recipe create/save actions are also out of scope.
 
+> **Superseded in part, 2026-09-06.** NiceGUI is no longer the direction for M11. The two
+> repositories whose shared pattern justified it, `pd-ocr-labeler` and `pd-ocr-trainer`, are
+> retired, and the workspace has moved to FastAPI with a React single-page application served
+> from one wheel. The `nicegui>=2.0` extra has been removed from `pyproject.toml`. M11's scope is
+> also unsettled, because the region and glyph review work it was being sized for is moving to
+> `pdomain-ocr-labeler-spa` under the
+> [proposed split](2026-09-06-measurement-labeling-synthesis-split-design.md). Everything
+> below about NiceGUI, its layering, its testing plugin, and its dependency cost is retained as
+> the record of an earlier design and is not current guidance. The goal, the three surfaces, the
+> transient-override behaviour, and the diff-and-save flow are still the intent.
+
 ## Current implementation status
 
 M11 is not implemented. The optional NiceGUI dependency and deterministic

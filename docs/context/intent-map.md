@@ -6,9 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-08-24
+- **Last verified:** 2026-09-06
 - **Provenance:** authored from all 32 evidence-backed migration analyzer records, current repository
-  state, and the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement
+  state, the evidence-backed 2026-08-24 PGDP architecture promotion, and the 2026-09-06 promotion
+  of the remaining shipped M15 slices with the retirement of their plans
 - **Disposition:** Injected ground truth for active, deferred, blocked, rejected, and owner-dependent intent.
 
 This map preserves useful unbuilt work after separating shipped truth from old
@@ -16,31 +17,45 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Active
 
-- M15b source-line alignment is measured and passing: precision 1.0000 over 760 rows, no
-  accepted declared-complex page, and all five review books admitted ([source-line
-  alignment](../architecture/pgdp-source-line-alignment.md), [observed geometry
-  profiling](../architecture/pgdp-observed-geometry-profiling.md), [ocr-container-meta issue
-  403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403)).
-- Both previously known alignment errors are fixed. Three band-identification defects caused
-  them: head-band selection picked by ordinal rather than position, a decorative rule was
-  treated as a match candidate, and the speck test had to narrow at the same time because
-  removing the rule alone made `379.png` worse.
+- **Decide the proposed split.** A draft design would move the measurement library into its own
+  package, the region and page-type vocabulary into `pdomain-book-contracts`, and human labeling
+  into `pdomain-ocr-labeler-spa`, leaving this repository to consume labeled datasets. It is the
+  largest open question here and every other PGDP item depends on the answer
+  ([split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)).
+- **Re-run the measurement chain on current alignment.** M15d, M15e, and M15f were all measured
+  from the `alignment-t2-*` reports, which predate the three band-identification fixes by
+  seventeen commits. Those fixes raised accepted pages from 665 to 713 and removed wrong-ink
+  bindings. The effect on the downstream reports is unmeasured, and it is worth knowing before
+  more geometry work, because the fixes removed the kind of binding Gate 3's failures resemble.
+- **Close Gate 3, or restate it.** Label correctness on the `transcribed` tier measures 0.978
+  against a floor of 0.98, and two of five books fail. Filtering the five quality flags gives
+  0.994 with every book clear. Either the gate measures the filtered inventory, or flagged glyphs
+  stop being emitted, or the book is accepted at a stated lower number. The call is the owner's;
+  the gate was not redefined to pass it
+  ([glyph inventory](../architecture/pgdp-glyph-inventory.md)).
+- **Work the flat-ascender queues.** 490 words across the five books sit unreviewed in each
+  manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book> <start> <count>`
+  renders them as labelled crops.
+- **Decide the atlas policy.** The corpus atlases are 7.4 MB across five books and live in the
+  evidence directory rather than the repository. The glyph plan's decision 1 says atlases ship,
+  and that the policy is due now that five books have landed. At the measured rate the full
+  286-project corpus would reach roughly 16 million glyphs.
+- **Consume the two unused page signals.** Every page records its `page_class` and its lines'
+  x-height median and spread, and nothing reads them. Feeding either back into page
+  classification is a slice of its own. The recorded chapter-opening figure of 43 to 67 percent
+  is ambiguous between precision and recall and must be recomputed before it is relied on.
 - Calibrate the 30-page book admission minimum. It is an uncalibrated seed, because nothing fits
   typography from an aligned page yet and so no consumer can state its real requirement ([whole-book
-  yield gate design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md)).
-- M11 preview UI: implement the localhost picker, sample grid, async rerender,
-  transient overrides, manifest detail, and an explicit diff/save flow. Resolve
-  the competing `pdomain_ocr_synth.ui` versus `preview` package names and decide
-  whether detection preview belongs in v1 before coding
+  yield gate design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md)). Partial answer as
+  of 2026-09-04: pooled x-height, baseline pitch, and stroke width settle within 0.5 px at 5 body
+  pages in four books and 20 in the fifth, and word gap settles at 5, 50, 5, 30, and 5.
+- **M11 preview UI is unbuilt and being re-scoped.** NiceGUI is no longer the direction. The plan
+  and spec justified it by pointing at `pd-ocr-labeler` and `pd-ocr-trainer`, both retired, and
+  the workspace has since moved to FastAPI with a React single-page application, shared through
+  `pdomain-ops` and `@pdomain/pdomain-ui`. The scope is also unsettled: the region and glyph
+  review work M11 was being sized for is moving to the labeler under the proposed split. Rewrite
+  the spec and plan once the split is decided
   (`docs/plans/11-preview-ui*.md`, `docs/specs/11-preview-ui.md`).
-- M11 has lost a design rationale and needs a new one. The plan and spec justified
-  the preview UI's framework and layering by pointing at a workspace pattern: that
-  `pd-ocr-labeler` and `pd-ocr-trainer` both use NiceGUI with the same MVVM and
-  layered shape. Both repositories are being retired, and the successor does not
-  share the trait. `pdomain-ocr-training` declares no NiceGUI dependency, where
-  `pd-ocr-trainer` pinned `nicegui>=1.4.0`, and its modules are flat rather than
-  layered. Choose the framework and layering on their merits before implementing,
-  rather than inheriting a pattern that no surviving repository follows.
 - M12 glyph annotations: confirm the sibling shared model and the semantic-text
   versus presentation invariant, prototype GSUB/cluster mapping, then implement
   the Gaelic/Roman v1 model, char spans, validation, additive recognition and
@@ -118,23 +133,31 @@ design choices to settle, but both remain actionable discovery work.
 
 ## Needs owner decision
 
-The migration can finish without these M11 product choices, but repository
-evidence does not select them:
+These are open questions repository evidence cannot settle. The six from the split design block
+the largest structural decision here.
 
-- Package name: confirm `pdomain_ocr_synth.ui` or retain the original design's
-  `pdomain_ocr_synth.preview`. The current staged spec and scoping plan
-  recommend `ui` to avoid confusion with `render.preview`, but leave final
-  confirmation to the owner
-  (`docs/specs/11-preview-ui.md`, `docs/plans/11-preview-ui-scoping.md`).
-- NiceGUI version constraint: the optional dependency currently permits the
-  repository's locked version, but the M11 compatibility policy is not stated
-  in code or tests (`pyproject.toml`, `docs/plans/11-preview-ui-scoping.md`).
-- Default port: no shipped console entry point, configuration, or test selects
-  a port (`docs/specs/11-preview-ui.md`, `docs/plans/11-preview-ui-scoping.md`).
-- UI test marker and gating: normal CI runs the full test suite, while the
-  scoping plan proposes separately gated UI tests. No current workflow decides
-  the marker or installation boundary (`.github/workflows/ci.yml`,
-  `docs/plans/11-preview-ui-scoping.md`).
+From the [split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md):
+
+- The measurement package's name. `pdomain-pgdp-measure` is a working name only.
+- Whether the glyph inventory moves with the measurement library. It is measurement, so it
+  should, but its Gate 3 is open and moving a milestone with a failing gate needs a deliberate
+  answer.
+- Whether this repository keeps a dependency on the measurement package during the transition, or
+  cuts over once.
+- How region proposals persist in the labeler: as `Block` objects with `block_role_labels`, which
+  already round-trips, or in the `extensions["labeler"]` slot on `PageRecord`. The labeler's
+  2026-05-07 scope freeze pinned `UserPageEnvelope` v2.1 byte for byte, and region annotation is
+  new persisted state, so the freeze has to be addressed rather than worked around.
+- Whether the labeler ingests PGDP corpora directly, or only reads the measurement package's
+  reports.
+- The labeled-dataset contract this repository will consume. It is unspecified and is the join
+  between the two halves of the suite.
+
+For M11, the four earlier product choices are withdrawn. The package name, NiceGUI version pin,
+default port, and UI test marker were all asked under a NiceGUI design that is no longer the
+direction. Two of them no longer exist as questions. Re-ask them against the FastAPI and React
+pattern once M11's scope settles, and note that the sibling SPAs differ on whether Tailwind is
+used, which is the one live divergence between them.
 
 ## Legacy-unverified sweep
 

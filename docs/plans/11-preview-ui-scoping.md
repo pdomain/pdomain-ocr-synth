@@ -10,6 +10,17 @@
 - **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
 - **Disposition:** Retained as current intent or process guidance.
 
+> **Superseded in part, 2026-09-06.** NiceGUI is no longer the direction for M11. The two
+> repositories whose shared pattern justified it, `pd-ocr-labeler` and `pd-ocr-trainer`, are
+> retired, and the workspace has moved to FastAPI with a React single-page application served
+> from one wheel. The `nicegui>=2.0` extra has been removed from `pyproject.toml`. M11's scope is
+> also unsettled, because the region and glyph review work it was being sized for is moving to
+> `pdomain-ocr-labeler-spa` under the
+> [proposed split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md). Everything
+> below about NiceGUI, its layering, its testing plugin, and its dependency cost is retained as
+> the record of an earlier design and is not current guidance. The goal, the three surfaces, the
+> transient-override behaviour, and the diff-and-save flow are still the intent.
+
 ## Goal
 
 Define the smallest evidence-backed sequence for M11 before implementation. The scoping work

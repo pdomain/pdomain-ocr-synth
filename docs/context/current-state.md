@@ -6,10 +6,11 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-09-04
+- **Last verified:** 2026-09-06
 - **Provenance:** authored from repository evidence, the 2026-08-24 local PGDP alignment review,
-  earlier ranking and geometry-profile corpus runs, tests, plans, CI, and the 2026-08-24 PGDP
-  architecture promotion and plan retirement
+  earlier ranking and geometry-profile corpus runs, tests, plans, CI, the 2026-08-24 PGDP
+  architecture promotion, and the 2026-09-06 promotion of the remaining shipped M15 slices with
+  the retirement of their plans
 - **Disposition:** Injected operational ground truth.
 
 M00-M10 are substantially shipped. The repository supports recipe discovery and
@@ -32,8 +33,9 @@ templates from first ink-band positions and classifies each page as
 `normal_recto`, `normal_verso`, `chapter_opening`, or `unknown`. It does not
 rectify scans or claim baselines, columns, semantics, or fonts.
 
-M15b writes `pgdp-alignment/v3` and remains partial. Three defects found on
-2026-08-31 are corrected. Version 1 rejected a page whenever any ink band split
+M15b is shipped and writes `pgdp-alignment/v3`. Its plan retired into
+[source-line alignment](../architecture/pgdp-source-line-alignment.md) on
+2026-09-06. Three defects found on 2026-08-31 are corrected. Version 1 rejected a page whenever any ink band split
 into more than one cluster, which excluded ordinary text pages over punctuation
 and dust. Specks became ink bands of their own and then candidates matching no
 source line. Running heads and page numbers, printed but deleted from F2, were
@@ -173,6 +175,66 @@ Font candidates, inverse rendering, typeface ranking, rectification, rectified
 frames, change-point detection, and any point-size or leading claim remain
 unimplemented.
 
+## PGDP glyph inventory, shipped with Gate 3 open
+
+M15f ships `glyphs-pgdp`. It cuts a labelled per-character glyph inventory from
+one aligned book's own scans and writes `manifest.json` as `pgdp-glyphs/v1`,
+`glyphs.jsonl` with one row per glyph, and a per-character atlas rendered from
+those rows. The corpus run harvested 266,549 glyphs from 1,367 of 1,385 pages
+across the five aligned books. See
+[glyph inventory](../architecture/pgdp-glyph-inventory.md).
+
+**Gate 3 fails and that is the recorded result.** Label correctness on the
+`transcribed` tier measures 0.978 pooled against a floor of 0.98, from 1,050
+glyphs sampled at random and read by eye. Two books fail, at 0.943 and 0.962;
+the other three pass at 0.990 to 1.000. Dropping every glyph the five quality
+flags mark takes the pooled figure to 0.994 with every book over the floor, but
+that is what one line of filtering buys a consumer, not the gate passing. Nine
+other gates pass, including determinism, provenance, both other label tiers,
+coverage, yield, atlas reproduction, and latent discipline.
+
+Two label tiers never mix. `transcribed` comes from words on lines reconciled
+against PGDP F2, so a human proofer chose the character. `recognized` comes from
+running heads and folios, where PGDP carries no text at all, so a DocTR read is
+the only label available. Proofers strip running heads from F2: across all five
+books there is not one bare page-number line in the transcription.
+
+Five quality flags record observations on a row and never change a label:
+`flat_ascender`, `narrow`, `wide`, `overtall`, and `unlike_character`.
+`DEFECT_FLAGS` in `glyph_quality.py` names them. The other row flags, `ascends`,
+`descends`, and the two `touches_line_*`, are ordinary facts about a letter.
+
+Two ceilings are measured rather than assumed. Small capitals cannot be found
+geometrically: against lines PGDP itself marks `<sc>`, x-height reads the same as
+roman lines in both books tested. And the shape check has a blind list a finer
+grid does not fix, holding at 14, 15, and 14 pairs across three grid sizes.
+
+## The measurement chain runs on a stale alignment report
+
+M15d, M15e, and M15f all ran against the `alignment-t2-*` reports, written on
+2026-08-31 between 17:59 and 18:18. The three band-identification fixes landed in
+commits `c7c63ab` and `aa5c567` at 22:08 and 22:09 the same day. Those fixes
+raised accepted pages from 665 to 713, moved 35 pages out of `unknown`, raised
+accepted-line precision from 0.9974 to 1.0000, and cut accepted pages where a
+dense thin band bound a source line from four to zero.
+
+So the typography and glyph inventories are built on 665 pages of an alignment
+that now accepts 713, and on bindings the fixes were written to remove.
+Re-running the chain is untried and its effect is unmeasured. The operating note
+repeated in three handoffs, "use the `alignment-t2-*` reports", is now
+misleading; it was written when t2 was the only report carrying the
+page-classification fixes.
+
+## A split is proposed and not yet decided
+
+A draft design proposes separating the three jobs this repository does. The
+measurement library under `src/pdomain_ocr_synth/pgdp/` would become its own
+package, the region and page-type vocabulary would go to
+`pdomain-book-contracts`, human labeling would move to
+`pdomain-ocr-labeler-spa`, and this repository would consume labeled datasets
+rather than produce its own measurements. Nothing has moved. See the
+[measurement, labeling, and synthesis split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md).
+
 ## PGDP ranking verification
 
 Two runs over `/workspaces/pdomain-data/pgdp-corpus` used a project limit of 50
@@ -267,22 +329,41 @@ in [ocr-container-meta issue 403](https://github.com/ConcaveTrillion/ocr-contain
 [Development and recipe system](../architecture/development-and-recipe-system.md)
 records the shipped development, schema, loader, validation, and CLI contracts.
 [Output and publishing](../architecture/output-and-publishing.md) records local
-training layouts, determinism, resume, and publishing. [PGDP ranking and review
-queue](../architecture/pgdp-ranking-and-review-queue.md) records M14's shipped
-corpus-ranking contract. [PGDP observed geometry
-profiling](../architecture/pgdp-observed-geometry-profiling.md) records M15a's
-shipped scan-measurement contract. Recipe authors should start with [Recipe
-workflow](../usage/recipe-workflow.md).
+training layouts, determinism, resume, and publishing.
+
+The PGDP track has four architecture documents, one per shipped contract:
+
+- [Ranking and review queue](../architecture/pgdp-ranking-and-review-queue.md),
+  M14's `rank-pgdp`.
+- [Observed geometry profiling](../architecture/pgdp-observed-geometry-profiling.md),
+  M15a's `profile-pgdp`, writing `pgdp-profile/v2`.
+- [Source-line alignment](../architecture/pgdp-source-line-alignment.md), M15b's
+  `align-pgdp`, writing `pgdp-alignment/v3`.
+- [Font-free typography](../architecture/pgdp-font-free-typography.md), M15d and
+  M15e's `typography-pgdp`, writing `pgdp-typography/v1`.
+- [Glyph inventory](../architecture/pgdp-glyph-inventory.md), M15f's
+  `glyphs-pgdp`, writing `pgdp-glyphs/v1`, with Gate 3 open.
+
+Recipe authors should start with [Recipe workflow](../usage/recipe-workflow.md).
 
 ## In-flight milestones
 
-M11 is the local preview UI. Its NiceGUI optional dependency and reusable
-preview, search, and validation primitives exist. The UI package, routes,
-viewmodels, save flow, and UI tests do not. M12 is glyph-annotation emission.
-Its shared model, recipe block, render mapping, sidecar output, and tests have
-not shipped. Four non-blocking M11 product choices remain in the
-[intent map](intent-map.md). The active roadmap remains
-[plans/README](../plans/README.md).
+M11 is the local preview UI and has not started. Its reusable preview, search,
+and validation primitives exist; the UI itself does not. Its framework changed on
+2026-09-06: NiceGUI is no longer the direction, because the two repositories that
+justified it are retired and the workspace has since moved to FastAPI with a
+React single-page application. Its scope is also unsettled, because the region
+and glyph review work it was being sized for is moving to the labeler under the
+proposed split.
+
+M12 is glyph-annotation emission. Its shared model, recipe block, render mapping,
+sidecar output, and tests have not shipped.
+
+M15f is shipped with Gate 3 open, so its plan stays live at
+`docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md`. Every other M15 slice is
+retired into architecture. M15c stays reserved for rectification and unstarted.
+
+The active roadmap remains [plans/README](../plans/README.md).
 
 ## Current risks and limits
 
