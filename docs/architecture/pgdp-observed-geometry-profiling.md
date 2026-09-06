@@ -179,7 +179,8 @@ chapter-opening sink stays `unknown` rather than being forced into a class.
 - Commits: `c97b108`, `4b13fca`, `8f01f2a`, `895e355`, `83e0a09`,
   `ed86d52`, `f182774`, `5d0ea55`, `a7e5565`, `c058327`, `c9fadb5`,
   `a176747`, and `f29661f` (original M15a slice).
-- Plans: `docs/plans/2026-08-31-pgdp-page-classification.md`.
+- Plans: `2026-08-31-pgdp-page-classification`, retired on 2026-09-06 with a tombstone in
+  [decisions](../context/decisions.md).
 - Specs: `docs/specs/2026-08-31-pgdp-whole-book-page-templates-design.md`.
 - Corpus verification: two five-project, 60-page profiles were byte-identical,
   and all pages were measured. Three one-band pages were excluded only from

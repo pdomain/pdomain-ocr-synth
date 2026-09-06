@@ -148,7 +148,7 @@ with it.
 - [F2 silently rejoins line-break hyphens](2026-09-03-pgdp-f2-line-break-hyphens.md) — the theory
   this finding replaced as the main explanation of over-split, and the largest named cause of the
   residual once this fix landed.
-- [M15d font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
+- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
   — Gate 6, and the 0.72 ceiling this finding corrects.
 - [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md)
   — the disagreement that survives this finding's fix, attributed.

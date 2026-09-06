@@ -1,5 +1,5 @@
 ---
-kind: handoff
+kind: archive
 status: "retired"
 created: "2026-09-03"
 created_at: "2026-09-03T03:15:00Z"
@@ -12,7 +12,10 @@ supersedes: "2026-09-02-210255-m15b-residuals-fixed-and-contracts-decision.md"
 handoff_reason: milestone_partial
 superseded_by: "2026-09-04-014500-m15d-word-gap-v2-complete.md"
 host: claude-code
+last_verified: "2026-09-06"
 ---
+
+> **Retired — superseded by `docs/_archive/handoff/2026-09-04-014500-m15d-word-gap-v2-complete.md`.**
 
 # M15d ships font-free typography; one gate fails in two books
 
@@ -25,7 +28,7 @@ host: claude-code
 Add a local `typography-pgdp` command that measures typographic observables from
 aligned ink and pools them per book and per page class, using no font candidates
 at all. All eight tasks of
-[the plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
+[the plan](../../architecture/pgdp-font-free-typography.md)
 landed. The plan is `partial` because Gate 6 fails in two of five books.
 
 ## What landed
@@ -105,7 +108,7 @@ without that measurement would be tuning against one book.
 is below the optimum in all five books, so it splits inside words at letter
 gaps. A per-page threshold from the page's own gap distribution lifts the worst
 book from 0.217 to 0.814 and clears the floor everywhere. See [the word-gap
-threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md). Not
+threshold finding](../../research/2026-09-03-word-gap-threshold-is-too-low.md). Not
 implemented: it moves word segmentation to a v2 algorithm version and
 invalidates the corpus numbers and fixtures recorded above.
 
@@ -170,10 +173,10 @@ This repo still has unpushed commits on `master`. Nothing here was pushed.
 
 ## Pointers
 
-- [the M15d plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
-- [Word-gap threshold is too low](../research/2026-09-03-word-gap-threshold-is-too-low.md)
-- [F2 line-break hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
-- [the typography design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
+- [the M15d plan](../../architecture/pgdp-font-free-typography.md)
+- [Word-gap threshold is too low](../../research/2026-09-03-word-gap-threshold-is-too-low.md)
+- [F2 line-break hyphens](../../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
+- [the typography design](../../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
 - [previous handoff](2026-09-02-210255-m15b-residuals-fixed-and-contracts-decision.md)
 - `/workspaces/pdomain/.m15d-evidence/gates.json` — every gate number
 - `/workspaces/pdomain/.m15d-evidence/gate4-sheets/` — the 21 review sheets

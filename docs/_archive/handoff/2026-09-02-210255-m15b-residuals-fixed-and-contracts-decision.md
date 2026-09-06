@@ -1,5 +1,5 @@
 ---
-kind: handoff
+kind: archive
 status: "retired"
 created: "2026-09-02"
 created_at: "2026-09-02T21:02:55Z"
@@ -12,7 +12,10 @@ supersedes: "2026-08-31-183553-m15b-gates-pass-and-merged.md"
 handoff_reason: user_requested
 superseded_by: "2026-09-03-031500-m15d-typography-shipped-partial.md"
 host: claude-code
+last_verified: "2026-09-06"
 ---
+
+> **Retired — superseded by `docs/_archive/handoff/2026-09-03-031500-m15d-typography-shipped-partial.md`.**
 
 # M15b residuals fixed, and this repo keeps its F2 parser
 
@@ -91,4 +94,4 @@ venv directories the way `pdomain-book-tools` always did.
 ## Pointers
 
 - [previous handoff](2026-08-31-183553-m15b-gates-pass-and-merged.md)
-- [book-contracts extraction plan](../../../pdomain-ops/docs/plans/2026-09-01-extract-book-contracts-and-retire-pd-repos.md)
+- Book-contracts extraction plan: `../pdomain-ops/docs/plans/2026-09-01-extract-book-contracts-and-retire-pd-repos.md`

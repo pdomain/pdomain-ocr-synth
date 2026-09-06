@@ -193,10 +193,9 @@ compositor set.
 
 ## Related
 
-- [PGDP font-free typographic observables](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
-  and [the OCR witness for continuation
-  fragments](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md), the two plans
-  this document promotes.
+- The two plans this document promotes, `2026-09-02-pgdp-font-free-typographic-observables`
+  and `2026-09-04-pgdp-ocr-witness-for-continuation-fragments`, were retired on 2026-09-06.
+  Their tombstones are in [decisions](../context/decisions.md).
 - [The word-gap threshold finding](../research/2026-09-03-word-gap-threshold-is-too-low.md).
 - [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md).
 - [F2 silently joins line-break hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md).

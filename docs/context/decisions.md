@@ -256,3 +256,84 @@ five whole-book `pgdp-alignment/v3` runs summarized in `.m15b-evidence/wholebook
   contracts are in the replacement architecture.
 - Remaining work: M15b and later measurement and synthesis milestones remain in
   `docs/context/intent-map.md`; the observed-geometry slice itself has none.
+
+### 2026-09-06 Retired: PGDP source-line alignment implementation plan
+
+- Old path: `docs/plans/2026-08-23-pgdp-source-line-alignment.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-source-line-alignment.md`
+- Removal commit: the unique local commit with subject
+  `docs(plans): retire the five shipped PGDP plans` (resolve with
+  `git log --grep='^docs(plans): retire the five shipped PGDP plans$'`).
+- Rationale kept: the shipped tokenizer, candidate extraction, dynamic-programming alignment,
+  acceptance gates, and per-book admission contracts are in the replacement architecture.
+- Note on status: the plan carried `status: partial` with 36 unticked task boxes at retirement.
+  Those boxes are TDD checklist scaffolding, not residual scope. The code shipped and all three
+  gates pass at precision 1.0000 over 760 rows.
+- Remaining work: none for this slice. M15c rectification stays reserved and unstarted.
+
+### 2026-09-06 Retired: PGDP fragmented-band correction plan
+
+- Old path: `docs/plans/2026-08-31-pgdp-fragmented-band-correction.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-source-line-alignment.md`
+- Removal commit: the unique local commit with subject
+  `docs(plans): retire the five shipped PGDP plans` (resolve with
+  `git log --grep='^docs(plans): retire the five shipped PGDP plans$'`).
+- Rationale kept: the cluster merge, minor-ink filter, and dominant-cluster candidate with its
+  page-level rate limit are in the replacement architecture, together with the reason version 1
+  rejected ordinary text pages over punctuation and dust.
+- Remaining work: none.
+
+### 2026-09-06 Retired: PGDP page classification plan
+
+- Old path: `docs/plans/2026-08-31-pgdp-page-classification.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-observed-geometry-profiling.md` for template fitting and
+  page classes, and `docs/architecture/pgdp-source-line-alignment.md` for running-head
+  suppression.
+- Removal commit: the unique local commit with subject
+  `docs(plans): retire the five shipped PGDP plans` (resolve with
+  `git log --grep='^docs(plans): retire the five shipped PGDP plans$'`).
+- Rationale kept: per-book template fitting, the four page classes, furniture suppression, and
+  the two template-fitting defects that raised classified pages from 527 of 1385 to 1165 are in
+  the replacement architecture.
+- Remaining work: none.
+
+### 2026-09-06 Retired: PGDP font-free typographic observables plan
+
+- Old path: `docs/plans/2026-09-02-pgdp-font-free-typographic-observables.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-font-free-typography.md`
+- Removal commit: the unique local commit with subject
+  `docs(plans): retire the five shipped PGDP plans` (resolve with
+  `git log --grep='^docs(plans): retire the five shipped PGDP plans$'`).
+- Rationale kept: the profile-hash refusal, the per-page mask reproduction check, the font-free
+  per-line measurements, two-stage pooling, and the `ink-profile-word-runs/v2` word segmentation
+  with its valley-depth guard are in the replacement architecture. The three research findings it
+  produced stay live in `docs/research/`.
+- Remaining work: none for the slice. The word-gap residual it attributed is recorded in
+  `docs/research/2026-09-04-what-word-reconciliation-still-misses.md`.
+
+### 2026-09-06 Retired: PGDP OCR witness for continuation fragments plan
+
+- Old path: `docs/plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/pgdp-font-free-typography.md`
+- Removal commit: the unique local commit with subject
+  `docs(plans): retire the five shipped PGDP plans` (resolve with
+  `git log --grep='^docs(plans): retire the five shipped PGDP plans$'`).
+- Rationale kept: the optional `--geometry` flag, the byte-identical behaviour without it, the
+  torch-free provenance discipline, and the measured effect on reconciliation are in the
+  replacement architecture.
+- Remaining work: none.
+
+### 2026-09-06 Kept live: PGDP per-book glyph inventory plan
+
+- Path: `docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md`
+- Outcome: shipped with a gate open, so not a retirement candidate
+- Current truth: `docs/architecture/pgdp-glyph-inventory.md` records the shipped contract and
+  states Gate 3 as failing at 0.978 pooled against a floor of 0.98.
+- Why it stays: retirement policy admits only evidence-backed implemented plans. This plan holds
+  live work that the architecture doc does not own: closing Gate 3, the 490 unreviewed
+  flat-ascender words, and the atlas-in-repository policy that decision 1 left due.

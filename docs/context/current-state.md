@@ -160,7 +160,7 @@ lines, and discounting them lifts agreement with the transcription by 3.0 to
 7.0 points, to 0.860, 0.772, 0.632, 0.870, and 0.847. That is reported beside
 Gate 6 and does not replace it. Two methods that share no evidence agree on the
 fragment rate within 1.1 points. See [the witness
-plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md).
+plan](../architecture/pgdp-font-free-typography.md).
 
 The report also carries per-gap accuracy, added on 2026-09-04. Gate 6 counts
 lines and a line carries six to twelve word gaps, so one bad gap fails the whole

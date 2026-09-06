@@ -254,9 +254,9 @@ every measurement comes from one page's own geometry.
   `tests/test_pgdp_alignment.py`, `tests/test_pgdp_alignment_review.py`,
   `tests/test_pgdp_alignment_fixtures.py`, `tests/test_pgdp_page_templates.py`, and
   `tests/test_cli_align_pgdp.py`.
-- Plans: `docs/plans/2026-08-23-pgdp-source-line-alignment.md`,
-  `docs/plans/2026-08-31-pgdp-fragmented-band-correction.md`, and
-  `docs/plans/2026-08-31-pgdp-page-classification.md`.
+- Plans: retired on 2026-09-06 with tombstones in [decisions](../context/decisions.md);
+  they were `2026-08-23-pgdp-source-line-alignment`,
+  `2026-08-31-pgdp-fragmented-band-correction`, and `2026-08-31-pgdp-page-classification`.
 - Specs: `docs/specs/2026-08-23-pgdp-source-line-alignment-design.md`,
   `docs/specs/2026-08-31-pgdp-whole-book-page-templates-design.md`, and
   `docs/specs/2026-08-31-pgdp-whole-book-yield-gate-design.md`.

@@ -1,5 +1,5 @@
 ---
-kind: handoff
+kind: archive
 status: "retired"
 created: "2026-09-04"
 created_at: "2026-09-04T01:45:00Z"
@@ -13,7 +13,10 @@ supersedes: "2026-09-03-031500-m15d-typography-shipped-partial.md"
 handoff_reason: milestone_complete
 superseded_by: "2026-09-04-093000-ocr-witness-shipped.md"
 host: claude-code
+last_verified: "2026-09-06"
 ---
+
+> **Retired — superseded by `docs/_archive/handoff/2026-09-04-093000-ocr-witness-shipped.md`.**
 
 # M15d is complete: the word-gap threshold now comes from each book's own gaps
 
@@ -24,7 +27,7 @@ host: claude-code
 
 Word segmentation moved to `ink-profile-word-runs/v2`. Gate 6, the one gate M15d
 failed, now passes in all five books, so
-[the plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md) moves
+[the plan](../../architecture/pgdp-font-free-typography.md) moves
 from `partial` to `complete`.
 
 The v1 rule, `max(2, round(0.25 * x_height_px))`, sat below the swept optimum in
@@ -92,7 +95,7 @@ Under v1 one book did not converge within 100.
 ## Three things the finding did not settle, settled here
 
 **Book-level, not per-page.** The
-[research finding](../research/2026-09-03-word-gap-threshold-is-too-low.md)
+[research finding](../../research/2026-09-03-word-gap-threshold-is-too-low.md)
 concluded the fix had to be per-page. Measured head to head over the same lines, a
 per-book threshold scores 0.811, 0.741, 0.620, 0.803, 0.783 and a per-page one
 scores 0.802, 0.751, 0.608, 0.814, 0.790. Book-level wins in three of five and no
@@ -135,7 +138,7 @@ corpus run applies to that book rather than a round number.
 
 **The residual disagreement was attributed after this handoff was first written.**
 See [what word reconciliation still
-misses](../research/2026-09-04-what-word-reconciliation-still-misses.md). The
+misses](../../research/2026-09-04-what-word-reconciliation-still-misses.md). The
 detector gets 91.5 to 97 percent of individual word gaps right, against the 59 to
 81 percent of lines Gate 6 reports, because a line carries six to twelve gaps and
 one bad gap fails it. PGDP text is not adding words: across all five books only 12
@@ -150,7 +153,7 @@ been retracted on 2026-09-03 against a residual a broken threshold dominated;
 fixing the threshold changed the denominator. Its page-boundary control was
 underpowered rather than negative: the expected effect is about 5 points against
 a standard error of 3 to 7. See [the hyphen
-finding](../research/2026-09-03-pgdp-f2-line-break-hyphens.md).
+finding](../../research/2026-09-03-pgdp-f2-line-break-hyphens.md).
 
 **Gate 4 is still model-reviewed**, as decision 7 settled. Whether the 210 sheets
 in `.m15d-evidence/gate4-sheets/` want a human pass is unanswered. This is the one
@@ -190,17 +193,17 @@ from F2 alone can be blind to exactly the thing being looked for.
 2. Decide whether reported word-box quality should be per-gap rather than
    per-line. Gate 6 itself should stay as it is; it did its job.
 3. Approve or reject [the OCR witness
-   plan](../plans/2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md),
+   plan](../../architecture/pgdp-font-free-typography.md),
    scoped on 2026-09-04. It carries four open decisions and needs no OCR engine,
    model, or new dependency in this repo: the project's own fine-tuned doctr
    records already cover all five books and pin to the same page hashes.
 
 ## Pointers
 
-- [the M15d plan](../plans/2026-09-02-pgdp-font-free-typographic-observables.md)
-- [Word-gap threshold is too low](../research/2026-09-03-word-gap-threshold-is-too-low.md)
-- [F2 line-break hyphens](../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
-- [the typography design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
+- [the M15d plan](../../architecture/pgdp-font-free-typography.md)
+- [Word-gap threshold is too low](../../research/2026-09-03-word-gap-threshold-is-too-low.md)
+- [F2 line-break hyphens](../../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
+- [the typography design](../../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
 - [previous handoff](2026-09-03-031500-m15d-typography-shipped-partial.md)
 - `/workspaces/pdomain/.m15d-evidence/gates.json` — every v2 gate number
 - `/workspaces/pdomain/.m15d-evidence/gates-v1-word-runs.json` — the v1 numbers
@@ -210,4 +213,4 @@ from F2 alone can be blind to exactly the thing being looked for.
 - `/workspaces/pdomain/.m15d-evidence/attribution*.json` — the residual, attributed
 - `/workspaces/pdomain/.m15d-evidence/fragment-test.json` — the leading-fragment repair test
 - `/workspaces/pdomain/.m15d-evidence/widegap-sheets/` — the crops that identified the mechanism
-- [What word reconciliation still misses](../research/2026-09-04-what-word-reconciliation-still-misses.md)
+- [What word reconciliation still misses](../../research/2026-09-04-what-word-reconciliation-still-misses.md)

@@ -17,9 +17,9 @@ delivery scaffolding. Each item cites its source document or replacement.
 ## Active
 
 - M15b source-line alignment is measured and passing: precision 1.0000 over 760 rows, no
-  accepted declared-complex page, and all five review books admitted ([page
-  classification plan](../plans/2026-08-31-pgdp-page-classification.md), [fragmented-band correction
-  plan](../plans/2026-08-31-pgdp-fragmented-band-correction.md), [ocr-container-meta issue
+  accepted declared-complex page, and all five review books admitted ([source-line
+  alignment](../architecture/pgdp-source-line-alignment.md), [observed geometry
+  profiling](../architecture/pgdp-observed-geometry-profiling.md), [ocr-container-meta issue
   403](https://github.com/ConcaveTrillion/ocr-container-meta/issues/403)).
 - Both previously known alignment errors are fixed. Three band-identification defects caused
   them: head-band selection picked by ordinal rather than position, a decorative rule was

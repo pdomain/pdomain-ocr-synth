@@ -380,9 +380,9 @@ behind.
 
 ## Related
 
-- [M15d font-free typographic observables](2026-09-02-pgdp-font-free-typographic-observables.md)
+- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
   — the word boxes this cuts from, and the latent discipline it inherits.
-- [PGDP OCR witness for continuation fragments](2026-09-04-pgdp-ocr-witness-for-continuation-fragments.md)
+- [PGDP font-free typography, OCR witness](../architecture/pgdp-font-free-typography.md)
   — the same provenance pattern, and the reason reconciliation is trustworthy.
 - `/workspaces/pdomain/.m15f-evidence/` — the measured per-book coverage this plan is written
   against, and `next-loop-prompt.md`, the execution brief for an unattended run.
