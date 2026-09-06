@@ -184,7 +184,7 @@ the review sheets the label gates were read from.
 | --- | --- | --- | --- |
 | 1. Determinism | byte-identical | five of five inventory directories identical across two runs, atlas PNGs included | pass |
 | 2. Provenance | exact | every row unique on page, tier, line, word and glyph ordinal; every row's page in the manifest table; a profile that does not hash to the alignment's value is refused | pass |
-| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs drawn at random across all five books, 14 wrong, 0.987 pooled; per book 1.000, 1.000, 0.990, **0.962**, 0.981 | **fail on one book** |
+| 3. Label correctness, `transcribed` | 0.98 over 200+ across 3+ books | 1,050 glyphs drawn at random across all five books, 23 wrong, **0.978 pooled**; per book 1.000, 0.995, 0.990, **0.962**, **0.943**. Filtering the three quality flags gives 0.992 pooled and every book passing | **fail** |
 | 3b. Label correctness, `recognized` | 0.90 over 100+ | 340 furniture glyphs reviewed across two books, 0 wrong, 1.000 | pass |
 | 4. Lowercase coverage | all 26 per book | no book misses a letter | pass |
 | 4b. Digit coverage | 20 per book | 83 to 1,879 per book | pass |
@@ -193,63 +193,39 @@ the review sheets the label gates were read from.
 | 6. Atlas reproduction | exact | re-rendering from the JSONL reproduced all 900 sheets byte for byte | pass |
 | 7. Latent discipline | none | no manifest or row key claims font identity, point size, advance, side bearing or tracking | pass |
 
-## Gate 3 fails on one book
+## Gate 3 fails
 
-**Re-drawing the sample at random changed the answer.** The first pass took the first 30 rows per
-character in page order, so it read only each book's earliest pages. Drawn at random under a fixed
-seed, the same 1,050 glyphs give 21 wrong instead of 6:
+Reviewed on 2026-09-06 at a legible scale, 30 glyphs each for `a e h n o s t` per book drawn at
+random under seed 20260905:
 
-| book | wrong before the line check | after | rate | verdict |
+| book | wrong | rate | filtered | verdict |
 | --- | ---: | ---: | ---: | --- |
-| projectID657550412c8dc | 0 | 0 | 1.000 | pass |
-| projectID609bfa0449bdf | 2 | 0 | 1.000 | pass |
-| projectID64a479f51ce5b | 4 | 2 | 0.990 | pass |
-| projectID67a80fde44d34 | 3 | 4 | 0.981 | pass |
-| projectID603d7d5e04ca0 | 12 | 8 | **0.962** | **fail** |
+| projectID657550412c8dc | 0 | 1.000 | 1.000 | pass |
+| projectID609bfa0449bdf | 1 | 0.995 | 0.995 | pass |
+| projectID64a479f51ce5b | 2 | 0.990 | 0.995 | pass |
+| projectID603d7d5e04ca0 | 8 | **0.962** | 0.981 | **fail** |
+| projectID67a80fde44d34 | 12 | **0.943** | 0.990 | **fail** |
+| pooled | 23 | **0.978** | 0.992 | **fail** |
 
-Checking every line against the recognizer, accepted pages included, took the pooled figure from
-0.980 to 0.987 and `projectID603d7d5e04ca0` from 0.943 to 0.962. That book is still under the 0.98
-floor, so the gate fails there and the plan does not close on it.
+Two books fail and the pooled figure fails, at 0.978 against a floor of 0.98.
 
-**What the line check fixed.** The wrong-ink bindings are gone: those lines scored 0.00 to 0.17
-word agreement against the recognizer and are now rejected, at a cost of 1.4 to 11.1 percent of
-matched lines per book.
+**An earlier pass of the same sample scored this too high, and the cause was the review, not the
+inventory.** Rendered thirty cells to a row, a bare stem cut from an `h` is indistinguishable from
+a whole letter; at fifteen to a row it is obvious. `projectID67a80fde44d34` scored 4 wrong at the
+coarse scale and 12 at the legible one. Any later review should render at most fifteen cells a row.
 
-**What remains is flagged, all of it.** A second measure closed the rest. An x-height letter that
-runs at least 1.35 times the median height of its line's own x-height letters is flagged
-`overtall`, which catches a box holding several letters and a capital where the label says
-lowercase. The reference has to be the line's own ink: normalised by the line's *fitted* x-height
-the tail runs to 5.33 and 13 of 16 outliers are correctly labelled glyphs on lines whose estimate
-was wrong, so it measures the estimator. Against the line's own letters the median is 1.00, the
-95th percentile 1.02 to 1.08, and 12 of 16 outliers are genuine label errors.
+**The three quality flags catch 15 of the 23, with three false positives across 1,050 cells.**
+Dropping flagged glyphs takes the pooled figure to 0.992 and every book over the floor, at a cost
+of 18 of 1,050 sampled glyphs. That is not the gate passing: the gate measures the inventory as
+shipped, and moving it to measure a filtered subset would be weakening it. It is what a consumer
+gets for one line of filtering.
 
-Filtering `flat_ascender` and `overtall` together, the same random sample of
-`projectID603d7d5e04ca0` reads **210 of 210 correct**, against 0.962 unfiltered. The two flags
-cover 0.28 to 2.64 percent of glyphs per book, 0.79 percent across the corpus.
+The eight that survive filtering are boxes holding a letter and part of its neighbour, which is
+neither narrow nor tall enough to trip anything: `t14` cut from `th`, `e29` from `eee`, `s12` from
+an `s` and its comma. A width test does not separate them, measured: they sit at 1.06 to 1.15
+times their character's median width, inside the ordinary spread.
 
-**So the gate's verdict now depends on what it measures.** Read against the inventory as shipped
-it is 0.962 and fails. Read against the inventory with its own quality flags applied it is 1.000
-in the sample. Every error the review found is flagged, which was not true before. Redefining the
-gate to measure the filtered inventory would be weakening it without CT's say-so, so it stays open
-with both numbers recorded. What is no longer true is that this book has an unfindable defect.
-
-**Reviewing the queue found a worse defect than the one it was built for.** Classifying the first
-20 of `projectID603d7d5e04ca0`'s 180 flat words: 7 are small capitals PGDP never marked, 3 are bad
-cuts or false positives, and **10 are a word bound to the wrong ink entirely** — `They` cut from
-WILL, `and` from `side,`, `being` from `morning,`, `off` from `her`, `of` from a quotation mark.
-Every glyph in such a word carries the wrong character.
-
-Those bindings are not caused by harvesting every page. The flat-word rate per admitted line on
-recognizer-admitted lines is 0.0037 to 0.0216, against 0.0061 to 0.0496 on accepted lines: lower
-in three books of five. They are a pre-existing defect on accepted pages that no gate had
-surfaced, because word-level agreement against the OCR read scores 0.9965 and a shifted binding
-still reads as a real word somewhere on the line.
-
-One class stays invisible to both flags: small capitals, which sit at x-height by definition and
-so are neither flat nor overtall when they fill a whole line. Those need shape evidence,
-connected-component or otherwise, and are a slice of their own. A consumer wanting the highest
-label correctness available today should drop `flat_ascender` and `overtall` glyphs, which costs
-under 1 percent of the corpus.
+Gate 3 is model-reviewed, not human-reviewed.
 
 Gate 3 is model-reviewed, not human-reviewed. Sheets of 30 samples each for `a e h n o s t` were
 rendered from the scans at 7x and read by eye; the six errors are a `g` labelled `a`, a `Th`

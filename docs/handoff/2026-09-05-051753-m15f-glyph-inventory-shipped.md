@@ -17,13 +17,14 @@ host: claude-code
 
 ## Read this first
 
-**Gate 3 fails on one book and the plan does not close.** Everything below shipped and works, but
-`projectID603d7d5e04ca0` reads 0.962 label correctness against a 0.98 floor. Four books pass at
-0.981 to 1.000 and the pooled figure is 0.987. Details in "Gate 3 fails on one book" below.
+**Gate 3 fails and the plan does not close.** I reviewed all 1,050 sampled glyphs on 2026-09-06
+and the pooled figure is 0.978 against a floor of 0.98. Two books fail:
+`projectID67a80fde44d34` at 0.943 and `projectID603d7d5e04ca0` at 0.962. The other three pass at
+0.990 to 1.000. Verdicts are in `.m15f-evidence/gate3-*.csv`, scored into `gate3-review.json`.
 
-The wrong-ink bindings found in this session are fixed: every line is now checked against the
-recognizer, accepted pages included, which took that book from 0.943 to 0.962 and the pool from
-0.980 to 0.987. What remains is capitals labelled lowercase.
+Filtering the three quality flags takes the pooled figure to 0.992 and every book over the floor,
+at a cost of 18 of 1,050 sampled glyphs. That is what a consumer gets for one line of filtering,
+not the gate passing: the gate measures the inventory as shipped.
 
 ## What changed
 
@@ -246,12 +247,11 @@ a call is comfortable.
 
 ## Resume steps
 
-1. **Decide what Gate 3 measures.** It reads 0.962 against the inventory as
-   shipped and 1.000 with `flat_ascender` and `overtall` filtered, on the same
-   random sample of the worst book. Filtering costs 0.79 percent of the corpus.
-   Either the gate measures the filtered inventory and passes, or the flagged
-   glyphs stop being emitted at all, or the book is accepted at a stated lower
-   number. That call is yours; I did not want to redefine the gate to pass it.
+1. **Nothing here needs a decision from you.** Gate 3 fails at 0.978 pooled and
+   that is the recorded result. The flags are how a consumer gets to 0.992. The
+   remaining engineering is the eight errors filtering does not catch, all of
+   them a box holding a letter plus part of its neighbour, and small capitals,
+   which need shape evidence.
 2. **Two page-level signals are now recorded and unused.** The manifest's page
    table carries each page's `page_class`, its lines' x-height median, and their
    spread. Spread over about 8 px marks a mixed-size page and is 43 to 67
