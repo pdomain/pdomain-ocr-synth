@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-05"
+kind: archive
+status: retired
 created_at: "2026-09-05T05:17:53Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "d7df685"
 supersedes: "2026-09-04-093000-ocr-witness-shipped.md"
-handoff_reason: stopping
-host: claude-code
+handoff_reason: "stopping"
+host: "claude-code"
+created: "2026-09-05"
+last_verified: "2026-09-06"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-06-140411-m15f-gate3-open-and-five-quality-flags.md`.**
+
 
 # The glyph inventory ships, and every review of it found something
 
