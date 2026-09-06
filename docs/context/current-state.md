@@ -209,7 +209,7 @@ geometrically: against lines PGDP itself marks `<sc>`, x-height reads the same a
 roman lines in both books tested. And the shape check has a blind list a finer
 grid does not fix, holding at 14, 15, and 14 pairs across three grid sizes.
 
-## The measurement chain runs on a stale alignment report
+## The shipped reports run on a stale alignment, and the re-run confirms 713
 
 M15d, M15e, and M15f all ran against the `alignment-t2-*` reports, written on
 2026-08-31 between 17:59 and 18:18. The three band-identification fixes landed in
@@ -218,12 +218,17 @@ raised accepted pages from 665 to 713, moved 35 pages out of `unknown`, raised
 accepted-line precision from 0.9974 to 1.0000, and cut accepted pages where a
 dense thin band bound a source line from four to zero.
 
-So the typography and glyph inventories are built on 665 pages of an alignment
-that now accepts 713, and on bindings the fixes were written to remove.
-Re-running the chain is untried and its effect is unmeasured. The operating note
-repeated in three handoffs, "use the `alignment-t2-*` reports", is now
-misleading; it was written when t2 was the only report carrying the
-page-classification fixes.
+The chain was re-run at `f9fdfef` on 2026-09-06 and reproduced 713 exactly:
+215, 227, 76, 157, and 38 accepted pages across the five books, a gain of 48
+over the 665 in the t2 reports, with 38 of those in `projectID603d7d5e04ca0`.
+So the shipped typography and glyph inventories are built on 665 pages of an
+alignment that accepts 713, and on bindings the fixes were written to remove.
+Fresh reports for all five books sit in `/workspaces/pdomain/.extraction-baseline/`;
+their effect on the downstream numbers is still uncompared.
+
+The operating note repeated in three handoffs, "use the `alignment-t2-*`
+reports", is now misleading; it was written when t2 was the only report carrying
+the page-classification fixes.
 
 ## A split is proposed and not yet decided
 

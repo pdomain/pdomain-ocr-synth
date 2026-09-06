@@ -96,9 +96,9 @@ current alignment, which accepts 713 pages against the 665 the old reports carry
 **Interfaces:**
 
 - Produces: one directory per book per stage, and `baseline-manifest.txt`, a sorted list of
-  `sha256  path` lines that Task 6 compares against.
+  `sha256  path` lines that Task 5 compares against.
 
-- [ ] **Step 1: Record the exact commit the baseline is captured at**
+- [x] **Step 1: Record the exact commit the baseline is captured at**
 
 ```bash
 mkdir -p /workspaces/pdomain/.extraction-baseline
@@ -110,20 +110,59 @@ git status --porcelain > /workspaces/pdomain/.extraction-baseline/BASELINE_TREE_
 Expected: `BASELINE_TREE_STATE` is empty. A dirty tree invalidates the baseline. Stop and clean it
 if it is not empty.
 
-- [ ] **Step 2: Write the capture script**
+- [x] **Step 2: Write the capture script**
 
-Create `/workspaces/pdomain/.extraction-baseline/capture.sh`. Run one book per invocation,
-because a book harvests in 1 to 10 minutes and a single Bash call is capped at ten minutes.
+**A book is isolated by cutting the ranking, not by a command-line flag.** Neither `rank-pgdp` nor
+`profile-pgdp` takes a book selector — `corpus_root` is their only positional argument. So the
+corpus is ranked once with every page of every project, and that ranking is cut down to one
+project before profiling. This is the chain that produced the M15b through M15f reports; the
+cutter below is `.m15b-evidence/build_wholebook_ranking.py`, which wrote the
+`ranking-wholebook-<ID>.json` files those runs consumed.
+
+First create `/workspaces/pdomain/.extraction-baseline/cut_book_ranking.py`:
+
+```python
+"""Cut a full ranking down to one project, keeping every page, for whole-book runs.
+
+Usage: cut_book_ranking.py <full-ranking.json> <project_id> <output.json>
+"""
+
+import json
+import sys
+from pathlib import Path
+
+full = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+project_id = sys.argv[2]
+project = next(p for p in full["projects"] if p["project_id"] == project_id)
+payload = {
+    **full,
+    "limits": {
+        **full["limits"],
+        "project_limit": 1,
+        "pages_per_project": len(project["pages"]),
+    },
+    "projects": [project],
+    "diagnostics": [],
+}
+Path(sys.argv[3]).write_text(
+    json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+    encoding="utf-8",
+)
+print(project_id, len(project["pages"]))
+```
+
+Then create `/workspaces/pdomain/.extraction-baseline/capture.sh`. Run one book per invocation,
+because a single Bash call is capped at ten minutes.
 
 ```bash
 #!/usr/bin/env bash
 # Capture one book's full measurement chain at the current commit.
-# Usage: capture.sh <BOOK_ID>
+# Usage: capture.sh <BOOK_ID> [OUT_DIR]
 set -euo pipefail
 
 BOOK="$1"
+OUT="${2:-/workspaces/pdomain/.extraction-baseline}"
 CORPUS=/workspaces/pdomain-data/pgdp-corpus
-OUT=/workspaces/pdomain/.extraction-baseline
 SYNTH=/workspaces/pdomain/pdomain-ocr-synth
 # The OCR witness records are one JSONL per book, produced by pdomain-source-data.
 GEOM="/workspaces/pdomain-data/typography/geometry-v1/${BOOK}.jsonl"
@@ -132,8 +171,14 @@ GEOM="/workspaces/pdomain-data/typography/geometry-v1/${BOOK}.jsonl"
 cd "$SYNTH"
 mkdir -p "$OUT/$BOOK"
 
-uv run pdomain-ocr-synth rank-pgdp "$CORPUS" \
-  --output "$OUT/$BOOK/ranking.json" --project-limit 50 --pages-per-project 12
+# The corpus-wide ranking is shared by every book. Build it once per OUT dir.
+FULL="$OUT/ranking-full-allpages.json"
+if [ ! -f "$FULL" ]; then
+  uv run pdomain-ocr-synth rank-pgdp "$CORPUS" \
+    --output "$FULL" --project-limit 5000 --pages-per-project 5000
+fi
+
+python3 "$OUT/cut_book_ranking.py" "$FULL" "$BOOK" "$OUT/$BOOK/ranking.json"
 
 uv run pdomain-ocr-synth profile-pgdp "$CORPUS" \
   --ranking "$OUT/$BOOK/ranking.json" --output "$OUT/$BOOK/profile.json" --whole-book
@@ -154,24 +199,47 @@ echo "captured $BOOK"
 
 Then `chmod +x /workspaces/pdomain/.extraction-baseline/capture.sh`.
 
-- [ ] **Step 3: Capture the four smaller books, one call each**
+The corpus-wide rank takes about 13 seconds and yields 328 ranked projects and 84,944 pages. The
+five books carry 98, 237, 312, 312, and 426 pages, matching the M15b whole-book rankings exactly.
+
+**The ranking is a frozen input, not something Task 5 regenerates.** `/workspaces/pdomain-data/pgdp-corpus`
+is live and gained two projects during this capture, moving `projects_seen` from 330 to 332 and
+`projects_ranked` from 328 to 330. Those counts sit in the ranking header, so its sha256 changes,
+and that sha is chained into `profile.json`, then `alignment.json`, then `typography.json` and
+`inventory/manifest.json`. A single new project in the corpus therefore breaks byte identity at
+five files without a single measured value changing.
+
+So Task 5 copies `ranking-full-allpages.json` from the baseline rather than re-ranking. The
+`if [ ! -f "$FULL" ]` guard above exists for exactly this: seed the file and the rank is skipped.
+`rank-pgdp` still gets its own identity check, described in Task 5, comparing per-project entries
+rather than the corpus-wide header.
+
+- [x] **Step 3: Capture all five books**
 
 ```bash
 /workspaces/pdomain/.extraction-baseline/capture.sh projectID67a80fde44d34
 ```
 
-Repeat, one Bash call per book, for `projectID64a479f51ce5b`, `projectID657550412c8dc`, and
-`projectID609bfa0449bdf`.
+One background Bash call per book, for `projectID67a80fde44d34`, `projectID64a479f51ce5b`,
+`projectID657550412c8dc`, `projectID609bfa0449bdf`, and `projectID603d7d5e04ca0`.
 
-- [ ] **Step 4: Capture the largest book alone**
+The ten-minute cap applies to foreground calls only, so all five ran concurrently in the
+background. On a 20-core box each stage stayed under 1 GB resident. Wall clock was 230, 579, 625,
+724, and 1032 seconds, the last being the 426-page book.
+
+- [x] **Step 4: Confirm every book exited clean**
 
 ```bash
-/workspaces/pdomain/.extraction-baseline/capture.sh projectID603d7d5e04ca0
+D=/workspaces/pdomain/.extraction-baseline
+for B in projectID67a80fde44d34 projectID64a479f51ce5b projectID657550412c8dc \
+         projectID609bfa0449bdf projectID603d7d5e04ca0; do
+  echo "$B $(grep -o 'exit=[0-9]*' "$D/$B.log" | tail -1) $(find "$D/$B" -type f | wc -l)"
+done
 ```
 
-Run this in its own call with nothing else. It is the slowest book.
+Expected: `exit=0` for all five, and 104, 217, 222, 196, and 192 files.
 
-- [ ] **Step 5: Build the baseline manifest**
+- [x] **Step 5: Build the baseline manifest**
 
 ```bash
 cd /workspaces/pdomain/.extraction-baseline
@@ -180,28 +248,30 @@ find . -type f \( -name '*.json' -o -name '*.jsonl' -o -name '*.png' \) -print0 
 wc -l baseline-manifest.txt
 ```
 
-Expected: several thousand lines, including every atlas PNG.
+Expected: 927 lines at the 2026-09-06 baseline, covering the five books' reports, glyph
+inventories, and atlas PNGs, plus the shared `ranking-full-allpages.json` at the root.
 
-- [ ] **Step 6: Prove the baseline is itself reproducible**
+- [x] **Step 6: Prove the baseline is itself reproducible**
 
 Re-run one book into a second directory and compare. If the pipeline is not deterministic today,
 byte identity cannot test the move, and this plan stops here.
 
+**Seed the replay directory with the baseline's ranking.** Letting it re-rank tests the corpus,
+not the code, and the corpus moves.
+
 ```bash
-cd /workspaces/pdomain/pdomain-ocr-synth
-OUT2=/workspaces/pdomain/.extraction-baseline-replay
-mkdir -p "$OUT2"
-sed 's|\.extraction-baseline|.extraction-baseline-replay|' \
-  /workspaces/pdomain/.extraction-baseline/capture.sh > "$OUT2/capture.sh"
-chmod +x "$OUT2/capture.sh"
-"$OUT2/capture.sh" projectID67a80fde44d34
-diff -r /workspaces/pdomain/.extraction-baseline/projectID67a80fde44d34 \
-        "$OUT2/projectID67a80fde44d34" && echo "DETERMINISM HOLDS"
+D=/workspaces/pdomain/.extraction-baseline
+R=/workspaces/pdomain/.extraction-baseline-replay
+mkdir -p "$R"
+cp "$D/ranking-full-allpages.json" "$D/cut_book_ranking.py" "$R/"
+"$D/capture.sh" projectID67a80fde44d34 "$R"
+diff -r "$D/projectID67a80fde44d34" "$R/projectID67a80fde44d34" && echo "DETERMINISM HOLDS"
 ```
 
-Expected: `DETERMINISM HOLDS`, with no diff output.
+Expected: `DETERMINISM HOLDS`, with no diff output. It held on 2026-09-06 across all 104 files,
+atlas PNGs and `glyphs.jsonl` included.
 
-- [ ] **Step 7: Record what the re-run says about the stale-alignment question**
+- [x] **Step 7: Record what the re-run says about the stale-alignment question**
 
 ```bash
 cd /workspaces/pdomain/.extraction-baseline
@@ -216,12 +286,24 @@ for p in sorted(glob.glob('*/alignment.json')):
 PY
 ```
 
-Write the totals into `/workspaces/pdomain/.extraction-baseline/NOTES.md`, beside the figure the
-old reports carried, which was 665 accepted pages against the 713 the fixes produced. This is
-evidence for the intent-map item "re-run the measurement chain on current alignment" and should be
-reported to the owner whatever it shows.
+**Result on 2026-09-06: 713 accepted pages, against the 665 the old reports carry.** The
+band-identification fixes in `c7c63ab` and `aa5c567` are worth 48 pages, and 38 of them are in the
+largest book alone.
 
-- [ ] **Step 8: Commit the note, not the data**
+| book | pages | old accepted | new accepted | delta |
+| --- | ---: | ---: | ---: | ---: |
+| projectID603d7d5e04ca0 | 426 | 177 | 215 | +38 |
+| projectID609bfa0449bdf | 312 | 226 | 227 | +1 |
+| projectID64a479f51ce5b | 237 | 75 | 76 | +1 |
+| projectID657550412c8dc | 312 | 155 | 157 | +2 |
+| projectID67a80fde44d34 | 98 | 32 | 38 | +6 |
+| total | 1385 | 665 | 713 | +48 |
+
+Every typography and glyph number in `.m15b-evidence/` through `.m15f-evidence/` was computed from
+the 665-page alignment. This closes the intent-map item "re-run the measurement chain on current
+alignment". The full write-up is in `/workspaces/pdomain/.extraction-baseline/NOTES.md`.
+
+- [x] **Step 8: Commit the note, not the data**
 
 The baseline lives outside both repositories and is not committed. Only the finding is.
 
@@ -620,8 +702,13 @@ GEOM="/workspaces/pdomain-data/typography/geometry-v1/${BOOK}.jsonl"
 cd "$MEASURE"
 mkdir -p "$OUT/$BOOK"
 
-uv run pgdp-measure rank "$CORPUS" \
-  --output "$OUT/$BOOK/ranking.json" --project-limit 50 --pages-per-project 12
+# The baseline's frozen ranking and cutter. Do not re-rank: the corpus is live,
+# and a new project changes the ranking header sha that every later stage chains.
+BASE=/workspaces/pdomain/.extraction-baseline
+FULL="$OUT/ranking-full-allpages.json"
+cp -n "$BASE/ranking-full-allpages.json" "$FULL"
+cp -n "$BASE/cut_book_ranking.py" "$OUT/"
+python3 "$OUT/cut_book_ranking.py" "$FULL" "$BOOK" "$OUT/$BOOK/ranking.json"
 uv run pgdp-measure profile "$CORPUS" \
   --ranking "$OUT/$BOOK/ranking.json" --output "$OUT/$BOOK/profile.json" --whole-book
 uv run pgdp-measure align "$CORPUS" \
@@ -635,11 +722,41 @@ uv run pgdp-measure glyphs "$CORPUS" \
 echo "verified $BOOK"
 ```
 
-- [ ] **Step 2: Run all five books, one call each**
+- [ ] **Step 2: Run all five books**
 
-One Bash call per book, largest alone, exactly as in Task 0.
+One background Bash call per book, exactly as in Task 0. On a 20-core box all five run
+concurrently under 1 GB each; measured wall clock was 230, 579, 625, 724, and 1032 seconds.
 
-- [ ] **Step 3: Compare against the baseline**
+- [ ] **Step 3: Check `rank` separately, because the corpus moves**
+
+The frozen ranking means Step 2 never exercises `rank`. Test it on its own, comparing per-project
+entries rather than the corpus-wide header, which legitimately changes as the corpus grows.
+
+```bash
+mkdir -p /workspaces/pdomain/.extraction-rank-check
+cd /workspaces/pdomain/pdomain-pgdp-measure
+uv run pgdp-measure rank /workspaces/pdomain-data/pgdp-corpus \
+  --output /workspaces/pdomain/.extraction-rank-check/rank-check.json \
+  --project-limit 5000 --pages-per-project 5000
+python3 - <<'PY2'
+import json
+a = json.load(open('/workspaces/pdomain/.extraction-baseline/ranking-full-allpages.json'))
+b = json.load(open('/workspaces/pdomain/.extraction-rank-check/rank-check.json'))
+ba = {p['project_id']: p for p in a['projects']}
+bb = {p['project_id']: p for p in b['projects']}
+shared = sorted(set(ba) & set(bb))
+differ = [k for k in shared
+          if json.dumps(ba[k], sort_keys=True) != json.dumps(bb[k], sort_keys=True)]
+print('added to corpus since baseline:', sorted(set(bb) - set(ba)))
+print('removed since baseline:', sorted(set(ba) - set(bb)))
+print('shared projects:', len(shared), 'differing:', len(differ), differ[:5])
+PY2
+```
+
+Expected: `differing: 0`. Projects added or removed since the baseline are corpus drift, not a
+finding. Any shared project whose entry differs is a real behaviour change in `rank`.
+
+- [ ] **Step 4: Compare against the baseline**
 
 ```bash
 cd /workspaces/pdomain/.extraction-verify
@@ -655,12 +772,12 @@ Expected: `BYTE IDENTICAL — EXTRACTION IS CLEAN`, with no diff output.
 match. A difference means the move changed behaviour, and the difference itself is the finding.
 Report which files differ and at which stage the chain first diverges.
 
-- [ ] **Step 4: Record the result**
+- [ ] **Step 5: Record the result**
 
 Write the outcome into the new package's `docs/architecture/` or `README.md`, naming the baseline
 commit from Task 0 and stating that all five books reproduced byte for byte.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure

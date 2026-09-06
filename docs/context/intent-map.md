@@ -22,11 +22,13 @@ delivery scaffolding. Each item cites its source document or replacement.
   into `pdomain-ocr-labeler-spa`, leaving this repository to consume labeled datasets. It is the
   largest open question here and every other PGDP item depends on the answer
   ([split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)).
-- **Re-run the measurement chain on current alignment.** M15d, M15e, and M15f were all measured
-  from the `alignment-t2-*` reports, which predate the three band-identification fixes by
-  seventeen commits. Those fixes raised accepted pages from 665 to 713 and removed wrong-ink
-  bindings. The effect on the downstream reports is unmeasured, and it is worth knowing before
-  more geometry work, because the fixes removed the kind of binding Gate 3's failures resemble.
+- **Compare the downstream reports against the re-run chain.** The chain was re-run at `f9fdfef`
+  on 2026-09-06 as Task 0 of the extraction plan, and the alignment question is settled: current
+  code accepts 713 pages against the 665 the `alignment-t2-*` reports carry, a gain of 48 with 38
+  of them in `projectID603d7d5e04ca0` alone. Fresh typography and glyph reports for all five books
+  now exist in `/workspaces/pdomain/.extraction-baseline/`. What remains is comparing them against
+  the M15d through M15f numbers, Gate 3 first, because the band-identification fixes removed the
+  kind of binding its failures resemble.
 - **Close Gate 3, or restate it.** Label correctness on the `transcribed` tier measures 0.978
   against a floor of 0.98, and two of five books fail. Filtering the five quality flags gives
   0.994 with every book clear. Either the gate measures the filtered inventory, or flagged glyphs
