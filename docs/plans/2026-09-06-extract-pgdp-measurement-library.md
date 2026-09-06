@@ -125,7 +125,9 @@ BOOK="$1"
 CORPUS=/workspaces/pdomain-data/pgdp-corpus
 OUT=/workspaces/pdomain/.extraction-baseline
 SYNTH=/workspaces/pdomain/pdomain-ocr-synth
-GEOM="${GEOMETRY_RECORDS:-}"
+# The OCR witness records are one JSONL per book, produced by pdomain-source-data.
+GEOM="/workspaces/pdomain-data/typography/geometry-v1/${BOOK}.jsonl"
+[ -f "$GEOM" ] || { echo "missing geometry records: $GEOM" >&2; exit 1; }
 
 cd "$SYNTH"
 mkdir -p "$OUT/$BOOK"
@@ -141,11 +143,11 @@ uv run pdomain-ocr-synth align-pgdp "$CORPUS" \
 
 uv run pdomain-ocr-synth typography-pgdp "$CORPUS" \
   --alignment "$OUT/$BOOK/alignment.json" --profile "$OUT/$BOOK/profile.json" \
-  --output "$OUT/$BOOK/typography.json" ${GEOM:+--geometry "$GEOM"}
+  --output "$OUT/$BOOK/typography.json" --geometry "$GEOM"
 
 uv run pdomain-ocr-synth glyphs-pgdp "$CORPUS" \
   --alignment "$OUT/$BOOK/alignment.json" --profile "$OUT/$BOOK/profile.json" \
-  --output "$OUT/$BOOK/inventory/" ${GEOM:+--geometry "$GEOM"}
+  --output "$OUT/$BOOK/inventory/" --geometry "$GEOM"
 
 echo "captured $BOOK"
 ```
@@ -611,7 +613,9 @@ BOOK="$1"
 CORPUS=/workspaces/pdomain-data/pgdp-corpus
 OUT=/workspaces/pdomain/.extraction-verify
 MEASURE=/workspaces/pdomain/pdomain-pgdp-measure
-GEOM="${GEOMETRY_RECORDS:-}"
+# Identical to the baseline's resolution. A mismatch here invalidates the comparison.
+GEOM="/workspaces/pdomain-data/typography/geometry-v1/${BOOK}.jsonl"
+[ -f "$GEOM" ] || { echo "missing geometry records: $GEOM" >&2; exit 1; }
 
 cd "$MEASURE"
 mkdir -p "$OUT/$BOOK"
@@ -624,10 +628,10 @@ uv run pgdp-measure align "$CORPUS" \
   --profile "$OUT/$BOOK/profile.json" --output "$OUT/$BOOK/alignment.json"
 uv run pgdp-measure typography "$CORPUS" \
   --alignment "$OUT/$BOOK/alignment.json" --profile "$OUT/$BOOK/profile.json" \
-  --output "$OUT/$BOOK/typography.json" ${GEOM:+--geometry "$GEOM"}
+  --output "$OUT/$BOOK/typography.json" --geometry "$GEOM"
 uv run pgdp-measure glyphs "$CORPUS" \
   --alignment "$OUT/$BOOK/alignment.json" --profile "$OUT/$BOOK/profile.json" \
-  --output "$OUT/$BOOK/inventory/" ${GEOM:+--geometry "$GEOM"}
+  --output "$OUT/$BOOK/inventory/" --geometry "$GEOM"
 echo "verified $BOOK"
 ```
 
@@ -887,12 +891,14 @@ The extraction is complete when all of these hold:
 does not hold today, this plan cannot verify itself and must stop.
 
 **The corpus may be unavailable.** Every task from 0 onward needs
-`/workspaces/pdomain-data/pgdp-corpus`. Confirm it is mounted before starting.
+`/workspaces/pdomain-data/pgdp-corpus`. Confirmed present on 2026-09-06 with 324 projects,
+including all five aligned books. Re-confirm before starting, since it is an external mount.
 
-**The `--geometry` records are external.** The OCR witness reads records produced by
-`pdomain-source-data`. If the baseline is captured with `--geometry` and the verification without
-it, the outputs will differ for reasons unrelated to the move. Set `GEOMETRY_RECORDS` identically
-for both, or leave it unset for both.
+**The `--geometry` records are external and per-book.** The OCR witness reads records produced
+by `pdomain-source-data`, at `/workspaces/pdomain-data/typography/geometry-v1/<BOOK>.jsonl`, one
+file per book. Both scripts resolve that path the same way and fail loudly if the file is absent,
+because a baseline captured with the witness and a verification captured without it would differ
+for reasons unrelated to the move. Confirmed present for all five books on 2026-09-06.
 
 **Task 7 is the least mechanical.** Moving documentation across repositories breaks relative links
 in both directions, which is the same failure that archiving three handoffs caused on 2026-09-06.
