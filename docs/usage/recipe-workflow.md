@@ -288,7 +288,18 @@ boxes: `and` labelled `o`, `ingine` labelled `f`, `whe` labelled `t`. It flags
 letter and a comma sits at 1.06 to 1.15 times the median, inside the ordinary
 spread, so no width test separates it.
 
-All four flags are observations, not verdicts: it says the ink is flatter than the
+Size gets that far and then stops. A box holding a letter and one stem of its
+neighbour, or a `b` where the label says `h`, sits at an ordinary width and an
+ordinary height. What separates those is the ink itself, so every glyph is also
+resampled onto a 16 by 12 grid and compared against the median shape its own
+character takes in that book and style. A glyph more than 1.4 times its
+character's own 95th-percentile scatter from that median is flagged
+`unlike_character`. Measured, glyphs of one character sit 2.5 to 3.3 from their
+reference while two different characters' references sit 4.3 to 7.7 apart, so
+the distance carries real signal; the flag costs 0.5 to 5.1 percent of glyphs.
+It never proposes a label, only observes that the ink is unlike the one claimed.
+
+All five flags are observations, not verdicts: it says the ink is flatter than the
 label predicts, not why. The causes found so far are small capitals PGDP never
 marked, a word bound to the wrong ink, and a badly cut glyph box. Only looking
 settles which, so the manifest carries a bounded queue of suspects rather than

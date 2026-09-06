@@ -28,7 +28,7 @@ import numpy as np
 
 from pdomain_ocr_synth.pgdp.alignment_image import build_candidate_mask
 from pdomain_ocr_synth.pgdp.alignment_models import AlignmentReport
-from pdomain_ocr_synth.pgdp.glyph_atlas import render_atlas, write_atlas
+from pdomain_ocr_synth.pgdp.glyph_atlas import _page_grayscale, render_atlas, write_atlas
 from pdomain_ocr_synth.pgdp.glyph_cut import (
     GLYPH_CUT_METHODS,
     crop_to_ink,
@@ -64,6 +64,11 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     line_x_height_reference,
     measure_glyph_quality,
     word_ascender_flatness,
+)
+from pdomain_ocr_synth.pgdp.glyph_shape import (
+    GLYPH_SHAPE_METHODS,
+    build_references,
+    normalise_glyph,
 )
 from pdomain_ocr_synth.pgdp.glyph_style import (
     GLYPH_STYLE_METHODS,
@@ -107,6 +112,7 @@ if TYPE_CHECKING:
         WireLineCandidate,
     )
     from pdomain_ocr_synth.pgdp.glyph_furniture import FurnitureWord
+    from pdomain_ocr_synth.pgdp.glyph_shape import ShapeGrid
     from pdomain_ocr_synth.pgdp.ocr_witness import PageWitness
     from pdomain_ocr_synth.pgdp.profile_models import PageMeasurement, ProjectProfile
     from pdomain_ocr_synth.pgdp.typography_measure import WordGapThreshold
@@ -402,7 +408,7 @@ def _harvest_project(
                     line_x_height_spread_px=_x_height_spread(harvest.line_x_heights),
                 )
             )
-    flagged_rows = _flag_narrow(rows)
+    flagged_rows = _flag_shape(_flag_narrow(rows), root, pages)
     flags: Counter[str] = Counter()
     for row in flagged_rows:
         flags.update(row.flags)
@@ -448,6 +454,7 @@ def _methods(*, witness: BookWitness | None) -> dict[str, object]:
         methods["furniture_selection"] = FURNITURE_METHODS["algorithm"]
         methods["line_admission"] = LINE_ADMISSION_METHODS["algorithm"]
     methods["glyph_style"] = GLYPH_STYLE_METHODS["algorithm"]
+    methods["glyph_shape"] = GLYPH_SHAPE_METHODS["algorithm"]
     return methods
 
 
@@ -457,6 +464,7 @@ def _thresholds(gap: WordGapThreshold, *, witness: BookWitness | None) -> dict[s
         WORD_SEGMENTATION_METHODS,
         GLYPH_CUT_METHODS,
         GLYPH_QUALITY_METHODS,
+        GLYPH_SHAPE_METHODS,
     ]
     if witness is not None:
         sources.append(FURNITURE_METHODS)
@@ -929,3 +937,47 @@ def _width_flagged(row: GlyphRow, reference: float | None) -> GlyphRow:
     if is_wide(width, reference):
         return replace(row, flags=(*row.flags, "wide"))
     return row
+
+
+def _flag_shape(
+    rows: Sequence[GlyphRow], root: Path, pages: Sequence[GlyphPage]
+) -> tuple[GlyphRow, ...]:
+    """Flag any glyph whose ink is unlike the shape its character usually takes in this book.
+
+    Needs the scans a second time, because the comparison is between pixels rather than boxes.
+    Each page is opened once and every glyph on it reduced to a 16 by 12 grid, which is 192 bytes
+    a glyph, so a whole book's grids stay in memory while the references are built from them.
+    """
+
+    by_name = {page.page_name: page for page in pages}
+    indices_by_page: dict[str, list[int]] = {}
+    for index, row in enumerate(rows):
+        indices_by_page.setdefault(row.page_name, []).append(index)
+
+    grids: list[ShapeGrid | None] = [None] * len(rows)
+    for page_name in sorted(indices_by_page, key=natural_page_key):
+        page = by_name.get(page_name)
+        if page is None:
+            continue
+        try:
+            grayscale = _page_grayscale(root, page=page)
+        except (OSError, ValueError, RuntimeError):
+            continue
+        for index in indices_by_page[page_name]:
+            x_start, y_start, x_end, y_end = rows[index].box
+            grids[index] = normalise_glyph(grayscale[y_start:y_end, x_start:x_end])
+
+    grouped: dict[tuple[str, str | None], list[ShapeGrid]] = {}
+    for row, grid in zip(rows, grids, strict=True):
+        if grid is not None and not row.flags:
+            grouped.setdefault((row.character, row.label_style), []).append(grid)
+    references = build_references(grouped)
+
+    return tuple(
+        replace(row, flags=(*row.flags, "unlike_character"))
+        if grid is not None
+        and (reference := references.get((row.character, row.label_style))) is not None
+        and reference.is_outlier(grid)
+        else row
+        for row, grid in zip(rows, grids, strict=True)
+    )

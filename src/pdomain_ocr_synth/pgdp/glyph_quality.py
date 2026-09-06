@@ -28,6 +28,7 @@ GlyphQualityFlag = Literal[
     "flat_ascender",
     "narrow",
     "overtall",
+    "unlike_character",
     "wide",
     "descends",
     "short_of_baseline",
