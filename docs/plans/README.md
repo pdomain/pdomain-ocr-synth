@@ -144,7 +144,8 @@ The split is agreed in principle and its first step is planned. See the
 [measurement, labeling, and synthesis split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)
 for the design, and the
 [measurement library extraction plan](2026-09-06-extract-pgdp-measurement-library.md) for the
-sequenced migration. Six decisions in the design are still open, including the new package's name.
+sequenced migration. The new package is named `pdomain-pgdp-measure`. Five decisions in the design are still
+open.
 
 The extraction's first task captures a byte-identity baseline at current `HEAD`, which also
 re-runs the measurement chain on the alignment that now accepts 713 pages. That answers the stale

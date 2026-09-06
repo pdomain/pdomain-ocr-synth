@@ -34,8 +34,9 @@ and pydantic.
 ## Global Constraints
 
 - The new distribution is named `pdomain-pgdp-measure` and imports as `pdomain_pgdp_measure`.
-  **This name is an open decision in the spec.** If the owner picks another, substitute it
-  everywhere before starting; do not start with the placeholder and rename later.
+  The owner confirmed this on 2026-09-06, so it is settled, not a placeholder. Its console script
+  is `pgdp-measure` and its subcommands are `rank`, `profile`, `align`, `typography`, and
+  `glyphs`, dropping the `-pgdp` suffix because the package name already carries it.
 - Runtime dependencies are exactly `pillow>=10.0`, `numpy>=1.26`, and `pydantic>=2.0`. Adding any
   other runtime dependency fails this plan.
 - Wire contract strings do not change: `pgdp-rank/v1`, `pgdp-profile/v2`, `pgdp-alignment/v3`,

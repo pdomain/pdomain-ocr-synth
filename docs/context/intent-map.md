@@ -133,12 +133,13 @@ design choices to settle, but both remain actionable discovery work.
 
 ## Needs owner decision
 
-These are open questions repository evidence cannot settle. The six from the split design block
-the largest structural decision here.
+These are open questions repository evidence cannot settle. The five remaining from the split
+design block the largest structural decision here.
 
 From the [split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md):
 
-- The measurement package's name. `pdomain-pgdp-measure` is a working name only.
+- ~~The measurement package's name.~~ Decided on 2026-09-06: `pdomain-pgdp-measure`,
+  importing as `pdomain_pgdp_measure`, with a `pgdp-measure` console script.
 - Whether the glyph inventory moves with the measurement library. It is measurement, so it
   should, but its Gate 3 is open and moving a milestone with a failing gate needs a deliberate
   answer.

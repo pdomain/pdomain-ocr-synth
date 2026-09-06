@@ -10,8 +10,8 @@
 - **Provenance:** authored from repository evidence in `pdomain-ocr-synth`,
   `pdomain-ocr-labeler-spa`, `pdomain-book-contracts`, and `pdomain-book-tools`, read during
   the 2026-09-06 session, plus owner direction in that session
-- **Disposition:** Agreed in principle on 2026-09-06. Step two is planned; six decisions remain
-  open.
+- **Disposition:** Agreed in principle on 2026-09-06. Step two is planned. The package name is
+  decided; five decisions remain open.
 - **Read when:** deciding where measurement, labeling, or synthesis code belongs; planning the
   measurement-library extraction; adding region or page-type annotation anywhere in the suite.
 - **Search terms:** region labeling, page type, measurement library, labeled dataset, first pass,
@@ -68,7 +68,8 @@ needing PGDP project layout and F2 transcription. `pdomain-book-tools`, on the o
 imported by repos that will never touch PGDP. Its own package also lets it keep its own
 determinism gates on its own release cadence.
 
-**Working name: `pdomain-pgdp-measure`.** The name is not settled; see "Open decisions".
+**Named `pdomain-pgdp-measure`,** confirmed by the owner on 2026-09-06, importing as
+`pdomain_pgdp_measure` and exposing a `pgdp-measure` console script.
 
 It carries its four wire contracts with it unchanged: `pgdp-profile/v2`, `pgdp-alignment/v3`,
 `pgdp-typography/v1`, and `pgdp-glyphs/v1`, with their JSON Schemas.
@@ -258,7 +259,7 @@ question is answered as a side effect of making the extraction verifiable.
 
 ## Open decisions
 
-- **The measurement package's name.** `pdomain-pgdp-measure` is a working name.
+- ~~The measurement package's name.~~ **Decided 2026-09-06: `pdomain-pgdp-measure`.**
 - **Whether the glyph inventory moves with it.** It is measurement, so it should. But its Gate 3 is
   open, and moving a milestone with a failing gate needs a deliberate answer.
 - **Whether `pdomain-ocr-synth` keeps a dependency on the measurement package** during the
