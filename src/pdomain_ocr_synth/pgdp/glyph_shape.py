@@ -9,6 +9,10 @@ median of its own clean glyphs. A glyph far from its reference is unlike the let
 be. Measured, glyphs of one character sit 2.5 to 3.3 from their own reference at the median, while
 two different characters' references sit 4.3 to 7.7 apart, so the distance carries real signal.
 
+A glyph in a style the book carries too few of gets no reference and so no check. An italic `e`
+is not shaped like a roman one, so comparing the two would manufacture false positives; leaving it
+unchecked reports less rather than reporting wrong.
+
 Nothing here is a verdict. The flag says the ink is unlike the character's usual shape, not which
 character it really is, and this module never reads or proposes a label.
 """

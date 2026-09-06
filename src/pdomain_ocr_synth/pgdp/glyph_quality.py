@@ -37,6 +37,15 @@ GlyphQualityFlag = Literal[
     "touches_line_top",
 ]
 
+DEFECT_FLAGS: Final = frozenset({"flat_ascender", "narrow", "overtall", "unlike_character", "wide"})
+"""The flags that say a glyph may be wrong, as against the ones that merely describe it.
+
+`ascends`, `descends` and the two `touches_line_*` flags are ordinary facts about a letter: every
+`h` ascends and every `g` descends. Treating them as defects excludes every ascender and descender
+from its own character's reference sample, which is how the shape check first shipped with
+references for 11 characters instead of 35.
+"""
+
 GLYPH_QUALITY_METHODS: dict[str, float | int | str] = {
     "algorithm": "line-band-agreement/v2",
     "row_extent_tolerance_px": 1,

@@ -92,3 +92,15 @@ def test_a_reference_with_no_scatter_calls_nothing_an_outlier() -> None:
     assert reference is not None
     assert reference.scatter_p95 == 0.0
     assert not reference.is_outlier(normalise_glyph(_BAR))
+
+
+def test_descriptive_flags_do_not_disqualify_a_glyph_from_its_own_reference() -> None:
+    """Every `h` ascends, so treating `ascends` as a defect leaves `h` with no reference at all."""
+
+    from pdomain_ocr_synth.pgdp.glyph_quality import DEFECT_FLAGS
+
+    assert "ascends" not in DEFECT_FLAGS
+    assert "descends" not in DEFECT_FLAGS
+    assert "touches_line_top" not in DEFECT_FLAGS
+    assert "unlike_character" in DEFECT_FLAGS
+    assert "narrow" in DEFECT_FLAGS

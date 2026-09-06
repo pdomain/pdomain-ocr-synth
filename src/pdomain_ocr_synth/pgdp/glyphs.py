@@ -54,6 +54,7 @@ from pdomain_ocr_synth.pgdp.glyph_models import (
     render_rows,
 )
 from pdomain_ocr_synth.pgdp.glyph_quality import (
+    DEFECT_FLAGS,
     GLYPH_QUALITY_METHODS,
     LineBand,
     ascender_is_flat,
@@ -969,7 +970,7 @@ def _flag_shape(
 
     grouped: dict[tuple[str, str | None], list[ShapeGrid]] = {}
     for row, grid in zip(rows, grids, strict=True):
-        if grid is not None and not row.flags:
+        if grid is not None and not DEFECT_FLAGS.intersection(row.flags):
             grouped.setdefault((row.character, row.label_style), []).append(grid)
     references = build_references(grouped)
 
