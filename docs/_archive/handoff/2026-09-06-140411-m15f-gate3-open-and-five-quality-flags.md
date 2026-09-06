@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-06"
+kind: archive
+status: retired
 created_at: "2026-09-06T14:04:11Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "36b9a77"
 supersedes: "2026-09-05-051753-m15f-glyph-inventory-shipped.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-06"
+last_verified: "2026-09-06"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-06-214111-measurement-library-extraction-planned-and-ready.md`.**
+
 
 # The glyph inventory ships with Gate 3 open, and the ceiling is measured
 
