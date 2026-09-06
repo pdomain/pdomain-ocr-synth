@@ -201,11 +201,11 @@ random under seed 20260905:
 | book | wrong | rate | filtered | verdict |
 | --- | ---: | ---: | ---: | --- |
 | projectID657550412c8dc | 0 | 1.000 | 1.000 | pass |
-| projectID609bfa0449bdf | 1 | 0.995 | 0.995 | pass |
-| projectID64a479f51ce5b | 2 | 0.990 | 0.995 | pass |
+| projectID609bfa0449bdf | 1 | 0.995 | 1.000 | pass |
+| projectID64a479f51ce5b | 2 | 0.990 | 1.000 | pass |
 | projectID603d7d5e04ca0 | 8 | **0.962** | 0.981 | **fail** |
 | projectID67a80fde44d34 | 12 | **0.943** | 0.990 | **fail** |
-| pooled | 23 | **0.978** | 0.992 | **fail** |
+| pooled | 23 | **0.978** | 0.994 | **fail** |
 
 Two books fail and the pooled figure fails, at 0.978 against a floor of 0.98.
 
@@ -214,16 +214,17 @@ inventory.** Rendered thirty cells to a row, a bare stem cut from an `h` is indi
 a whole letter; at fifteen to a row it is obvious. `projectID67a80fde44d34` scored 4 wrong at the
 coarse scale and 12 at the legible one. Any later review should render at most fifteen cells a row.
 
-**The three quality flags catch 15 of the 23, with three false positives across 1,050 cells.**
-Dropping flagged glyphs takes the pooled figure to 0.992 and every book over the floor, at a cost
-of 18 of 1,050 sampled glyphs. That is not the gate passing: the gate measures the inventory as
+**The four quality flags catch 17 of the 23, with three false positives across 1,050 cells.**
+Dropping flagged glyphs takes the pooled figure to 0.994 and every book over the floor, at a cost
+of 20 of 1,050 sampled glyphs. That is not the gate passing: the gate measures the inventory as
 shipped, and moving it to measure a filtered subset would be weakening it. It is what a consumer
 gets for one line of filtering.
 
-The eight that survive filtering are boxes holding a letter and part of its neighbour, which is
-neither narrow nor tall enough to trip anything: `t14` cut from `th`, `e29` from `eee`, `s12` from
-an `s` and its comma. A width test does not separate them, measured: they sit at 1.06 to 1.15
-times their character's median width, inside the ordinary spread.
+The six that survive filtering split two ways. Three are a box holding a letter and just enough of
+its neighbour to stay inside the ordinary width spread, at 1.00 to 1.15 times the character's
+median: `s12` cut from an `s` and its comma, `a10` from an `a` and one stem, `e5` from `ler`.
+Three are the right width but the wrong letterform: `h21` reading `b`, `n16` reading `N`, `e13`
+reading `E`. No size test reaches either group, and that is the floor of what geometry can do.
 
 Gate 3 is model-reviewed, not human-reviewed.
 

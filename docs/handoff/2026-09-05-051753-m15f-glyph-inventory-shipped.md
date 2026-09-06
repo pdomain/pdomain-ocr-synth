@@ -22,8 +22,8 @@ and the pooled figure is 0.978 against a floor of 0.98. Two books fail:
 `projectID67a80fde44d34` at 0.943 and `projectID603d7d5e04ca0` at 0.962. The other three pass at
 0.990 to 1.000. Verdicts are in `.m15f-evidence/gate3-*.csv`, scored into `gate3-review.json`.
 
-Filtering the three quality flags takes the pooled figure to 0.992 and every book over the floor,
-at a cost of 18 of 1,050 sampled glyphs. That is what a consumer gets for one line of filtering,
+Filtering the four quality flags takes the pooled figure to 0.994 and every book over the floor,
+at a cost of 20 of 1,050 sampled glyphs. That is what a consumer gets for one line of filtering,
 not the gate passing: the gate measures the inventory as shipped.
 
 ## What changed
@@ -248,10 +248,14 @@ a call is comfortable.
 ## Resume steps
 
 1. **Nothing here needs a decision from you.** Gate 3 fails at 0.978 pooled and
-   that is the recorded result. The flags are how a consumer gets to 0.992. The
-   remaining engineering is the eight errors filtering does not catch, all of
-   them a box holding a letter plus part of its neighbour, and small capitals,
-   which need shape evidence.
+   that is the recorded result; the flags are how a consumer reaches 0.994.
+   Geometry has gone as far as it goes. The six errors that survive filtering
+   split into three boxes holding a letter and just enough of its neighbour to
+   stay inside the ordinary width spread, and three that are the right size but
+   the wrong letterform. Small capitals were tested at line level against the
+   spans PGDP marks and do not separate: 1.00 against 1.00 x-height in one book,
+   1.08 against 1.08 in another. All three classes need shape evidence, which is
+   a slice of its own.
 2. **Two page-level signals are now recorded and unused.** The manifest's page
    table carries each page's `page_class`, its lines' x-height median, and their
    spread. Spread over about 8 px marks a mixed-size page and is 43 to 67
