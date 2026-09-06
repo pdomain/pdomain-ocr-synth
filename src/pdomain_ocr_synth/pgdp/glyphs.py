@@ -60,6 +60,7 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     character_width_reference,
     is_narrow,
     is_overtall,
+    is_wide,
     line_x_height_reference,
     measure_glyph_quality,
     word_ascender_flatness,
@@ -901,7 +902,7 @@ def _x_height_spread(x_heights: Sequence[int]) -> int | None:
 
 
 def _flag_narrow(rows: Sequence[GlyphRow]) -> tuple[GlyphRow, ...]:
-    """Flag any glyph far narrower than its character usually runs in this book.
+    """Flag any glyph far narrower or wider than its character usually runs in this book.
 
     This is the one measure that needs the whole book: a half-cut letter looks unremarkable beside
     its neighbours on the line, and only the character's usual width elsewhere gives it away. So it
@@ -917,8 +918,14 @@ def _flag_narrow(rows: Sequence[GlyphRow]) -> tuple[GlyphRow, ...]:
         if (value := character_width_reference(sample)) is not None
     }
     return tuple(
-        replace(row, flags=(*row.flags, "narrow"))
-        if is_narrow(row.box[2] - row.box[0], reference.get((row.character, row.label_style)))
-        else row
-        for row in rows
+        _width_flagged(row, reference.get((row.character, row.label_style))) for row in rows
     )
+
+
+def _width_flagged(row: GlyphRow, reference: float | None) -> GlyphRow:
+    width = row.box[2] - row.box[0]
+    if is_narrow(width, reference):
+        return replace(row, flags=(*row.flags, "narrow"))
+    if is_wide(width, reference):
+        return replace(row, flags=(*row.flags, "wide"))
+    return row

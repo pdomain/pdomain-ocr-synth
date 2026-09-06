@@ -15,6 +15,7 @@ from pdomain_ocr_synth.pgdp.glyph_quality import (
     character_width_reference,
     is_narrow,
     is_overtall,
+    is_wide,
     line_x_height_reference,
     measure_glyph_quality,
     word_ascender_flatness,
@@ -211,3 +212,24 @@ def test_a_whole_letter_does_not() -> None:
 
 def test_no_reference_means_no_narrow_judgement() -> None:
     assert not is_narrow(2, None)
+
+
+def test_a_box_holding_several_letters_reads_wide() -> None:
+    assert is_wide(30, 12.0)
+    assert is_wide(18, 12.0)
+
+
+def test_a_whole_letter_is_neither_narrow_nor_wide() -> None:
+    assert not is_wide(19, 19.0)
+    assert not is_narrow(19, 19.0)
+
+
+def test_a_letter_with_its_comma_is_too_close_to_call_on_width() -> None:
+    """Measured at 1.06 to 1.15 of median, inside the ordinary spread; no width test sees it."""
+
+    assert not is_wide(15, 13.0)
+    assert not is_wide(17, 16.0)
+
+
+def test_no_reference_means_no_wide_judgement() -> None:
+    assert not is_wide(99, None)

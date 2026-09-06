@@ -280,7 +280,15 @@ same way. This is the one measure taken across the whole book, because a
 half-cut letter looks unremarkable beside its neighbours and only the
 character's usual width elsewhere gives it away.
 
-All three flags are observations, not verdicts: it says the ink is flatter than the
+The mirror case is flagged `wide`: a glyph at or above 1.5 times its
+character's usual width, which is a missed blank column leaving a letter and its
+neighbours in one box. Twelve of twelve reviewed were genuine multi-letter
+boxes: `and` labelled `o`, `ingine` labelled `f`, `whe` labelled `t`. It flags
+0.06 to 0.91 percent of glyphs. It sees only the gross cases; a box holding a
+letter and a comma sits at 1.06 to 1.15 times the median, inside the ordinary
+spread, so no width test separates it.
+
+All four flags are observations, not verdicts: it says the ink is flatter than the
 label predicts, not why. The causes found so far are small capitals PGDP never
 marked, a word bound to the wrong ink, and a badly cut glyph box. Only looking
 settles which, so the manifest carries a bounded queue of suspects rather than

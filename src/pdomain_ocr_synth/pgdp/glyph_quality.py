@@ -28,6 +28,7 @@ GlyphQualityFlag = Literal[
     "flat_ascender",
     "narrow",
     "overtall",
+    "wide",
     "descends",
     "short_of_baseline",
     "sparse_ink",
@@ -43,6 +44,7 @@ GLYPH_QUALITY_METHODS: dict[str, float | int | str] = {
     "overtall_ratio_minimum": 1.35,
     "overtall_line_sample_minimum": 4,
     "narrow_ratio_maximum": 0.6,
+    "wide_ratio_minimum": 1.5,
     "narrow_character_sample_minimum": 30,
 }
 
@@ -243,6 +245,9 @@ reviewed are genuinely half a letter: the `T` of `ETC.` reduced to its stem, the
 to its left leg.
 """
 
+_WIDE_RATIO_MINIMUM: Final = 1.5
+"""How wide a glyph may run against its character's usual width before it is flagged."""
+
 _NARROW_CHARACTER_SAMPLE_MINIMUM: Final = 30
 """How many of a character a book needs before its median width is worth comparing against."""
 
@@ -260,3 +265,19 @@ def is_narrow(width: int, reference: float | None) -> bool:
     """Whether a glyph is too narrow to be the whole letter its label names."""
 
     return reference is not None and width < _NARROW_RATIO_MAXIMUM * reference
+
+
+def is_wide(width: int, reference: float | None) -> bool:
+    """Whether a glyph is too wide to be only the letter its label names.
+
+    The mirror of `is_narrow` and the same evidence. Where a broken arch leaves half a letter, a
+    missed blank column leaves a letter and its neighbours in one box: `and` labelled `o`, `ingine`
+    labelled `f`, `whe` labelled `t`. Twelve of twelve reviewed at this threshold were genuine
+    multi-letter boxes, and it flags 0.06 to 0.91 percent of glyphs.
+
+    It sees only the gross cases. A box holding a letter and a comma, or a letter and one stem of
+    its neighbour, sits at 1.06 to 1.15 times the median and inside the ordinary spread, so no
+    width test separates it.
+    """
+
+    return reference is not None and width >= _WIDE_RATIO_MINIMUM * reference
