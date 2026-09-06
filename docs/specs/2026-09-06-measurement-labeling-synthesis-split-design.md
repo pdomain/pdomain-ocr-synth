@@ -3,14 +3,15 @@
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-06
 - **Last verified:** 2026-09-06
 - **Provenance:** authored from repository evidence in `pdomain-ocr-synth`,
   `pdomain-ocr-labeler-spa`, `pdomain-book-contracts`, and `pdomain-book-tools`, read during
   the 2026-09-06 session, plus owner direction in that session
-- **Disposition:** Proposed target architecture. Nothing moves until this is approved.
+- **Disposition:** Agreed in principle on 2026-09-06. Step two is planned; six decisions remain
+  open.
 - **Read when:** deciding where measurement, labeling, or synthesis code belongs; planning the
   measurement-library extraction; adding region or page-type annotation anywhere in the suite.
 - **Search terms:** region labeling, page type, measurement library, labeled dataset, first pass,
@@ -248,6 +249,12 @@ belongs in this repository because this repository is its only consumer.
 6. **Specify the labeled-dataset contract** and point M16 at it.
 
 Steps 1 and 2 are independent and can run together.
+
+Step 2 is planned in detail in the
+[measurement library extraction plan](../plans/2026-09-06-extract-pgdp-measurement-library.md).
+Its first task captures a byte-identity baseline at current `HEAD`, which also re-runs the
+measurement chain on the alignment that now accepts 713 pages rather than 665. So the stale-report
+question is answered as a side effect of making the extraction verifiable.
 
 ## Open decisions
 
