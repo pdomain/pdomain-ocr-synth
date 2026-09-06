@@ -22,8 +22,8 @@ and the pooled figure is 0.978 against a floor of 0.98. Two books fail:
 `projectID67a80fde44d34` at 0.943 and `projectID603d7d5e04ca0` at 0.962. The other three pass at
 0.990 to 1.000. Verdicts are in `.m15f-evidence/gate3-*.csv`, scored into `gate3-review.json`.
 
-Filtering the four quality flags takes the pooled figure to 0.994 and every book over the floor,
-at a cost of 20 of 1,050 sampled glyphs. That is what a consumer gets for one line of filtering,
+Filtering the five quality flags takes the pooled figure to 0.994 and every book over the floor,
+at a cost of 23 of 1,050 sampled glyphs and six false positives. That is what a consumer gets for one line of filtering,
 not the gate passing: the gate measures the inventory as shipped.
 
 ## What changed
@@ -249,13 +249,18 @@ a call is comfortable.
 
 1. **Nothing here needs a decision from you.** Gate 3 fails at 0.978 pooled and
    that is the recorded result; the flags are how a consumer reaches 0.994.
-   Geometry has gone as far as it goes. The six errors that survive filtering
-   split into three boxes holding a letter and just enough of its neighbour to
-   stay inside the ordinary width spread, and three that are the right size but
-   the wrong letterform. Small capitals were tested at line level against the
-   spans PGDP marks and do not separate: 1.00 against 1.00 x-height in one book,
-   1.08 against 1.08 in another. All three classes need shape evidence, which is
-   a slice of its own.
+   Both geometry and shape have now gone as far as they go, and the ceiling is
+   measured. `unlike_character` compares ink against each character's own median
+   shape, but fourteen character pairs in `projectID603d7d5e04ca0` sit closer to
+   each other than a character scatters from itself, and that count holds across
+   grids of 16 by 12, 24 by 18 and 32 by 24. Four of the fourteen are a capital
+   and its lowercase of the same outline, which normalising size away erases;
+   the rest differ by a few pixels, `b` from `h` by whether the bowl closes.
+
+   The next thing to try is scaling each glyph against its line's x-height
+   rather than onto a fixed grid, which would restore the capital-versus-
+   lowercase distinction at the cost of depending on a per-line x-height this
+   milestone already found unreliable on badly printed pages.
 2. **Two page-level signals are now recorded and unused.** The manifest's page
    table carries each page's `page_class`, its lines' x-height median, and their
    spread. Spread over about 8 px marks a mixed-size page and is 43 to 67

@@ -207,6 +207,8 @@ random under seed 20260905:
 | projectID67a80fde44d34 | 12 | **0.943** | 0.990 | **fail** |
 | pooled | 23 | **0.978** | 0.994 | **fail** |
 
+Filtering costs 23 of 1,050 sampled glyphs and carries six false positives.
+
 Two books fail and the pooled figure fails, at 0.978 against a floor of 0.98.
 
 **An earlier pass of the same sample scored this too high, and the cause was the review, not the
@@ -214,11 +216,31 @@ inventory.** Rendered thirty cells to a row, a bare stem cut from an `h` is indi
 a whole letter; at fifteen to a row it is obvious. `projectID67a80fde44d34` scored 4 wrong at the
 coarse scale and 12 at the legible one. Any later review should render at most fifteen cells a row.
 
-**The four quality flags catch 17 of the 23, with three false positives across 1,050 cells.**
+**The five quality flags catch 17 of the 23, with six false positives across 1,050 cells.**
 Dropping flagged glyphs takes the pooled figure to 0.994 and every book over the floor, at a cost
-of 20 of 1,050 sampled glyphs. That is not the gate passing: the gate measures the inventory as
+of 23 of 1,050 sampled glyphs. That is not the gate passing: the gate measures the inventory as
 shipped, and moving it to measure a filtered subset would be weakening it. It is what a consumer
 gets for one line of filtering.
+
+**A fifth flag, `unlike_character`, compares ink rather than boxes**, resampling each glyph onto a
+16 by 12 grid and scoring it against the median shape its own character takes in that book and
+style. Glyphs of one character sit 2.5 to 3.3 from their reference while two different characters'
+references sit 4.3 to 7.7 apart, so the distance carries signal, and the flag costs 0.5 to 5.1
+percent of glyphs.
+
+**It has a measured blind list, and a finer grid does not fix it.** Fourteen character pairs in
+`projectID603d7d5e04ca0` have references closer together than the characters' own scatter, so no
+threshold separates them. The count holds at 14, 15 and 14 across grids of 16 by 12, 24 by 18 and
+32 by 24: the distances scale with the grid and the separation does not. The pairs say why. Four
+are a capital and its lowercase of the same outline, `I`/`l`, `O`/`o`, `W`/`w`, `S`/`s`, which
+normalising size away deliberately erases, and that is the small-capital problem restated in
+another form. The rest differ by a few pixels of outline: `b`/`h` by whether the bowl closes,
+`c`/`e` by the crossbar. Measured, the `b` reference sits 3.34 from the `h` reference while `h`
+scatters 3.46 from its own, so a `b` labelled `h` is inside ordinary `h` variation.
+
+Scaling each glyph against its line's x-height instead of onto a fixed grid would restore the
+capital-versus-lowercase distinction, at the cost of depending on a per-line x-height that this
+milestone has already found unreliable on badly printed pages. That is the next thing to try.
 
 The six that survive filtering split two ways. Three are a box holding a letter and just enough of
 its neighbour to stay inside the ordinary width spread, at 1.00 to 1.15 times the character's
