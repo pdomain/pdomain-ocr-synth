@@ -132,6 +132,18 @@ The operating note repeated in three handoffs, "use the `alignment-t2-*` reports
 misleading. It was written when t2 was the only report carrying the page-classification fixes,
 and it stayed after later fixes made t2 stale.
 
+## A proposed split would move measurement and labeling out of this repository
+
+A draft design proposes separating the three jobs this repository currently does. The measurement
+library would become its own package, the region and page-type vocabulary would live in
+`pdomain-book-contracts`, human labeling would move to `pdomain-ocr-labeler-spa`, and this
+repository would consume labeled datasets rather than produce its own measurements. Under it,
+M16 through M19 stop meaning "measure more" and start meaning "consume labels".
+
+Nothing has moved. See the
+[measurement, labeling, and synthesis split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md),
+which is `draft` and awaiting the owner's decision.
+
 ## M11 is a FastAPI and React SPA, not NiceGUI
 
 M11's earlier design chose NiceGUI and an MVVM layering by pointing at a workspace pattern:
