@@ -636,7 +636,7 @@ git add -A && git commit -m "test: move the pgdp test suite and its reviewed fix
 The subcommands lose their `-pgdp` suffix, because the package name already says PGDP. Flags and
 positional arguments do not change.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_cli_surface.py`:
 
@@ -680,13 +680,13 @@ def test_required_flags_survive_the_move(command: str, required: list[str]) -> N
         assert flag in flags
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `cd /workspaces/pdomain/pdomain-pgdp-measure && uv run pytest tests/test_cli_surface.py -v`
 
 Expected: FAIL, `ModuleNotFoundError: No module named 'pdomain_pgdp_measure.cli'`.
 
-- [ ] **Step 3: Write the CLI**
+- [x] **Step 3: Write the CLI**
 
 Create `src/pdomain_pgdp_measure/cli.py`. Copy the five subparser definitions from
 `pdomain-ocr-synth`'s `src/pdomain_ocr_synth/cli.py`, which define them at lines 296, 319, 340,
@@ -705,13 +705,13 @@ def main(argv: list[str] | None = None) -> int:
     return int(args.handler(args))
 ```
 
-- [ ] **Step 4: Run the surface test and watch it pass**
+- [x] **Step 4: Run the surface test and watch it pass**
 
 Run: `cd /workspaces/pdomain/pdomain-pgdp-measure && uv run pytest tests/test_cli_surface.py -v`
 
 Expected: PASS.
 
-- [ ] **Step 5: Point the moved CLI tests at the new command**
+- [x] **Step 5: Point the moved CLI tests at the new command**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -726,7 +726,7 @@ uv run pytest tests/ -n auto -q
 Expected: the full suite passes. Some tests invoke the parser directly rather than by command
 string; fix those by hand to call `build_parser()` from the new module.
 
-- [ ] **Step 6: Run the full gate**
+- [x] **Step 6: Run the full gate**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -737,7 +737,7 @@ uv run ruff check . && uv run ruff format --check . \
 
 Expected: all clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -757,7 +757,7 @@ git add -A && git commit -m "feat: add the pgdp-measure CLI with the five measur
 
 - Consumes: `baseline-manifest.txt` from Task 0.
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 Create `/workspaces/pdomain/.extraction-verify/verify.sh`, identical to Task 0's capture script
 except that it calls `pgdp-measure` from the new package and writes into
@@ -797,12 +797,12 @@ uv run pgdp-measure glyphs "$CORPUS" \
 echo "verified $BOOK"
 ```
 
-- [ ] **Step 2: Run all five books**
+- [x] **Step 2: Run all five books**
 
 One background Bash call per book, exactly as in Task 0. On a 20-core box all five run
 concurrently under 1 GB each; measured wall clock was 230, 579, 625, 724, and 1032 seconds.
 
-- [ ] **Step 3: Check `rank` separately, because the corpus moves**
+- [x] **Step 3: Check `rank` separately, because the corpus moves**
 
 The frozen ranking means Step 2 never exercises `rank`. Test it on its own, comparing per-project
 entries rather than the corpus-wide header, which legitimately changes as the corpus grows.
@@ -831,28 +831,60 @@ PY2
 Expected: `differing: 0`. Projects added or removed since the baseline are corpus drift, not a
 finding. Any shared project whose entry differs is a real behaviour change in `rank`.
 
-- [ ] **Step 4: Compare against the baseline**
+**Result on 2026-09-07: 0 differing across all 328 shared projects.** The corpus had grown from
+330 projects to 390 by then, with 60 added and none removed, which is exactly why the ranking is
+frozen for Step 2.
+
+- [x] **Step 4: Compare against the baseline**
+
+**Two provenance fields are normalized, and only two.** `align`, `typography`, and `glyphs` write
+the package's own VCS version into their reports, so the baseline carries
+`0.0.3.dev215+g52b1e0ef5.d20260906` from `pdomain-ocr-synth` and the new package writes
+`0.1.dev3+g50ceab432.d20260907`. `alignment_sha256` then moves for that reason alone, because it
+hashes `alignment.json`, which carries `tool_version`.
+
+Prove the second one is a consequence of the first before normalizing it. On all five books, the
+recorded `alignment_sha256` equals the raw sha of `alignment.json` on both sides, and the two
+alignment files hash identically once `tool_version` is normalized.
+
+`profile_sha256`, `rows_sha256`, and `geometry_sha256` are deliberately left alone. The files they
+hash carry no `tool_version`, so any change in them would be real.
+
+Write `/workspaces/pdomain/.extraction-verify/manifest.py` to normalize exactly
+`("tool_version", "alignment_sha256")` in any JSON object that has them, re-serialize with
+`indent=2, sort_keys=True, ensure_ascii=False`, and print `sha256  relative-path` per file. Have it
+report which files it touched, on stderr.
 
 ```bash
-cd /workspaces/pdomain/.extraction-verify
-find . -type f \( -name '*.json' -o -name '*.jsonl' -o -name '*.png' \) -print0 \
-  | sort -z | xargs -0 sha256sum | sed 's| \./| |' > verify-manifest.txt
-diff /workspaces/pdomain/.extraction-baseline/baseline-manifest.txt verify-manifest.txt \
+M=/workspaces/pdomain/.extraction-verify/manifest.py
+python3 "$M" /workspaces/pdomain/.extraction-baseline > /tmp/baseline-normalized.txt
+python3 "$M" /workspaces/pdomain/.extraction-verify   > /tmp/verify-normalized.txt
+diff /tmp/baseline-normalized.txt /tmp/verify-normalized.txt \
   && echo "BYTE IDENTICAL — EXTRACTION IS CLEAN"
 ```
 
-Expected: `BYTE IDENTICAL — EXTRACTION IS CLEAN`, with no diff output.
+**Result on 2026-09-07: `BYTE IDENTICAL — EXTRACTION IS CLEAN`, across all 927 files.**
+
+Both sides normalize exactly 15 files: `alignment.json`, `typography.json`, and
+`inventory/manifest.json` for each of the five books. Any other file carrying `tool_version` would
+mean a report gained a version field the move was not expected to touch, and that is a finding.
+
+Before normalizing `alignment_sha256`, the raw comparison left 10 files differing, and the reason
+is worth recording. In `projectID67a80fde44d34`'s typography report, 2 of 29,680 leaf values
+differ; in `projectID603d7d5e04ca0`'s, 2 of 59,517. Both times the two are `tool_version` and
+`alignment_sha256`. Every measured value is identical, and every atlas PNG and `glyphs.jsonl`
+matched without any normalization at all.
 
 **If the diff is non-empty, stop.** Do not proceed to Task 6, and do not adjust the baseline to
 match. A difference means the move changed behaviour, and the difference itself is the finding.
 Report which files differ and at which stage the chain first diverges.
 
-- [ ] **Step 5: Record the result**
+- [x] **Step 5: Record the result**
 
 Write the outcome into the new package's `docs/architecture/` or `README.md`, naming the baseline
 commit from Task 0 and stating that all five books reproduced byte for byte.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
