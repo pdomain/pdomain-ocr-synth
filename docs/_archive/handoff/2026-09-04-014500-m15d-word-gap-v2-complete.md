@@ -27,7 +27,7 @@ last_verified: "2026-09-06"
 
 Word segmentation moved to `ink-profile-word-runs/v2`. Gate 6, the one gate M15d
 failed, now passes in all five books, so
-[the plan](../../architecture/pgdp-font-free-typography.md) moves
+the plan in `pdomain-pgdp-measure` moves
 from `partial` to `complete`.
 
 The v1 rule, `max(2, round(0.25 * x_height_px))`, sat below the swept optimum in
@@ -192,15 +192,15 @@ from F2 alone can be blind to exactly the thing being looked for.
 1. Decide whether Gate 4 wants a human pass. Nothing else here is blocked on you.
 2. Decide whether reported word-box quality should be per-gap rather than
    per-line. Gate 6 itself should stay as it is; it did its job.
-3. Approve or reject [the OCR witness
-   plan](../../architecture/pgdp-font-free-typography.md),
+3. Approve or reject the OCR witness
+   plan in `pdomain-pgdp-measure`,
    scoped on 2026-09-04. It carries four open decisions and needs no OCR engine,
    model, or new dependency in this repo: the project's own fine-tuned doctr
    records already cover all five books and pin to the same page hashes.
 
 ## Pointers
 
-- [the M15d plan](../../architecture/pgdp-font-free-typography.md)
+- the M15d plan in `pdomain-pgdp-measure`
 - [Word-gap threshold is too low](../../research/2026-09-03-word-gap-threshold-is-too-low.md)
 - [F2 line-break hyphens](../../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
 - [the typography design](../../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)

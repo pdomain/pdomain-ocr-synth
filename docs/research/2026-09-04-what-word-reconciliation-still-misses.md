@@ -207,8 +207,8 @@ not tested.
    `word_run_error_count`, and `word_gap_error_rate` per page and per book, so a consumer reads
    per-gap accuracy of 0.923 to 0.972 rather than only Gate 6's 0.593 to 0.805. Gate 6 keeps its
    definition and its value; it did its job.
-2. Shipped on 2026-09-04. See [the OCR witness
-   plan](../architecture/pgdp-font-free-typography.md). It needed no OCR
+2. Shipped on 2026-09-04. See the OCR witness
+   plan in `pdomain-pgdp-measure`. It needed no OCR
    engine in this repo: the DocTR records already exist for all five books. On the same
    denominator the shipped witness and this document's repair test agree within 0.0006 to 0.0107.
 3. Leave threshold jitter alone. Three books are at the noise floor of any single global
@@ -220,7 +220,7 @@ not tested.
   — the finding whose fix produced the residual measured here.
 - [F2 silently rejoins line-break hyphens](2026-09-03-pgdp-f2-line-break-hyphens.md) — confirmed
   above, and much larger than either document first estimated.
-- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
+- PGDP font-free typography in `pdomain-pgdp-measure`
   — Gate 6 and its 0.50 floor.
-- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
+- PGDP font-free typography in `pdomain-pgdp-measure`
   — the plan scoped from this measurement.

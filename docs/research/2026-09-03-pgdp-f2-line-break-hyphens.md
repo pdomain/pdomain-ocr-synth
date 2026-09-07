@@ -166,8 +166,8 @@ to what ink is on the line.
    supports the mechanism across the corpus nor refutes it there. The leading-run width test was
    not repeated. See [what word reconciliation still
    misses](2026-09-04-what-word-reconciliation-still-misses.md).
-3. Shipped on 2026-09-04 as [the OCR witness
-   plan](../architecture/pgdp-font-free-typography.md). F2 stays the label
+3. Shipped on 2026-09-04 as the OCR witness
+   plan in `pdomain-pgdp-measure`. F2 stays the label
    and ink projection stays the geometry; OCR supplies only correspondence. It needed no OCR
    engine in this repo, because the project's own fine-tuned DocTR records already cover all five
    corpus books and pin to the same page hashes. It flags 893 lines, 3.7 to 7.1 percent of matched
@@ -179,9 +179,9 @@ to what ink is on the line.
   — the finding that replaced this one as the explanation of over-split.
 - [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md)
   — where this mechanism was confirmed directly and measured across all five books.
-- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
+- PGDP font-free typography in `pdomain-pgdp-measure`
   — the witness pass this finding asked for, scoped and measured for feasibility.
-- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
+- PGDP font-free typography in `pdomain-pgdp-measure`
   — Gate 6 and the gap-threshold sweep.
 - [PGDP typography and structure synthesis design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)
   — the slice an OCR witness pass would sit in front of.

@@ -28,7 +28,7 @@ last_verified: "2026-09-06"
 Add a local `typography-pgdp` command that measures typographic observables from
 aligned ink and pools them per book and per page class, using no font candidates
 at all. All eight tasks of
-[the plan](../../architecture/pgdp-font-free-typography.md)
+the plan in `pdomain-pgdp-measure`
 landed. The plan is `partial` because Gate 6 fails in two of five books.
 
 ## What landed
@@ -173,7 +173,7 @@ This repo still has unpushed commits on `master`. Nothing here was pushed.
 
 ## Pointers
 
-- [the M15d plan](../../architecture/pgdp-font-free-typography.md)
+- the M15d plan in `pdomain-pgdp-measure`
 - [Word-gap threshold is too low](../../research/2026-09-03-word-gap-threshold-is-too-low.md)
 - [F2 line-break hyphens](../../research/2026-09-03-pgdp-f2-line-break-hyphens.md)
 - [the typography design](../../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md)

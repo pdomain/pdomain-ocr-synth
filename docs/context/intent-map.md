@@ -34,7 +34,7 @@ delivery scaffolding. Each item cites its source document or replacement.
   the five quality flags gives 0.994 with every book clear. Either the gate measures the filtered
   inventory, or flagged glyphs stop being emitted, or the book is accepted at a stated lower
   number. The call is the owner's; the gate was not redefined to pass it
-  ([glyph inventory](../architecture/pgdp-glyph-inventory.md)).
+  (glyph inventory in `pdomain-pgdp-measure`).
   Two things now bear on the number. Re-running the chain changes nothing: all 23 marked glyphs
   survive the band-identification fixes. And 0.978 is an upper bound on the error, because three of
   the 23 marks are correct `small_caps` records that the review sheet scores wrong by showing the

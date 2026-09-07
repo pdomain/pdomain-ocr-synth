@@ -34,7 +34,7 @@ templates from first ink-band positions and classifies each page as
 rectify scans or claim baselines, columns, semantics, or fonts.
 
 M15b is shipped and writes `pgdp-alignment/v3`. Its plan retired into
-[source-line alignment](../architecture/pgdp-source-line-alignment.md) on
+source-line alignment in `pdomain-pgdp-measure` on
 2026-09-06. Three defects found on 2026-08-31 are corrected. Version 1 rejected a page whenever any ink band split
 into more than one cluster, which excluded ordinary text pages over punctuation
 and dust. Specks became ink bands of their own and then candidates matching no
@@ -161,8 +161,8 @@ The witness flags 893 lines across the corpus, 3.7 to 7.1 percent of matched
 lines, and discounting them lifts agreement with the transcription by 3.0 to
 7.0 points, to 0.860, 0.772, 0.632, 0.870, and 0.847. That is reported beside
 Gate 6 and does not replace it. Two methods that share no evidence agree on the
-fragment rate within 1.1 points. See [the witness
-plan](../architecture/pgdp-font-free-typography.md).
+fragment rate within 1.1 points. See the witness
+plan in `pdomain-pgdp-measure`.
 
 The report also carries per-gap accuracy, added on 2026-09-04. Gate 6 counts
 lines and a line carries six to twelve word gaps, so one bad gap fails the whole
@@ -182,7 +182,7 @@ one aligned book's own scans and writes `manifest.json` as `pgdp-glyphs/v1`,
 `glyphs.jsonl` with one row per glyph, and a per-character atlas rendered from
 those rows. The corpus run harvested 266,549 glyphs from 1,367 of 1,385 pages
 across the five aligned books. See
-[glyph inventory](../architecture/pgdp-glyph-inventory.md).
+glyph inventory in `pdomain-pgdp-measure`.
 
 **Gate 3 fails and that is the recorded result.** Label correctness on the
 `transcribed` tier measures 0.978 pooled against a floor of 0.98, from 1,050
@@ -351,15 +351,15 @@ training layouts, determinism, resume, and publishing.
 
 The PGDP track has four architecture documents, one per shipped contract:
 
-- [Ranking and review queue](../architecture/pgdp-ranking-and-review-queue.md),
+- Ranking and review queue in `pdomain-pgdp-measure`,
   M14's `rank-pgdp`.
-- [Observed geometry profiling](../architecture/pgdp-observed-geometry-profiling.md),
+- Observed geometry profiling in `pdomain-pgdp-measure`,
   M15a's `profile-pgdp`, writing `pgdp-profile/v2`.
-- [Source-line alignment](../architecture/pgdp-source-line-alignment.md), M15b's
+- Source-line alignment in `pdomain-pgdp-measure`, M15b's
   `align-pgdp`, writing `pgdp-alignment/v3`.
-- [Font-free typography](../architecture/pgdp-font-free-typography.md), M15d and
+- Font-free typography in `pdomain-pgdp-measure`, M15d and
   M15e's `typography-pgdp`, writing `pgdp-typography/v1`.
-- [Glyph inventory](../architecture/pgdp-glyph-inventory.md), M15f's
+- Glyph inventory in `pdomain-pgdp-measure`, M15f's
   `glyphs-pgdp`, writing `pgdp-glyphs/v1`, with Gate 3 open.
 
 Recipe authors should start with [Recipe workflow](../usage/recipe-workflow.md).

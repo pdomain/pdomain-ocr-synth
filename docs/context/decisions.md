@@ -337,3 +337,26 @@ five whole-book `pgdp-alignment/v3` runs summarized in `.m15b-evidence/wholebook
 - Why it stays: retirement policy admits only evidence-backed implemented plans. This plan holds
   live work that the architecture doc does not own: closing Gate 3, the 490 unreviewed
   flat-ascender words, and the atlas-in-repository policy that decision 1 left due.
+
+### 2026-09-07 Moved to `pdomain-pgdp-measure`: the five PGDP architecture docs
+
+- Old paths: `docs/architecture/pgdp-ranking-and-review-queue.md`,
+  `pgdp-observed-geometry-profiling.md`, `pgdp-source-line-alignment.md`,
+  `pgdp-font-free-typography.md`, `pgdp-glyph-inventory.md`
+- Outcome: superseded by relocation. The docs are unchanged in substance; they now sit in
+  `pdomain-pgdp-measure/docs/architecture/`, beside the code they describe.
+- Superseded by: the same five files in `pdomain-pgdp-measure`
+- Removal commit: the unique local commit with subject
+  `docs: move the five PGDP architecture docs to pdomain-pgdp-measure` (resolve with
+  `git log --grep='^docs: move the five PGDP architecture docs to pdomain-pgdp-measure$'`).
+- Rationale kept: in the moved docs themselves. Their code and test paths were repointed from
+  `src/pdomain_ocr_synth/pgdp/` to `src/pdomain_pgdp_measure/`, and their command names from
+  `rank-pgdp` through `glyphs-pgdp` to the `pgdp-measure` subcommands. Links to research and
+  decision docs that stayed here became prose naming `pdomain-ocr-synth`, following this repo's
+  convention of naming a sibling repository rather than linking across repositories.
+- Remaining work: none. Gate 3 stays open, and it travels with the glyph-inventory doc; see
+  [the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).
+
+The tombstones above this entry name these five docs under their old
+`docs/architecture/` paths. Those references are historical and are left as written: they record
+where truth lived when each plan retired.

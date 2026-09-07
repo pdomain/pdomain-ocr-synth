@@ -387,9 +387,9 @@ behind.
 
 ## Related
 
-- [PGDP font-free typography](../architecture/pgdp-font-free-typography.md)
+- PGDP font-free typography in `pdomain-pgdp-measure`
   — the word boxes this cuts from, and the latent discipline it inherits.
-- [PGDP font-free typography, OCR witness](../architecture/pgdp-font-free-typography.md)
+- PGDP font-free typography, OCR witness in `pdomain-pgdp-measure`
   — the same provenance pattern, and the reason reconciliation is trustworthy.
 - `/workspaces/pdomain/.m15f-evidence/` — the measured per-book coverage this plan is written
   against, and `next-loop-prompt.md`, the execution brief for an unattended run.

@@ -83,7 +83,7 @@ later continuation rather than an insertion.
 
 | # | Slice | Status | Delivers |
 |---|-------|--------|----------|
-| [14](../architecture/pgdp-ranking-and-review-queue.md) | Discovery and review queue | ✅ shipped; current architecture | `rank-pgdp` ranks projects and pages from F2 evidence |
+| 14 in `pdomain-pgdp-measure` | Discovery and review queue | ✅ shipped; current architecture | `rank-pgdp` ranks projects and pages from F2 evidence |
 | 15 | Scan measurement and book profiles | ✅ shipped in seven slices; see below | Measured geometry, typography, and a glyph inventory |
 | 16 | Styled text and typography controls | not started | Styled spans, font families, variable axes, tracking, kerning |
 | 17 | Structured-page compositor | not started | Shared page graph, then columns, tables, braces, poetry, notes |
@@ -97,19 +97,19 @@ inside each plan's own text, so this table is the first place they are collected
 
 | slice | delivers | status | current truth |
 |---|---|---|---|
-| M15a | `profile-pgdp`: foreground bounds, margins, ink bands, page templates, page classes | shipped | [observed geometry profiling](../architecture/pgdp-observed-geometry-profiling.md) |
-| M15b | `align-pgdp`: bind F2 source lines to scan rows, `pgdp-alignment/v3` | shipped | [source-line alignment](../architecture/pgdp-source-line-alignment.md) |
+| M15a | `profile-pgdp`: foreground bounds, margins, ink bands, page templates, page classes | shipped | observed geometry profiling in `pdomain-pgdp-measure` |
+| M15b | `align-pgdp`: bind F2 source lines to scan rows, `pgdp-alignment/v3` | shipped | source-line alignment in `pdomain-pgdp-measure` |
 | M15c | rectification and dewarping | **reserved, not started** | none; the alignment and typography plans both say not to start it |
-| M15d | `typography-pgdp`: baseline, x-height, stroke, skew, word runs, all font-free | shipped | [font-free typography](../architecture/pgdp-font-free-typography.md) |
-| M15e | OCR witness for continuation fragments, the `--geometry` flag | shipped | [font-free typography](../architecture/pgdp-font-free-typography.md) |
-| M15f | `glyphs-pgdp`: per-book labelled glyph inventory and atlas | shipped, **Gate 3 open** | [glyph inventory](../architecture/pgdp-glyph-inventory.md) |
+| M15d | `typography-pgdp`: baseline, x-height, stroke, skew, word runs, all font-free | shipped | font-free typography in `pdomain-pgdp-measure` |
+| M15e | OCR witness for continuation fragments, the `--geometry` flag | shipped | font-free typography in `pdomain-pgdp-measure` |
+| M15f | `glyphs-pgdp`: per-book labelled glyph inventory and atlas | shipped, **Gate 3 open** | glyph inventory in `pdomain-pgdp-measure` |
 
 M15a absorbed page classification and M15b absorbed the fragmented-band correction. Both are
 covered by the architecture docs above rather than by separate slice letters.
 
 **M15f shipped with Gate 3 failing.** Label correctness on the `transcribed` tier measures 0.978
 pooled against a floor of 0.98, and two of five books fail. That is the recorded result. See the
-[glyph inventory architecture](../architecture/pgdp-glyph-inventory.md).
+glyph inventory architecture in `pdomain-pgdp-measure`.
 
 ## The measurement chain runs on a stale alignment report
 
