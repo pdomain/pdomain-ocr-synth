@@ -267,8 +267,11 @@ question is answered as a side effect of making the extraction verifiable.
   `label_style` and so scores correct small-caps records as errors. Keeping the glyph modules here
   would delay the extraction without moving the gate
   ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
-- **Whether `pdomain-ocr-synth` keeps a dependency on the measurement package** during the
-  transition, or cuts over once.
+- ~~Whether `pdomain-ocr-synth` keeps a dependency on the measurement package during the
+  transition.~~ **Decided 2026-09-07: it cuts over in one step.** No dependency is added. The five
+  `*-pgdp` subcommands are removed along with the modules, so `pdomain-ocr-synth` becomes a
+  synthesizer only. Callers move to `pgdp-measure rank`, `profile`, `align`, `typography`, and
+  `glyphs`.
 - **How region proposals persist in the labeler:** as `Block` objects with `block_role_labels`,
   which already round-trips, or in the `extensions["labeler"]` namespaced slot on `PageRecord`.
 - **Whether the labeler ingests PGDP corpora directly,** or only reads the measurement package's

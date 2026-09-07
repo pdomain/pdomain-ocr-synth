@@ -31,10 +31,6 @@ ALL_SUBCOMMANDS = [
     "render",
     "publish",
     "clean",
-    "rank-pgdp",
-    "profile-pgdp",
-    "align-pgdp",
-    "typography-pgdp",
 ]
 
 # Subcommands still fully stubbed after M08-dry-run. ``publish``
@@ -483,3 +479,13 @@ def test_schema_to_file(tmp_path: Path) -> None:
 def test_env_var_isolation_works(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.delenv("PD_OCR_SYNTH_RECIPES", raising=False)
     assert os.environ.get("PD_OCR_SYNTH_RECIPES") is None
+
+
+def test_pgdp_subcommands_are_gone() -> None:
+    """Measurement moved to pdomain-pgdp-measure; synth must not offer it."""
+    from pdomain_ocr_synth.cli import build_parser
+
+    parser = build_parser()
+    actions = [a for a in parser._actions if a.dest == "command"]
+    choices = set(actions[0].choices)
+    assert not {c for c in choices if c.endswith("-pgdp")}

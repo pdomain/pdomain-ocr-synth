@@ -382,26 +382,26 @@ def test_cli_spec_parser_accepts_lowercase_hyphenated_subcommand_names() -> None
 
 | Command | Purpose |
 |---------|---------|
-| `rank-pgdp <corpus_root>` | Rank projects |
-| `rank--pgdp <corpus_root>` | Invalid doubled separator |
-| `rank-pgdp- <corpus_root>` | Invalid trailing separator |
-| `rank_pgdp <corpus_root>` | Invalid underscore |
+| `rank-corpus <corpus_root>` | Rank projects |
+| `rank--corpus <corpus_root>` | Invalid doubled separator |
+| `rank-corpus- <corpus_root>` | Invalid trailing separator |
+| `rank_corpus <corpus_root>` | Invalid underscore |
 
-### `rank-pgdp <corpus_root>`
+### `rank-corpus <corpus_root>`
 
 | Flag | Purpose |
 |------|---------|
 | `--project-limit LIMIT` | Cap projects |
 
-### `rank--pgdp <corpus_root>`
+### `rank--corpus <corpus_root>`
 
 | Flag | Purpose |
 |------|---------|
 | `--invalid` | Must not be parsed |
 """
 
-    assert _spec_subcommand_names(spec_text) == ["rank-pgdp"]
-    assert _spec_flag_tables(spec_text) == {"rank-pgdp": {"--project-limit"}}
+    assert _spec_subcommand_names(spec_text) == ["rank-corpus"]
+    assert _spec_flag_tables(spec_text) == {"rank-corpus": {"--project-limit"}}
 
 
 def test_spec_01_subcommands_match_argparse() -> None:
