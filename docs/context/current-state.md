@@ -193,13 +193,17 @@ that is what one line of filtering buys a consumer, not the gate passing. Nine
 other gates pass, including determinism, provenance, both other label tiers,
 coverage, yield, atlas reproduction, and latent discipline.
 
-**0.978 is an upper bound on the error, because the review sheet hides the
-style.** Three of the 23 marked glyphs are `small_caps` records that describe the
-ink exactly. The sheet shows a reviewer the character alone, so a small-capital N
-labelled `n` reads as an error. Two more marks are real defects the quality flags
-miss: a within-word cut that puts `s` on a well-formed `e`, and a missed word gap
-in a script italic that puts `e` on three letterforms. Show `label_style` on the
-sheet and rescore before deciding the gate. See
+**The review sheet now shows `label_style`, and the corrected number still
+fails.** Three of the 23 marked glyphs are `small_caps` records that describe the
+ink exactly: the E of "MASTER", the E of "SETON", and the N of "HERRING", each
+verified against the ink. The sheet used to show the character alone, so a
+small-capital N labelled `n` read as an error. Counting those three as correct
+moves `projectID603d7d5e04ca0` from 0.962 to 0.976, still under the floor, and
+leaves `projectID67a80fde44d34` at 0.943 with all 12 of its marks `roman`. Pooled
+the corrected rate is 0.981, but the gate is judged per book. Two more marks are
+real defects the quality flags miss: a within-word cut that puts `s` on a
+well-formed `e`, and a missed word gap in a script italic that puts `e` on three
+letterforms. See
 [the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).
 
 Two label tiers never mix. `transcribed` comes from words on lines reconciled

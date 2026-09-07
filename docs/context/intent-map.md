@@ -36,10 +36,11 @@ delivery scaffolding. Each item cites its source document or replacement.
   inventory, or flagged glyphs stop being emitted, or the book is accepted at a stated lower
   number. The call is the owner's; the gate was not redefined to pass it
   (glyph inventory in `pdomain-pgdp-measure`).
-  Two things now bear on the number. Re-running the chain changes nothing: all 23 marked glyphs
-  survive the band-identification fixes. And 0.978 is an upper bound on the error, because three of
-  the 23 marks are correct `small_caps` records that the review sheet scores wrong by showing the
-  character without the style. Fix the sheet and rescore before deciding
+  Two routes to a better number are now closed. Re-running the chain changes nothing: all 23
+  marked glyphs survive the band-identification fixes. And the review sheet now shows
+  `label_style`, which recovers the three correct `small_caps` marks and takes the pooled rate
+  from 0.978 to 0.981 — but the worse book is untouched at 0.943, and neither failing book clears
+  the floor. Filtering remains the only route that passes as measured
   ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
 - **Work the flat-ascender queues.** 490 words across the five books sit unreviewed in each
   manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book> <start> <count>`
