@@ -260,8 +260,13 @@ question is answered as a side effect of making the extraction verifiable.
 ## Open decisions
 
 - ~~The measurement package's name.~~ **Decided 2026-09-06: `pdomain-pgdp-measure`.**
-- **Whether the glyph inventory moves with it.** It is measurement, so it should. But its Gate 3 is
-  open, and moving a milestone with a failing gate needs a deliberate answer.
+- ~~Whether the glyph inventory moves with it.~~ **Decided 2026-09-07: it moves with the rest.**
+  It is measurement, and the open Gate 3 is no longer a reason to wait. Re-running the measurement
+  chain on the current alignment changes nothing: all 23 glyphs the review marked wrong survive the
+  band-identification fixes. The correction Gate 3 needs is to the review sheet, which hides
+  `label_style` and so scores correct small-caps records as errors. Keeping the glyph modules here
+  would delay the extraction without moving the gate
+  ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
 - **Whether `pdomain-ocr-synth` keeps a dependency on the measurement package** during the
   transition, or cuts over once.
 - **How region proposals persist in the labeler:** as `Block` objects with `block_role_labels`,

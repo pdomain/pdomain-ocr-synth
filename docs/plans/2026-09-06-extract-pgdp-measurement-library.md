@@ -461,7 +461,7 @@ git commit -m "feat: scaffold the pgdp measurement package"
 
 **Files:**
 
-- Create: `src/pdomain_pgdp_measure/*.py` — 33 modules
+- Create: `src/pdomain_pgdp_measure/*.py` — 32 modules
 - Delete: `src/pdomain_ocr_synth/pgdp/*.py` in the synth repository, in Task 6 not here
 
 **Interfaces:**
@@ -473,7 +473,7 @@ git commit -m "feat: scaffold the pgdp measurement package"
   `.profile_input.load_profile_snapshot`, `.profile_input.read_profile_snapshot`,
   `.profile_models.ProfileReport`, `.image_measurement.SnapshotSpoolError`, `.report.write_report`.
 
-- [ ] **Step 1: Copy the modules verbatim**
+- [x] **Step 1: Copy the modules verbatim**
 
 ```bash
 SRC=/workspaces/pdomain/pdomain-ocr-synth/src/pdomain_ocr_synth/pgdp
@@ -482,11 +482,14 @@ cp "$SRC"/*.py "$DST"/
 ls "$DST"/*.py | wc -l
 ```
 
-Expected: `33`.
+Expected: `32`. This overwrites the placeholder `__init__.py` from Task 1 with the real one, which
+is what defines the package's public surface.
 
-- [ ] **Step 2: Rewrite absolute self-references**
+- [x] **Step 2: Rewrite absolute self-references**
 
-The modules use relative imports internally, so most need no change. Catch any absolute ones.
+**Nearly every module needs this.** The tree uses absolute self-imports throughout: 23 of the 32
+files name `pdomain_ocr_synth.pgdp` directly and none use a relative import. It imports nothing
+from the rest of `pdomain_ocr_synth`, so the package's own name is the only thing to rewrite.
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -502,7 +505,12 @@ grep -rn 'pdomain_ocr_synth' src/pdomain_pgdp_measure/ || echo "CLEAN"
 
 Expected: `CLEAN`.
 
-- [ ] **Step 3: Copy the schemas and fixtures**
+Step 3 copies fixtures that need the same rewrite. `tests/fixtures/pgdp_glyphs/generate_fixtures.py`
+imports `pdomain_ocr_synth.pgdp.glyph_atlas` and `glyph_cut`. It surfaces as an isort failure
+rather than an import error, because with `known-first-party` set to the new name the stale import
+sorts into a different block. Rerun the same `sed` over `tests/` after Step 3.
+
+- [x] **Step 3: Copy the schemas and fixtures**
 
 ```bash
 SYNTH=/workspaces/pdomain/pdomain-ocr-synth
@@ -513,9 +521,11 @@ cp -r "$SYNTH"/tests/fixtures/pgdp_* "$DST/tests/fixtures/"
 ls "$DST/schemas" | wc -l && ls "$DST/tests/fixtures" | wc -l
 ```
 
-Expected: `8` and `4`.
+Expected: `8` and `4`. All eight schemas are pgdp schemas, so copying the whole directory is
+right. They are test-only artifacts: no module under `src` references them, and the four model
+tests load them by a path relative to the repository root, which this layout preserves.
 
-- [ ] **Step 4: Verify the package imports**
+- [x] **Step 4: Verify the package imports**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -530,7 +540,7 @@ print('ALL SYMBOLS RESOLVE')
 
 Expected: `ALL SYMBOLS RESOLVE`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -543,45 +553,67 @@ git add -A && git commit -m "feat: move the pgdp measurement modules, schemas, a
 
 - Create: `tests/test_pgdp_*.py` — 32 files
 - Create: `tests/test_cli_*_pgdp.py` — 5 files
+- Create: `tests/__init__.py` — empty, but required
 
 **Interfaces:**
 
 - Consumes: the modules from Task 2.
 
-- [ ] **Step 1: Copy the test files**
+- [x] **Step 1: Copy the test files**
 
 ```bash
 SYNTH=/workspaces/pdomain/pdomain-ocr-synth
 DST=/workspaces/pdomain/pdomain-pgdp-measure
 cp "$SYNTH"/tests/test_pgdp_*.py "$DST/tests/"
 cp "$SYNTH"/tests/test_cli_*_pgdp.py "$DST/tests/"
+cp "$SYNTH"/tests/__init__.py "$DST/tests/"
 ls "$DST"/tests/test_*.py | wc -l
 ```
 
 Expected: `38`, being the 37 moved files plus `test_package_imports.py`.
 
-- [ ] **Step 2: Rewrite the imports**
+`tests/__init__.py` is empty and easy to overlook, but it makes `tests` an importable package.
+`test_pgdp_glyph_atlas.py` and `test_pgdp_typography_witness.py` pull fixtures through
+`from tests.test_pgdp_*`, and fail to collect without it.
+
+- [x] **Step 2: Rewrite the imports**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
-sed -i 's/pdomain_ocr_synth\.pgdp/pdomain_pgdp_measure/g; s/from pdomain_ocr_synth import/from pdomain_pgdp_measure import/g' tests/*.py
-grep -rn 'pdomain_ocr_synth' tests/ || echo "CLEAN"
+sed -i 's/pdomain_ocr_synth\.pgdp/pdomain_pgdp_measure/g' tests/*.py
+# The old `pgdp` submodule IS the new package, so this import has to become an
+# alias. Rewriting it to `from pdomain_pgdp_measure import pgdp` cannot resolve.
+sed -i 's/^from pdomain_ocr_synth import pgdp$/import pdomain_pgdp_measure as pgdp/' tests/*.py
+grep -rn 'pdomain_ocr_synth' tests/ | grep -v 'pdomain_ocr_synth\.cli' || echo "CLEAN"
 ```
 
-Expected: `CLEAN`. If the CLI tests still reference `pdomain-ocr-synth` as a command name, leave
-them failing; Task 4 fixes them.
+Expected: `CLEAN`, with `pdomain_ocr_synth.cli` references left standing for Task 4.
 
-- [ ] **Step 3: Run the non-CLI tests**
+Renaming the imports leaves six files with isort violations, because the new name sorts into a
+different block. Run `uv run ruff check . --fix`; the change is import order only.
+
+- [x] **Step 3: Run the non-CLI tests**
+
+**Ten files need the CLI, not five.** Beyond the five `test_cli_*_pgdp` files,
+`test_pgdp_alignment`, `test_pgdp_typography`, and `test_pgdp_glyphs` import
+`pdomain_ocr_synth.cli` directly, and `test_pgdp_glyph_atlas` and `test_pgdp_typography_witness`
+import fixtures from those. Excluding only the glob leaves 51 collection errors.
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
-uv run pytest tests/ -n auto --ignore-glob='*test_cli_*' -q
+uv run pytest tests/ -n auto -q --ignore-glob='*test_cli_*' \
+  --ignore=tests/test_pgdp_alignment.py \
+  --ignore=tests/test_pgdp_typography.py \
+  --ignore=tests/test_pgdp_glyphs.py \
+  --ignore=tests/test_pgdp_glyph_atlas.py \
+  --ignore=tests/test_pgdp_typography_witness.py
 ```
 
-Expected: all pass. Every fixture-backed test must pass here, because those fixtures are the
-reviewed evidence and a failure means the move corrupted something.
+Expected: 897 passed, 0 errors, at 79.6 percent coverage. Every fixture-backed test must pass here,
+because those fixtures are the reviewed evidence and a failure means the move corrupted something.
+Task 4 brings the remaining ten files in.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
