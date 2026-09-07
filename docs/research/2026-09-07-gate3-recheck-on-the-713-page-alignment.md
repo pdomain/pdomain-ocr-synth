@@ -213,7 +213,7 @@ It says nothing about the `recognized` tier. Gate 3 samples `transcribed` only.
 
 ## Related
 
-- [Per-book glyph inventory plan](../plans/2026-09-05-pgdp-per-book-glyph-inventory.md) — the live
+- Per-book glyph inventory plan in `pdomain-pgdp-measure` — the live
   plan Gate 3 belongs to.
 - Glyph inventory architecture in `pdomain-pgdp-measure` — where the gate and the
   quality flags are defined.

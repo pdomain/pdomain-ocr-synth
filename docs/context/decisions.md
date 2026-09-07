@@ -360,3 +360,19 @@ five whole-book `pgdp-alignment/v3` runs summarized in `.m15b-evidence/wholebook
 The tombstones above this entry name these five docs under their old
 `docs/architecture/` paths. Those references are historical and are left as written: they record
 where truth lived when each plan retired.
+
+### 2026-09-07 Moved to `pdomain-pgdp-measure`: the live glyph-inventory plan
+
+- Old path: `docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md`
+- Outcome: superseded by relocation. The plan is still live, and its Gate 3 is still open.
+- Superseded by: the same file in `pdomain-pgdp-measure/docs/plans/`
+- Removal commit: the unique local commit with subject
+  `docs: repoint PGDP documentation at the measurement package` (resolve with
+  `git log --grep='^docs: repoint PGDP documentation at the measurement package$'`).
+- Rationale kept: in the moved plan. An open gate belongs with the code it gates, and that code is
+  now `pdomain_pgdp_measure.glyphs`.
+- Remaining work: Gate 3 is open at 0.978 against a floor of 0.98. Before deciding it, show
+  `label_style` on the review sheet and rescore, because three of the 23 marked glyphs are correct
+  small-caps records; see
+  [the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md). The 490
+  flat-ascender words queued in each manifest are also unreviewed.

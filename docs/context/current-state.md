@@ -378,7 +378,8 @@ M12 is glyph-annotation emission. Its shared model, recipe block, render mapping
 sidecar output, and tests have not shipped.
 
 M15f is shipped with Gate 3 open, so its plan stays live at
-`docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md`. Every other M15 slice is
+`docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md` in `pdomain-pgdp-measure`.
+Every other M15 slice is
 retired into architecture. M15c stays reserved for rectification and unstarted.
 
 The active roadmap remains [plans/README](../plans/README.md).

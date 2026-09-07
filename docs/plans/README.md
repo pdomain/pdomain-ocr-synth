@@ -83,7 +83,7 @@ later continuation rather than an insertion.
 
 | # | Slice | Status | Delivers |
 |---|-------|--------|----------|
-| 14 in `pdomain-pgdp-measure` | Discovery and review queue | ✅ shipped; current architecture | `rank-pgdp` ranks projects and pages from F2 evidence |
+| 14 | Discovery and review queue | ✅ shipped; architecture now in `pdomain-pgdp-measure` | `pgdp-measure rank` ranks projects and pages from F2 evidence |
 | 15 | Scan measurement and book profiles | ✅ shipped in seven slices; see below | Measured geometry, typography, and a glyph inventory |
 | 16 | Styled text and typography controls | not started | Styled spans, font families, variable axes, tracking, kerning |
 | 17 | Structured-page compositor | not started | Shared page graph, then columns, tables, braces, poetry, notes |
@@ -92,17 +92,23 @@ later continuation rather than an insertion.
 
 ## M15 became seven slices, and all but one letter shipped
 
+**Every M15 command now lives in `pdomain-pgdp-measure`.** The measurement library was extracted on
+2026-09-07 and this repository cut over in one step, keeping no dependency on it. The five
+subcommands are `pgdp-measure rank`, `profile`, `align`, `typography`, and `glyphs`; flags,
+arguments, and wire contracts are unchanged. The architecture docs in the "current truth" column
+below moved with them.
+
 M15 was scoped as one milestone and grew lettered sub-slices as it ran. The letters appear only
 inside each plan's own text, so this table is the first place they are collected.
 
 | slice | delivers | status | current truth |
 |---|---|---|---|
-| M15a | `profile-pgdp`: foreground bounds, margins, ink bands, page templates, page classes | shipped | observed geometry profiling in `pdomain-pgdp-measure` |
-| M15b | `align-pgdp`: bind F2 source lines to scan rows, `pgdp-alignment/v3` | shipped | source-line alignment in `pdomain-pgdp-measure` |
+| M15a | `pgdp-measure profile`: foreground bounds, margins, ink bands, page templates, page classes | shipped | observed geometry profiling in `pdomain-pgdp-measure` |
+| M15b | `pgdp-measure align`: bind F2 source lines to scan rows, `pgdp-alignment/v3` | shipped | source-line alignment in `pdomain-pgdp-measure` |
 | M15c | rectification and dewarping | **reserved, not started** | none; the alignment and typography plans both say not to start it |
-| M15d | `typography-pgdp`: baseline, x-height, stroke, skew, word runs, all font-free | shipped | font-free typography in `pdomain-pgdp-measure` |
+| M15d | `pgdp-measure typography`: baseline, x-height, stroke, skew, word runs, all font-free | shipped | font-free typography in `pdomain-pgdp-measure` |
 | M15e | OCR witness for continuation fragments, the `--geometry` flag | shipped | font-free typography in `pdomain-pgdp-measure` |
-| M15f | `glyphs-pgdp`: per-book labelled glyph inventory and atlas | shipped, **Gate 3 open** | glyph inventory in `pdomain-pgdp-measure` |
+| M15f | `pgdp-measure glyphs`: per-book labelled glyph inventory and atlas | shipped, **Gate 3 open** | glyph inventory in `pdomain-pgdp-measure` |
 
 M15a absorbed page classification and M15b absorbed the fragmented-band correction. Both are
 covered by the architecture docs above rather than by separate slice letters.
@@ -152,7 +158,7 @@ re-runs the measurement chain on the alignment that now accepts 713 pages. That 
 report question above as a side effect of making the move verifiable.
 
 The one live PGDP plan is the
-[per-book glyph inventory](2026-09-05-pgdp-per-book-glyph-inventory.md), kept open because Gate 3
+per-book glyph inventory in `pdomain-pgdp-measure`, kept open because Gate 3
 fails.
 
 ## M11 is a FastAPI and React SPA, not NiceGUI

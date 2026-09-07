@@ -17,6 +17,8 @@ Recipe-driven synthetic OCR training-data generator; produces labeled
 image+text pairs for historical and specialty typography (first target:
 Cló Gaelach / early Irish). Status: M00–M10 substantially shipped;
 M11 (preview UI) and M12 (glyph annotations) are the remaining milestones.
+PGDP measurement left this repo on 2026-09-07 for `pdomain-pgdp-measure`;
+this repo renders and publishes, and consumes measurement reports.
 Architecture: `docs/specs/00-overview.md`.
 
 ## Commands
@@ -65,6 +67,9 @@ Full spec set in `docs/specs/00-N.md` (read in order). Roadmap milestones in `do
 - `../pdomain-ocr-training/` — consumes synth output; reads the profile directory layout
   this repo must match. Supersedes the retired `pd-ocr-trainer`.
 - `../pdomain-book-tools/` — shared OCR/image primitives (potential future dependency).
+- `../pdomain-pgdp-measure/` — the PGDP measurement library, extracted from this repo on
+  2026-09-07. It owns scan geometry, alignment, typography, and glyph cutting, and the
+  `pgdp-measure` CLI. This repo cut over in one step and keeps no dependency on it.
 
 ## GH issues
 
