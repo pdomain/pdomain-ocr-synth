@@ -146,7 +146,11 @@ library would become its own package, the region and page-type vocabulary would 
 repository would consume labeled datasets rather than produce its own measurements. Under it,
 M16 through M19 stop meaning "measure more" and start meaning "consume labels".
 
-The split is agreed in principle and its first step is planned. See the
+The split is agreed in principle, and its measurement-library step shipped on 2026-09-07. The
+labeling side is now the active track: see the
+[labeling track roadmap](2026-09-07-labeling-track-roadmap.md) for its seven slices, three
+corrections to the split design's premises, and the finding that no region ground truth exists
+anywhere in the suite. See also the
 [measurement, labeling, and synthesis split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)
 for the design, and the
 [measurement library extraction plan](2026-09-06-extract-pgdp-measurement-library.md) for the
