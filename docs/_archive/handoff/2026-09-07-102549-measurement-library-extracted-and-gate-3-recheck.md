@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-07"
+kind: archive
+status: retired
 created_at: "2026-09-07T10:25:40Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "5b3d55d44083063ac2613b3a6228114da3c31a6d"
 supersedes: "2026-09-06-214111-measurement-library-extraction-planned-and-ready.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-07"
+last_verified: "2026-09-07"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-07-131242-labeling-track-opened-and-region-vocabulary-settled.md`.**
+
 
 # The extraction shipped, and Gate 3 is the open item
 
