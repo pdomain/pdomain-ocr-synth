@@ -102,8 +102,12 @@ cell, caption, illustration, ornament, rule, brace, and bracket.
 `RegionType` stays as it is. It records what a machine detector proposed, which is a different
 question from what a person meant, and merging them would erase the distinction.
 
-A `PageType` enum joins it, carrying the four classes `profile-pgdp` already assigns:
-`normal_recto`, `normal_verso`, `chapter_opening`, and `unknown`.
+A page enum joins it. **Corrected on 2026-09-07 by [region provenance and
+persistence](2026-09-07-region-provenance-and-persistence-design.md).** It is named `PageKind`, not
+`PageType`, because `pdomain-prep-for-pgdp` already ships a seven-value `PageType` deciding what is
+written to the submission zip. And it does not carry the four classes `profile-pgdp` assigns:
+`normal_recto`, `normal_verso`, `chapter_opening`, and `unknown` are `PageClass`, a measured
+geometric signal that feeds a `PageKind` proposal rather than being it.
 
 Relations get modelled explicitly rather than computed. Reading order is a free function in
 `layout/regions.py` today and nothing serializes it. The `matching/` package in the same

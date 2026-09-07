@@ -86,17 +86,20 @@ block layer with a visibility toggle and a canvas consumer to hang regions on.
 
 ## Two open decisions from the split design are now answered
 
-**Where region proposals persist: as a sidecar map, which is neither option the design offered.**
-The design proposed `Block` objects with `block_role_labels`, or the `extensions["labeler"]` slot
-on the shared `PageRecord`. Reject both. The labeler never touches `Block` at all, zero references
-in the repository, and its own `PATCH` route documents `layout_type` as lost on the
-`Block.to_dict` to `from_dict` round trip. `extensions["labeler"]` holds per-page session state
-such as `selection_mode` and `line_filter`, not annotation payload.
+**Where confirmed regions persist: as `Block` objects, by owner ruling on 2026-09-07.**
+Superseded by [region provenance and
+persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md). This section first
+recommended a sidecar map and the owner rejected it. Regions are first-class `Block` objects, and
+machine proposals persist separately from them.
 
-Instead, `core/labeler_sidecars.py` already carries `glyph_annotations_map` and `char_bboxes_map`
-under a reserved `labeler_sidecars` key inside the content blob, where `Page.from_dict` ignores
-unknown keys. It is versioned by content hash, so undo and reload rehydrate for free. Regions
-belong there as a third map.
+The objection recorded here was that the labeler never touches `Block` at all, zero import
+references in the repository. That remains true and is a cost rather than a blocker. The implied
+data-loss worry does not hold: `block_role_labels` is written by `Block.to_dict` and read back by
+`from_dict`, so role labels round-trip. The attribute genuinely lost on that round trip is the
+line-level validated flag, which is unrelated.
+
+`extensions["labeler"]` was also rejected and stays rejected. It holds per-page session state such
+as `selection_mode` and `line_filter`, not annotation payload.
 
 **Whether the labeler ingests PGDP corpora directly: no, it reads a materialized bundle.** That
 path already exists. `core/persistence/book_labeling_manifest.py` and `book_labeling_session.py`
@@ -122,9 +125,10 @@ own design before it is built.
 twenty that ship today unchanged plus fourteen additions, under an additive-only rule. Two
 adversarial reviews and a recheck; no code has moved.
 
-The role enum and a `PageType` enum, plus mappings from PP-DocLayout's 14 `RegionType` values and
+The role enum and a `PageKind` enum, plus mappings from PP-DocLayout's 14 `RegionType` values and
 `Block`'s 20 strings so the new enum replaces them as the authority rather than becoming a third
-list.
+list. The page enum is named `PageKind`, not `PageType`, because `pdomain-prep-for-pgdp` already
+ships a seven-value `PageType` deciding what is written to the submission zip.
 
 It must import without the imaging or ML stack. `tests/test_torch_free_import.py` blocks `torch`,
 `doctr`, `torchvision`, `cv2`, `pandas`, `matplotlib`, and `transformers` in a clean subprocess
@@ -137,10 +141,20 @@ Blocks every other slice.
 
 ### Slice 2 — Region annotations in the labeler, backend only
 
-A `regions_map` in `LabelerSidecars` beside `glyph_annotations_map`. CRUD routes plus an
-accept-proposal route copying the shape of
-`POST .../words/{line}/{word}/accept-prediction`. A proposal sidecar that is never ground truth
-and is recomputed rather than persisted, matching the glyph design's intent.
+Confirmed regions as `Block` objects, machine proposals in their own per-run store, and a decision
+record joining the two. CRUD routes plus accept and reject routes. Proposals persist rather than
+being recomputed, because a model cannot be scored against decisions that were never kept. The
+shape is settled in [region provenance and
+persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
+
+Do not copy the glyph accept-prediction route wholesale. It has no reject counterpart and never
+persists the prediction, so it cannot measure its own classifier.
+
+**Words are in scope too, by owner direction on 2026-09-07, and cost less.** `Word` already keeps
+`text` with `ocr_confidence` beside `_ground_truth_text`, so the recognizer's claim survives a
+human correction. What it lacks is provenance: F2 alignment, a person typing, split and merge, and
+the export job all write `ground_truth_text` and nothing records which. Adding `source` to
+`ReviewMetadata` closes it with no new store.
 
 **Every region carries `source`, `confidence`, and `evidence` from its first stored byte.** This
 is the one thing that cannot be retrofitted: adding it later rewrites every stored region.

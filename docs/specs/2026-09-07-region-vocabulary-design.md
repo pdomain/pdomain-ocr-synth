@@ -187,3 +187,10 @@ List-item, Page-footer, Page-header, Picture, Section-header, Table, Text, Title
 - **Open:** how a pre-structure `block_role_labels=["table"]` becomes a post-structure
   `BlockCategory.TABLE`. `10-table-structure.md:475` lists this as unresolved in its own review.
   Deferred to that spec.
+- **Two page vocabularies this spec did not absorb.** Its provenance covers `pdomain-book-tools`
+  and `pdomain-book-contracts` and never inspected `pdomain-prep-for-pgdp`, which ships a
+  seven-value `PageType`, or `pdomain-pgdp-measure`, which ships a four-value `PageClass`. The
+  companion spec on [region provenance and
+  persistence](2026-09-07-region-provenance-and-persistence-design.md) treats them as three
+  separate axes and names the new enum `PageKind` to avoid the collision. This affects the page
+  enum only; the 34 region roles are unaffected.
