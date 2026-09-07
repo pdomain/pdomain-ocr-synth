@@ -22,19 +22,24 @@ delivery scaffolding. Each item cites its source document or replacement.
   into `pdomain-ocr-labeler-spa`, leaving this repository to consume labeled datasets. It is the
   largest open question here and every other PGDP item depends on the answer
   ([split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)).
-- **Compare the downstream reports against the re-run chain.** The chain was re-run at `f9fdfef`
-  on 2026-09-06 as Task 0 of the extraction plan, and the alignment question is settled: current
-  code accepts 713 pages against the 665 the `alignment-t2-*` reports carry, a gain of 48 with 38
-  of them in `projectID603d7d5e04ca0` alone. Fresh typography and glyph reports for all five books
-  now exist in `/workspaces/pdomain/.extraction-baseline/`. What remains is comparing them against
-  the M15d through M15f numbers, Gate 3 first, because the band-identification fixes removed the
-  kind of binding its failures resemble.
-- **Close Gate 3, or restate it.** Label correctness on the `transcribed` tier measures 0.978
-  against a floor of 0.98, and two of five books fail. Filtering the five quality flags gives
-  0.994 with every book clear. Either the gate measures the filtered inventory, or flagged glyphs
-  stop being emitted, or the book is accepted at a stated lower number. The call is the owner's;
-  the gate was not redefined to pass it
+- **Compare the M15d and M15e reports against the re-run chain.** The chain was re-run at
+  `f9fdfef` on 2026-09-06 as Task 0 of the extraction plan, and the alignment question is settled:
+  current code accepts 713 pages against the 665 the `alignment-t2-*` reports carry, a gain of 48
+  with 38 of them in `projectID603d7d5e04ca0` alone. Fresh reports for all five books now exist in
+  `/workspaces/pdomain/.extraction-baseline/`. Gate 3 has been compared and the answer was no
+  change, so what remains is the typography side
+  ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
+- **Close Gate 3, or restate it, against a corrected number.** Label correctness on the
+  `transcribed` tier measures 0.978 against a floor of 0.98, and two of five books fail. Filtering
+  the five quality flags gives 0.994 with every book clear. Either the gate measures the filtered
+  inventory, or flagged glyphs stop being emitted, or the book is accepted at a stated lower
+  number. The call is the owner's; the gate was not redefined to pass it
   ([glyph inventory](../architecture/pgdp-glyph-inventory.md)).
+  Two things now bear on the number. Re-running the chain changes nothing: all 23 marked glyphs
+  survive the band-identification fixes. And 0.978 is an upper bound on the error, because three of
+  the 23 marks are correct `small_caps` records that the review sheet scores wrong by showing the
+  character without the style. Fix the sheet and rescore before deciding
+  ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
 - **Work the flat-ascender queues.** 490 words across the five books sit unreviewed in each
   manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book> <start> <count>`
   renders them as labelled crops.

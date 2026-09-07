@@ -216,6 +216,13 @@ inventory.** Rendered thirty cells to a row, a bare stem cut from an `h` is indi
 a whole letter; at fifteen to a row it is obvious. `projectID67a80fde44d34` scored 4 wrong at the
 coarse scale and 12 at the legible one. Any later review should render at most fifteen cells a row.
 
+**The review is still scoring three of the 23 wrong, for the same reason.** The sheet shows a
+reviewer the character without `label_style`, so a small-capital N whose record reads
+`character: n, label_style: small_caps` is marked wrong when the record is right. Show the style
+and rescore before deciding this gate. Re-running the measurement chain does not help: all 23
+marked glyphs survive the band-identification fixes unchanged. See
+[the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).
+
 **The five quality flags catch 17 of the 23, with six false positives across 1,050 cells.**
 Dropping flagged glyphs takes the pooled figure to 0.994 and every book over the floor, at a cost
 of 23 of 1,050 sampled glyphs. That is not the gate passing: the gate measures the inventory as

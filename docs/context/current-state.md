@@ -193,6 +193,15 @@ that is what one line of filtering buys a consumer, not the gate passing. Nine
 other gates pass, including determinism, provenance, both other label tiers,
 coverage, yield, atlas reproduction, and latent discipline.
 
+**0.978 is an upper bound on the error, because the review sheet hides the
+style.** Three of the 23 marked glyphs are `small_caps` records that describe the
+ink exactly. The sheet shows a reviewer the character alone, so a small-capital N
+labelled `n` reads as an error. Two more marks are real defects the quality flags
+miss: a within-word cut that puts `s` on a well-formed `e`, and a missed word gap
+in a script italic that puts `e` on three letterforms. Show `label_style` on the
+sheet and rescore before deciding the gate. See
+[the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).
+
 Two label tiers never mix. `transcribed` comes from words on lines reconciled
 against PGDP F2, so a human proofer chose the character. `recognized` comes from
 running heads and folios, where PGDP carries no text at all, so a DocTR read is
@@ -223,8 +232,12 @@ The chain was re-run at `f9fdfef` on 2026-09-06 and reproduced 713 exactly:
 over the 665 in the t2 reports, with 38 of those in `projectID603d7d5e04ca0`.
 So the shipped typography and glyph inventories are built on 665 pages of an
 alignment that accepts 713, and on bindings the fixes were written to remove.
-Fresh reports for all five books sit in `/workspaces/pdomain/.extraction-baseline/`;
-their effect on the downstream numbers is still uncompared.
+Fresh reports for all five books sit in `/workspaces/pdomain/.extraction-baseline/`.
+
+The glyph side of that comparison is done, and the answer is that nothing
+changes. All 23 glyphs the Gate 3 review marked wrong survive the fixes, so the
+48 pages buy zero mislabels. The typography side is still uncompared. See
+[the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).
 
 The operating note repeated in three handoffs, "use the `alignment-t2-*`
 reports", is now misleading; it was written when t2 was the only report carrying
