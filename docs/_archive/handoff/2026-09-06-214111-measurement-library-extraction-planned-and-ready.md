@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-06"
+kind: archive
+status: retired
 created_at: "2026-09-06T21:41:11Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "fe79cc316250bd39cf86f3faf750ae50ea3ad2e7"
 supersedes: "2026-09-06-140411-m15f-gate3-open-and-five-quality-flags.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-06"
+last_verified: "2026-09-07"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-07-102549-measurement-library-extracted-and-gate-3-recheck.md`.**
+
 
 # The measurement library is ready to extract, and Task 0 is the gate
 
