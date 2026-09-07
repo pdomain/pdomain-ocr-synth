@@ -17,10 +17,11 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Active
 
-- **Decide the proposed split.** A draft design would move the measurement library into its own
-  package, the region and page-type vocabulary into `pdomain-book-contracts`, and human labeling
-  into `pdomain-ocr-labeler-spa`, leaving this repository to consume labeled datasets. It is the
-  largest open question here and every other PGDP item depends on the answer
+- **Carry out the rest of the split.** The measurement half is done: `pdomain-pgdp-measure` was
+  extracted on 2026-09-07 and reproduces the pre-move baseline byte for byte, and this repository
+  cut over in one step with no dependency on it. Three of the five open decisions in the design are
+  now closed. What remains is the region and page-type vocabulary moving to
+  `pdomain-book-contracts`, and human labeling to `pdomain-ocr-labeler-spa`
   ([split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)).
 - **Compare the M15d and M15e reports against the re-run chain.** The chain was re-run at
   `f9fdfef` on 2026-09-06 as Task 0 of the extraction plan, and the alignment question is settled:

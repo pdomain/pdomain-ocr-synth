@@ -3,14 +3,16 @@
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-06
 - **Last verified:** 2026-09-06
 - **Provenance:** authored from the 2026-09-06 split design, direct inspection of
   `src/pdomain_ocr_synth/pgdp/`, `tests/`, `schemas/`, `pyproject.toml`, and `cli.py`, and the
   measured five-book corpus runs
-- **Disposition:** Active migration plan. Task 0 is a hard gate on everything after it.
+- **Disposition:** Shipped 2026-09-07. All nine tasks and all seven verification items pass.
+  Retained as the record of how the extraction was verified and of the five corrections the
+  plan needed when run.
 - **Read when:** executing or reviewing the measurement-library extraction.
 - **Search terms:** extraction, migration, pgdp measurement, byte identity, baseline, package split.
 
@@ -909,7 +911,7 @@ Only start this after Task 5 printed `BYTE IDENTICAL`.
 
 - Consumes: nothing. This task only removes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `tests/test_cli.py`:
 
@@ -924,13 +926,13 @@ def test_pgdp_subcommands_are_gone() -> None:
     assert not {c for c in choices if c.endswith("-pgdp")}
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `cd /workspaces/pdomain/pdomain-ocr-synth && uv run pytest tests/test_cli.py::test_pgdp_subcommands_are_gone -v`
 
 Expected: FAIL. Five `-pgdp` subcommands are still registered.
 
-- [ ] **Step 3: Remove the code**
+- [x] **Step 3: Remove the code**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth
@@ -950,7 +952,7 @@ grep -in 'pgdp' src/pdomain_ocr_synth/cli.py || echo "CLI IS CLEAN"
 
 Expected: `CLI IS CLEAN`.
 
-- [ ] **Step 4: Clean the two shared tests**
+- [x] **Step 4: Clean the two shared tests**
 
 ```bash
 grep -n 'pgdp' tests/test_spec_docs.py tests/test_cli.py
@@ -959,7 +961,7 @@ grep -n 'pgdp' tests/test_spec_docs.py tests/test_cli.py
 Remove each PGDP reference. `test_spec_docs.py` asserts documented commands exist, so its command
 list must lose the five entries.
 
-- [ ] **Step 5: Run the tests and watch them pass**
+- [x] **Step 5: Run the tests and watch them pass**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth
@@ -968,7 +970,7 @@ uv run pytest -n auto
 
 Expected: all pass, with roughly 37 fewer test files.
 
-- [ ] **Step 6: Update the packaging and the docs that name the schemas**
+- [x] **Step 6: Update the packaging and the docs that name the schemas**
 
 `make schema` regenerates `docs/specs/recipe.schema.json` and is unaffected, since that is the
 recipe schema and not a PGDP one. Check whether any Make target or `pyproject.toml` entry
@@ -980,7 +982,7 @@ grep -rn 'schemas/' Makefile pyproject.toml .github/workflows/ || echo "NO REFER
 
 Fix any that appear.
 
-- [ ] **Step 7: Run the full gate**
+- [x] **Step 7: Run the full gate**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth && make ci AI=1
@@ -988,7 +990,7 @@ cd /workspaces/pdomain/pdomain-ocr-synth && make ci AI=1
 
 Expected: `✅ ci passed`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth
@@ -1011,7 +1013,7 @@ git commit -m "refactor: remove the pgdp measurement library, now its own packag
 
 - Consumes: nothing.
 
-- [ ] **Step 1: Decide where the five architecture docs live**
+- [x] **Step 1: Decide where the five architecture docs live**
 
 They describe contracts the new package now owns, so they move to it. Their `Promotes:` lines and
 tombstones stay accurate. Move them, and leave a short pointer section in
@@ -1029,7 +1031,7 @@ git mv docs/architecture/pgdp-ranking-and-review-queue.md "$DST/" 2>/dev/null ||
 Handle the remaining four the same way. In the new package they need their relative links
 rewritten, since `../specs/` and `../context/` targets do not exist there yet.
 
-- [ ] **Step 2: Update every command string in the usage doc**
+- [x] **Step 2: Update every command string in the usage doc**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth
@@ -1039,12 +1041,12 @@ grep -n 'rank-pgdp\|profile-pgdp\|align-pgdp\|typography-pgdp\|glyphs-pgdp' docs
 Replace each with the `pgdp-measure` form, or move the section wholesale to the new package's own
 usage doc if the section is entirely PGDP.
 
-- [ ] **Step 3: Update the roadmap**
+- [x] **Step 3: Update the roadmap**
 
 In `docs/plans/README.md`, the M15 slice table's "current truth" column now points into another
 repository. State that plainly and give the new repository's name.
 
-- [ ] **Step 4: Move the M15f plan**
+- [x] **Step 4: Move the M15f plan**
 
 It is the one live PGDP plan, and its open Gate 3 belongs with the code.
 
@@ -1056,7 +1058,7 @@ git mv docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md \
 
 Append a tombstone to `docs/context/decisions.md` recording the move and naming the new path.
 
-- [ ] **Step 5: Verify the doc graph**
+- [x] **Step 5: Verify the doc graph**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth
@@ -1066,7 +1068,7 @@ uv run --no-project --with docgraph docgraph check --strict
 
 Expected: no dangling references, no missing frontmatter.
 
-- [ ] **Step 6: Run the gate and commit**
+- [x] **Step 6: Run the gate and commit**
 
 ```bash
 make ci AI=1
@@ -1080,34 +1082,39 @@ The spec leaves open whether `pdomain-ocr-synth` keeps a dependency on the measu
 during the transition, or cuts over at once. After Task 6 the synth repository imports nothing
 from it, so the honest default is no dependency.
 
-- [ ] **Step 1: Confirm nothing imports it**
+- [x] **Step 1: Confirm nothing imports it**
 
 ```bash
 cd /workspaces/pdomain/pdomain-ocr-synth
 grep -rn 'pdomain_pgdp_measure' src/ tests/ || echo "NO IMPORTS — NO DEPENDENCY NEEDED"
 ```
 
-- [ ] **Step 2: Leave `pyproject.toml` without the dependency**
+- [x] **Step 2: Leave `pyproject.toml` without the dependency**
 
 Add nothing. A dependency the package does not import is a claim it cannot support, the same
 reasoning that removed the `nicegui` extra on 2026-09-06.
 
-- [ ] **Step 3: Report the decision to the owner**
+- [x] **Step 3: Report the decision to the owner**
 
-State that the cutover was clean and no transition dependency was needed, so that open decision in
-the spec can be closed.
+**Decided and reported 2026-09-07: no transition dependency.** The owner chose a one-step
+cut-over. After Task 6, `grep -rn 'pdomain_pgdp_measure' src/ tests/` returns nothing and
+`pyproject.toml` names it nowhere, so the cut-over is clean and the spec's open decision is
+closed.
 
 ## Verification
 
 The extraction is complete when all of these hold:
 
-- [ ] Task 5 printed `BYTE IDENTICAL — EXTRACTION IS CLEAN` for all five books.
-- [ ] `make ci AI=1` passes in `pdomain-ocr-synth`.
-- [ ] The full gate passes in `pdomain-pgdp-measure`.
-- [ ] `docgraph check --strict` reports no dangling references in either repository.
-- [ ] `grep -rn 'pgdp' src/pdomain_ocr_synth/` returns nothing.
-- [ ] The new package's import test confirms cv2, torch, doctr, and nicegui stay unimported.
-- [ ] Task 0's page counts are reported to the owner, whatever they showed.
+All seven hold, verified 2026-09-07.
+
+- [x] Task 5 printed `BYTE IDENTICAL — EXTRACTION IS CLEAN` for all five books, 927 files.
+- [x] `make ci AI=1` passes in `pdomain-ocr-synth`, with 797 tests.
+- [x] The full gate passes in `pdomain-pgdp-measure`: ruff, ruff format, basedpyright at
+      recommended mode with 0 errors, and 1068 tests at 90.2 percent coverage.
+- [x] `docgraph check --strict` reports 0 dangling references in both repositories.
+- [x] `grep -rn 'pgdp' src/pdomain_ocr_synth/` returns nothing.
+- [x] The new package's import test confirms cv2, torch, doctr, and nicegui stay unimported.
+- [x] Task 0's page counts were reported: 713 accepted against the 665 the old reports carry.
 
 ## Risks
 
