@@ -326,7 +326,7 @@ git commit -m "docs(plan): record the extraction baseline commit and page counts
 - Produces: an installable distribution `pdomain-pgdp-measure` exposing the module
   `pdomain_pgdp_measure`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_package_imports.py`:
 
@@ -358,13 +358,35 @@ def test_import_pulls_no_heavy_dependency() -> None:
     assert result.stdout.strip() == ""
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
+
+The test cannot run before the environment exists, so write `pyproject.toml` and `README.md` from
+Step 3 first, run `uv sync --group dev`, and only then leave
+`src/pdomain_pgdp_measure/__init__.py` absent for this step.
 
 Run: `cd /workspaces/pdomain/pdomain-pgdp-measure && uv run pytest tests/test_package_imports.py -v`
 
-Expected: FAIL, `ModuleNotFoundError: No module named 'pdomain_pgdp_measure'`.
+Expected: the namespace-package test and the heavy-dependency test both FAIL. The bare import test
+passes even now, which is exactly why the namespace-package test exists.
 
-- [ ] **Step 3: Write the packaging metadata**
+- [x] **Step 3: Write the packaging metadata**
+
+**Carry the tool configuration over from `pdomain-ocr-synth`.** The block below is the project
+metadata only. Copying it alone would grade the moved code against ruff and basedpyright defaults
+instead of the settings it was written to pass, so also copy the `[tool.ruff]`, `[tool.ruff.lint]`,
+`[tool.pytest.ini_options]`, `[tool.coverage.*]`, and `[tool.basedpyright]` sections, renaming
+`pdomain_ocr_synth` to `pdomain_pgdp_measure` and dropping the per-file-ignores that name source
+modules. The pgdp tree needs none of them: it has no per-file-ignores entry and no basedpyright
+baseline entry, and it passes `ruff check` clean and `basedpyright --level error` with 0 errors.
+
+Three departures from the source config, each verified on 2026-09-07:
+
+- Gate basedpyright on errors, as `make typecheck` does. A bare `basedpyright` applies
+  `failOnWarnings = true` and fails on the 176 informational warnings the pgdp tree carries.
+- Leave `venvPath` and `venv` unset. This workspace sets `UV_PROJECT_ENVIRONMENT=.venv-container`,
+  so a hardcoded `.venv` only warns. Under `uv run`, basedpyright resolves numpy and Pillow from
+  the active interpreter.
+- Add `S603` to the `tests/**` ignores, for the import-isolation test's `subprocess.run`.
 
 Create `pyproject.toml`:
 
@@ -398,17 +420,36 @@ exclude = [".venv/**", ".venv-container/**"]
 packages = ["src/pdomain_pgdp_measure"]
 ```
 
-Create `src/pdomain_pgdp_measure/__init__.py` as an empty file for now. Task 2 fills it.
+Create `src/pdomain_pgdp_measure/__init__.py` with a module docstring. It must not be empty or
+absent: Python treats any directory on the path as an implicit namespace package, so the import
+test above passes against nothing at all. Add a second test that pins this down:
 
-- [ ] **Step 4: Run the tests and watch them pass**
+```python
+def test_package_is_real_not_a_namespace_package() -> None:
+    import pdomain_pgdp_measure
 
-```bash
-cd /workspaces/pdomain/pdomain-pgdp-measure && uv sync && uv run pytest tests/ -v
+    assert pdomain_pgdp_measure.__file__ is not None
+    assert pdomain_pgdp_measure.__file__.endswith("__init__.py")
 ```
 
-Expected: both tests PASS.
+The package also needs a `README.md`, because `readme` in the metadata makes hatchling fail the
+build without one. Task 2 fills the package itself.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Run the tests and watch them pass**
+
+```bash
+cd /workspaces/pdomain/pdomain-pgdp-measure
+uv sync --group dev --reinstall-package pdomain-pgdp-measure
+uv run pytest tests/ -v
+```
+
+`--reinstall-package` is needed the first time. `hatch-vcs` reads the version from git, and a
+repository with no commits yet leaves the project unbuilt, so a plain `uv sync` installs the
+dependencies without installing the package.
+
+Expected: all three tests PASS.
+
+- [x] **Step 5: Commit**
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
@@ -657,7 +698,9 @@ string; fix those by hand to call `build_parser()` from the new module.
 
 ```bash
 cd /workspaces/pdomain/pdomain-pgdp-measure
-uv run ruff check . && uv run ruff format --check . && uv run basedpyright && uv run pytest -n auto
+uv run ruff check . && uv run ruff format --check . \
+  && uv run basedpyright src/pdomain_pgdp_measure --level error \
+  && uv run pytest -n auto
 ```
 
 Expected: all clean.
