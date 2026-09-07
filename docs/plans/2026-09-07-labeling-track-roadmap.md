@@ -117,6 +117,11 @@ own design before it is built.
 
 ### Slice 1 — Region vocabulary in `pdomain-book-contracts`
 
+**Designed and reviewed on 2026-09-07:
+[region vocabulary](../specs/2026-09-07-region-vocabulary-design.md).** Thirty-four roles, the
+twenty that ship today unchanged plus fourteen additions, under an additive-only rule. Two
+adversarial reviews and a recheck; no code has moved.
+
 The role enum and a `PageType` enum, plus mappings from PP-DocLayout's 14 `RegionType` values and
 `Block`'s 20 strings so the new enum replaces them as the authority rather than becoming a third
 list.
