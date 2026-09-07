@@ -19,11 +19,13 @@ Kind: research
   commit `f9fdfef` in `/workspaces/pdomain/.extraction-baseline/`, compared glyph for glyph with
   the M15f inventories in `/workspaces/pdomain/.m15f-evidence/` and the 23 cells marked wrong in
   `gate3-review.json`; glyphs were matched by page and box, and the six unflagged survivors were
-  read as rendered crops, not as text
+  read as rendered crops, not as text. Extended on 2026-09-07 with a rescore of the same 1,050
+  cells after `label_style` was added to the review sheet, and with all three small-caps marks
+  read as rendered crops inside their words
 - **Disposition:** Active finding. Rules out the standing hypothesis that re-running the chain on
   the current alignment would close Gate 3, records a comparison trap that inverted a first pass of
-  this same analysis, and shows the gate's review sheet overstates the error rate because it hides
-  `label_style`.
+  this same analysis, and shows the gate's review sheet overstated the error rate because it hid
+  `label_style`. The sheet now shows the style; the corrected rate still fails on two books.
 - **Read when:** deciding how to close Gate 3, changing the glyph review protocol, comparing two
   glyph inventories, or judging whether a measurement re-run is worth the time.
 - **Search terms:** Gate 3, label correctness, small caps, label_style, quality flags,
@@ -117,8 +119,50 @@ renders the crop with the character alone, so the reviewer compares a small-capi
 letter `n` and marks it wrong.
 
 Across the five books the pipeline applies `small_caps` to 877 glyphs, against 253,922 `roman`, 556
-`italic`, and 2 `bold`. Those are frequencies, not an accuracy measurement. The style was verified
-against the ink in one word only, where all seven glyphs agree.
+`italic`, and 2 `bold`. Those are frequencies, not an accuracy measurement. At this point the style
+had been verified against the ink in one word only, where all seven glyphs agree; the section below
+extends that to all three marked words.
+
+### The style is now on the sheet, and it does not close Gate 3
+
+Next step 1 below is done. The review sheet captions every cell with its `label_style` beside the
+cell id, the review CSV carries a `label_style` column, and the 1,050 cells were rescored with all
+23 marks carried forward.
+
+The correction is real and it is not enough.
+
+| book | marked wrong | rate as marked | small caps among them | rate if those are correct |
+| --- | ---: | ---: | ---: | ---: |
+| projectID657550412c8dc | 0 | 1.0000 | 0 | 1.0000 |
+| projectID609bfa0449bdf | 1 | 0.9952 | 0 | 0.9952 |
+| projectID64a479f51ce5b | 2 | 0.9905 | 0 | 0.9905 |
+| projectID603d7d5e04ca0 | 8 | 0.9619 | 3 | 0.9762 |
+| projectID67a80fde44d34 | 12 | 0.9429 | 0 | 0.9429 |
+| pooled | 23 | 0.9781 | 3 | 0.9810 |
+
+**Both failing books still fail.** All three small-caps marks fall in `projectID603d7d5e04ca0`,
+which rises from 0.9619 to 0.9762 and stays under the 0.98 floor.
+`projectID67a80fde44d34` is untouched: its 12 marks are all `roman`, and at 0.9429 it is the
+larger failure. Pooled, the correction clears the floor at 0.9810, but Gate 3 is judged per book.
+
+**All three small-caps records are correct, now checked against the ink rather than assumed.** The
+recheck above verified one word. Rendering each marked cell inside its whole word verifies all
+three, and they are proper nouns set in small capitals: `e8` is the E of "MASTER" on page
+`130.png`, `e12` the E of "SETON" on `158.png`, and `n16` the N of "HERRING" on `283.png`. Every
+glyph in all three words carries `label_style: small_caps`, and every one is a small-capital form.
+The crops are `/workspaces/pdomain/.gate3-recheck/small-caps-marks.png`.
+
+One mark is `italic`: cell `e5`, the missed word gap described below. It is a real defect, not a
+style artifact, so showing the style does not recover it.
+
+**The extraction had broken every script this needed.** `gate3.py` and all five scripts in
+`/workspaces/pdomain/.gate3-recheck/` imported `pdomain_ocr_synth.pgdp`, which the 2026-09-07
+extraction removed. They now import `pdomain_pgdp_measure` and must be run from
+`/workspaces/pdomain/pdomain-pgdp-measure`, not from this repository.
+
+`render` now carries forward the `wrong` marks already in a book's CSV, matching on `cell_id`. The
+sample is seeded, so a re-render draws the same cells; without the carry-forward, re-rendering the
+sheet to change what it displays would have discarded the review.
 
 ### Two of the six unflagged survivors are real defects
 
@@ -178,13 +222,17 @@ a quality flag, so both reach the filtered pass.
 
 ## Next steps
 
-1. Show `label_style` on the Gate 3 review sheet, beside the character, and rescore.
+1. ~~Show `label_style` on the Gate 3 review sheet, beside the character, and rescore.~~ Done, and
+   it moves one book from 0.9619 to 0.9762 without clearing the floor.
 2. Have the owner re-read `e13`, `h21`, and `a10` before treating them as review false positives.
-3. Decide Gate 3 on the filtered inventory or on a stated lower number, with the small-caps
-   correction applied first. The choice is unchanged by this finding; the number it is made against
-   is not.
+   These are now the only marks left that might be review errors; the small-caps question is closed.
+3. Decide Gate 3 on the filtered inventory or on a stated lower number. The small-caps correction
+   is applied and the unfiltered rate still fails on two books, so the filtered inventory is the
+   only route that passes as measured.
 4. Measure how often a word gap is missed in italic and script faces, which `e5` shows is not
    covered by any current flag.
+5. Consider a fresh sample from the 713-page pool. The current 1,050 cells were drawn under seed
+   `20260905` from the old pool, and every number here inherits that draw.
 
 ## What this does NOT establish
 
@@ -194,13 +242,13 @@ reading of the crops. The 23 cells were drawn from the old pool under seed `2026
 It does not establish that `e13`, `h21`, and `a10` are review errors. One reader looked at three
 crops. That is evidence for a second look, not a verdict.
 
-It does not measure how many small-caps glyphs a fresh sample would draw, so it does not say how
-much of the 0.978 the correction recovers. It says only that three of 23 marks in this sample are
-of that kind.
+It does not measure how many small-caps glyphs a fresh sample would draw. The rescore says what
+the correction is worth on this sample only: three of 23 marks, 0.9781 to 0.9810 pooled. A
+different draw would give a different number.
 
 It does not test whether `label_style` is correct in general. The `small_caps` labels were checked
-against the ink in one word, "Herring", where all seven glyphs agree. The 877-glyph count is a
-frequency, not an accuracy.
+against the ink in three words, "Master", "Seton", and "Herring", where all 18 glyphs agree. The
+877-glyph count is a frequency, not an accuracy.
 
 It does not measure how common the `s12` and `e5` defects are. Two instances in a 1,050-cell sample
 bound nothing; both were found because the review had already marked them.
