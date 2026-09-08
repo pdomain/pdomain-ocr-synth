@@ -54,6 +54,15 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
   Existing callers and five existing tests depend on it reporting missing words and permitting
   extras.
 - Any new field on a serialized dataclass must default, so stored profiles keep loading.
+- **`make ci` in book-tools needs `CI=1` in a sandbox without a GPU.** The Makefile's `GPU_EXTRA`
+  auto-detect runs `nvidia-smi` when `$CI` is empty and installs cupy, which then fails with
+  `CURAND_STATUS_INITIALIZATION_FAILED`. This reproduces on pristine master, so it is an environment
+  limitation rather than a defect. `CI=1` is the Makefile's own sanctioned way to skip that path and
+  is what real CI sets.
+- **Adding a defaulted field to `ReviewMetadata` breaks tests that assert exact serialization.**
+  Six book-tools tests compare `to_dict()` output against literal dicts, so `source` and `state`
+  appearing with their defaults fails them. The updates are mechanical and additive, but they must
+  happen in the same change or the suite goes red.
 
 ---
 
@@ -66,6 +75,8 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
 | `pdomain_book_tools/ocr/layout_aware_reorg.py` | modified: `_REGION_TO_BLOCK_ROLE` gains the folio role |
 | `pdomain-book-tools/tests/ocr/test_word_duplication.py` | covers the new validator and its strict-mode path |
 | `pdomain-book-tools/tests/layout/test_page_number_mapping.py` | covers both halves of the folio fix |
+| `pdomain-book-tools/tests/layout/test_mappings.py` | modified: an existing test locks the old behaviour |
+| `pdomain-book-tools/docs/architecture/page-serialization.md` | modified: two drift gates require listing new values |
 | `src/pdomain_pgdp_measure/page_templates.py` | modified: `PageTemplate` gains `first_band_spread_px` |
 | `src/pdomain_pgdp_measure/profile_models.py` | modified: the record and the wire model both carry it |
 | `src/pdomain_pgdp_measure/profiling.py` | modified: copies the new field into the record |
@@ -164,6 +175,19 @@ def test_a_dropped_word_is_not_reported_as_duplication() -> None:
     assert find_duplicated_words([alpha, beta], [alpha]) == []
 
 
+def test_a_brand_new_word_absent_from_pre_is_not_flagged() -> None:
+    """Creation is not duplication.
+
+    The cursive drop-cap recovery synthesizes a Word for a glyph the recognizer
+    missed. It exists nowhere in pre_words and must not be reported.
+    """
+    from pdomain_book_tools.ocr.reorganize_page_utils import find_duplicated_words
+
+    alpha = _word("alpha", 0.1, 0.1, 0.2, 0.2)
+    recovered = _word("O", 0.05, 0.1, 0.09, 0.2)
+    assert find_duplicated_words([alpha], [alpha, recovered]) == []
+
+
 def test_empty_text_words_are_ignored_like_the_drop_validator() -> None:
     from pdomain_book_tools.ocr.reorganize_page_utils import find_duplicated_words
 
@@ -216,12 +240,23 @@ def find_duplicated_words(
     page that already held two identical signatures is not falsely flagged.
     Empty-text and bbox-less words are filtered by ``collect_word_signatures``,
     matching the drop validator exactly.
+
+    A signature absent from ``pre_words`` is **created**, not duplicated, and is
+    never flagged. The pipeline legitimately synthesizes words: the cursive
+    drop-cap recovery in ``dropcap.detect_and_stitch_cursive_dropcaps`` builds a
+    ``Word`` for a glyph the recognizer missed entirely, so a page whose OCR read
+    only "NCE" of "ONCE" gains a real "O" that exists nowhere in ``pre_words``.
+    Flagging that would break the corpus on its first run.
     """
     pre_counts = Counter(collect_word_signatures(pre_words))
     post_counts = Counter(collect_word_signatures(post_words))
     errors: list[str] = []
     for sig, post_n in post_counts.items():
-        extra = post_n - pre_counts.get(sig, 0)
+        pre_n = pre_counts.get(sig, 0)
+        if pre_n == 0:
+            # Created, not duplicated.
+            continue
+        extra = post_n - pre_n
         if extra <= 0:
             continue
         text, x0, y0, x1, y1 = sig
@@ -402,10 +437,18 @@ Expected: PASS, all three tests.
 - [ ] **Step 6: Run the full suite**
 
 Run: `make test AI=1`
-Expected: PASS. The 120-case layout regression fixture stores PP-DocLayout's own output as its
-expected values, so if any of those cases carried a page-number region previously mapped to
-`footer`, the fixture will now differ. If it does, regenerate the fixture and record in the commit
-message that the change is the folio fix, not a detector change.
+Expected: FAIL on two existing tests, then PASS once both are updated.
+
+`tests/layout/test_mappings.py::test_page_chrome_labels_are_preserved_not_dropped` asserts
+`page_number` maps to `RegionType.footer`, which is exactly what this task reverses. Update it to
+expect `RegionType.page_number`.
+
+`tests/test_page_model_doc.py::test_doc_lists_every_layout_region_type` requires every `RegionType`
+member to appear backtick-quoted in `docs/architecture/page-serialization.md`. Add `page_number`
+there. This is the `RegionType` analogue of the block-role drift gate Task 4 hits.
+
+The 120-case layout regression fixture needs no regeneration: no case carries a `page_number`
+region, verified by grep across `tests/fixtures/layout_regression`.
 
 - [ ] **Step 7: Run the gate and commit**
 
