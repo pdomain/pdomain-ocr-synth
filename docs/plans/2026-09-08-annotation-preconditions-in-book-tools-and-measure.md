@@ -5,9 +5,10 @@
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Close the two gaps that block region annotation and page-kind confidence: nothing detects a
-word duplicated across regions, and no template records the spread a residual must be scaled
-against.
+**Goal:** Close the gaps that block region annotation and page-kind confidence: nothing detects a
+word duplicated across regions, no template records the spread a residual must be scaled against,
+the folio signal is discarded into the footer, and `Block` rejects fourteen of the thirty-four
+region roles.
 
 **Architecture:** Two independent changes in two repositories. In `pdomain-book-tools`, a new
 validator reports words the reorganize pipeline duplicated, wired into the existing reconcile step
@@ -33,8 +34,8 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
   `ocr/block.py`, its Makefile and `pyproject.toml`, and
   `pdomain-pgdp-measure/src/pdomain_pgdp_measure/page_templates.py`, `profiling.py`,
   `profile_models.py`, and `tests/test_pgdp_page_templates.py`
-- **Disposition:** Active. Preconditions for slices 2 and 4 of the labeling track. Independent of
-  each other; either task may ship alone.
+- **Disposition:** Active. Preconditions for slices 2 and 4 of the labeling track. Tasks 1 and 3
+  are independent and may ship alone. Tasks 2 and 4 both need the vocabularies plan first.
 - **Read when:** implementing the word duplication check, or adding per-class spread to page
   templates so `template_residual_px` can become a confidence.
 - **Search terms:** word duplication, validate_word_preservation, reconcile_dropped_words,
@@ -69,6 +70,8 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
 | `src/pdomain_pgdp_measure/profile_models.py` | modified: the record and the wire model both carry it |
 | `src/pdomain_pgdp_measure/profiling.py` | modified: copies the new field into the record |
 | `schemas/pgdp-profile-v2.schema.json` | modified: documents the new property |
+| `pdomain_book_tools/ocr/block.py` | modified: `ALLOWED_BLOCK_ROLE_LABELS` widens to 34 roles |
+| `pdomain-book-tools/tests/ocr/test_block_role_vocabulary.py` | covers all 34 roles and the new aliases |
 | `pdomain-pgdp-measure/tests/test_pgdp_page_templates.py` | modified: covers the spread and its round trip |
 
 ---
@@ -644,12 +647,118 @@ git commit -m "feat(templates): record the spread each page template was fitted 
 
 ---
 
+---
+
+### Task 4: Widen `ALLOWED_BLOCK_ROLE_LABELS` to the same 34 roles
+
+`Block.ALLOWED_BLOCK_ROLE_LABELS` holds the original twenty role strings. The vocabularies plan puts
+34 into `pdomain-book-contracts`, and until this frozenset matches, `Block._normalize_label` raises
+`ValueError` for all fourteen additions. Every route that sets a region role would fail on
+`catchword`, `signature mark`, `plate`, and the rest.
+
+Widen the frozenset and its alias map in place. `Block` keeps its own `frozenset[str]` rather than
+importing the enum, because `Block` pulls in the imaging stack and the enum must not.
+
+**Files:**
+
+- Modify: `pdomain_book_tools/pdomain_book_tools/ocr/block.py`
+- Test: `pdomain-book-tools/tests/ocr/test_block_role_vocabulary.py`
+
+**Interfaces:**
+
+- Consumes: the 34 role strings and their aliases, as listed in the vocabularies plan Task 2.
+- Produces: no new symbol. `ALLOWED_BLOCK_ROLE_LABELS` and `BLOCK_ROLE_LABEL_ALIASES` grow.
+
+- [ ] **Step 1: Read the current frozenset and alias map**
+
+Run: `sed -n '55,100p' pdomain_book_tools/ocr/block.py`
+Note the exact declaration style, and that canonical strings use spaces rather than underscores.
+
+- [ ] **Step 2: Write the failing test**
+
+```python
+# tests/ocr/test_block_role_vocabulary.py
+from __future__ import annotations
+
+import pytest
+
+from pdomain_book_tools.ocr.block import Block
+
+_ADDITIONS = frozenset(
+    {
+        "signature mark", "catchword", "press figure", "rule", "brace",
+        "bracket", "group label", "plate", "speaker label", "stage direction",
+        "interlinear gloss", "abandoned", "decorated initial", "unknown",
+    }
+)
+
+
+def test_the_twenty_shipped_roles_survive() -> None:
+    shipped = {
+        "paragraph", "sidenote", "page header", "page footer", "page number",
+        "printers mark", "blockquote", "poetry", "recovered", "illustration",
+        "decoration", "caption", "figure", "table", "footnote", "title",
+        "section", "list", "formula", "artefact",
+    }
+    assert shipped <= Block.ALLOWED_BLOCK_ROLE_LABELS
+
+
+def test_the_fourteen_additions_are_accepted() -> None:
+    assert _ADDITIONS <= Block.ALLOWED_BLOCK_ROLE_LABELS
+    assert len(Block.ALLOWED_BLOCK_ROLE_LABELS) == 34
+
+
+@pytest.mark.parametrize("role", sorted(_ADDITIONS))
+def test_each_addition_normalizes_without_raising(role: str) -> None:
+    block = Block(block_role_labels=[role])
+    assert role in block.block_role_labels
+
+
+def test_the_new_aliases_fold() -> None:
+    assert Block(block_role_labels=["frontispiece"]).block_role_labels == ["plate"]
+    assert Block(block_role_labels=["signaturemark"]).block_role_labels == ["signature mark"]
+```
+
+- [ ] **Step 3: Run test to verify it fails**
+
+Run: `make test-single TEST='tests/ocr/test_block_role_vocabulary.py'`
+Expected: FAIL. The additions raise `ValueError` from `_normalize_label`.
+
+- [ ] **Step 4: Add the fourteen roles and five aliases**
+
+Append the fourteen strings to `ALLOWED_BLOCK_ROLE_LABELS`, keeping the existing twenty untouched
+and using spaces rather than underscores. Add to `BLOCK_ROLE_LABEL_ALIASES`: `frontispiece` to
+`plate`, `signaturemark` to `signature mark`, `pressfigure` to `press figure`, `stagedirection` to
+`stage direction`, and `speakerlabel` to `speaker label`.
+
+- [ ] **Step 5: Run the tests**
+
+Run: `make test-single TEST='tests/ocr/test_block_role_vocabulary.py'`
+Expected: PASS.
+
+- [ ] **Step 6: Run the full suite**
+
+Run: `make test AI=1`
+Expected: PASS. `dropcap._SKIP_ROLES` and `route_sidenote_reading_order` match role strings
+literally, so a widened set must not disturb them.
+
+- [ ] **Step 7: Run the gate and commit**
+
+```bash
+make ci AI=1
+git add pdomain_book_tools/ocr/block.py tests/ocr/test_block_role_vocabulary.py
+git commit -m "feat(ocr): widen the block role vocabulary to 34 roles"
+```
+
 ## What this plan does not do
 
 - It does not build the normalizer that turns `template_residual_px` into a confidence. This task
   supplies the missing input; the normalizer belongs with the proposal engine, which is slice 4 and
   needs its own design.
-- It does not make `Block` adopt `RegionRole` as the authority behind `ALLOWED_BLOCK_ROLE_LABELS`.
+- It does not replace `ALLOWED_BLOCK_ROLE_LABELS` with `RegionRole` as the sole authority. Task 4
+  widens the frozenset to the same 34 values; making `Block` import the enum itself is a larger
+  change and is not required for any consumer.
+- It does not resolve the conflict between a region's explicit box and `Block.recompute_bounding_box`.
   That is a larger change and the additive-only rule means nothing is broken by deferring it.
 - It does not change `validate_word_preservation`. Its contract and its five existing tests are
   untouched by design.

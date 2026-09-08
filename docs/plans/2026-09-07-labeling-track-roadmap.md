@@ -273,8 +273,10 @@ territory, with Modal provisioning per run.
 
 ## What has a plan, and what is still owed
 
-Three plans were written on 2026-09-08 and gap-scanned against the design. This records what they
-cover so nothing is mistaken for planned.
+Eight plans were written on 2026-09-08 and gap-scanned twice against the design. This records what
+they cover so nothing is mistaken for planned.
+
+The first three came out of the design directly:
 
 - [Annotation vocabularies](2026-09-08-annotation-vocabularies-in-book-contracts.md) — region
   roles, page kinds, the provenance enums, and `ReviewMetadata.source`.
@@ -283,22 +285,31 @@ cover so nothing is mistaken for planned.
 - [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — the proposal store, the
   decision store, and the one read path.
 
-Eight pieces of the design have no plan yet. They are listed so they are not lost:
+All eight gaps from the first scan now have plans, written 2026-09-08:
 
-1. **Region routes and the proposal-run job.** The rest of slice 2. Builds directly on the stores.
-2. **Writing `ReviewMetadata.source`.** The field is added but nothing populates it. Four writers
-   fill `ground_truth_text` and none records which. Until this lands, the field ships empty, which
-   reads as coverage without being it.
-3. **Page kind beyond the enum.** No typed field on `Page`, no classifier proposal store, no
-   per-page reviewed marker, and none of the book-scoped ordering.
-4. **The glyph level.** Predictions still never persist and there is still no reject route.
-5. **Style span review granularity.** The model is complete; the review routes are word-scoped while
-   a span is a grapheme range crossing word boundaries.
-6. **Converting `tag_words_with_layout` into a proposal generator.** It still assigns membership
-   directly by a rectangle test.
-7. **The proposal-to-region matcher.** Matching is specified on page and box; nothing implements it.
-8. **Two of the four test tiers.** The conformance golden fixture pinning `block_role_labels` and
-   `override_page_sort_order`, and the browser test proving proposals render distinctly.
+- [Region routes and proposal run](2026-09-08-region-routes-and-proposal-run.md) — the eight
+  routes, the proposal-run job, the conformance fixture, and the browser test.
+- [Word and glyph provenance](2026-09-08-word-and-glyph-provenance.md) — the writers that fill
+  `ground_truth_text`, persisted glyph predictions, and the reject route.
+- [Page kind end to end](2026-09-08-page-kind-end-to-end.md) — the typed field, the book-scoped
+  proposal, the residual-to-confidence conversion, and the reviewed marker.
+- [Explicit membership and matching](2026-09-08-explicit-membership-and-matching.md) — the
+  proposal generator, the sibling-disjointness check, and the page-and-box matcher.
+- [Style span review surface](2026-09-08-style-span-review-surface.md) — span identity and
+  span-scoped review routes.
+
+A second scan on 2026-09-08 read the design against all eight plans with a different lens: what the
+data model cannot represent, and which flow states have no defined behavior. Six of its eight
+findings were settled in the design, and two were owner rulings. Three items it opened still have
+no plan:
+
+1. **Editorial corrections.** The ink reads one way and editorial direction says another. The
+   labeler records them; a post-processor applies them. They must never enter `ground_truth_text`,
+   and they need their own model because a zero-width insertion is legal and `StyleSpan` forbids it.
+2. **The post-processor itself.** Its input shape is settled; nothing else about it is.
+3. **A ground-truth text digest beside each glyph annotation set.** `LigatureMark.char_span` and
+   `long_s_positions` index into `Word.ground_truth_text`, which four writers rewrite, so the marks
+   go stale silently today.
 
 Slices 3 to 7 remain unplanned by intent: each needs its own design first.
 

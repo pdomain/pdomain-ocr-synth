@@ -115,6 +115,24 @@ def test_provenance_enums_import_from_annotation() -> None:
     assert ConfidenceTier.QUARANTINE == "quarantine"
 
 
+def test_a_model_can_be_named_as_the_source() -> None:
+    """The five shipped values are document sources and a person.
+
+    Nothing among them can say a model proposed something, which is the claim
+    the labeling track exists to record.
+    """
+    from pdomain_book_contracts.annotation import LabelSource
+
+    assert LabelSource.MODEL == "model"
+
+
+def test_the_f2_parser_s_source_is_unchanged() -> None:
+    from pdomain_book_contracts.annotation import LabelSource
+
+    # Additive only: the one existing consumer must keep working.
+    assert LabelSource.F2 == "f2"
+
+
 def test_typography_labels_still_re_export_them() -> None:
     from pdomain_book_contracts.annotation import KnowledgeState as Moved
     from pdomain_book_contracts.typography.labels import KnowledgeState as ReExported
@@ -162,6 +180,12 @@ class LabelSource(StrEnum):
     SE_COMPUTED_CSS = "se_computed_css"
     HUMAN = "human"
     SYNTHETIC = "synthetic"
+    # New. The five values above are four document sources and a person, because
+    # this enum was built to record which transcription asserted a style. None of
+    # them can say that a model proposed something, which is the claim the whole
+    # labeling track exists to record. The model's identity and version live on
+    # the proposal run record, so this member only names the category.
+    MODEL = "model"
 
 
 class ConfidenceTier(StrEnum):
@@ -172,6 +196,10 @@ class ConfidenceTier(StrEnum):
     BRONZE = "bronze"
     QUARANTINE = "quarantine"
 ```
+
+**This adds one member to a shipped enum.** It is additive, so the F2 parser at
+`pdomain_book_contracts/sources/pgdp/f2/parser.py:143,291` — the only place `LabelSource` is
+referenced today — is unaffected.
 
 Create `pdomain_book_contracts/annotation/__init__.py`:
 
@@ -904,9 +932,10 @@ git commit -m "feat(ocr): give ReviewMetadata a source and a knowledge state"
 
 ## What this plan does not do
 
-- It does not change `Block`. Adopting `RegionRole` as the authority behind
-  `ALLOWED_BLOCK_ROLE_LABELS` happens in `pdomain-book-tools`, in the second plan, because a
-  downstream repository cannot be changed from here.
+- It does not change `Block`. Widening `ALLOWED_BLOCK_ROLE_LABELS` to the same 34 values is Task 4
+  of the [preconditions plan](2026-09-08-annotation-preconditions-in-book-tools-and-measure.md),
+  because a downstream repository cannot be changed from here. **Until that lands, `Block` rejects
+  the fourteen additions**, so the two plans must ship together for the vocabulary to be usable.
 - It does not add the `_REGION_TO_BLOCK_ROLE` entry for `page_number`. That mapping lives in
   `pdomain-book-tools` and is the second plan's work.
 - It does not add `BlockCategory.TABLE`, `CELL`, or `GROUP`. Those depend on the table structure

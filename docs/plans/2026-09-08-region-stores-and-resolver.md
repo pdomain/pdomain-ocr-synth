@@ -37,7 +37,8 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
 - **Read when:** implementing the region proposal store, the decision journal, or the resolver that
   serves both the labeler and the execution engine.
 - **Search terms:** RegionProposal, ProposalRun, RegionDecision, resolve_regions, decision journal,
-  append-only JSONL, confidence threshold, page blob invariant.
+  append-only JSONL, confidence threshold, page blob invariant, page_facet_digests, depends_on,
+  facet digest, stale proposal, Disposition.CARRIED, member_word_signatures.
 
 ## Global Constraints
 
@@ -50,6 +51,17 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
   `"{line_index}_{word_index}"`, and line numbering is not stable across the band-identification
   fixes. Regions carry their own opaque identifier, and proposal-to-region matching is done on page
   and box.
+- **A proposal goes stale per facet, not per page.** `ProposalRun.page_facet_digests` is keyed by
+  page index, then by exactly one of four facet names — `word_boxes`, `line_structure`,
+  `page_image`, `word_text` — and `depends_on` names which of those a run's proposals actually
+  read. `resolve_regions` compares only the named facets against the page's current digests, which
+  it takes as an explicit argument; it does not compute those digests itself (the routes plan
+  does, from a live `Page`).
+- **`Disposition.CARRIED` marks a decision that reached its proposal by matching an earlier
+  confirmed region across runs, not by a person looking at this run's proposal directly.** Its
+  `knowledge_state` is `POSITIVE`, same as `ACCEPTED`/`EDITED` — only `REJECTED` is a refusal. A
+  `RegionDecision` may name `carried_from_run_id`/`carried_from_proposal_id` only when its
+  disposition is `CARRIED`.
 - Journals are append-only. An existing record is never rewritten; supersession is a later record
   referring to an earlier one. Follow `core/typography_review.py`'s `TypographyCorrectionLog`, which
   fsyncs before `append` returns and takes an operating-system append lock so writers across worker
@@ -168,14 +180,37 @@ def test_a_run_records_what_it_was_conditioned_on() -> None:
         model_id="pp-doclayout-plus-l",
         model_version="1.0.0",
         created_at="2026-09-08T10:00:00+00:00",
-        page_content_hashes={0: "a" * 64, 1: "b" * 64},
+        page_facet_digests={
+            0: {"word_boxes": "a" * 64, "line_structure": "b" * 64, "page_image": "c" * 64, "word_text": "d" * 64},
+            1: {"word_boxes": "e" * 64, "line_structure": "f" * 64, "page_image": "g" * 64, "word_text": "h" * 64},
+        },
+        depends_on=frozenset({"word_boxes", "line_structure", "page_image"}),
         page_kind_decision_ref="pk-run-7",
         page_kind_was_confirmed=False,
     )
     restored = ProposalRun.from_dict(run.to_dict())
     assert restored == run
-    assert restored.page_content_hashes[1] == "b" * 64
+    assert restored.page_facet_digests[1]["word_boxes"] == "e" * 64
+    assert restored.depends_on == frozenset({"word_boxes", "line_structure", "page_image"})
     assert restored.page_kind_was_confirmed is False
+
+
+def test_a_run_s_facet_digests_do_not_cover_word_text_when_depends_on_omits_it() -> None:
+    """A geometry-only run's ``depends_on`` need not name every facet it stored a digest for."""
+    from pdomain_ocr_labeler_spa.core.regions.models import ProposalRun
+
+    run = ProposalRun(
+        run_id="r1",
+        model_id="pp-doclayout-plus-l",
+        model_version="1.0.0",
+        created_at="2026-09-08T10:00:00+00:00",
+        page_facet_digests={0: {"word_boxes": "a" * 64, "word_text": "b" * 64}},
+        depends_on=frozenset({"word_boxes"}),
+        page_kind_decision_ref=None,
+        page_kind_was_confirmed=False,
+    )
+    assert "word_text" not in run.depends_on
+    assert run.page_facet_digests[0]["word_text"] == "b" * 64
 
 
 def test_a_decision_records_a_rejection_distinctly_from_an_acceptance() -> None:
@@ -227,6 +262,77 @@ def test_disposition_maps_onto_a_knowledge_state() -> None:
     assert Disposition.ACCEPTED.knowledge_state is KnowledgeState.POSITIVE
     assert Disposition.EDITED.knowledge_state is KnowledgeState.POSITIVE
     assert Disposition.REJECTED.knowledge_state is KnowledgeState.VERIFIED_NEGATIVE
+    assert Disposition.CARRIED.knowledge_state is KnowledgeState.POSITIVE
+
+
+def test_a_carried_decision_names_the_run_and_proposal_it_carried_from() -> None:
+    from pdomain_ocr_labeler_spa.core.regions.models import Disposition, RegionDecision
+
+    carried = RegionDecision(
+        decision_id="d3",
+        run_id="r2",
+        proposal_id="p9",
+        disposition=Disposition.CARRIED,
+        region_id="reg-1",
+        actor="default",
+        decided_at="2026-09-08T12:00:00+00:00",
+        carried_from_run_id="r1",
+        carried_from_proposal_id="p1",
+    )
+    restored = RegionDecision.from_dict(carried.to_dict())
+    assert restored == carried
+    assert restored.carried_from_run_id == "r1"
+    assert restored.carried_from_proposal_id == "p1"
+
+
+def test_a_carried_decision_must_name_where_it_carried_from() -> None:
+    from pdomain_ocr_labeler_spa.core.regions.models import Disposition, RegionDecision
+
+    with pytest.raises(ValueError, match="carried_from_run_id"):
+        RegionDecision(
+            decision_id="d3",
+            run_id="r2",
+            proposal_id="p9",
+            disposition=Disposition.CARRIED,
+            region_id="reg-1",
+            actor="default",
+            decided_at="2026-09-08T12:00:00+00:00",
+        )
+
+
+def test_a_non_carried_decision_rejects_carried_provenance() -> None:
+    from pdomain_ocr_labeler_spa.core.regions.models import Disposition, RegionDecision
+
+    with pytest.raises(ValueError, match="only set on a carried decision"):
+        RegionDecision(
+            decision_id="d1",
+            run_id="r1",
+            proposal_id="p1",
+            disposition=Disposition.ACCEPTED,
+            region_id="reg-1",
+            actor="default",
+            decided_at="2026-09-08T10:05:00+00:00",
+            carried_from_run_id="r0",
+            carried_from_proposal_id="p0",
+        )
+
+
+def test_a_resolved_region_carries_word_membership_and_staleness() -> None:
+    from pdomain_book_contracts.annotation import RegionRole
+
+    from pdomain_ocr_labeler_spa.core.regions.models import ResolvedRegion
+
+    region = ResolvedRegion(
+        role=RegionRole.POETRY,
+        box=(10, 20, 300, 400),
+        confirmed=True,
+        confidence=None,
+        proposal_id=None,
+        region_id="reg-1",
+        member_word_signatures=((10.0, 20.0, 60.0, 40.0, False),),
+    )
+    assert region.member_word_signatures == ((10.0, 20.0, 60.0, 40.0, False),)
+    assert region.stale is False
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -244,8 +350,9 @@ Create `src/pdomain_ocr_labeler_spa/core/regions/__init__.py` as an empty module
 
 Proposals are immutable once written. Decisions join a proposal to what a person
 did with it. A run ties a batch of proposals to the model that made them and to
-the exact page state each was computed from, which is what lets a later detector
-be scored against this one on identical pages.
+the exact page facets each was computed from, which is what lets a later detector
+be scored against this one on identical pages, and lets staleness be judged per
+facet rather than by any change anywhere on the page.
 """
 
 from __future__ import annotations
@@ -256,13 +363,23 @@ from typing import Any
 
 from pdomain_book_contracts.annotation import KnowledgeState, RegionRole
 
+#: The four facets a region proposal run can depend on. A geometry proposal
+#: depends on the first three; none depend on ``word_text`` — see the spec's
+#: "A proposal goes stale per facet, not per page".
+FACET_WORD_BOXES = "word_boxes"
+FACET_LINE_STRUCTURE = "line_structure"
+FACET_PAGE_IMAGE = "page_image"
+FACET_WORD_TEXT = "word_text"
+ALL_FACETS = frozenset({FACET_WORD_BOXES, FACET_LINE_STRUCTURE, FACET_PAGE_IMAGE, FACET_WORD_TEXT})
+
 
 class Disposition(StrEnum):
-    """What a person did with one proposal."""
+    """What a person did with one proposal, or how an earlier decision reached it."""
 
     ACCEPTED = "accepted"
     EDITED = "edited"
     REJECTED = "rejected"
+    CARRIED = "carried"
 
     @property
     def knowledge_state(self) -> KnowledgeState:
@@ -322,13 +439,22 @@ class RegionProposal:
 
 @dataclass(frozen=True)
 class ProposalRun:
-    """One pass of one model over one book, and what it was conditioned on."""
+    """One pass of one model over one book, and what it was conditioned on.
+
+    ``page_facet_digests`` replaces a single whole-page hash: fixing a typo
+    must not invalidate a geometry proposal that never read the text facet.
+    It is keyed by page index, then by facet name (one of ``FACET_WORD_BOXES``,
+    ``FACET_LINE_STRUCTURE``, ``FACET_PAGE_IMAGE``, ``FACET_WORD_TEXT``).
+    ``depends_on`` names which of those facets this run's proposals were
+    actually computed from — the resolver compares only those at read time.
+    """
 
     run_id: str
     model_id: str
     model_version: str
     created_at: str
-    page_content_hashes: dict[int, str]
+    page_facet_digests: dict[int, dict[str, str]]
+    depends_on: frozenset[str]
     page_kind_decision_ref: str | None
     page_kind_was_confirmed: bool
 
@@ -339,25 +465,28 @@ class ProposalRun:
             "model_version": self.model_version,
             "created_at": self.created_at,
             # JSON object keys are strings; page indices are restored on read.
-            "page_content_hashes": {
-                str(index): digest
-                for index, digest in self.page_content_hashes.items()
+            "page_facet_digests": {
+                str(index): dict(facets)
+                for index, facets in self.page_facet_digests.items()
             },
+            "depends_on": sorted(self.depends_on),
             "page_kind_decision_ref": self.page_kind_decision_ref,
             "page_kind_was_confirmed": self.page_kind_was_confirmed,
         }
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> ProposalRun:
-        raw_hashes = d.get("page_content_hashes") or {}
+        raw_digests = d.get("page_facet_digests") or {}
         return cls(
             run_id=str(d["run_id"]),
             model_id=str(d["model_id"]),
             model_version=str(d["model_version"]),
             created_at=str(d["created_at"]),
-            page_content_hashes={
-                int(index): str(digest) for index, digest in raw_hashes.items()
+            page_facet_digests={
+                int(index): {str(facet): str(digest) for facet, digest in facets.items()}
+                for index, facets in raw_digests.items()
             },
+            depends_on=frozenset(str(facet) for facet in (d.get("depends_on") or [])),
             page_kind_decision_ref=(
                 str(d["page_kind_decision_ref"])
                 if d.get("page_kind_decision_ref") is not None
@@ -383,11 +512,22 @@ class RegionDecision:
     region_id: str | None
     actor: str
     decided_at: str
+    carried_from_run_id: str | None = None
+    carried_from_proposal_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.disposition is not Disposition.REJECTED and self.region_id is None:
             raise ValueError(
                 f"a {self.disposition.value} decision must name the region_id it produced"
+            )
+        if self.disposition is Disposition.CARRIED:
+            if self.carried_from_run_id is None or self.carried_from_proposal_id is None:
+                raise ValueError(
+                    "a carried decision must name carried_from_run_id and carried_from_proposal_id"
+                )
+        elif self.carried_from_run_id is not None or self.carried_from_proposal_id is not None:
+            raise ValueError(
+                "carried_from_run_id/carried_from_proposal_id are only set on a carried decision"
             )
 
     def to_dict(self) -> dict[str, Any]:
@@ -399,6 +539,8 @@ class RegionDecision:
             "region_id": self.region_id,
             "actor": self.actor,
             "decided_at": self.decided_at,
+            "carried_from_run_id": self.carried_from_run_id,
+            "carried_from_proposal_id": self.carried_from_proposal_id,
         }
 
     @classmethod
@@ -411,6 +553,14 @@ class RegionDecision:
             region_id=str(d["region_id"]) if d.get("region_id") is not None else None,
             actor=str(d.get("actor", "default")),
             decided_at=str(d["decided_at"]),
+            carried_from_run_id=(
+                str(d["carried_from_run_id"]) if d.get("carried_from_run_id") is not None else None
+            ),
+            carried_from_proposal_id=(
+                str(d["carried_from_proposal_id"])
+                if d.get("carried_from_proposal_id") is not None
+                else None
+            ),
         )
 
 
@@ -420,6 +570,18 @@ class ResolvedRegion:
 
     ``confirmed`` is True when a person put it there. The labeler renders the
     two differently; the execution engine only ever sees proposals.
+
+    ``member_word_signatures`` names the words the region holds, as stable
+    bounding-box signatures — never a line/word ordinal, since line numbering
+    is not stable across the band-identification fixes. Populated for a
+    confirmed region lifted off a ``Block`` (see the routes plan's
+    ``confirmed_regions_from_page``); empty for a region resolved straight
+    from a proposal, which carries no membership of its own.
+
+    ``stale`` is True when the run that produced this proposal read facets
+    that have since changed on the page. A stale proposal is still returned,
+    not suppressed — a person still sees what the model said and judges it
+    against the page as it now stands. Always False for a confirmed region.
     """
 
     role: RegionRole
@@ -428,12 +590,14 @@ class ResolvedRegion:
     confidence: float | None
     proposal_id: str | None
     region_id: str | None
+    member_word_signatures: tuple[tuple[float, float, float, float, bool | None], ...] = ()
+    stale: bool = False
 ```
 
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/unit/core/regions/test_region_models.py -v`
-Expected: PASS, all seven tests.
+Expected: PASS, all twelve tests.
 
 - [ ] **Step 5: Commit**
 
@@ -487,7 +651,8 @@ def _run(run_id: str = "r1") -> ProposalRun:
         model_id="pp-doclayout-plus-l",
         model_version="1.0.0",
         created_at="2026-09-08T10:00:00+00:00",
-        page_content_hashes={0: "a" * 64},
+        page_facet_digests={0: {"word_boxes": "a" * 64}},
+        depends_on=frozenset({"word_boxes"}),
         page_kind_decision_ref=None,
         page_kind_was_confirmed=False,
     )
@@ -956,8 +1121,8 @@ untouched, and content addressing makes that a single hash comparison.
 
 **Interfaces:**
 
-- Consumes: `RegionProposal`, `RegionDecision`, `Disposition`, `ResolvedRegion` from Task 1;
-  `RegionProposalLog` from Task 2; `RegionDecisionLog` from Task 3.
+- Consumes: `RegionProposal`, `RegionDecision`, `ProposalRun`, `Disposition`, `ResolvedRegion` from
+  Task 1; `RegionProposalLog` from Task 2; `RegionDecisionLog` from Task 3.
 - Produces:
   `resolve_regions(...) -> list[ResolvedRegion]`, with this signature:
 
@@ -966,10 +1131,17 @@ def resolve_regions(
     confirmed: Sequence[ResolvedRegion],
     proposals: Sequence[RegionProposal],
     decisions: Mapping[str, RegionDecision],
+    runs: Mapping[str, ProposalRun],
     *,
     threshold: float,
+    current_facet_digests: Mapping[str, str],
 ) -> list[ResolvedRegion]: ...
 ```
+
+`runs` maps `run_id` to the `ProposalRun` that produced it, so the resolver can look up each
+proposal's `depends_on` and the facet digests it read. `current_facet_digests` is the page's facet
+digests as of right now. A proposal whose run is missing from `runs` is treated as not stale —
+there is nothing to compare against.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -985,6 +1157,7 @@ from pdomain_book_contracts.annotation import RegionRole
 
 from pdomain_ocr_labeler_spa.core.regions.models import (
     Disposition,
+    ProposalRun,
     RegionDecision,
     RegionProposal,
     ResolvedRegion,
@@ -1014,11 +1187,26 @@ def _confirmed(region_id: str) -> ResolvedRegion:
     )
 
 
+def _run_with_digests(
+    run_id: str, page_index: int, digests: dict[str, str], depends_on: frozenset[str]
+) -> ProposalRun:
+    return ProposalRun(
+        run_id=run_id,
+        model_id="pp-doclayout-plus-l",
+        model_version="1.0.0",
+        created_at="2026-09-08T10:00:00+00:00",
+        page_facet_digests={page_index: digests},
+        depends_on=depends_on,
+        page_kind_decision_ref=None,
+        page_kind_was_confirmed=False,
+    )
+
+
 def test_a_confirmed_region_wins_over_a_proposal() -> None:
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
     resolved = resolve_regions(
-        [_confirmed("reg-1")], [_proposal("p1", 0.99)], {}, threshold=0.0
+        [_confirmed("reg-1")], [_proposal("p1", 0.99)], {}, {}, threshold=0.0, current_facet_digests={}
     )
     assert [r.region_id for r in resolved] == ["reg-1"]
     assert resolved[0].role is RegionRole.BLOCKQUOTE
@@ -1028,7 +1216,9 @@ def test_a_confirmed_region_wins_over_a_proposal() -> None:
 def test_a_proposal_above_the_threshold_is_returned_when_nothing_is_confirmed() -> None:
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
-    resolved = resolve_regions([], [_proposal("p1", 0.7)], {}, threshold=0.5)
+    resolved = resolve_regions(
+        [], [_proposal("p1", 0.7)], {}, {}, threshold=0.5, current_facet_digests={}
+    )
     assert len(resolved) == 1
     assert resolved[0].confirmed is False
     assert resolved[0].proposal_id == "p1"
@@ -1038,13 +1228,16 @@ def test_a_proposal_above_the_threshold_is_returned_when_nothing_is_confirmed() 
 def test_a_proposal_below_the_threshold_is_dropped() -> None:
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
-    assert resolve_regions([], [_proposal("p1", 0.2)], {}, threshold=0.5) == []
+    assert (
+        resolve_regions([], [_proposal("p1", 0.2)], {}, {}, threshold=0.5, current_facet_digests={})
+        == []
+    )
 
 
 def test_nothing_confirmed_and_nothing_above_threshold_returns_nothing() -> None:
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
-    assert resolve_regions([], [], {}, threshold=0.5) == []
+    assert resolve_regions([], [], {}, {}, threshold=0.5, current_facet_digests={}) == []
 
 
 def test_a_rejected_proposal_is_never_returned_even_above_the_threshold() -> None:
@@ -1059,7 +1252,10 @@ def test_a_rejected_proposal_is_never_returned_even_above_the_threshold() -> Non
         actor="default",
         decided_at="2026-09-08T10:00:00+00:00",
     )
-    assert resolve_regions([], [_proposal("p1", 0.99)], {"p1": rejected}, threshold=0.5) == []
+    resolved = resolve_regions(
+        [], [_proposal("p1", 0.99)], {"p1": rejected}, {}, threshold=0.5, current_facet_digests={}
+    )
+    assert resolved == []
 
 
 def test_the_unattended_row_where_both_human_stores_are_empty() -> None:
@@ -1067,7 +1263,7 @@ def test_the_unattended_row_where_both_human_stores_are_empty() -> None:
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
     proposals = [_proposal("p1", 0.9), _proposal("p2", 0.3)]
-    resolved = resolve_regions([], proposals, {}, threshold=0.5)
+    resolved = resolve_regions([], proposals, {}, {}, threshold=0.5, current_facet_digests={})
     assert [r.proposal_id for r in resolved] == ["p1"]
     assert all(r.confirmed is False for r in resolved)
 
@@ -1076,8 +1272,57 @@ def test_the_labeler_row_where_the_threshold_is_zero_shows_every_proposal() -> N
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
     proposals = [_proposal("p1", 0.9), _proposal("p2", 0.01)]
-    resolved = resolve_regions([], proposals, {}, threshold=0.0)
+    resolved = resolve_regions([], proposals, {}, {}, threshold=0.0, current_facet_digests={})
     assert [r.proposal_id for r in resolved] == ["p1", "p2"]
+
+
+def test_a_text_only_change_leaves_a_geometry_proposal_current() -> None:
+    """Fixing a typo must not invalidate a proposal that never read the text facet."""
+    from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
+
+    run = _run_with_digests(
+        "r1",
+        0,
+        {"word_boxes": "wb1", "line_structure": "ls1", "page_image": "pi1", "word_text": "wt1"},
+        frozenset({"word_boxes", "line_structure", "page_image"}),
+    )
+    current = {"word_boxes": "wb1", "line_structure": "ls1", "page_image": "pi1", "word_text": "wt2"}
+
+    resolved = resolve_regions(
+        [], [_proposal("p1", 0.9)], {}, {"r1": run}, threshold=0.5, current_facet_digests=current
+    )
+    assert resolved[0].stale is False
+
+
+def test_a_word_boxes_change_marks_a_geometry_proposal_stale() -> None:
+    from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
+
+    run = _run_with_digests(
+        "r1",
+        0,
+        {"word_boxes": "wb1", "line_structure": "ls1", "page_image": "pi1", "word_text": "wt1"},
+        frozenset({"word_boxes", "line_structure", "page_image"}),
+    )
+    current = {"word_boxes": "wb2", "line_structure": "ls1", "page_image": "pi1", "word_text": "wt1"}
+
+    resolved = resolve_regions(
+        [], [_proposal("p1", 0.9)], {}, {"r1": run}, threshold=0.5, current_facet_digests=current
+    )
+    assert resolved[0].stale is True
+
+
+def test_a_stale_proposal_is_still_returned_not_suppressed() -> None:
+    from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
+
+    run = _run_with_digests("r1", 0, {"word_boxes": "wb1"}, frozenset({"word_boxes"}))
+    current = {"word_boxes": "wb2"}
+
+    resolved = resolve_regions(
+        [], [_proposal("p1", 0.9)], {}, {"r1": run}, threshold=0.5, current_facet_digests=current
+    )
+    assert len(resolved) == 1
+    assert resolved[0].proposal_id == "p1"
+    assert resolved[0].stale is True
 
 
 def test_writing_proposals_leaves_the_page_content_blob_untouched(tmp_path: Path) -> None:
@@ -1086,7 +1331,6 @@ def test_writing_proposals_leaves_the_page_content_blob_untouched(tmp_path: Path
     Content addressing makes this a single comparison: the journal write must
     not change what the blob store holds.
     """
-    from pdomain_ocr_labeler_spa.core.regions.models import ProposalRun
     from pdomain_ocr_labeler_spa.core.regions.proposal_log import RegionProposalLog
 
     blobs_dir = tmp_path / ".pd-pages" / "blobs"
@@ -1105,7 +1349,8 @@ def test_writing_proposals_leaves_the_page_content_blob_untouched(tmp_path: Path
             model_id="pp-doclayout-plus-l",
             model_version="1.0.0",
             created_at="2026-09-08T10:00:00+00:00",
-            page_content_hashes={0: "a" * 64},
+            page_facet_digests={0: {"word_boxes": "a" * 64}},
+            depends_on=frozenset({"word_boxes"}),
             page_kind_decision_ref=None,
             page_kind_was_confirmed=False,
         )
@@ -1134,6 +1379,11 @@ confidence threshold, then nothing.
 The labeler passes a threshold of zero and renders proposals visibly differently.
 The execution engine passes a real threshold and takes the result as the answer.
 Because there is one function, there is no second pipeline to keep in step.
+
+A returned proposal also carries whether it is stale: whether the facets its
+run actually depended on have since changed on the page. Staleness never
+suppresses a proposal — it is a fact a caller (chiefly the labeler) renders,
+not a filter.
 """
 
 from __future__ import annotations
@@ -1142,6 +1392,7 @@ from collections.abc import Mapping, Sequence
 
 from pdomain_ocr_labeler_spa.core.regions.models import (
     Disposition,
+    ProposalRun,
     RegionDecision,
     RegionProposal,
     ResolvedRegion,
@@ -1152,8 +1403,10 @@ def resolve_regions(
     confirmed: Sequence[ResolvedRegion],
     proposals: Sequence[RegionProposal],
     decisions: Mapping[str, RegionDecision],
+    runs: Mapping[str, ProposalRun],
     *,
     threshold: float,
+    current_facet_digests: Mapping[str, str],
 ) -> list[ResolvedRegion]:
     """Resolve one page's regions from the three stores.
 
@@ -1163,9 +1416,19 @@ def resolve_regions(
         decisions: The decision for each proposal id, where one exists. A
             proposal absent from this mapping is unreviewed, which is a
             different fact from a recorded rejection.
+        runs: The `ProposalRun` each proposal in `proposals` belongs to,
+            keyed by run_id, so staleness can be judged against what that
+            run actually depended on. A proposal whose run is missing from
+            this mapping is treated as not stale — there is nothing to
+            compare against.
         threshold: Minimum confidence a proposal needs to stand in for a missing
             confirmed region. Zero shows everything, which is what the labeler
             wants.
+        current_facet_digests: The page's facet digests as of right now,
+            keyed by facet name (`word_boxes`, `line_structure`, `page_image`,
+            `word_text`). Compared only against the facets a proposal's run
+            named in `depends_on` — a run that never read `word_text` is
+            never invalidated by a text-only edit.
 
     Returns:
         Confirmed regions first, in the order given, then the surviving
@@ -1184,6 +1447,16 @@ def resolve_regions(
             continue
         if proposal.confidence < threshold:
             continue
+
+        run = runs.get(proposal.run_id)
+        stale = False
+        if run is not None:
+            proposal_digests = run.page_facet_digests.get(proposal.page_index, {})
+            stale = any(
+                current_facet_digests.get(facet) != proposal_digests.get(facet)
+                for facet in run.depends_on
+            )
+
         resolved.append(
             ResolvedRegion(
                 role=proposal.role,
@@ -1192,6 +1465,7 @@ def resolve_regions(
                 confidence=proposal.confidence,
                 proposal_id=proposal.proposal_id,
                 region_id=None,
+                stale=stale,
             )
         )
 
@@ -1201,7 +1475,7 @@ def resolve_regions(
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/unit/core/regions/test_resolver.py -v`
-Expected: PASS, all eight tests.
+Expected: PASS, all eleven tests.
 
 - [ ] **Step 5: Run the fast suite and the gate**
 
@@ -1228,8 +1502,19 @@ git commit -m "feat(regions): resolve confirmed regions over proposals above a t
   off a page belongs with the routes, because that is the first caller that needs it.
 - It does not compute proposals. The proposal engine is slice 4 and needs its own design, and it is
   gated on the page-template spread from the second plan.
-- It does not add explicit word membership. That arrives with the routes, where setting membership
-  is its own operation.
+- It does not populate `ResolvedRegion.member_word_signatures` from a live page. The field exists
+  here so the resolver's contract can carry it, but lifting a confirmed `Block`'s words into that
+  field is `confirmed_regions_from_page`'s job, which belongs with the routes plan — that is the
+  first caller with a `Block` to read from. Setting membership on a confirmed region is its own
+  route, also in that plan.
+- It does not compute facet digests from a live `Page`. `resolve_regions` and `ProposalRun` both
+  take digests as plain `dict[str, str]` values; the algorithm that derives a digest from
+  `Page.words`, `Page.lines`, or an image blob lives in the routes plan, the first caller that has
+  a `Page` to read from.
+- It does not implement the geometric matching that produces a `CARRIED` decision. Deciding that a
+  new run's proposal matches an earlier confirmed region — by overlap and agreeing role — is slice
+  4's proposal engine; this plan only makes the disposition representable and enforces that its two
+  origin fields are set exactly when it is used.
 - It does not touch the glyph or word stores. Word provenance rides on `ReviewMetadata.source` from
   the first plan.
 

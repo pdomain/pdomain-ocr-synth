@@ -141,10 +141,17 @@ same standard, by owner direction on 2026-09-08. None may be left with gaps.
 glyph pattern. That pattern is the weakest instance in the suite. `StyleSpan` in book-contracts is
 the strongest, and it already carries everything this design asks for.
 
-Its three vocabularies are better than a human-or-machine flag. `LabelSource` names five origins:
+Its three vocabularies are richer than a human-or-machine flag. `LabelSource` names five origins:
 `f2`, `gutenberg_html`, `se_computed_css`, `human`, `synthetic`. `ConfidenceTier` is `gold`,
 `silver`, `bronze`, `quarantine`. `KnowledgeState` is `positive`, `verified_negative`, `unknown`,
 `conflict`.
+
+**`LabelSource` needs a sixth member before it can serve this track.** Its five values are four
+document sources and a person, because it was built to record which transcription asserted a style.
+It is referenced in exactly one place today, the F2 parser. Nothing in it can say that a model
+proposed something, which is the claim this entire track exists to record. Add `model`. The model's
+identity and version stay on the run record rather than in the enum, so the vocabulary stays small
+and identity is not duplicated.
 
 That third enum is the one the other levels lack. `verified_negative` is a recorded rejection, and
 `conflict` names two sources disagreeing. A span also carries `source_slices`, `rule_ref`,
@@ -178,11 +185,18 @@ per-page reviewed marker.
 **Regions have nothing at all.** Role labels round-trip on `Block` and that is the whole of it.
 Everything in this design is new work here.
 
-**Style spans have the model and the wrong review granularity.** No route lets a person confirm a
-span. The typography review routes are word-scoped, at `/typography/words/{word_id}/`, while the
-model is a grapheme range that crosses word boundaries. `StyleSpan` itself is complete, and the
-labeler already loads spans: `book_labeling_session.py` validates `TypographyPageRecord`, whose
-`style_spans` field is deserialized on every page-record load.
+**Style spans have the model, no identity, and the wrong review granularity.** No route lets a
+person confirm a span. The typography review routes are word-scoped, at
+`/typography/words/{word_id}/`, while the model is a grapheme range that crosses word boundaries.
+The labeler already loads spans: `book_labeling_session.py` validates `TypographyPageRecord`, whose
+`style_spans` field is deserialized on every page-record load. It then discards them, retaining
+nothing on the loaded bundle.
+
+**`StyleSpan` also carries no identifier of its own.** The eight properties above do not ask for
+one, but a decision store does. A page holds many spans, so by the rule below they need per-span
+recorded disposition, and a disposition has to point at something. Identity must be derived
+deterministically from the page digest, the range, and the content before any span-level decision
+can be stored.
 
 **Words have the two stores and no provenance.** `ReviewMetadata` holds only `validated`,
 `reviewer_note`, and `flagged_for_attention`. It can express neither a rejection nor a conflict, and
@@ -383,9 +397,15 @@ value can be validated the way a region role is.
 ## The routes follow the convention already in place
 
 Region routes add nothing agent-specific, because the existing convention already serves both
-callers. Every mutating route among the 89 that ship takes the per-page lock, bumps `generation`,
-persists, and returns the full `PagePayload`. Region routes do the same, so a person clicking and
-an agent calling see identical semantics.
+callers. The word and page routes take the per-page lock, bump `generation`, persist, and return
+the full `PagePayload`. Region routes do the same, so a person clicking and an agent calling see
+identical semantics.
+
+**That convention is not universal, and the exception is instructive.** The typography routes take
+the page lock but return a compare-and-swap `head_token` and check an `expected_head` on write,
+with no `generation` and no `PagePayload`, because style spans never enter the page state that
+payload is built from. Any annotation level whose data does not live on the page follows the
+typography pattern rather than this one.
 
 Eight routes carry the work:
 
@@ -423,16 +443,32 @@ A region's box is not its membership, so geometry only proposes which words a re
 `tag_words_with_layout` assigns a word to every region containing the word's bounding-box centre,
 and containment is an axis-aligned rectangle test, `L <= x <= R and T <= y <= B`.
 
-The rectangle is what makes this wrong rather than merely approximate. Body text flowing around a
-ragged figure sits in the notch of the figure's bounding rectangle, so every one of those words
-tests as inside the figure. A true polygon would exclude them; a bounding box cannot.
+The rectangle over-tags, and that is deliberate. Body text flowing around a ragged figure sits in
+the notch of the figure's bounding rectangle, so every one of those words tests as inside the
+figure. A true polygon would exclude them; a bounding box cannot.
 
-Under this design that pass becomes a proposal generator, and stored membership is an edge somebody
-confirmed.
+**The over-tagging is load-bearing, and an earlier draft of this design was wrong to call it simply
+a defect.** `_word_has_only_layout_tag` reads how many `layout:` tags a word carries and treats a
+word tagged both `layout:figure` and `layout:text` as wrap-around body rather than figure-internal
+noise, so it is not dropped. Multi-tagging is how the shipped pipeline already disambiguates the
+ragged figure.
+
+So the change is layered, not a replacement. The tagging pass keeps its multi-tag output, because a
+downstream pass reads the multiplicity as evidence. What changes is that this output becomes a
+proposal rather than an answer, and stored membership on a confirmed region is an edge somebody
+confirmed. Exclusive membership binds confirmed sibling regions; it does not bind the proposal
+layer, where a word being a candidate for two regions is exactly the signal worth keeping.
 
 **Sibling regions are disjoint, ancestors are not.** Two siblings may overlap as rectangles and
 still share no word. A word belongs to several regions only through ancestry, which the block tree
 gives for free. So the owning region is always the innermost one, and no tie-break rule is needed.
+
+**`Block` enforces the opposite relationship today, and that has to be reconciled.** Both
+`Block.add_item` and `Block.remove_item` end by calling `recompute_bounding_box`, so a block's box is
+derived from its members. Changing a region's membership would silently redraw its box to the union
+of its words, which is exactly what the rule above forbids. A region's box is an independent fact
+that a person or a detector asserted, and it must survive a membership change untouched, so every
+membership write has to preserve it explicitly.
 
 **Order stays derived, with an explicit override.** Order is recomputed on every access to
 `page.items`, sorting by `override_page_sort_order` where it is set and by top-left y then x
@@ -493,6 +529,143 @@ That is the guard against treating model output as data, and it is only observab
 fixture in book-tools stores PP-DocLayout's own output as its expected values. It detects change
 and cannot validate correctness.
 
+## Six corrections from the data-model scan
+
+A scan on 2026-09-08 read the design against all eight plans and the code, looking for things the
+data model cannot represent rather than work with no plan. Six findings are settled here because
+they follow from rules already made.
+
+**Regions nest, and the plans made them flat.** The vocabulary spec's hierarchy rule 1 expresses
+containment by nesting, and rule 6 requires a `BlockCategory.GROUP` holding a `brace` or `bracket`
+plus a `group label`. `BlockCategory` has only `BLOCK`, `PARAGRAPH`, and `LINE`, and a region
+created with `child_type=BlockChildType.WORDS` raises `TypeError` when a child block is added. So
+the vocabulary can name `brace`, `bracket`, `group label`, and a `page header` containing a running
+head and a folio, while the only write path cannot build any of them. Region creation must accept a
+nesting-capable child type, and `BlockCategory.GROUP` must exist before those four roles mean
+anything.
+
+**`ResolvedRegion` must carry word membership.** It holds a role, a box, and provenance and no
+words. That makes the single read path unable to answer the question a trainer actually asks, and
+forces every caller to walk the block tree itself, which defeats having one path at all.
+
+**A confirmed region must record where it came from.** A region created by hand and a region
+promoted from a proposal are currently byte-identical, because only `region_id` is stamped. Record
+the originating proposal id, or an explicit marker meaning a person drew it unprompted.
+
+**Glyph identity must be geometric, on the same grounds as regions.** The glyph annotation and
+prediction maps stay keyed on line and word ordinal. Line numbering is not stable across the
+band-identification fixes, and matching on ordinal across a renumbering already invalidated an
+analysis in this repository. The rule that forbids positional keys for regions applies unchanged
+one level down.
+
+**Glyphs adopt `LabelSource` now that it can name a model.** The glyph level keeps a private
+three-value source vocabulary because nothing in `LabelSource` could say a model predicted
+something. Adding `model` removes that reason, so the levels share one vocabulary as the design
+requires.
+
+**The proposal run reads the page-kind state itself.** Passing the page-kind reference in as a
+request field lets a caller run region proposals against a book whose page kinds were never proposed
+or confirmed, which silently breaks the ordering the design depends on. The job looks the decision
+up rather than trusting what it was handed.
+
+## Editorial corrections say what the page should have said, and never touch ground truth
+
+The five annotation levels all describe what is on the page. An editorial correction is the one
+thing that departs from it: the ink reads one way, and context or editorial direction says it should
+read another. A printer's error, a dropped word, a name misspelled consistently through a chapter.
+
+**The invariant is that an editorial correction never enters `ground_truth_text`.** Ground truth is
+what the ink says, always. If "should have said" leaks into it, the recognition trainer learns to
+read words that are not on the page, and the corpus this track exists to produce is quietly
+poisoned. The correction sits beside the reading, never inside it.
+
+The suite already runs this discipline for one case. The F2 parser captures PGDP's `[** ... ]`
+proofer notes as `ParserNoteEvidence`, whose own docstring calls them quarantined, holding
+`raw_text`, `page_review_content`, a status, and source slices. Separately, `remove_proofer_notes`
+strips them from the text. Captured and held apart, never applied. An editorial correction
+generalizes that from PGDP's note convention to any correction from any source.
+
+**A correction is span-scoped, and its span may be empty.** Corrections cross word boundaries, so
+the word level is the wrong home. They also insert: a word the printer omitted has a correction with
+no extent in the ink at all. `StyleSpan` cannot serve here, because its range validator requires
+`start < end` and so forbids the zero-width insertion. Editorial corrections need their own model.
+
+Each correction records the reading as printed, the reading intended, and why — a printer's error, a
+missing mark of punctuation, a modernization, an editorial conjecture. Provenance and knowledge
+state come from the same shared vocabularies as everything else, so a conjecture and a certain fix
+are distinguishable, and a correction can be rejected on review like any other claim.
+
+**The labeler records them. A post-processor applies them.** Owner direction, 2026-09-08. Applying a
+correction is out of scope here and belongs to a post-processing stage that does not yet exist. The
+synthesizer never sees corrections at all, because it renders what the ink said.
+
+## Glyph marks point into mutable text, and go stale unnoticed
+
+Glyphs sit below words, so a glyph annotation set hangs off one word and is keyed by that word. That
+much the identity rule above already covers. Below the word it is worse, and this is live today.
+
+`LigatureMark.char_span` is a half-open pair of character indices into `Word.ground_truth_text`, and
+`long_s_positions` is a list of character indices into the same string. That string has four
+writers: F2 alignment, a person typing, split and merge redistributing tokens, and the export job.
+Correcting a word's ground truth shifts every mark on it, and nothing invalidates or remaps them. A
+ligature span survives the edit and now names different characters.
+
+This is the ordinal problem one level down. It does not touch Gate 3: `pdomain-pgdp-measure` never
+reads these marks, so the glyph inventory Gate 3 scores is built from a different path. What is at
+risk is everything downstream of the labeler's own glyph annotations, which the labeler passes
+straight to its wire model without checking them against the text they index. That is the corpus
+this track exists to produce.
+
+The fix is the mechanism the page level already uses. Store a digest of the ground-truth text
+alongside the annotation set. When the text changes, the digest stops matching and the sub-word
+marks are stale rather than silently wrong. Facet digests at page level, a text digest at word
+level, one rule.
+
+## A proposal goes stale per facet, not per page
+
+A whole-page content hash is too blunt. Fixing one typo would invalidate every geometry proposal on
+the page, even though nothing the geometry depended on moved. So a run records what it actually
+read, and staleness is decided against that.
+
+**Owner ruling, 2026-09-08: staleness is decided per edit kind.** A text correction leaves geometry
+proposals valid; a rebox or a split invalidates them.
+
+The mechanism is a digest per page facet rather than one hash for the page. A run stores, for each
+page it read, a digest of each facet it depended on. At read time the resolver recomputes those
+facets from the current page and compares only the ones the run named. Four facets carry the
+distinctions that matter:
+
+| facet | covers | a geometry proposal depends on it |
+| --- | --- | --- |
+| `word_boxes` | every word's bounding box | yes |
+| `line_structure` | line and paragraph grouping, and their order | yes |
+| `page_image` | the image blob the detector ran on | yes |
+| `word_text` | OCR text and ground-truth text | no |
+
+**Facet digests are computed, never declared.** An earlier draft had every mutation route announce
+what it touched. Recomputing the digest gives the same answer without a hand-maintained list that
+can drift out of step with the route it describes, and it catches a change no matter which path
+made it.
+
+A proposal whose named facets still match is current. One whose facets have moved is served with a
+stale marker, so a person still sees what the model said and judges it against the page as it now
+stands. The resolver therefore needs the page's current facet digests as an argument; without them
+staleness cannot be seen at read time at all.
+
+## An accepted decision carries forward, and says so
+
+**Owner ruling, 2026-09-08: a decision carries across runs, recorded as its own disposition.**
+Proposal ids are minted fresh per run, so without this a person re-reviews the whole corpus on every
+model upgrade, which in practice stops upgrades happening.
+
+When a run proposes a region that matches one a person already confirmed, by geometric overlap and
+agreeing role, the earlier decision carries to the new proposal. The carried decision is written as
+`carried`, not `accepted`, and names both the run it came from and the proposal it came from.
+
+The separate disposition is what keeps measurement honest. A carried decision is not fresh human
+agreement and must never be counted as though it were, or every model would score better simply by
+being run later. It also lets a person filter for carried decisions and spot-check them.
+
 ## What this does not settle
 
 - The wire shape of a proposal record, and where the proposal store physically lives. The page
@@ -502,6 +675,10 @@ and cannot validate correctness.
 - How a book-scoped proposal run reaches pages, given that the book labeling manifest is read-only
   today and has no write path anywhere in the labeler.
 - The labeled-dataset contract the synthesizer reads at M16, which remains unspecified.
+- The post-processor that applies editorial corrections. Its input shape is settled here; nothing
+  else about it is.
+- Whether an editorial correction can span a page boundary. A word broken across pages is already
+  known to be handled poorly, and a correction to one is unmodeled.
 
 ## Related
 
