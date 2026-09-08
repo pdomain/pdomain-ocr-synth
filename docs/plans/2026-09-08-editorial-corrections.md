@@ -69,18 +69,18 @@ corrections say what the page should have said, and never touch ground truth."
   - [Annotation vocabularies in
     book-contracts](2026-09-08-annotation-vocabularies-in-book-contracts.md) — Task 1 imports
     `ConfidenceTier`, `KnowledgeState`, `LabelSource` from `pdomain_book_contracts.annotation`, which
-    that plan creates. Verified absent today: `pdomain_book_contracts/annotation/` does not exist in
-    the current tree: only `pdomain_book_contracts/typography/labels.py` defines these three enums.
+    that plan creates. **This dependency is satisfied.** That plan was implemented and merged on
+    2026-09-08 at `bfcb7dd`, and `pdomain_book_contracts.annotation` now exports 34 `RegionRole`
+    values, 14 `PageKind` values, and the three provenance enums including `LabelSource.MODEL`.
   - [Style span review surface](2026-09-08-style-span-review-surface.md) — Tasks 2–5 extend
     `core/typography_review.py` and `api/typography.py` immediately after the classes and routes that
     plan adds (`StyleSpanDecisionLog`, `record_style_span_decision`), and Task 4's imports assume that
     plan already added `ConfidenceTier`, `KnowledgeState`, `LabelSource` to `api/typography.py`'s
     `from pdomain_book_tools.typography import (...)` block. Verified absent today: neither file
     contains `StyleSpanDecisionLog`, `SpanDisposition`, or `stable_style_span_id` in the current tree.
-  - Both are themselves unimplemented as of this plan's authoring (verified: `git log` on
-    `pdomain-book-contracts` shows no commit past `9bde881`, and neither `core/regions/` nor
-    `pdomain_book_contracts/annotation/` exists). Insertion points below are anchored to symbol names,
-    not line numbers, so they survive whichever of the two companion plans lands first.
+  - The style-span plan remains unimplemented. Insertion points below are anchored to symbol names
+    rather than line numbers, so they survive whichever companion plan lands first. The annotation
+    vocabularies dependency is already met, so only the style-span one still gates Tasks 2 to 5.
 - **An editorial correction never enters `Word.ground_truth_text`.** `EditorialCorrection` carries no
   field that could be mistaken for it (verified: `Word.ground_truth_text` lives on
   `pdomain_book_tools/ocr/word.py:197-207`, `_ground_truth_text` at line 98 — this plan's model and
@@ -386,20 +386,21 @@ class EditorialCorrection(CanonicalModel):
         return self
 ```
 
-Edit `pdomain_book_contracts/typography/__init__.py`:
+Edit `pdomain_book_contracts/typography/__init__.py` in three places.
 
-1. Add `` and ``editorial.py``` to the module docstring's owned-file list (currently "Owns
-   ``labels.py``, ``spans.py``, ``normalization.py``, ``records.py``, ``annotations.py``,
-   ``exchange.py``, ``book_manifest.py``, and ``review.py``"), so it reads "... ``book_manifest.py``,
-   ``editorial.py``, and ``review.py``".
-1. Insert a new import block, alphabetically between the `book_manifest` and `exchange` blocks:
+First, add `editorial.py` to the module docstring's owned-file list (currently "Owns ``labels.py``,
+``spans.py``, ``normalization.py``, ``records.py``, ``annotations.py``, ``exchange.py``,
+``book_manifest.py``, and ``review.py``"), so it reads "... ``book_manifest.py``, ``editorial.py``,
+and ``review.py``".
+
+Second, insert a new import block, alphabetically between the `book_manifest` and `exchange` blocks:
 
 ```python
 from pdomain_book_contracts.typography.editorial import CorrectionReason, EditorialCorrection
 ```
 
-1. Add `"CorrectionReason"` and `"EditorialCorrection"` to `__all__`, alphabetically: immediately
-   after `"CorrectionDecision"` and before `"Evidence"`.
+Third, add `"CorrectionReason"` and `"EditorialCorrection"` to `__all__`, alphabetically: immediately
+after `"CorrectionDecision"` and before `"Evidence"`.
 
 - [ ] **Step 4: Run the tests**
 
