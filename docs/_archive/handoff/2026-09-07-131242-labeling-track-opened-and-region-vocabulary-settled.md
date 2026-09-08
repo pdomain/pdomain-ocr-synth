@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-07"
+kind: archive
+status: retired
 created_at: "2026-09-07T13:13:00Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "74f41d32379588f3519a0222d464c0ac930c31b2"
 supersedes: "2026-09-07-102549-measurement-library-extracted-and-gate-3-recheck.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-07"
+last_verified: "2026-09-08"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-08-164255-annotation-track-designed-planned-and-four-plans-shipped.md`.**
+
 
 # The labeling track is open and its vocabulary is settled
 
