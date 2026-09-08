@@ -476,7 +476,7 @@ __all__ = [
 - [ ] **Step 4: Run the tests**
 
 Run: `UV_PROJECT_ENVIRONMENT=.venv uv run pytest tests/test_annotation_vocabularies.py -v`
-Expected: PASS, all eight tests.
+Expected: PASS, all nine tests in the file.
 
 - [ ] **Step 5: Run the gate and commit**
 
@@ -701,7 +701,9 @@ def test_figure_and_illustration_stay_distinct() -> None:
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `UV_PROJECT_ENVIRONMENT=.venv uv run pytest tests/test_annotation_mappings.py -v`
-Expected: FAIL with `AttributeError: page_number` on `RegionType`.
+Expected: FAIL. The first test imports `REGION_TYPE_TO_ROLE`, which does not exist yet, so the
+reported error is `ImportError: cannot import name 'REGION_TYPE_TO_ROLE'` rather than the
+`AttributeError` on `RegionType.page_number` you might expect. Same cause, earlier symptom.
 
 - [ ] **Step 3: Add the enum member**
 
@@ -857,7 +859,14 @@ Expected: FAIL with `TypeError: ReviewMetadata.__init__() got an unexpected keyw
 
 - [ ] **Step 3: Write the implementation**
 
-Replace the body of `ReviewMetadata` in `pdomain_book_contracts/ocr/review.py`:
+Replace the body of `ReviewMetadata` in `pdomain_book_contracts/ocr/review.py`.
+
+**Widen `from_dict` to take a `Mapping`, not a `dict`.** The shipped signature is
+`from_dict(cls, d: dict[str, object])`, and `to_dict` returns `dict[str, bool | str | None]`.
+`dict` is invariant in its value type, so round-tripping `from_dict(x.to_dict())` fails basedpyright
+with `reportArgumentType`. The existing signature has the same defect; it is latent only because
+nothing round-trips it today, and the tests below do. Import `Mapping` from `collections.abc` under
+`TYPE_CHECKING`, matching this repo's typing conventions.
 
 ```python
 from pdomain_book_contracts.annotation.provenance import KnowledgeState, LabelSource
@@ -895,7 +904,7 @@ class ReviewMetadata:
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, object]) -> ReviewMetadata:
+    def from_dict(cls, d: Mapping[str, object]) -> ReviewMetadata:
         raw_source = d.get("source")
         raw_state = d.get("state")
         return cls(

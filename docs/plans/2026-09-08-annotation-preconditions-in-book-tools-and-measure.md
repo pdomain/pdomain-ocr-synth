@@ -72,6 +72,7 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
 | `schemas/pgdp-profile-v2.schema.json` | modified: documents the new property |
 | `pdomain_book_tools/ocr/block.py` | modified: `ALLOWED_BLOCK_ROLE_LABELS` widens to 34 roles |
 | `pdomain-book-tools/tests/ocr/test_block_role_vocabulary.py` | covers all 34 roles and the new aliases |
+| `pdomain-book-tools/docs/architecture/page-serialization.md` | modified: the drift gate requires listing every role |
 | `pdomain-pgdp-measure/tests/test_pgdp_page_templates.py` | modified: covers the spread and its round trip |
 
 ---
@@ -710,13 +711,17 @@ def test_the_fourteen_additions_are_accepted() -> None:
 
 @pytest.mark.parametrize("role", sorted(_ADDITIONS))
 def test_each_addition_normalizes_without_raising(role: str) -> None:
-    block = Block(block_role_labels=[role])
+    # `items` has no default on Block.__init__ — pass it explicitly, matching
+    # the idiom in tests/ocr/test_block.py.
+    block = Block(items=[], block_role_labels=[role])
     assert role in block.block_role_labels
 
 
 def test_the_new_aliases_fold() -> None:
-    assert Block(block_role_labels=["frontispiece"]).block_role_labels == ["plate"]
-    assert Block(block_role_labels=["signaturemark"]).block_role_labels == ["signature mark"]
+    assert Block(items=[], block_role_labels=["frontispiece"]).block_role_labels == ["plate"]
+    assert Block(items=[], block_role_labels=["signaturemark"]).block_role_labels == [
+        "signature mark"
+    ]
 ```
 
 - [ ] **Step 3: Run test to verify it fails**
@@ -739,8 +744,16 @@ Expected: PASS.
 - [ ] **Step 6: Run the full suite**
 
 Run: `make test AI=1`
-Expected: PASS. `dropcap._SKIP_ROLES` and `route_sidenote_reading_order` match role strings
-literally, so a widened set must not disturb them.
+Expected: FAIL on first run, then PASS after the doc update below.
+
+`tests/test_page_model_doc.py::test_doc_lists_every_allowed_block_role_label` is a drift gate: it
+asserts every value in `ALLOWED_BLOCK_ROLE_LABELS` appears backtick-quoted in
+`docs/architecture/page-serialization.md`. Widening the frozenset without touching that doc fails it
+with thirteen missing labels. Add the fourteen roles and five aliases to the "Block roles" and alias
+listings in that document. The addition is documentation only; remove and rename nothing.
+
+Then confirm `dropcap._SKIP_ROLES` and `route_sidenote_reading_order` still pass, since both match
+role strings literally and a widened set must not disturb them.
 
 - [ ] **Step 7: Run the gate and commit**
 
