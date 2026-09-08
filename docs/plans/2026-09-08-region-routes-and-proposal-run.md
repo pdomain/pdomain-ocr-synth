@@ -874,6 +874,59 @@ def test_create_a_container_region_then_nest_a_child_under_it(toolbar_loaded: An
     assert parent_block is not None and child_block is not None
     assert child_block in parent_block.items
     assert child_block not in page.items
+    # The container keeps the box it was drawn with. Without the save/restore,
+    # ``add_item``'s recompute shrinks it to the child's (10, 10, 30, 30).
+    assert parent_block.bounding_box is not None
+    assert parent_block.bounding_box.to_ltrb() == (0.0, 0.0, 200.0, 300.0)
+
+
+def test_delete_nested_region_removes_it_from_its_parent_and_preserves_parent_box(
+    toolbar_loaded: Any,
+) -> None:
+    """Exercises ``_region_owner``'s tree-walking branch, not just its ``return page``
+    fallback — a region created with ``parent_region_id`` lives in the parent's
+    ``items``, and deleting it must not let ``Block.remove_item``'s bounding-box
+    recompute shrink the container to whatever it has left.
+    """
+    client, _ps, page = toolbar_loaded
+    container = client.post(
+        f"{_BASE}/regions",
+        json={
+            "role": "figure",
+            "box": {"x": 0, "y": 0, "width": 200, "height": 300},
+            "child_type": "blocks",
+        },
+    ).json()
+    parent_id = next(reg["region_id"] for reg in container["regions"] if reg["confirmed"])
+
+    nested = client.post(
+        f"{_BASE}/regions",
+        json={
+            "role": "caption",
+            "box": {"x": 10, "y": 10, "width": 20, "height": 20},
+            "parent_region_id": parent_id,
+        },
+    ).json()
+    child_id = next(
+        reg["region_id"] for reg in nested["regions"] if reg["confirmed"] and reg["role"] == "caption"
+    )
+
+    from pdomain_ocr_labeler_spa.api.regions import find_region_block
+
+    parent_block = find_region_block(page, parent_id)
+    child_block = find_region_block(page, child_id)
+    assert parent_block is not None and child_block is not None
+    assert parent_block.bounding_box is not None
+    original_parent_box = parent_block.bounding_box.to_ltrb()
+
+    r = client.delete(f"{_BASE}/regions/{child_id}")
+    assert r.status_code == 200, r.text
+    assert all(reg["region_id"] != child_id for reg in r.json()["regions"])
+
+    assert child_block not in parent_block.items
+    assert find_region_block(page, child_id) is None
+    assert parent_block.bounding_box is not None
+    assert parent_block.bounding_box.to_ltrb() == original_parent_box
 
 
 def test_nesting_under_a_non_container_parent_returns_400(toolbar_loaded: Any) -> None:
@@ -1281,7 +1334,7 @@ Add the install call right after `install_words_router(app)`:
 - [ ] **Step 5: Run the tests**
 
 Run: `uv run pytest tests/integration/test_regions_router.py -v`
-Expected: PASS, all ten tests.
+Expected: PASS, all eleven tests.
 
 - [ ] **Step 6: Regression check**
 
@@ -1311,10 +1364,10 @@ orphaned, wrapped as `recovered`); words newly listed are moved out of wherever 
 
 **Interfaces:**
 
-- Consumes: `find_region_block` (Task 2); `Block.words`, `Block.items`, `Block.add_item`,
-  `Block.remove_item`, `Page.lines` from `pdomain_book_tools.ocr`.
+- Consumes: `find_region_block` (Task 2); `_word_not_found` from `.words`; `Block.words`,
+  `Block.items`, `Block.add_item`, `Block.remove_item`, `Page.lines` from `pdomain_book_tools.ocr`.
 - Produces: `PUT .../regions/{region_id}/words` (`set_region_word_membership`), returning the full
-  `PagePayload`.
+  `PagePayload`; `_resolve_target_word` and `_region_not_word_capable` in `api/regions.py`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1366,7 +1419,10 @@ def test_set_membership_replaces_the_prior_set(toolbar_loaded: Any) -> None:
     region_id = next(reg["region_id"] for reg in created["regions"] if reg["confirmed"])
     client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 0, "word_index": 0}]})
 
-    r = client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 0, "word_index": 1}]})
+    # word_index 0, not 1: the first PUT moved "one" out of line 0, so "two" has
+    # shifted down to index 0. Positions resolve against the live tree on every
+    # request — that is the design, and a stale index here 404s.
+    r = client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 0, "word_index": 0}]})
     assert r.status_code == 200, r.text
     from pdomain_ocr_labeler_spa.api.regions import find_region_block
 
@@ -1393,6 +1449,31 @@ def test_set_membership_on_unknown_word_returns_404(toolbar_loaded: Any) -> None
     r = client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 99, "word_index": 0}]})
     assert r.status_code == 404, r.text
     assert r.json()["error"] == "word_not_found"
+
+
+def test_set_membership_on_a_container_region_returns_400(toolbar_loaded: Any) -> None:
+    """A container region (``child_type=blocks``) holds regions, not words — the
+    mirror image of ``parent_not_nesting_capable``. The rejection must land before
+    any word is moved out of its line.
+    """
+    client, _ps, page = toolbar_loaded
+    container = client.post(
+        f"{_BASE}/regions",
+        json={
+            "role": "figure",
+            "box": {"x": 0, "y": 0, "width": 200, "height": 300},
+            "child_type": "blocks",
+        },
+    ).json()
+    container_id = next(reg["region_id"] for reg in container["regions"] if reg["confirmed"])
+
+    r = client.put(
+        f"{_BASE}/regions/{container_id}/words", json={"word_refs": [{"line_index": 0, "word_index": 0}]}
+    )
+    assert r.status_code == 400, r.text
+    assert r.json()["error"] == "region_not_word_capable"
+    # Nothing moved before the rejection — the word is still on its original line.
+    assert {w.text for w in page.lines[0].words} == {"one", "two"}
 
 
 # Moved here from Task 2: it needs the membership route above to put words in the
@@ -1435,29 +1516,36 @@ class SetRegionWordMembershipRequest(BaseModel):
 
 Add a resolver helper beside `_bbox_to_ltrb`:
 
-```python
-def _resolve_line_and_word(page: Any, line_index: int, word_index: int) -> tuple[Any, Any] | None:
-    """Resolve ``(line_block, word)`` at the given position in the *current* live tree.
+`_word_not_found` already exists in `api/words.py` — import it rather than defining a second copy.
 
-    Positional and resolved once, at request time, exactly like every other word-scoped
-    route in ``api/words.py`` — never persisted as a stored key. Line numbering is not
-    stable across the band-identification fixes, so nothing here stores this pair.
+```python
+def _resolve_target_word(page: Page, line_index: int, word_index: int) -> Word | None:
+    """Resolve the word at ``(line_index, word_index)`` in the *current* live tree.
+
+    Positional and resolved once, at request time, exactly like ``_resolve_word``
+    in ``api/words.py`` — never persisted as a stored key. Line numbering is
+    renumbered by the band-identification fixes, so nothing here stores this pair.
     """
     lines = page.lines
     if not (0 <= line_index < len(lines)):
         return None
-    line = lines[line_index]
-    words = line.words
+    words = lines[line_index].words
     if not (0 <= word_index < len(words)):
         return None
-    return line, words[word_index]
+    return words[word_index]
 
 
-def _word_not_found(line_index: int, word_index: int) -> JSONResponse:
+def _region_not_word_capable(region_id: str) -> JSONResponse:
+    """A container region holds regions, not words — the mirror of ``parent_not_nesting_capable``.
+
+    Without this, ``Block.add_item`` raises ``TypeError`` when a ``Word`` is added to a
+    ``child_type=BLOCKS`` block and the route answers a reachable request with a 500.
+    """
     return JSONResponse(
-        status_code=404,
+        status_code=400,
         content=ApiError(
-            error="word_not_found", message=f"word not found: line {line_index}, word {word_index}"
+            error="region_not_word_capable",
+            message=f"region {region_id} holds regions, not words; address a leaf region instead",
         ).model_dump(),
     )
 ```
@@ -1484,6 +1572,11 @@ def set_region_word_membership(
 ) -> JSONResponse:
     """Replace a region's word membership exactly with the given set.
 
+    Only a leaf (``child_type=WORDS``) region can hold words directly; a container
+    region rejects this route with 400 ``region_not_word_capable``, checked right
+    after the region resolves and before any word is resolved or moved, mirroring
+    ``create_region``'s ``parent_not_nesting_capable`` check for the opposite shape.
+
     A word not listed is released; a word newly listed is moved out of wherever it
     currently sits. ``Block.add_item``/``remove_item`` recompute the block's bounding
     box from its items as a side effect — the region's own explicitly-set box is saved
@@ -1503,13 +1596,14 @@ def set_region_word_membership(
         region = find_region_block(page, region_id)
         if region is None:
             return _region_not_found(region_id)
+        if region.child_type is not BlockChildType.WORDS:
+            return _region_not_word_capable(region_id)
 
-        target_words = []
+        target_words: list[Word] = []
         for ref in body.word_refs:
-            resolved = _resolve_line_and_word(page, ref.line_index, ref.word_index)
-            if resolved is None:
+            word = _resolve_target_word(page, ref.line_index, ref.word_index)
+            if word is None:
                 return _word_not_found(ref.line_index, ref.word_index)
-            _line, word = resolved
             target_words.append(word)
 
         saved_box = region.bounding_box
@@ -1552,7 +1646,7 @@ Add `SetRegionWordMembershipRequest` and `WordRef` to `__all__`.
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/integration/test_regions_router.py -v`
-Expected: PASS, all sixteen tests (ten from Task 2, six new).
+Expected: PASS, all eighteen tests (eleven from Task 2, seven new).
 
 - [ ] **Step 5: Regenerate the OpenAPI contract**
 
