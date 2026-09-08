@@ -152,8 +152,10 @@ as a region back into a `ResolvedRegion`, and it is how `_page_payload` learns t
 **Interfaces:**
 
 - Consumes: `ResolvedRegion`, `RegionProposal`, `RegionDecision`, `ProposalRun`, `Disposition`,
-  `RegionProposalLog`, `RegionDecisionLog`, `resolve_regions` from
-  `pdomain_ocr_labeler_spa.core.regions`; `RegionRole` from `pdomain_book_contracts.annotation`;
+  `RegionProposalLog`, `RegionDecisionLog`, `resolve_regions` from the
+  `pdomain_ocr_labeler_spa.core.regions` submodules (`.models`, `.proposal_log`, `.decision_log`,
+  `.resolver` — the package `__init__.py` re-exports nothing);
+  `RegionRole` from `pdomain_book_contracts.annotation`;
   `Block`, `Page`, `Word` from `pdomain_book_tools.ocr`.
 
 - Produces: `confirmed_regions_from_page(page: Page) -> list[ResolvedRegion]`,
@@ -564,12 +566,26 @@ from ..core.regions.proposal_log import RegionProposalLog
 from ..core.regions.resolver import resolve_regions
 ```
 
-Inside `_page_payload`, find the block that computes `is_page` (the `isinstance(payload_obj, _Page)
-or hasattr(payload_obj, "lines")` check) and capture the resolved page object for later reuse:
+Inside `_page_payload`, resolve the live `Page` for the region assembly with a real `isinstance`
+check, immediately before the assembly block. Do **not** reuse the existing `is_page` /
+`payload_obj` locals: `is_page` is `isinstance(payload_obj, _Page) or hasattr(payload_obj,
+"lines")`, and that `hasattr` arm is true for the duck-typed test stubs this file already carries
+(`_StubPage` in `tests/unit/api/test_b1_b3_f1.py` exposes `.lines` and `.paragraphs` but no
+`.items`), so handing `payload_obj` to `confirmed_regions_from_page` raises `AttributeError` at
+runtime. The `or` also defeats `isinstance` narrowing, so `payload_obj` stays `object | None` and
+fails typecheck. Both locals are bound inside a nested `if`, so they may not exist at all here.
 
 ```python
-            is_page = isinstance(payload_obj, _Page) or hasattr(payload_obj, "lines")
-            _resolved_page_for_regions = payload_obj if is_page else None
+    # Region/proposal assembly. Only a genuine ``Page`` carries block
+    # structure — the duck-typed test stubs some payloads use elsewhere in
+    # this file expose ``.lines`` but not ``.items``/``.words``, so this is
+    # gated on a real ``isinstance`` check rather than the looser duck-typed
+    # ``is_page`` test used above for the line-matches path.
+    _resolved_page_for_regions: Page | None = None
+    if pstate is not None and pstate.page_record is not None:
+        _raw_payload = pstate.page_record.payload
+        if isinstance(_raw_payload, Page):
+            _resolved_page_for_regions = _raw_payload
 ```
 
 Immediately before `return PagePayload(`, add the region/proposal assembly. `page_store` is already
@@ -632,20 +648,27 @@ index 0 — a stand-in digest that still detects *some* image change is better t
             )
             for r in resolved
         ]
-        proposals = [
-            RegionProposalView(
-                proposal_id=p.proposal_id,
-                run_id=p.run_id,
-                page_index=p.page_index,
-                role=p.role,
-                box=BBox(x=p.box[0], y=p.box[1], width=p.box[2] - p.box[0], height=p.box[3] - p.box[1]),
-                confidence=p.confidence,
-                evidence=p.evidence,
-                disposition=(decisions[p.proposal_id].disposition.value if decisions.get(p.proposal_id) else None),
-                decided_region_id=(decisions[p.proposal_id].region_id if decisions.get(p.proposal_id) else None),
+        # A loop, not a comprehension: `decisions[p.proposal_id]` is typed
+        # `RegionDecision | None`, and a `decisions.get(...)` truthiness test in a
+        # conditional expression does not narrow the separate subscript in its body.
+        # basedpyright reports `reportOptionalMemberAccess` on both fields. Binding
+        # `decision` once narrows correctly and halves the dict lookups.
+        proposals = []
+        for p in raw_proposals:
+            decision = decisions.get(p.proposal_id)
+            proposals.append(
+                RegionProposalView(
+                    proposal_id=p.proposal_id,
+                    run_id=p.run_id,
+                    page_index=p.page_index,
+                    role=p.role,
+                    box=BBox(x=p.box[0], y=p.box[1], width=p.box[2] - p.box[0], height=p.box[3] - p.box[1]),
+                    confidence=p.confidence,
+                    evidence=p.evidence,
+                    disposition=decision.disposition.value if decision is not None else None,
+                    decided_region_id=decision.region_id if decision is not None else None,
+                )
             )
-            for p in raw_proposals
-        ]
 ```
 
 Then add `regions=regions, proposals=proposals` to the `PagePayload(...)` call.
@@ -661,16 +684,29 @@ Expected: PASS. `_page_payload` callers with no project loaded, or a project who
 `Page` object yet, must still return `regions=[]` and `proposals=[]` rather than raising — spot
 check by running the full existing pages test file:
 
-Run: `uv run pytest tests/unit/api/test_pages.py -v`
-Expected: PASS, no regressions.
+Run: `uv run pytest tests/unit/api/test_pages_get.py tests/unit/api/test_pages_image.py
+tests/unit/api/test_b1_b3_f1.py tests/integration/test_pages_router.py -v`
+Expected: PASS, no regressions. (There is no `tests/unit/api/test_pages.py`; `_page_payload` and
+`GET /pages/{idx}` are covered by those four files. `test_b1_b3_f1.py` is the one that uses the
+duck-typed `_StubPage`, so it is the targeted regression check for the `isinstance` gate above.)
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Regenerate the OpenAPI contract**
+
+Run: `make openapi-export`
+
+This task adds no route, but it does add two fields to `PagePayload`, which changes the OpenAPI
+schema. Without this step the `openapi-drift` CI job is red from here until Task 3 regenerates
+`types.ts` for its own route.
+
+- [ ] **Step 9: Commit**
+
+The subject below is 55 characters. `gitlint` rejects anything past 72, so keep detail in the body.
 
 ```bash
 git add src/pdomain_ocr_labeler_spa/core/regions/block_adapter.py \
   src/pdomain_ocr_labeler_spa/core/models.py src/pdomain_ocr_labeler_spa/api/pages.py \
-  tests/unit/core/regions/test_block_adapter.py
-git commit -m "feat(regions): lift confirmed Block regions and wire PagePayload.regions/.proposals"
+  tests/unit/core/regions/test_block_adapter.py frontend/src/api/types.ts
+git commit -m "feat(regions): lift Block regions into PagePayload views"
 ```
 
 ---
@@ -771,22 +807,6 @@ def test_delete_region_removes_it_from_the_payload(toolbar_loaded: Any) -> None:
     r = client.delete(f"{_BASE}/regions/{region_id}")
     assert r.status_code == 200, r.text
     assert all(reg["region_id"] != region_id for reg in r.json()["regions"])
-
-
-def test_delete_region_recovers_its_member_words(toolbar_loaded: Any) -> None:
-    client, _ps, page = toolbar_loaded
-    created = client.post(
-        f"{_BASE}/regions",
-        json={"role": "poetry", "box": {"x": 0, "y": 0, "width": 200, "height": 300}},
-    ).json()
-    region_id = next(reg["region_id"] for reg in created["regions"] if reg["confirmed"])
-    client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 0, "word_index": 0}]})
-
-    before_word_count = len(page.words)
-    r = client.delete(f"{_BASE}/regions/{region_id}")
-    assert r.status_code == 200, r.text
-    assert len(page.words) == before_word_count
-    assert any("recovered" in b.block_role_labels for b in page.items)
 
 
 def test_create_region_stamps_the_hand_drawn_sentinel_as_its_origin(toolbar_loaded: Any) -> None:
@@ -977,6 +997,22 @@ def _invalid_region_role(exc: ValueError) -> JSONResponse:
     )
 
 
+def _region_owner(page: Any, region: Block) -> Any:
+    """Return whatever holds ``region`` — its parent container block, or the page itself.
+
+    Compares by identity, never equality: two regions can carry equal field values and
+    still be different objects on the page.
+    """
+    stack: list[Any] = list(page.items)
+    while stack:
+        item = stack.pop()
+        if isinstance(item, Block):
+            if any(child is region for child in item.items):
+                return item
+            stack.extend(item.items)
+    return page
+
+
 def _parent_not_nesting_capable(parent_region_id: str) -> JSONResponse:
     return JSONResponse(
         status_code=400,
@@ -1051,7 +1087,13 @@ def create_region(
             )
         except ValueError as exc:
             return _invalid_region_role(exc)
+        # ``Block.add_item`` recomputes the owner's bounding box from its items. A
+        # container region's box is what a person drew on the page, not the union of
+        # its children — same rule the membership route follows for a leaf region.
+        saved_parent_box = parent.bounding_box if parent is not None else None
         (parent if parent is not None else page).add_item(region)
+        if parent is not None:
+            parent.bounding_box = saved_parent_box
         pstate.generation += 1
         if not _save_to_store_best_effort(
             pstate=pstate,
@@ -1148,7 +1190,13 @@ def delete_region(
         if region is None:
             return _region_not_found(region_id)
         members = list(region.words)
-        page.remove_item(region)
+        # A region created with ``parent_region_id`` lives in its parent's ``items``,
+        # not in ``page.items``, so ``page.remove_item`` would not find it.
+        owner = _region_owner(page, region)
+        saved_owner_box = owner.bounding_box if isinstance(owner, Block) else None
+        owner.remove_item(region)
+        if isinstance(owner, Block):
+            owner.bounding_box = saved_owner_box
         if members:
             recovered = build_recovered_words_block(members)
             if recovered is not None:
@@ -1190,7 +1238,7 @@ Add the install call right after `install_words_router(app)`:
 - [ ] **Step 5: Run the tests**
 
 Run: `uv run pytest tests/integration/test_regions_router.py -v`
-Expected: PASS, all ten tests.
+Expected: PASS, all nine tests.
 
 - [ ] **Step 6: Regression check**
 
@@ -1302,6 +1350,25 @@ def test_set_membership_on_unknown_word_returns_404(toolbar_loaded: Any) -> None
     r = client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 99, "word_index": 0}]})
     assert r.status_code == 404, r.text
     assert r.json()["error"] == "word_not_found"
+
+
+# Moved here from Task 2: it needs the membership route above to put words in the
+# region before deleting it. Under Task 2 alone the PUT 404s, the region has no
+# members, and the recovered-block assertion cannot pass.
+def test_delete_region_recovers_its_member_words(toolbar_loaded: Any) -> None:
+    client, _ps, page = toolbar_loaded
+    created = client.post(
+        f"{_BASE}/regions",
+        json={"role": "poetry", "box": {"x": 0, "y": 0, "width": 200, "height": 300}},
+    ).json()
+    region_id = next(reg["region_id"] for reg in created["regions"] if reg["confirmed"])
+    client.put(f"{_BASE}/regions/{region_id}/words", json={"word_refs": [{"line_index": 0, "word_index": 0}]})
+
+    before_word_count = len(page.words)
+    r = client.delete(f"{_BASE}/regions/{region_id}")
+    assert r.status_code == 200, r.text
+    assert len(page.words) == before_word_count
+    assert any("recovered" in b.block_role_labels for b in page.items)
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1404,7 +1471,9 @@ def set_region_word_membership(
 
         saved_box = region.bounding_box
 
-        released = [w for w in region.words if w not in target_words]
+        # Identity, not equality: ``Word`` may compare equal by value, and two words
+        # with the same text and box are still different objects on the page.
+        released = [w for w in region.words if not any(w is t for t in target_words)]
         for word in released:
             region.remove_item(word)
         if released:
@@ -1413,9 +1482,9 @@ def set_region_word_membership(
                 page.add_item(recovered)
 
         for word in target_words:
-            if word in region.words:
+            if any(w is word for w in region.words):
                 continue
-            owner_line = next((ln for ln in page.lines if word in ln.words), None)
+            owner_line = next((ln for ln in page.lines if any(w is word for w in ln.words)), None)
             if owner_line is not None:
                 owner_line.remove_item(word)
             region.add_item(word)
@@ -1440,7 +1509,7 @@ Add `SetRegionWordMembershipRequest` and `WordRef` to `__all__`.
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/integration/test_regions_router.py -v`
-Expected: PASS, all fifteen tests (ten from Task 2, five new).
+Expected: PASS, all fifteen tests (nine from Task 2, six new).
 
 - [ ] **Step 5: Regenerate the OpenAPI contract**
 
