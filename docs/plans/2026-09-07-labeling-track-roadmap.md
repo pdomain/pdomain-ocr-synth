@@ -218,9 +218,21 @@ dependency." That ruling stands.
 
 No LLM or VLM code exists anywhere in the workspace today. This is the first.
 
-### Slice 7 — Build our own trainer, and train our own layout detector
+### Slice 7 — Build our own trainer, and train our own layout models
 
 On the corpus slices 2 through 5 produce.
+
+**Two models, not one, by owner direction on 2026-09-08.** A book layout model proposing page kind,
+and a page layout model proposing regions. They match the two scopes the provenance design
+separates: page kind needs the whole book, regions need one page.
+
+Only one of the two seams exists. The page-level detector can be swapped today through
+`register_detector`. `fit_book_templates` is a fitted heuristic rather than a pluggable model, so a
+book-scoped classifier has nothing to plug into and that seam must be built.
+
+Because every proposal run records its model identity and version, replacing PP-DocLayout is a new
+run rather than a migration, and the replacement can be scored against it on identical pages with
+identical human answers.
 
 **The consumption plumbing already exists and is unused.**
 `pdomain_book_tools/layout/registry.py::get_detector` has a `register_detector()` extension point
