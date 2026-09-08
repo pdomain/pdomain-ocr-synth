@@ -537,12 +537,18 @@ def _fit_template(
 
 - [ ] **Step 4: Carry it through the profile record**
 
-In `src/pdomain_pgdp_measure/profile_models.py`, add the field to `PageTemplateRecord` after
-`first_band_top_px`, and add it to that class's `to_dict` so it reaches the serialized profile:
+In `src/pdomain_pgdp_measure/profile_models.py`, add the field to `PageTemplateRecord` and to that
+class's `to_dict` so it reaches the serialized profile:
 
 ```python
     first_band_spread_px: int = 0
 ```
+
+**Put it at the END of the dataclass, not beside `first_band_top_px`.** `PageTemplateRecord` is a
+plain frozen dataclass, not `kw_only`, and `first_band_top_px` is followed by five required fields.
+A defaulted field placed before them raises `TypeError: non-default argument 'text_left_px' follows
+default argument` when the class is defined. Order the key beside `first_band_top_px` inside
+`to_dict` instead, where dict literal order carries no such constraint.
 
 ```python
                 "first_band_spread_px": self.first_band_spread_px,
@@ -565,7 +571,9 @@ field list and its own `to_domain`. `ProfileReport.from_json` and `from_dict` ro
 field, every profile read back from disk silently resets `first_band_spread_px` to zero, which
 destroys the one signal this task exists to record.
 
-Add the field to `PageTemplateWire` after `first_band_top_px`:
+Add the field to `PageTemplateWire` after `first_band_top_px`. This model is a pydantic
+`BaseModel`, so the dataclass ordering rule above does not apply and the field can sit where it
+reads best:
 
 ```python
     first_band_spread_px: StrictInt = 0
@@ -619,17 +627,17 @@ def test_a_stored_profile_without_the_key_still_validates() -> None:
 
 - [ ] **Step 7: Regenerate the profile schema**
 
-`schemas/pgdp-profile-v2.schema.json` documents `PageTemplateWire` and is now stale. Regenerate it
-by whatever generator this repository uses, then confirm the new property appears:
+`schemas/pgdp-profile-v2.schema.json` documents `PageTemplateWire` and is now stale. The generator
+is `profile_schema_json()` in `src/pdomain_pgdp_measure/profile_models.py`. Run it and write the
+result, then confirm the new property appears:
 
 Run: `grep -n "first_band_spread_px" schemas/pgdp-profile-v2.schema.json`
-Expected: at least one hit. If the file is hand-maintained rather than generated, add the property
-by hand alongside `first_band_top_px`, matching its type and description style.
+Expected: at least one hit, on `PageTemplateWire`, styled like `first_band_top_px`.
 
 - [ ] **Step 8: Run the tests**
 
 Run: `uv run pytest tests/test_pgdp_page_templates.py -v`
-Expected: PASS, all five new tests plus the seven that already exist in that file.
+Expected: PASS, 25 tests: the five new ones plus the twenty already in that file.
 
 - [ ] **Step 9: Run the full suite**
 
@@ -642,7 +650,8 @@ Expected: PASS. Warnings are errors in this repository, so a new deprecation sur
 uv run ruff format --check .
 uv run ruff check .
 uv run basedpyright
-git add src/pdomain_pgdp_measure tests/test_pgdp_page_templates.py
+git add src/pdomain_pgdp_measure schemas/pgdp-profile-v2.schema.json \
+  tests/test_pgdp_page_templates.py
 git commit -m "feat(templates): record the spread each page template was fitted from"
 ```
 
