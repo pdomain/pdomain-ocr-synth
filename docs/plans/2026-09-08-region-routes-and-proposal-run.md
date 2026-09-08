@@ -4,6 +4,14 @@
 > superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **Execution status (2026-09-08):** Tasks 1, 2, 3, 4, 6 and 7 are implemented and merged-ready on
+> `feature/region-routes-and-proposal-run` in `pdomain-ocr-labeler-spa`. **Task 5 was not executed**
+> — it imports `core/page_kind/proposal_log.py` and `core/page_kind/reviewed_store.py`, which the
+> page-kind-end-to-end plan has not yet built. So seven of the eight routes shipped; the
+> book-scoped `POST /regions/propose` and the `propose_regions` job did not, and nothing populates
+> the proposal journal in production yet. Execute Task 5 after the page-kind plan lands.
+> The task sections below have been corrected against what actually shipped.
 
 **Goal:** Give the labeler eight REST routes over the region stores, plus a book-scoped background
 job that fills the proposal store, so a person or an agent can create, edit, delete, and decide
@@ -2141,11 +2149,35 @@ Add the new request/response classes to `__all__`.
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/integration/test_region_proposals_router.py -v`
-Expected: PASS, all eleven tests — the six below plus five more you must add: an accept whose
-proposal carries a role `Block.ALLOWED_BLOCK_ROLE_LABELS` does not allow returns 400 and adds no
-region; a second accept of the same proposal adds no second region; an accept after its region was
-deleted creates a fresh one; and a failing decision-log append returns the 503 envelope rather than
-a 500, on both accept and reject.
+
+Expected: PASS. The six tests written above are the starting point, not the finished suite —
+execution and review grew this file to 22. The shipped file is authoritative; these are the
+behaviours it pins, and a re-execution of this plan should end with the same list:
+
+| test | what it proves |
+| --- | --- |
+| `test_list_proposals_returns_confidence_and_evidence` | the list route carries the model's own claim |
+| `test_accept_proposal_creates_a_confirmed_region` | accept promotes a proposal into the blob |
+| `test_accept_leaves_the_proposal_record_byte_identical` | a proposal is never edited |
+| `test_reject_proposal_records_a_verified_negative_decision` | a refusal is a recorded fact |
+| `test_a_rejected_proposal_never_reappears_in_the_resolved_list` | the resolver honours a refusal |
+| `test_accept_unknown_proposal_returns_404` | |
+| `test_accept_proposal_with_unsupported_role_returns_400` | a role book-tools disallows never reaches the blob |
+| `test_accept_decision_persist_failure_returns_a_structured_error` | a journal I/O failure is not a 500 |
+| `test_reject_decision_persist_failure_returns_a_structured_error` | likewise on reject |
+| `test_delete_decision_persist_failure_returns_a_structured_error` | likewise on delete |
+| `test_accepting_the_same_proposal_twice_adds_no_second_region` | a double click makes one region, not two |
+| `test_accept_after_its_region_was_deleted_creates_a_fresh_region` | deleting and re-accepting is a new decision |
+| `test_rejecting_a_proposal_whose_region_still_exists_returns_409` | the journal cannot contradict the blob |
+| `test_rejecting_is_allowed_again_once_the_accepted_region_is_deleted` | the 409 clears when the region does |
+| `test_rejecting_on_a_page_that_is_not_loaded_writes_nothing` | that guard does not fail open |
+| `test_deleting_an_accepted_region_records_a_rejection_naming_its_proposal` | removal is recorded, not silent |
+| `test_after_deleting_an_accepted_region_the_proposal_is_declined_not_absent` | the payload says refused, not unreviewed |
+| `test_deleting_a_hand_drawn_region_records_no_decision` | a region with no machine origin decides nothing |
+| `test_stale_agrees_between_the_get_payload_and_a_mutating_route` | one page, one staleness answer |
+| `test_a_text_edit_does_not_change_the_page_image_facet` | fixing a typo does not invalidate geometry |
+| `test_the_decision_journal_is_read_once_per_proposal_listing` | the journal is read once, not per proposal |
+| `test_the_decision_journal_is_read_once_per_page_payload` | likewise on the page payload |
 
 - [ ] **Step 5: Regenerate the OpenAPI contract and run the full suite**
 
@@ -2167,6 +2199,10 @@ git commit -m "feat(regions): add list/accept/reject proposal routes"
 ---
 
 ### Task 5: The proposal-run job and the book-scoped route
+
+> **Not executed.** This task is blocked on the page-kind-end-to-end plan: its handler imports
+> `PageKindProposalLog` and `PageKindReviewedStore` from `core/page_kind/`, a package that does not
+> exist yet. Everything else in this plan shipped without it.
 
 The job never computes real proposals in this plan — that is slice 4's geometry engine, gated on
 work this plan does not do. What it builds is the scaffolding slice 4 plugs into: a job type, a
@@ -3247,6 +3283,15 @@ git commit -m "feat(regions): render proposals visibly distinct from confirmed r
   proposed over; it never writes page kind.
 - It does not cache the proposal or decision journals. `_page_payload` re-scans both JSONL files
   on every request; that is acceptable at slice-2 scale and unoptimized on purpose.
+- It does not render `RegionView.stale` anywhere in the UI. The field reaches the payload and the
+  spec calls staleness a fact the labeler renders, but a stale badge needs review-UI design that
+  arrives with slice 3. The fact is carried; nothing displays it yet.
+- It does not fix `stable_word_id`'s dependence on `reading_order`. Moving a word into a region
+  shifts every later word's `reading_order`, which detaches already-recorded typography corrections
+  keyed by that id. The flaw is pre-existing — `lines_paragraphs.py`'s merge, split and delete
+  already restructure `page.lines` — so this plan adds a new trigger, not the flaw. Rekeying word
+  identity belongs to the word-and-glyph-provenance plan, which owns word provenance. A regression
+  test in this plan pins the current behaviour so it is not rediscovered by accident.
 - It does not give regions their own rail-visibility toggle. The new canvas layers ride the
   existing "blocks" visibility switch until slice 3 builds the review UI.
 - It does not touch style spans, word provenance, or glyph annotations — those ride on
