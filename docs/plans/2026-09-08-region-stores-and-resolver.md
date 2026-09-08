@@ -1202,15 +1202,56 @@ def _run_with_digests(
     )
 
 
-def test_a_confirmed_region_wins_over_a_proposal() -> None:
+def test_a_promoted_proposal_is_not_shown_beside_the_region_it_became() -> None:
+    """Precedence is per region, not per page.
+
+    A proposal is suppressed for its own reason — it was promoted, or it was
+    rejected — never because some other region on the page got confirmed.
+    """
     from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
 
+    promoted = RegionDecision(
+        decision_id="d1",
+        run_id="r1",
+        proposal_id="p1",
+        disposition=Disposition.ACCEPTED,
+        region_id="reg-1",
+        actor="default",
+        decided_at="2026-09-08T10:00:00+00:00",
+    )
     resolved = resolve_regions(
-        [_confirmed("reg-1")], [_proposal("p1", 0.99)], {}, {}, threshold=0.0, current_facet_digests={}
+        [_confirmed("reg-1")],
+        [_proposal("p1", 0.99)],
+        {"p1": promoted},
+        {},
+        threshold=0.0,
+        current_facet_digests={},
     )
     assert [r.region_id for r in resolved] == ["reg-1"]
     assert resolved[0].role is RegionRole.BLOCKQUOTE
     assert resolved[0].confirmed is True
+
+
+def test_a_partially_reviewed_page_still_shows_its_unreviewed_proposals() -> None:
+    """Confirming one region must not hide the rest of the page's proposals.
+
+    A person works through a page a region at a time. If confirming one made
+    the others vanish, a partially reviewed page could never be finished.
+    """
+    from pdomain_ocr_labeler_spa.core.regions.resolver import resolve_regions
+
+    resolved = resolve_regions(
+        [_confirmed("reg-1")],
+        [_proposal("p1", 0.9), _proposal("p2", 0.8)],
+        {},
+        {},
+        threshold=0.5,
+        current_facet_digests={},
+    )
+    assert [r.region_id for r in resolved] == ["reg-1", None, None]
+    assert [r.proposal_id for r in resolved] == [None, "p1", "p2"]
+    assert resolved[0].confirmed is True
+    assert all(r.confirmed is False for r in resolved[1:])
 
 
 def test_a_proposal_above_the_threshold_is_returned_when_nothing_is_confirmed() -> None:
@@ -1433,6 +1474,12 @@ def resolve_regions(
     Returns:
         Confirmed regions first, in the order given, then the surviving
         proposals in the order given.
+
+        **Precedence is per region, not per page.** A proposal is suppressed
+        only for its own reason: its decision names the region it became, or its
+        disposition is a rejection. Confirming one region never hides the other
+        proposals on the page, because a person reviews a page a region at a
+        time and would otherwise be unable to finish one.
     """
     resolved = list(confirmed)
 
