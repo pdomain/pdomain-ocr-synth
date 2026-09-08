@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-08"
+kind: archive
+status: retired
 created_at: "2026-09-08T16:42:55Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "1f8a0ee6d118c8b5d5c848ffdf5d648d08c7b77e"
 supersedes: "2026-09-07-131242-labeling-track-opened-and-region-vocabulary-settled.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-08"
+last_verified: "2026-09-08"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-08-224245-region-routes-shipped-and-merged-task-5-waits-on-page-kind.md`.**
+
 
 # The annotation track is designed, planned, and four plans are shipped
 
