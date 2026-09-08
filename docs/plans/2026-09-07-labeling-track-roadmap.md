@@ -271,6 +271,37 @@ Training does not fit this machine. The box has an RTX 3070 Ti Laptop with 8 GB,
 `pd-ocr-trainer/docs/plans/roadmap.md` puts real fine-tuning on rented cloud GPUs, in A10G or A100
 territory, with Modal provisioning per run.
 
+## What has a plan, and what is still owed
+
+Three plans were written on 2026-09-08 and gap-scanned against the design. This records what they
+cover so nothing is mistaken for planned.
+
+- [Annotation vocabularies](2026-09-08-annotation-vocabularies-in-book-contracts.md) — region
+  roles, page kinds, the provenance enums, and `ReviewMetadata.source`.
+- [Annotation preconditions](2026-09-08-annotation-preconditions-in-book-tools-and-measure.md) —
+  the word duplication check, the page template spread, and the folio fix.
+- [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — the proposal store, the
+  decision store, and the one read path.
+
+Eight pieces of the design have no plan yet. They are listed so they are not lost:
+
+1. **Region routes and the proposal-run job.** The rest of slice 2. Builds directly on the stores.
+2. **Writing `ReviewMetadata.source`.** The field is added but nothing populates it. Four writers
+   fill `ground_truth_text` and none records which. Until this lands, the field ships empty, which
+   reads as coverage without being it.
+3. **Page kind beyond the enum.** No typed field on `Page`, no classifier proposal store, no
+   per-page reviewed marker, and none of the book-scoped ordering.
+4. **The glyph level.** Predictions still never persist and there is still no reject route.
+5. **Style span review granularity.** The model is complete; the review routes are word-scoped while
+   a span is a grapheme range crossing word boundaries.
+6. **Converting `tag_words_with_layout` into a proposal generator.** It still assigns membership
+   directly by a rectangle test.
+7. **The proposal-to-region matcher.** Matching is specified on page and box; nothing implements it.
+8. **Two of the four test tiers.** The conformance golden fixture pinning `block_role_labels` and
+   `override_page_sort_order`, and the browser test proving proposals render distinctly.
+
+Slices 3 to 7 remain unplanned by intent: each needs its own design first.
+
 ## What this roadmap does not settle
 
 - The labeled-dataset contract the synthesizer reads at M16. It is the join between the two halves
