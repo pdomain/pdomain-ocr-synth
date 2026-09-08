@@ -789,6 +789,26 @@ def test_edit_region_changes_role_and_box(toolbar_loaded: Any) -> None:
     assert region["box"] == {"x": 10, "y": 10, "width": 20, "height": 20}
 
 
+def test_edit_region_with_an_unsupported_role_returns_400(toolbar_loaded: Any) -> None:
+    """A rejected role must never reach the blob — a later ``from_dict`` would fail to load it."""
+    client, _ps, _page = toolbar_loaded
+    created = client.post(
+        f"{_BASE}/regions",
+        json={"role": "poetry", "box": {"x": 5, "y": 5, "width": 50, "height": 50}},
+    ).json()
+    region_id = next(reg["region_id"] for reg in created["regions"] if reg["confirmed"])
+
+    r = client.patch(f"{_BASE}/regions/{region_id}", json={"role": "catchword"})
+    assert r.status_code == 400, r.text
+    assert r.json()["error"] == "invalid_region_role"
+
+    # The rejection must never have reached the blob — the region still carries its
+    # original role, proving nothing was mutated before the 400 was returned.
+    payload = client.get(_BASE).json()
+    region = next(reg for reg in payload["regions"] if reg["region_id"] == region_id)
+    assert region["role"] == "poetry"
+
+
 def test_edit_unknown_region_returns_404(toolbar_loaded: Any) -> None:
     client, _ps, _page = toolbar_loaded
     r = client.patch(f"{_BASE}/regions/does-not-exist", json={"role": "poetry"})
@@ -920,7 +940,7 @@ import logging
 import uuid
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.responses import JSONResponse
 from pdomain_book_contracts.annotation import RegionRole
 from pdomain_book_contracts.geometry.bounding_box import BoundingBox
@@ -997,19 +1017,42 @@ def _invalid_region_role(exc: ValueError) -> JSONResponse:
     )
 
 
-def _region_owner(page: Any, region: Block) -> Any:
+def _normalized_role_labels(role: RegionRole) -> list[str]:
+    """Validate and normalize ``role`` the same way ``Block.__init__`` does.
+
+    ``Block.block_role_labels`` is a plain attribute, not a validating property, so
+    assigning to it directly — as ``edit_region`` must, to avoid re-deriving the
+    region's box or membership from a full reconstruction — bypasses
+    ``Block._normalize_label`` entirely. That matters beyond a wrong error code:
+    ``Block.from_dict`` builds through the validating constructor, so an unsupported
+    label written onto a block makes the whole page fail to load on the next read.
+    A throwaway, memberless ``Block`` runs the real normalization, aliases and
+    whitespace/underscore/hyphen handling included, and raises ``ValueError`` exactly
+    as ``create_region``'s constructor does. There is no public single-label validator
+    on ``Block``, and hand-checking ``ALLOWED_BLOCK_ROLE_LABELS`` would drift from
+    ``_normalize_label``'s alias handling.
+    """
+    probe = Block(
+        items=[],
+        child_type=BlockChildType.WORDS,
+        block_category=BlockCategory.BLOCK,
+        block_role_labels=[role.value],
+    )
+    return probe.block_role_labels
+
+
+def _region_owner(page: Page, region: Block) -> Page | Block:
     """Return whatever holds ``region`` — its parent container block, or the page itself.
 
     Compares by identity, never equality: two regions can carry equal field values and
     still be different objects on the page.
     """
-    stack: list[Any] = list(page.items)
+    stack: list[Block] = list(page.items)
     while stack:
         item = stack.pop()
-        if isinstance(item, Block):
-            if any(child is region for child in item.items):
-                return item
-            stack.extend(item.items)
+        if any(child is region for child in item.items):
+            return item
+        stack.extend(child for child in item.items if isinstance(child, Block))
     return page
 
 
@@ -1141,8 +1184,8 @@ def edit_region(
             return _region_not_found(region_id)
         if body.role is not None:
             try:
-                region.block_role_labels = [body.role.value]
-            except ValueError as exc:  # pragma: no cover - defensive; role already type-checked
+                region.block_role_labels = _normalized_role_labels(body.role)
+            except ValueError as exc:
                 return _invalid_region_role(exc)
         if body.box is not None:
             left, top, right, bottom = _bbox_to_ltrb(body.box)
@@ -1212,7 +1255,7 @@ def delete_region(
     )
 
 
-def install_regions_router(app: Any) -> None:
+def install_regions_router(app: FastAPI) -> None:
     """Register the regions router. Called from ``bootstrap.build_app``."""
     app.include_router(router)
 
@@ -1238,7 +1281,7 @@ Add the install call right after `install_words_router(app)`:
 - [ ] **Step 5: Run the tests**
 
 Run: `uv run pytest tests/integration/test_regions_router.py -v`
-Expected: PASS, all nine tests.
+Expected: PASS, all ten tests.
 
 - [ ] **Step 6: Regression check**
 
@@ -1509,7 +1552,7 @@ Add `SetRegionWordMembershipRequest` and `WordRef` to `__all__`.
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/integration/test_regions_router.py -v`
-Expected: PASS, all fifteen tests (nine from Task 2, six new).
+Expected: PASS, all sixteen tests (ten from Task 2, six new).
 
 - [ ] **Step 5: Regenerate the OpenAPI contract**
 
