@@ -54,11 +54,18 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
   Existing callers and five existing tests depend on it reporting missing words and permitting
   extras.
 - Any new field on a serialized dataclass must default, so stored profiles keep loading.
-- **`make ci` in book-tools needs `CI=1` in a sandbox without a GPU.** The Makefile's `GPU_EXTRA`
-  auto-detect runs `nvidia-smi` when `$CI` is empty and installs cupy, which then fails with
-  `CURAND_STATUS_INITIALIZATION_FAILED`. This reproduces on pristine master, so it is an environment
-  limitation rather than a defect. `CI=1` is the Makefile's own sanctioned way to skip that path and
-  is what real CI sets.
+- **`make ci` in book-tools needs `CI=1` in this sandbox.** The Makefile's `GPU_EXTRA` auto-detect
+  runs `nvidia-smi` when `$CI` is empty and installs cupy. A device is reported, but CUDA memory
+  allocation fails, so the GPU tests error with `CURAND_STATUS_INITIALIZATION_FAILED` and
+  `CUDA_ERROR_OUT_OF_MEMORY`. Measured on pristine master: 2910 passed, 24 failed, every failure in
+  one of five GPU-specific test files and every underlying cause a driver or allocation fault rather
+  than an assertion. `CI=1` disables only that auto-detect, which is what real CI sets, so the gate
+  is the same one CI runs.
+- **Re-sync `.venv` after any merge that changes `uv.lock`.** `basedpyright` reads `venvPath`/`venv`
+  from `pyproject.toml` pointing at `.venv`, while everything else uses `.venv-container` via
+  `UV_PROJECT_ENVIRONMENT`. A `.venv` left behind by an older lock resolves the old
+  `pdomain-book-contracts` and reports every new enum member as a missing attribute. Fix with
+  `UV_PROJECT_ENVIRONMENT=.venv uv sync --all-groups`; the errors are not real.
 - **Adding a defaulted field to `ReviewMetadata` breaks tests that assert exact serialization.**
   Six book-tools tests compare `to_dict()` output against literal dicts, so `source` and `state`
   appearing with their defaults fails them. The updates are mechanical and additive, but they must
