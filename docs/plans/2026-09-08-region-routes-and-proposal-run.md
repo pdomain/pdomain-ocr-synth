@@ -1070,6 +1070,39 @@ def _invalid_region_role(exc: ValueError) -> JSONResponse:
     )
 
 
+def _build_region_block(
+    *,
+    box: tuple[int, int, int, int],
+    is_content_normalized: bool,
+    child_type: BlockChildType,
+    role: RegionRole,
+    region_id: str,
+    source_proposal_id: str,
+) -> Block:
+    """Construct a new confirmed region ``Block``.
+
+    Shared by ``create_region`` (a person drew this region unprompted —
+    ``source_proposal_id`` is the hand-drawn sentinel) and Task 4's
+    ``accept_region_proposal`` (a person confirmed a machine's proposal —
+    ``source_proposal_id`` is the real proposal id). Both stamp ``region_id``
+    and ``source_proposal_id`` into ``additional_block_attributes`` and let
+    ``Block.__init__`` raise ``ValueError`` for an unsupported role; the
+    caller maps that to the 400 ``invalid_region_role`` envelope.
+    """
+    left, top, right, bottom = box
+    return Block(
+        items=[],
+        bounding_box=BoundingBox.from_ltrb(left, top, right, bottom, is_normalized=is_content_normalized),
+        child_type=child_type,
+        block_category=BlockCategory.BLOCK,
+        block_role_labels=[role.value],
+        additional_block_attributes={
+            _REGION_ID_KEY: region_id,
+            _SOURCE_PROPOSAL_ID_KEY: source_proposal_id,
+        },
+    )
+
+
 def _normalized_role_labels(role: RegionRole) -> list[str]:
     """Validate and normalize ``role`` the same way ``Block.__init__`` does.
 
@@ -1170,16 +1203,13 @@ def create_region(
                 return _parent_not_nesting_capable(body.parent_region_id)
 
         try:
-            region = Block(
-                items=[],
-                bounding_box=BoundingBox.from_ltrb(left, top, right, bottom, is_normalized=page.is_content_normalized),
+            region = _build_region_block(
+                box=(left, top, right, bottom),
+                is_content_normalized=page.is_content_normalized,
                 child_type=child_type,
-                block_category=BlockCategory.BLOCK,
-                block_role_labels=[body.role.value],
-                additional_block_attributes={
-                    _REGION_ID_KEY: region_id,
-                    _SOURCE_PROPOSAL_ID_KEY: _HAND_DRAWN_SENTINEL,
-                },
+                role=body.role,
+                region_id=region_id,
+                source_proposal_id=_HAND_DRAWN_SENTINEL,
             )
         except ValueError as exc:
             return _invalid_region_role(exc)
@@ -1678,7 +1708,7 @@ with no page mutation, so "nobody has looked" and "looked and refused" are never
 
 - Consumes: `RegionProposal`, `RegionDecision`, `Disposition` from `..core.regions.models`;
   `RegionProposalLog`, `RegionDecisionLog` from `..core.regions.proposal_log` /
-  `.decision_log`.
+  `.decision_log`; `_build_region_block` and `find_region_block` (Task 2).
 - Produces: `GET .../regions/proposals` (`list_region_proposals`, returns
   `ListRegionProposalsResponse`), `POST .../regions/proposals/{proposal_id}/accept`
   (`accept_region_proposal`), `POST .../regions/proposals/{proposal_id}/reject`
@@ -1868,6 +1898,43 @@ def _proposal_not_found(proposal_id: str) -> JSONResponse:
         status_code=404,
         content=ApiError(error="proposal_not_found", message=f"proposal not found: {proposal_id}").model_dump(),
     )
+
+
+def _decision_persist_failed_response(*, proposal_id: str) -> JSONResponse:
+    """503 when a region decision could not be durably persisted (mirrors
+    ``_store_persist_failed_response`` in ``api/words.py``, for the decision log
+    rather than the page store).
+    """
+    return JSONResponse(
+        status_code=503,
+        content=ApiError(
+            error="decision_persist_failed",
+            message=f"decision could not be persisted to the decision log (proposal_id={proposal_id})",
+        ).model_dump(),
+    )
+
+
+def _append_decision_or_error(
+    decision_log: RegionDecisionLog, decision: RegionDecision
+) -> JSONResponse | None:
+    """Append ``decision``; return ``None`` on success or a 503 envelope on I/O failure.
+
+    A disk-full, permission, or concurrent-write failure on the decision log is a
+    reachable I/O failure, same as the page-store writes ``_save_to_store_best_effort``
+    guards — no route in this codebase lets a reachable request fall through to the
+    catch-all handler's 500.
+    """
+    try:
+        decision_log.append(decision)
+    except OSError as exc:
+        log.warning(
+            "decision log append failed proposal_id=%s run_id=%s: %s",
+            decision.proposal_id,
+            decision.run_id,
+            exc,
+        )
+        return _decision_persist_failed_response(proposal_id=decision.proposal_id)
+    return None
 ```
 
 Add the three routes after `set_region_word_membership`:
@@ -1952,22 +2019,37 @@ def accept_region_proposal(
 
     role = body.role if body.role is not None else proposal.role
     box = _bbox_to_ltrb(body.box) if body.box is not None else proposal.box
-    disposition = Disposition.EDITED if (body.role is not None or body.box is not None) else Disposition.ACCEPTED
-    region_id = uuid.uuid4().hex
+    has_override = body.role is not None or body.box is not None
+    disposition = Disposition.EDITED if has_override else Disposition.ACCEPTED
+    decision_log = RegionDecisionLog(project.project_root)
 
     page_lock = project_state.get_page_lock(page_index)
     with page_lock:
+        # Accepting twice must not create a second region for one proposal — a double
+        # click is enough. If a decision already exists and the region it names still
+        # resolves, the accept already happened; return the current payload unchanged.
+        # If the region was deleted since, fall through: deleting it and accepting
+        # again is a legitimate new decision, not a duplicate.
+        existing_decision = decision_log.decision_for(proposal_id, run_id=proposal.run_id)
+        existing_region_id = existing_decision.region_id if existing_decision is not None else None
+        if existing_region_id is not None and find_region_block(page, existing_region_id) is not None:
+            return _refresh_payload_response(
+                project_id=project_id,
+                page_index=page_index,
+                project_state=project_state,
+                settings=settings,
+                app_config=app_config,
+            )
+
+        region_id = uuid.uuid4().hex
         try:
-            region = Block(
-                items=[],
-                bounding_box=BoundingBox.from_ltrb(*box, is_normalized=page.is_content_normalized),
+            region = _build_region_block(
+                box=box,
+                is_content_normalized=page.is_content_normalized,
                 child_type=BlockChildType.WORDS,
-                block_category=BlockCategory.BLOCK,
-                block_role_labels=[role.value],
-                additional_block_attributes={
-                    _REGION_ID_KEY: region_id,
-                    _SOURCE_PROPOSAL_ID_KEY: proposal_id,
-                },
+                role=role,
+                region_id=region_id,
+                source_proposal_id=proposal_id,
             )
         except ValueError as exc:
             return _invalid_region_role(exc)
@@ -1980,18 +2062,26 @@ def accept_region_proposal(
         ):
             return _store_persist_failed_response(page_id=pstate.page_id)
 
-    decision_log = RegionDecisionLog(project.project_root)
-    decision_log.append(
-        RegionDecision(
-            decision_id=uuid.uuid4().hex,
-            run_id=proposal.run_id,
-            proposal_id=proposal_id,
-            disposition=disposition,
-            region_id=region_id,
-            actor="default",
-            decided_at=datetime.now(UTC).isoformat(),
+        # Page blob first, decision second, both under the lock. Neither order is
+        # transactional, so choose by which failure is worse: a confirmed region with
+        # no decision reads as "nobody has looked yet" — the confusion this design
+        # exists to prevent — but is recoverable, because the block carries
+        # ``source_proposal_id``. A decision naming a region that was never written
+        # is not recoverable.
+        decision_err = _append_decision_or_error(
+            decision_log,
+            RegionDecision(
+                decision_id=uuid.uuid4().hex,
+                run_id=proposal.run_id,
+                proposal_id=proposal_id,
+                disposition=disposition,
+                region_id=region_id,
+                actor="default",
+                decided_at=datetime.now(UTC).isoformat(),
+            ),
         )
-    )
+        if decision_err is not None:
+            return decision_err
 
     return _refresh_payload_response(
         project_id=project_id, page_index=page_index, project_state=project_state, settings=settings, app_config=app_config,
@@ -2026,7 +2116,8 @@ def reject_region_proposal(
         return _proposal_not_found(proposal_id)
 
     decision_log = RegionDecisionLog(project.project_root)
-    decision_log.append(
+    decision_err = _append_decision_or_error(
+        decision_log,
         RegionDecision(
             decision_id=uuid.uuid4().hex,
             run_id=proposal.run_id,
@@ -2035,8 +2126,10 @@ def reject_region_proposal(
             region_id=None,
             actor="default",
             decided_at=datetime.now(UTC).isoformat(),
-        )
+        ),
     )
+    if decision_err is not None:
+        return decision_err
 
     return _refresh_payload_response(
         project_id=project_id, page_index=page_index, project_state=project_state, settings=settings, app_config=app_config,
@@ -2048,7 +2141,11 @@ Add the new request/response classes to `__all__`.
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/integration/test_region_proposals_router.py -v`
-Expected: PASS, all six tests.
+Expected: PASS, all eleven tests — the six below plus five more you must add: an accept whose
+proposal carries a role `Block.ALLOWED_BLOCK_ROLE_LABELS` does not allow returns 400 and adds no
+region; a second accept of the same proposal adds no second region; an accept after its region was
+deleted creates a fresh one; and a failing decision-log append returns the 503 envelope rather than
+a 500, on both accept and reject.
 
 - [ ] **Step 5: Regenerate the OpenAPI contract and run the full suite**
 
