@@ -248,7 +248,7 @@ Add the field right after the existing `review` field:
 
     # What this page is — title page, chapter opening, body, and so on. Only a
     # human action ever sets this (never the propose_page_kinds classifier job);
-    # see docs/specs/2026-09-07-region-provenance-and-persistence-design.md
+    # see pdomain-ocr-synth's docs/specs/2026-09-07-region-provenance-and-persistence-design.md
     # "Page kind is classified per book, and it runs before regions".
     page_kind: PageKind | None = None
 ```
@@ -646,8 +646,22 @@ Expected: PASS. Warnings are errors, so a new deprecation surfaces as a failure.
 
 Run: `uv run ruff format --check .`
 Run: `uv run ruff check .`
-Run: `uv run basedpyright`
 Expected: PASS.
+
+Run: `uv run basedpyright`
+Expected: **not** a clean pass, and it never was on this repo. Measured at master `a3910dc`
+before this task: 1442 errors and 948 warnings, every one of them inside `tests/`; scoped to
+`src/` it is genuinely 0 errors. 1037 of those errors sit in `tests/test_pgdp_profile_models.py`
+alone, where `to_dict()` returns `dict[str, JsonValue]` and basedpyright cannot narrow through
+repeated subscripting — the file relies on that un-narrowable 4-level chain at dozens of sites
+already. Step 6's `del payload["projects"][0]["pages"][0]["page_class_confidence"]` is the same
+pattern and adds 23 more.
+
+The bar to hold is therefore: **`src/` stays at 0 errors, and no new warnings appear on the
+three files this task touches.** Do not silence the new test line with a `cast()` or a
+`# type: ignore` — annotating one site while ~50 identical pre-existing ones stay bare would
+contradict the file's own convention and hide the real problem, which is that this repo's test
+tree has never been typed to the gate's standard. That cleanup is its own task.
 
 - [ ] **Step 10: Commit**
 
@@ -763,7 +777,7 @@ person's confirmed answer.
 Page kind is classified per book, proposed here, and confirmed by a human
 directly onto ``Page.page_kind``. Unlike regions, page kind needs no decision
 log: a page has one kind, so the human's answer replaces the machine's whole.
-See docs/specs/2026-09-07-region-provenance-and-persistence-design.md "Page
+See pdomain-ocr-synth's docs/specs/2026-09-07-region-provenance-and-persistence-design.md "Page
 kind needs a marker, not a decision log".
 """
 
@@ -1209,7 +1223,7 @@ Create `src/pdomain_ocr_labeler_spa/core/page_kind/reviewed_store.py`:
 A page has one page kind, so the human's answer replaces the machine's whole
 — diffing the confirmed value against ``PageKindProposalLog.latest_proposal_for_page``
 already tells you accepted-or-changed. This store answers the other half:
-whether anyone has looked at all. See docs/specs/2026-09-07-region-provenance-
+whether anyone has looked at all. See pdomain-ocr-synth's docs/specs/2026-09-07-region-provenance-
 and-persistence-design.md "Page kind needs a marker, not a decision log".
 """
 
@@ -1527,7 +1541,7 @@ Create `src/pdomain_ocr_labeler_spa/core/jobs/handlers/propose_page_kinds.py`:
 ```python
 """propose_page_kinds job handler.
 
-Spec authority: docs/specs/2026-09-07-region-provenance-and-persistence-
+Spec authority: pdomain-ocr-synth's docs/specs/2026-09-07-region-provenance-and-persistence-
 design.md "Page kind is classified per book, and it runs before regions".
 
 The pass needs every page before it can classify any — ``fit_book_templates``
@@ -1746,7 +1760,7 @@ def post_propose_page_kinds(
     classifies the whole book against its own fitted templates, and records
     one page-kind proposal per page.
 
-    Spec: docs/specs/2026-09-07-region-provenance-and-persistence-design.md
+    Spec: pdomain-ocr-synth's docs/specs/2026-09-07-region-provenance-and-persistence-design.md
     "Page kind is classified per book, and it runs before regions".
 
     Returns 404 when the requested project is not loaded.
@@ -2037,7 +2051,7 @@ def confirm_page_kind(
 ) -> JSONResponse:
     """``POST .../page-kind`` — record a person's confirmed page kind.
 
-    Spec: docs/specs/2026-09-07-region-provenance-and-persistence-design.md
+    Spec: pdomain-ocr-synth's docs/specs/2026-09-07-region-provenance-and-persistence-design.md
     "Page kind needs a marker, not a decision log". A page has one kind, so
     the human's answer replaces the machine's whole outright — there is no
     accept/reject pair here the way there is for regions. Writing
