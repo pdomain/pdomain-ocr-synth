@@ -1206,6 +1206,23 @@ def test_a_malformed_line_is_skipped_rather_than_failing_the_read(tmp_path: Path
         handle.write("{not json\n")
 
     assert store.is_reviewed(0) is True
+
+
+def test_a_wrong_shaped_line_is_skipped_rather_than_failing_the_read(tmp_path: Path) -> None:
+    """Valid JSON, wrong shape. This is the case the test above does not reach."""
+    from pdomain_ocr_labeler_spa.core.page_kind.reviewed_store import PageKindReviewedStore
+
+    store = PageKindReviewedStore(tmp_path)
+    store.mark_reviewed(0, "2026-09-08T10:00:00+00:00")
+    path = tmp_path / ".pd-pages" / "page-kind-reviewed.jsonl"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write('{"foo": 1}\n')
+        handle.write("{}\n")
+
+    assert store.is_reviewed(0) is True
+    marker = store.latest_for_page(0)
+    assert marker is not None
+    assert marker.reviewed_at == "2026-09-08T10:00:00+00:00"
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1262,7 +1279,7 @@ class PageKindReviewedMarker:
         return cls(
             page_index=int(d["page_index"]),
             reviewed_at=str(d["reviewed_at"]),
-            actor=str(d.get("actor", "default")),
+            actor=str(d["actor"]) if d.get("actor") is not None else "default",
             note=str(d["note"]) if d.get("note") is not None else None,
         )
 
@@ -1312,8 +1329,21 @@ class PageKindReviewedStore:
                         "page-kind-reviewed.jsonl: skipping malformed line %d", line_number
                     )
                     continue
-                if isinstance(loaded, dict):
+                if not isinstance(loaded, dict):
+                    continue
+                # Unlike the proposal journal, this file has no "kind"
+                # discriminator to filter on, so from_dict sees every object
+                # that parses. Any line of the wrong shape raises KeyError out
+                # of is_reviewed(), which a confirm route calls on every page
+                # load. Skip it the same way the JSONDecodeError branch above
+                # skips an unparseable one.
+                try:
                     markers.append(PageKindReviewedMarker.from_dict(loaded))
+                except (KeyError, ValueError, TypeError):
+                    log.warning(
+                        "page-kind-reviewed.jsonl: skipping wrong-shaped line %d", line_number
+                    )
+                    continue
         return markers
 
     def latest_for_page(self, page_index: int) -> PageKindReviewedMarker | None:
@@ -1331,7 +1361,7 @@ class PageKindReviewedStore:
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/unit/core/page_kind/test_reviewed_store.py -v`
-Expected: PASS, all five tests.
+Expected: PASS, all six tests.
 
 - [ ] **Step 5: Commit**
 
