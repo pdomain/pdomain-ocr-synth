@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-08"
+kind: archive
+status: retired
 created_at: "2026-09-08T22:42:45Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "ee4521839211da4661b8ab5ed45fa3d92953a1e9"
 supersedes: "2026-09-08-164255-annotation-track-designed-planned-and-four-plans-shipped.md"
-handoff_reason: stopping
-host: claude-code
+handoff_reason: "stopping"
+host: "claude-code"
+created: "2026-09-08"
+last_verified: "2026-09-09"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-09-095107-page-kind-stores-shipped-across-three-repos-merge-decision-open.md`.**
+
 
 # Region routes shipped and merged; Task 5 waits on page kind
 
