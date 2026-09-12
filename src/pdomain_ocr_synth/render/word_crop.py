@@ -101,7 +101,7 @@ def render_word_crop(
         raise RenderError(f"shaping returned no glyphs for {text!r}")
 
     bitmaps = _rasterize_glyphs(handles.ft_face, info_glyphs)
-    image, bbox, runs = _composite(bitmaps, info_glyphs, positions, ink, bg, padding)
+    image, bbox, runs = _composite(bitmaps, info_glyphs, positions, ink=ink, bg=bg, padding=padding)
 
     return RenderedSample(
         text=text,
@@ -216,6 +216,7 @@ def _composite(
     bitmaps,
     glyphs,
     positions,
+    *,
     ink: tuple[int, int, int],
     bg: tuple[int, int, int],
     padding: int,
