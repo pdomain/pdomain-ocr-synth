@@ -99,6 +99,10 @@ normalize_dirs() {
     if LC_ALL=C awk 'BEGIN{exit !match(ARGV[1], /[\200-\377]/)}' "$orig"; then
       clean="$(printf %s "$orig" | iconv -f LATIN1 -t ASCII//TRANSLIT 2>/dev/null || echo "$orig")"
       if [[ -n "$clean" && "$clean" != "$orig" ]]; then
+        # mktemp -d creates at 0700 and ignores the umask by design, and a move
+        # preserves that mode, so the published font directory would be
+        # unreadable to any other uid. Widen it to the umask default first.
+        chmod -R "$(printf '%03o' "$(( 0777 & ~0$(umask) ))")" "$d"
         mv "$d" "$DEST/$clean"
         echo "  ↳ normalized: $orig → $clean"
       fi
