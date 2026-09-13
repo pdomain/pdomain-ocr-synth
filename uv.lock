@@ -443,47 +443,47 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.12" },
-    { name = "freetype-py", specifier = ">=2.4" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "huggingface-hub", marker = "extra == 'publish'", specifier = ">=0.26" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "pydantic", specifier = ">=2.0" },
+    { name = "beautifulsoup4", specifier = ">=4.15" },
+    { name = "freetype-py", specifier = ">=2.5" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "huggingface-hub", marker = "extra == 'publish'", specifier = ">=1.16" },
+    { name = "numpy", specifier = ">=2.5" },
+    { name = "pillow", specifier = ">=12.3" },
+    { name = "pydantic", specifier = ">=2.13" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "uharfbuzz", specifier = ">=0.39" },
+    { name = "uharfbuzz", specifier = ">=0.56" },
 ]
 provides-extras = ["publish"]
 
 [package.metadata.requires-dev]
 all-dev = [
-    { name = "basedpyright", specifier = ">=1.39.4" },
+    { name = "basedpyright", specifier = ">=1.40.1" },
     { name = "gitlint", specifier = ">=0.19.1" },
-    { name = "huggingface-hub", specifier = ">=0.26" },
-    { name = "pre-commit", specifier = ">=4.3" },
-    { name = "pytest", specifier = ">=8.4" },
-    { name = "pytest-cov", specifier = ">=7.0" },
+    { name = "huggingface-hub", specifier = ">=1.16" },
+    { name = "pre-commit", specifier = ">=4.6" },
+    { name = "pytest", specifier = ">=9.1" },
+    { name = "pytest-cov", specifier = ">=7.1" },
     { name = "pytest-xdist", specifier = ">=3.8" },
-    { name = "ruff", specifier = ">=0.15.13" },
+    { name = "ruff", specifier = ">=0.16.7" },
 ]
 dev = [
-    { name = "basedpyright", specifier = ">=1.39.4" },
+    { name = "basedpyright", specifier = ">=1.40.1" },
     { name = "gitlint", specifier = ">=0.19.1" },
-    { name = "pre-commit", specifier = ">=4.3" },
-    { name = "pytest", specifier = ">=8.4" },
-    { name = "pytest-cov", specifier = ">=7.0" },
+    { name = "pre-commit", specifier = ">=4.6" },
+    { name = "pytest", specifier = ">=9.1" },
+    { name = "pytest-cov", specifier = ">=7.1" },
     { name = "pytest-xdist", specifier = ">=3.8" },
-    { name = "ruff", specifier = ">=0.15.13" },
+    { name = "ruff", specifier = ">=0.16.7" },
 ]
 lint = [
-    { name = "basedpyright", specifier = ">=1.39.4" },
+    { name = "basedpyright", specifier = ">=1.40.1" },
     { name = "gitlint", specifier = ">=0.19.1" },
-    { name = "pre-commit", specifier = ">=4.3" },
-    { name = "ruff", specifier = ">=0.15.13" },
+    { name = "pre-commit", specifier = ">=4.6" },
+    { name = "ruff", specifier = ">=0.16.7" },
 ]
 test = [
-    { name = "pytest", specifier = ">=8.4" },
-    { name = "pytest-cov", specifier = ">=7.0" },
+    { name = "pytest", specifier = ">=9.1" },
+    { name = "pytest-cov", specifier = ">=7.1" },
     { name = "pytest-xdist", specifier = ">=3.8" },
 ]
 
