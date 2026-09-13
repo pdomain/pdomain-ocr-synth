@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-09"
+kind: archive
+status: retired
 created_at: "2026-09-09T09:51:07Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "150fc6929db77ed6a86ddb19a4a18fa29b15c579"
 supersedes: "2026-09-08-224245-region-routes-shipped-and-merged-task-5-waits-on-page-kind.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-09"
+last_verified: "2026-09-13"
 ---
+
+> **Retired — superseded by `docs/handoff/docs/handoff/2026-09-13-174346-page-kind-unblocked-releases-cut-task-5-still-unrun.md`.**
+
 
 # Page kind stores shipped across three repos; merge decision open
 
