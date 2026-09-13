@@ -153,6 +153,13 @@ precision = 1
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+# Ruff 0.16 began formatting Python code fences inside Markdown. Opt out, the
+# same way pdomain-book-tools and pdomain-book-contracts already do. The fences
+# in this repo's plans are deliberately partial: single keyword-argument lines
+# showing where a value is inserted. Formatting one as a whole file rewrites
+# `first_band_spread_px=template.first_band_spread_px,` into a tuple
+# assignment, which changes what the plan tells an implementer to write.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = [
