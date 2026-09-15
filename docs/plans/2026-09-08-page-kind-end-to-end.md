@@ -1405,6 +1405,12 @@ The labeler has no image-measurement pipeline of its own — that is exactly wha
 - Produces: `handle_propose_page_kinds(runner, job) -> None`, registered as job type
   `"propose_page_kinds"`; `POST /api/projects/{project_id}/propose-page-kinds` → `202 {job_id}`.
 
+> **Correction, found in execution 2026-09-15.** Step 1's snippet below is stale. By the time this
+> task ran, `pyproject.toml` already pinned `pdomain-book-tools==0.28.0` and
+> `pdomain-book-contracts>=0.2.0`. Only the `pdomain-pgdp-measure` line and its
+> `[tool.uv.sources]` entry were added. Pasting the snippet verbatim would have downgraded both
+> pins and reintroduced the 14 rejected region roles that the 0.28.0 release fixed.
+
 - [ ] **Step 1: Add the dependency**
 
 In `pyproject.toml`, add `pdomain-pgdp-measure` next to the other suite packages:
@@ -1432,6 +1438,14 @@ Expected: resolves without conflict — `pdomain-pgdp-measure`'s only runtime de
 `pydantic`, `pillow`, `numpy`, all already present transitively via `pdomain-book-tools`.
 
 - [ ] **Step 2: Write the failing test**
+
+> **Correction, found in execution 2026-09-15.** The tops in the steady-book test below cannot
+> satisfy that test's own confidence assertion. `pdomain-pgdp-measure` fits each template on
+> `median(tops)` and returns
+> `max(0.0, 1.0 - residual_px / max(first_band_spread_px, 8))`, so only a zero residual gives
+> exactly 1.0. Jittered tops leave a nonzero residual for most pages. The shipped test uses
+> `[300, 300, 300, 300]` here, and a second test uses these original jittered tops to assert a
+> confidence strictly between 0 and 1 threads through the journal unchanged.
 
 ```python
 # tests/unit/core/jobs/test_propose_page_kinds_handler.py
@@ -1518,6 +1532,7 @@ async def test_a_steady_book_proposes_body_for_every_page(tmp_path: Path) -> Non
     project = _project(tmp_path, 4)
     runner, job = _runner_and_job(project, tops=[300, 302, 298, 301])
 
+
     await handle_propose_page_kinds(runner, job)
 
     proposal_log = PageKindProposalLog(project.project_root)
@@ -1565,6 +1580,14 @@ Run: `uv run pytest tests/unit/core/jobs/test_propose_page_kinds_handler.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named '...core.jobs.handlers.propose_page_kinds'`
 
 - [ ] **Step 4: Write the handler**
+
+> **Correction, found in execution 2026-09-15.** This call must be offloaded:
+> `await asyncio.to_thread(measure_fn, project.project_id, input_page)`. In production
+> `measure_fn` is `profile_page`, a PIL decode plus numpy work over a full page scan, and running
+> it inline blocks the single event loop for the whole run. Every other image-touching handler in
+> the labeler already offloads. The shipped handler also re-checks the submitted `project_id`
+> against the loaded project and refuses on mismatch, because resolving the project at dequeue
+> time let a run started for one book write durable proposals into another's journal.
 
 Create `src/pdomain_ocr_labeler_spa/core/jobs/handlers/propose_page_kinds.py`:
 
@@ -1677,6 +1700,7 @@ async def handle_propose_page_kinds(runner: JobRunner, job: Job) -> None:
             source_path=f"{project.project_id}/{image_path.name}",
         )
         measured.append(measure_fn(project.project_id, input_page))
+
         await runner.update_progress(
             job.job_id, current=page_index + 1, total=total,
             message=f"Measured page {page_index + 1}/{total}",
@@ -1941,6 +1965,12 @@ Expected: resolves with `PageKind` importable via `pdomain_book_tools.ocr.page.P
 
 - [ ] **Step 2: Write the failing test**
 
+> **Correction, found in execution 2026-09-15.** The shipped request model types `kind` as a
+> `PageKind` with a before-validator running `normalize_page_kind`, so the generated client gets a
+> real 14-member union instead of `string`. An invalid kind is therefore rejected by pydantic,
+> and this app maps every `RequestValidationError` to 400 `validation_error`, so the shipped test
+> asserts that identifier rather than `invalid_page_kind`. The status code is still 400.
+
 ```python
 # tests/unit/api/test_page_kind_endpoint.py
 """Unit tests for POST .../pages/{idx}/page-kind — confirming a page kind.
@@ -2031,6 +2061,7 @@ def test_confirming_a_page_kind_writes_it_and_marks_it_reviewed(
 
 
 def test_confirming_an_invalid_page_kind_returns_400(loaded_client: TestClient) -> None:
+
     page = Page(width=100, height=100, page_index=0, blocks=[])
     _seed_page_state(loaded_client, page_index=0, page=page)
 
@@ -2053,6 +2084,13 @@ Run: `uv run pytest tests/unit/api/test_page_kind_endpoint.py -v`
 Expected: FAIL with a 404 (route does not exist yet).
 
 - [ ] **Step 4: Write the implementation**
+
+> **Correction, found in execution 2026-09-15.** The shipped route does not hand-roll this catch;
+> see the correction above. It also resolves the page through `_resolve_page_object_for_pages`
+> and returns 503 `store_unavailable` when the confirmed kind cannot be persisted, without
+> writing the reviewed marker. As written below, a page whose payload was not a live `Page`, or
+> an unwired store, skipped the store write, still appended the marker, and returned 200 — a
+> durable record claiming a human reviewed a page whose kind was never stored.
 
 In `src/pdomain_ocr_labeler_spa/api/pages.py`, add `from datetime import UTC, datetime` to the
 imports if not already present. Add the request model near `RematchGtRequest`:
@@ -2106,6 +2144,7 @@ def confirm_page_kind(
             content=ApiError(
                 error="invalid_page_kind",
                 message=f"not a valid page kind: {body.kind!r}",
+
             ).model_dump(),
         )
 
