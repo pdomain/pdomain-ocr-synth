@@ -5,12 +5,12 @@
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **Execution status (2026-09-08):** Tasks 1, 2, 3, 4, 6 and 7 are implemented and merged-ready on
-> `feature/region-routes-and-proposal-run` in `pdomain-ocr-labeler-spa`. **Task 5 was not executed**
-> — it imports `core/page_kind/proposal_log.py` and `core/page_kind/reviewed_store.py`, which the
-> page-kind-end-to-end plan has not yet built. So seven of the eight routes shipped; the
-> book-scoped `POST /regions/propose` and the `propose_regions` job did not, and nothing populates
-> the proposal journal in production yet. Execute Task 5 after the page-kind plan lands.
+> **Execution status (2026-09-17): all eight tasks have shipped.** Tasks 1, 2, 3, 4, 6 and 7
+> merged on 2026-09-08. Task 5 was held back because it imports `core/page_kind/proposal_log.py`
+> and `core/page_kind/reviewed_store.py`, which did not exist then; the page-kind-end-to-end plan
+> merged that package to `master` on 2026-09-17, and Task 5 merged the same day in
+> `cebe556`. A book-scoped run now fills the region proposal journal in production. Until it
+> landed, every proposal in the system had been written by a test.
 > The task sections below have been corrected against what actually shipped.
 
 **Goal:** Give the labeler eight REST routes over the region stores, plus a book-scoped background
@@ -39,7 +39,7 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-08
-- **Last verified:** 2026-09-08
+- **Last verified:** 2026-09-17
 - **Provenance:** authored 2026-09-08 from the design above and direct inspection of
   `pdomain-ocr-labeler-spa` `bootstrap.py`, `api/words.py`, `api/pages.py`, `api/projects.py`,
   `api/refine.py`, `api/dependencies.py`, `core/jobs/runner.py`,
@@ -49,7 +49,9 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
   and `frontend/src/components/BBoxOverlay.tsx` and `PageImageCanvas.tsx`; and of
   `pdomain-book-tools` `pdomain_book_tools/ocr/block.py`, `ocr/page.py`,
   `ocr/reorganize_page_utils.py`, and `pdomain-book-contracts`
-  `pdomain_book_contracts/geometry/bounding_box.py`
+  `pdomain_book_contracts/geometry/bounding_box.py`; re-verified 2026-09-17 against
+  `pdomain-book-tools` v0.28.0 and the merged `core/page_kind/` package
+
 - **Disposition:** Active. Second half of slice 2 of the labeling track. Builds directly on the
   stores plan.
 - **Read when:** implementing a region route, the proposal-run job, the `Block` adapter, or the
@@ -78,22 +80,24 @@ persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md).
   `ProposalRun(...)` construction in this plan uses those, not the earlier
   `page_content_hashes: dict[int, str]` shape.
 - **`PageKindProposalLog` and `PageKindReviewedStore`** come from
-  `pdomain_ocr_labeler_spa.core.page_kind` and must already be released (the page-kind-end-to-end
-  plan) before Task 5 starts. The `propose_regions` job handler reads page-kind state through
-  these — see Task 5.
+  `pdomain_ocr_labeler_spa.core.page_kind`, and they are on `master` as of 2026-09-17. The
+  `propose_regions` job handler reads page-kind state through these — see Task 5. This constraint
+  originally said they must be "released"; that was wrong. They live in the same distribution Task 5
+  is written into, so merged to `master` is enough and no release is needed.
 - **The page blob is only ever written by a human action.** The `propose_regions` job handler must
   never call `save_page_content_to_store` or `save_page_to_store`. Only the accept-proposal route
   (a human clicking or an agent calling on the human's behalf) writes the page blob among the new
   routes in this plan.
-- **`Block.ALLOWED_BLOCK_ROLE_LABELS` in `pdomain-book-tools` still only has the original 20 role
-  strings.** Neither the annotation-vocabularies plan nor the annotation-preconditions plan widens
-  it to the full 34-value `RegionRole` vocabulary — both explicitly say so. Constructing or editing
-  a `Block` with one of the 14 new roles (`catchword`, `signature mark`, `press figure`, `rule`,
-  `brace`, `bracket`, `group label`, `plate`, `speaker label`, `stage direction`,
-  `interlinear gloss`, `abandoned`, `decorated initial`, `unknown`) raises `ValueError` from
-  `Block._normalize_label` **today**, in a different repo, outside this plan's scope. Every route
-  that sets `block_role_labels` must catch that `ValueError` and return `400 invalid_region_role`
-  rather than a 500. This is a real, tracked cross-repo gap, not a bug in this plan.
+- **The 14-role gap this constraint described is closed, and the routes' guard stays.** This
+  constraint used to say `Block.ALLOWED_BLOCK_ROLE_LABELS` carried only the original 20 role
+  strings, so a `Block` given one of the 14 newer roles (`catchword`, `signature mark`,
+  `press figure`, `rule`, `brace`, `bracket`, `group label`, `plate`, `speaker label`,
+  `stage direction`, `interlinear gloss`, `abandoned`, `decorated initial`, `unknown`) raised
+  `ValueError` from `Block._normalize_label`. `pdomain-book-tools` v0.28.0 carries all 34, and the
+  labeler pins that version exactly, so every `RegionRole` value now constructs. Keep the
+  `ValueError` catch that returns `400 invalid_region_role`: it is still the right answer for a
+  role the installed book-tools does not know, and it is what keeps a version skew from becoming a
+  500. Verified 2026-09-17 against the installed package.
 - **A region's box is not its membership.** `Block.add_item`/`Block.remove_item` call
   `self.recompute_bounding_box()`, which overwrites `bounding_box` from the union of the block's
   items. The membership route must save the region's box before mutating items and restore it
@@ -2200,9 +2204,18 @@ git commit -m "feat(regions): add list/accept/reject proposal routes"
 
 ### Task 5: The proposal-run job and the book-scoped route
 
-> **Not executed.** This task is blocked on the page-kind-end-to-end plan: its handler imports
-> `PageKindProposalLog` and `PageKindReviewedStore` from `core/page_kind/`, a package that does not
-> exist yet. Everything else in this plan shipped without it.
+> **Shipped 2026-09-17** in `pdomain-ocr-labeler-spa` `68afbc5`, merged as `cebe556`, with the
+> full suite green at 1640 passed and 4 skipped. This task was held back because its handler
+> imports `PageKindProposalLog` and `PageKindReviewedStore` from `core/page_kind/`, which did not
+> exist when the rest of this plan ran.
+>
+> **Five corrections below are marked inline, where execution proved the draft wrong.** Three were
+> defects the page-kind work had already been fixed for in commit `8cb5a58`, reproduced here
+> because this task was written before that fix existed: the route did not stamp `project_id` into
+> the job payload the handler reads, the handler did not pin itself to the book it was queued for,
+> and the per-page work ran inline on the event loop. The other two are this task's own: the
+> `hasattr(page, "lines")` guard could never fire, and the page-kind journals were read once per
+> page.
 
 The job never computes real proposals in this plan — that is slice 4's geometry engine, gated on
 work this plan does not do. What it builds is the scaffolding slice 4 plugs into: a job type, a
@@ -2233,7 +2246,7 @@ say-so — a page whose kind was never proposed or confirmed gets no region prop
   `_HANDLERS`; `POST /{project_id}/regions/propose` (`start_region_proposal_run`), returning
   `202 {job_id}`.
 
-- [ ] **Step 1: Write the failing detector test**
+- [x] **Step 1: Write the failing detector test**
 
 ```python
 # tests/unit/core/regions/test_detector.py
@@ -2251,12 +2264,12 @@ def test_the_null_detector_proposes_nothing() -> None:
     assert null_region_detector(page) == []
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/core/regions/test_detector.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named '...core.regions.detector'`
 
-- [ ] **Step 3: Write the detector interface**
+- [x] **Step 3: Write the detector interface**
 
 Create `src/pdomain_ocr_labeler_spa/core/regions/detector.py`:
 
@@ -2302,12 +2315,36 @@ def null_region_detector(page: Any) -> list[DetectedRegion]:
 __all__ = ["DetectedRegion", "RegionDetector", "null_region_detector"]
 ```
 
-- [ ] **Step 4: Run the detector test**
+- [x] **Step 4: Run the detector test**
 
 Run: `uv run pytest tests/unit/core/regions/test_detector.py -v`
 Expected: PASS.
 
-- [ ] **Step 5: Write the job handler**
+- [x] **Step 5: Write the job handler**
+
+**Correction, found in execution.** The handler below reads
+`project_state.loaded_project` and never checks it against the book the job was queued for. A
+project load between submit and dequeue would write one book's run into another book's journal.
+The shipped handler copies the refusal from `propose_page_kinds` — log a warning, report both
+project ids through `update_progress`, return — before it looks at any page.
+
+**Correction, found in execution.** `detector(page)` and the per-page facet-digest snapshot both
+run inline below. The snapshot does page-store I/O through `_image_digest` and walks the page's
+word and line tree, and slice 4's real detector will decode images and run numpy. Over a 400-page
+book that stalls every request, including this job's own progress stream. The shipped handler
+offloads both through `asyncio.to_thread`.
+
+**Correction, found in execution.** The `hasattr(page, "lines")` guard below can never fire
+usefully: `compute_page_facet_digests(page, ...)` is called on the same object earlier in the
+function with no guard at all, so a page that is not `Page`-shaped fails there first. The shipped
+handler narrows `PageState.page_record.payload` with one `isinstance(payload, Page)` helper and
+drops the `hasattr` check.
+
+**Correction, found in execution.** The page-kind journals below are read once per page.
+`PageKindReviewedStore.is_reviewed` and `PageKindProposalLog.latest_proposal_for_page` each
+re-parse the whole JSONL file, and `page_kind_was_confirmed`'s `all(...)` pass reads every
+eligible page a second time. The shipped handler builds the proposed-page-index set once from
+`runs()` plus `proposals_for_run`, and memoizes each page's reviewed status.
 
 Create `src/pdomain_ocr_labeler_spa/core/jobs/handlers/propose_regions.py`:
 
@@ -2484,7 +2521,7 @@ async def handle_propose_regions(runner: "JobRunner", job: "Job") -> None:
 __all__ = ["handle_propose_regions"]
 ```
 
-- [ ] **Step 6: Register the job type**
+- [x] **Step 6: Register the job type**
 
 In `src/pdomain_ocr_labeler_spa/core/jobs/runner.py`, add a wrapper beside `_handle_refine_bboxes`:
 
@@ -2514,7 +2551,12 @@ _HANDLERS: dict[str, Handler] = {
 }
 ```
 
-- [ ] **Step 7: Add the book-scoped route**
+- [x] **Step 7: Add the book-scoped route**
+
+**Correction, found in execution.** The route below submits `payload=body.model_dump()`, but
+`StartRegionProposalRunRequest` carries only `model_id` and `model_version` while the handler reads
+`job.payload.get("project_id")`. The key would never have been there. The shipped route stamps it
+in alongside the body, the way `post_propose_page_kinds` does in `api/projects.py`.
 
 In `src/pdomain_ocr_labeler_spa/api/regions.py`, add to imports:
 
@@ -2568,7 +2610,7 @@ def start_region_proposal_run(
 
 Add the two new request/response classes to `__all__`.
 
-- [ ] **Step 8: Write the job-route and invariant tests**
+- [x] **Step 8: Write the job-route and invariant tests**
 
 Append to `tests/integration/test_region_proposals_router.py`:
 
@@ -2667,12 +2709,12 @@ def test_a_page_with_no_page_kind_state_gets_no_region_proposals(toolbar_loaded:
     assert RegionProposalLog(project.project_root).runs() == []
 ```
 
-- [ ] **Step 9: Run the tests**
+- [x] **Step 9: Run the tests**
 
 Run: `uv run pytest tests/unit/core/regions/test_detector.py tests/integration/test_region_proposals_router.py -v`
 Expected: PASS, all tests including the four new job/route tests.
 
-- [ ] **Step 10: Regenerate the OpenAPI contract and run the full suite**
+- [x] **Step 10: Regenerate the OpenAPI contract and run the full suite**
 
 ```bash
 make openapi-export
@@ -2681,7 +2723,7 @@ make AI=1 test
 
 Expected: `types.ts` picks up the final new route; full suite passes.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add src/pdomain_ocr_labeler_spa/core/regions/detector.py \
