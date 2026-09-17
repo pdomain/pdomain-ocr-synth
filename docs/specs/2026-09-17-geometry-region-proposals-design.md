@@ -1,5 +1,5 @@
 ---
-Status: draft
+Status: active
 Owner: CT
 Created: 2026-09-17
 Last verified: 2026-09-17
@@ -11,7 +11,7 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-17
 - **Last verified:** 2026-09-17
@@ -24,8 +24,9 @@ Kind: spec
   `core/regions/detector.py`, `core/regions/block_adapter.py`, `core/project_state.py`,
   `api/dependencies.py`; `pdomain-book-tools` `ocr/block.py`; and the 2026-09-17 recomputation of
   the x-height spread figure
-- **Disposition:** Draft. Slice 4 of the labeling track. Needs an owner ruling on the two open
-  decisions in "What this design does not settle" before a plan is written.
+- **Disposition:** Active. Slice 4 of the labeling track. Neither open decision blocks a plan:
+  the persisted-measurement record is contingent on a performance problem that has not happened,
+  and the cluster-gap threshold has a stated direction the plan can settle.
 - **Read when:** designing or building the region proposal engine, choosing which region roles a
   machine may propose, or deciding where a proposal run gets its geometry.
 - **Search terms:** slice 4, geometry engine, region detector, RegionDetector, BookTemplates,
