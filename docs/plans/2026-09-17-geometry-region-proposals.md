@@ -613,7 +613,9 @@ def test_a_detected_region_becomes_a_proposal_in_the_journal(proposal_run_ready:
     log = RegionProposalLog(project.project_root)
     runs = log.runs()
     assert len(runs) == 1
-    proposals = log.proposals_for_run(runs[0].run_id)
+    # RegionProposalLog exposes proposals_for_page, not proposals_for_run —
+    # the run-scoped accessor is PageKindProposalLog's, a different class.
+    proposals = [p for idx in (0, 1) for p in log.proposals_for_page(idx, run_id=runs[0].run_id)]
     assert len(proposals) == 2
     assert {p.page_index for p in proposals} == {0, 1}
     assert all(p.role is RegionRole.PAGE_HEADER for p in proposals)
