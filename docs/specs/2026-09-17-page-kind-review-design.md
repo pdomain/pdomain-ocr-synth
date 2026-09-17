@@ -1,5 +1,5 @@
 ---
-Status: draft
+Status: implemented
 Owner: CT
 Created: 2026-09-17
 Last verified: 2026-09-17
@@ -11,7 +11,7 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
 - **Last verified:** 2026-09-17
@@ -22,7 +22,8 @@ Kind: spec
   `core/page_state.py` (`ensure_page_model`), `api/history.py`, and the frontend `components/PageActionsCompact.tsx`,
   `components/right-panel/RegionDetail.tsx`, `components/drawer/Worklist.tsx`,
   `components/drawer/BulkActions.tsx`, `stores/dialog-store.ts`, `hooks/usePageMutations.ts`
-- **Disposition:** Draft. Second increment of slice 5 of the labeling track, after the
+- **Disposition:** Implemented 2026-09-17 in `pdomain-ocr-labeler-spa` merge `2adbd46`. Second
+  increment of slice 5 of the labeling track, after the
   [book review queue](2026-09-17-book-review-queue-design.md).
 - **Read when:** building page-kind review in the labeler, reading page-kind proposals over the API,
   or confirming page kinds for many pages at once.
