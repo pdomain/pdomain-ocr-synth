@@ -1219,10 +1219,46 @@ def test_a_page_with_normalized_word_boxes_is_skipped() -> None:
 ```
 
 The `_bbox` helper stamps `is_normalized` explicitly rather than letting it be inferred, the same
-way `tests/integration/conftest.py:_tb_bbox` does. Read `Page.is_content_normalized` in
-`pdomain-book-tools` before writing this, and say what you found — in particular, whether a page
-with one normalized box and one pixel box raises, which is the second branch the guard handles. If
-it does, add a test for the mixed case too.
+way `tests/integration/conftest.py:_tb_bbox` does.
+
+`Page.is_content_normalized` is verified: it walks every word with a bounding box, returns the
+shared `is_normalized` flag when they all agree, returns `False` when no word has a box, and raises
+`ValueError` when the page mixes the two conventions. So the guard's two branches are both real. Add
+a test for the mixed case as well:
+
+```python
+def test_a_page_mixing_normalized_and_pixel_boxes_is_skipped() -> None:
+    """Page.is_content_normalized raises on a mixed page; a detector cannot pick a side."""
+    from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
+
+    words = [
+        _word("THE", 100, 105, 170, 125),
+        _word("17", 0, 0, 0, 0, normalized=True),
+    ]
+    assert furniture_region_detector(_input(words)) == []
+```
+
+**It iterates `self.lines`, so a word outside a `LINE`-category block is invisible to it.**
+`_page_words` walks the whole item tree and is not limited that way, so the page-level guard alone
+would let a stray normalized word reach the band comparison. Close that by filtering per word too.
+Change the in-band filter in `furniture_region_detector` to:
+
+```python
+    in_band = [
+        word
+        for word in _page_words(detector_input.page)
+        if word.bounding_box.has_usable_coordinates
+        # The page-level guard above reads Page.is_content_normalized, which
+        # only walks words inside LINE blocks. _page_words walks the whole
+        # tree, so a normalized box on a word outside any line would otherwise
+        # be compared against a source-frame band y range.
+        and not word.bounding_box.is_normalized
+        and top <= (word.bounding_box.minY + word.bounding_box.maxY) / 2 <= bottom
+    ]
+```
+
+The test helper builds one `LINE` block, so both test words are seen by the page-level guard as
+well.
 
 - [ ] **Step 5: Run the tests**
 
