@@ -236,6 +236,11 @@ page kinds, words and glyphs in the queue, and a confidence-ordered review flow 
 [page-kind review](../specs/2026-09-17-page-kind-review-design.md), which shows each page's proposed
 and confirmed kind and confirms kinds one page or many at a time.
 
+**Bottom-of-page furniture was measured and ruled out** on 2026-09-17:
+[bottom furniture is too rare, and sits too close to the text](../research/2026-09-17-bottom-of-page-furniture-is-too-rare-and-too-close-to-the-text.md).
+Marks appear on 6.6 percent of pages against 78.6 percent for top furniture, and they sit at
+ordinary line spacing, so the gap rule that finds running heads does not transfer.
+
 ### Slice 6 — Model-proposed semantics
 
 A vision-language model proposes role where geometry cannot separate the cases, poetry against
