@@ -1,5 +1,5 @@
 ---
-Status: active
+Status: implemented
 Owner: CT
 Created: 2026-09-17
 Last verified: 2026-09-17
@@ -8,6 +8,17 @@ Kind: plan
 
 # Geometry Region Proposals Implementation Plan
 
+> **Shipped 2026-09-17** in `pdomain-ocr-labeler-spa`, merged as `0e35a06` with the suite green at
+> 1683 passed and 4 skipped. All four tasks landed. The labeler now generates region proposals of
+> its own; until this, every proposal in the system had been written by a test.
+>
+> **Two things this plan shipped that later measurement corrected or qualified.** The confidence
+> rule changed mid-execution: a furniture proposal was to inherit its page's classification
+> confidence, and that score is exactly 0.0 on 26 percent of furniture pages, so it now comes from
+> the cluster's shape instead. And the gap threshold that splits a running head from its folio is a
+> fixed share of text width, which measurement across six books shows cannot work; that is filed at
+> `docs/issues/2026-09-17-the-furniture-gap-threshold-cannot-be-a-fixed-share.md`.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
@@ -30,7 +41,7 @@ range, clusters them horizontally, and proposes one region per cluster.
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
 - **Last verified:** 2026-09-17
@@ -40,8 +51,10 @@ range, clusters them horizontally, and proposes one region per cluster.
   `bootstrap.py`; `pdomain-pgdp-measure` `page_templates.py`, `profile_models.py`,
   `profile_input.py`; `pdomain-book-tools` `ocr/page.py`, `ocr/block.py`, `ocr/word.py`; and
   `pdomain-book-contracts` `annotation` and `geometry/bounding_box.py`
-- **Disposition:** Active. Slice 4 of the labeling track, first increment. Produces the first
-  machine-generated region proposals in the system.
+- **Disposition:** Implemented. Merged 2026-09-17 in `pdomain-ocr-labeler-spa` `0e35a06`, suite
+  green at 1683 passed and 4 skipped. Twelve corrections were made to this plan during execution;
+  they are marked inline. The whole-branch review then found two defects no task-scoped review
+  could see, fixed in `419d130`.
 - **Read when:** building the region detector, changing the detector seam, or touching the
   `propose_regions` job's measurement pass.
 - **Search terms:** slice 4, geometry detector, furniture detector, DetectorInput, page header,
@@ -115,7 +128,7 @@ suite must stay green with no behaviour change.
   `RegionDetector = Callable[[DetectorInput], Sequence[DetectedRegion]]`;
   `null_region_detector(detector_input: DetectorInput) -> list[DetectedRegion]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace the whole body of `tests/unit/core/regions/test_detector.py` with this.
 
@@ -172,7 +185,7 @@ def test_detector_input_carries_the_page_index_and_the_book_templates() -> None:
     assert detector_input.classification.page_class == "unknown"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/core/regions/test_detector.py -v`
 Expected: FAIL with `ImportError: cannot import name 'DetectorInput'`.
@@ -182,7 +195,7 @@ If instead it fails constructing `PageMeasurement`, read that dataclass in
 `__post_init__` requires. Do not weaken the test to a `Mock` — a real object here is what catches a
 field rename in the measurement package.
 
-- [ ] **Step 3: Widen the seam**
+- [x] **Step 3: Widen the seam**
 
 In `src/pdomain_ocr_labeler_spa/core/regions/detector.py`, replace the `RegionDetector` alias and
 `null_region_detector`, and add `DetectorInput`, keeping `DetectedRegion` exactly as it is.
@@ -227,7 +240,7 @@ from pdomain_pgdp_measure.page_templates import BookTemplates, PageClassificatio
 from pdomain_pgdp_measure.profile_models import PageMeasurement
 ```
 
-- [ ] **Step 4: Fix the one call site**
+- [x] **Step 4: Fix the one call site**
 
 `core/jobs/handlers/propose_regions.py` calls `await asyncio.to_thread(detector, page)`. It has no
 measurement or templates yet — Task 2 supplies those. Until then it cannot build a real
@@ -248,13 +261,13 @@ what it read, and it still writes zero proposals, which is the behaviour before 
 
 Let ruff and basedpyright tell you which imports became unused. Do not guess.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `uv run pytest tests/unit/core/regions/test_detector.py tests/integration/test_region_proposals_router.py -v`
 Expected: PASS. The Task 5 tests that assert an empty proposal journal still pass, because the run
 still proposes nothing.
 
-- [ ] **Step 6: Run the gate and commit**
+- [x] **Step 6: Run the gate and commit**
 
 ```bash
 export PATH="$PWD/.venv-container/bin:$PATH"
@@ -296,7 +309,7 @@ the same three things. Extract that pass into one function both jobs call, then 
   `page_indices[n]` is the original page index of `measurements[n]`, which is not `n` when a page
   was skipped for a failed lease.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/core/test_page_measurement.py`:
 
@@ -399,12 +412,12 @@ def test_measure_book_on_a_book_with_no_pages_returns_empty(tmp_path: Path) -> N
     assert result.templates.has_type_page is False
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/core/test_page_measurement.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'pdomain_ocr_labeler_spa.core.page_measurement'`.
 
-- [ ] **Step 3: Write the shared pass**
+- [x] **Step 3: Write the shared pass**
 
 Create `src/pdomain_ocr_labeler_spa/core/page_measurement.py`:
 
@@ -553,12 +566,12 @@ Update the tests in Step 1 to pass a `project_state` and to assert `page_indices
 that were measured. A fake project state whose `open_labeling_page` returns `None` and whose
 `labeling_image_path` returns `project.image_paths[i]` reproduces the ordinary-project path.
 
-- [ ] **Step 4: Run the new test**
+- [x] **Step 4: Run the new test**
 
 Run: `uv run pytest tests/unit/core/test_page_measurement.py -v`
 Expected: PASS, all three tests.
 
-- [ ] **Step 5: Have `propose_page_kinds` use it**
+- [x] **Step 5: Have `propose_page_kinds` use it**
 
 In `core/jobs/handlers/propose_page_kinds.py`, replace the inline measurement loop, the
 `fit_book_templates` call, the `classify_pages` call, and the length check with one `measure_book`
@@ -584,13 +597,13 @@ Delete `_MeasurePageFn` from this file and import `MeasurePageFn` from `core.pag
 instead — one protocol, one definition. Keep the `ctx.get("propose_page_kinds_measure_fn")`
 injection point exactly as it is; the existing handler tests depend on it.
 
-- [ ] **Step 6: Run the page-kind tests**
+- [x] **Step 6: Run the page-kind tests**
 
 Run: `uv run pytest tests/unit/core/jobs/test_propose_page_kinds_handler.py -v`
 Expected: PASS with no test changes. If a test fails, the extraction changed behaviour — find out
 which and fix the extraction, not the test.
 
-- [ ] **Step 7: Write the failing `propose_regions` test**
+- [x] **Step 7: Write the failing `propose_regions` test**
 
 Create `tests/unit/core/jobs/test_propose_regions_handler.py`:
 
@@ -681,13 +694,13 @@ register the `Job` in `runner._jobs`. Copy the `Job` construction and the `runne
 direct enqueue from the existing tests at the bottom of
 `tests/integration/test_region_proposals_router.py` — they are the working precedent for this.
 
-- [ ] **Step 8: Run test to verify it fails**
+- [x] **Step 8: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/core/jobs/test_propose_regions_handler.py -v`
 Expected: FAIL. The handler proposes nothing because Task 1 Step 4 hard-coded `detected = []`, so
 `seen` is empty and the journal holds no proposals.
 
-- [ ] **Step 9: Wire the measurement into `propose_regions`**
+- [x] **Step 9: Wire the measurement into `propose_regions`**
 
 In `core/jobs/handlers/propose_regions.py`, after the eligibility pass has produced
 `eligible_indices` and before the `ProposalRun` is built:
@@ -762,7 +775,7 @@ Log a warning when a page has no measurement, naming the page index.
 Restore the `detector` lookup and the `RegionDetector` / `null_region_detector` imports that Task 1
 removed.
 
-- [ ] **Step 10: Run the tests**
+- [x] **Step 10: Run the tests**
 
 Run the handler tests for both jobs and the proposals-router tests:
 
@@ -773,7 +786,7 @@ uv run pytest tests/unit/core/jobs/test_propose_regions_handler.py \
 ```
 Expected: PASS.
 
-- [ ] **Step 11: Restore the three tests Task 1 pinned to the transitional state**
+- [x] **Step 11: Restore the three tests Task 1 pinned to the transitional state**
 
 Task 1 could not build a real `DetectorInput`, so it hard-coded the detector result empty and three
 tests in `tests/integration/test_region_proposals_router.py` were pinned to `recorded == []` and
@@ -825,7 +838,7 @@ Also check `test_a_detector_that_raises_skips_its_page_and_does_not_kill_the_run
 and `tests/unit/core/jobs/test_labeling_page_lease.py` — any test that injects a detector needs its
 signature retyped once the seam carries a `DetectorInput`.
 
-- [ ] **Step 12: Run the gate and commit**
+- [x] **Step 12: Run the gate and commit**
 
 ```bash
 export PATH="$PWD/.venv-container/bin:$PATH"
@@ -897,7 +910,7 @@ confidence-ranked queue. Evidence:
 anywhere in the suite, so there is nothing to calibrate against. They encode an ordering the
 geometry justifies, and slice 5's first review pass is what sets them.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/core/regions/test_furniture.py`:
 
@@ -1142,7 +1155,7 @@ def test_the_evidence_names_the_band_and_the_cluster_width() -> None:
     assert detected[0].evidence["template_residual_px"] == 2
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/core/regions/test_furniture.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named '...core.regions.furniture'`.
@@ -1165,7 +1178,7 @@ through `Page.from_dict` rather than calling `Word` and `Block` directly, becaus
 takes `text` as its first positional argument and has no `ocr_text` parameter, and `Block.__init__`
 takes `items` first. The dict form is what every other test in this repo uses.
 
-- [ ] **Step 3: Write the detector**
+- [x] **Step 3: Write the detector**
 
 Create `src/pdomain_ocr_labeler_spa/core/regions/furniture.py`:
 
@@ -1384,7 +1397,7 @@ def furniture_region_detector(detector_input: DetectorInput) -> list[DetectedReg
 __all__ = ["FOLIO_GAP_SHARE_OF_TEXT_WIDTH", "furniture_region_detector"]
 ```
 
-- [ ] **Step 4: Handle the normalized-coordinate case**
+- [x] **Step 4: Handle the normalized-coordinate case**
 
 The code above compares `word.bounding_box.minY` against a band's `y_start`, which is a source-frame
 pixel. On a page whose word boxes are normalized to 0 to 1, that comparison is meaningless and the
@@ -1480,13 +1493,13 @@ Change the in-band filter in `furniture_region_detector` to:
 The test helper builds one `LINE` block, so both test words are seen by the page-level guard as
 well.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `uv run pytest tests/unit/core/regions/test_furniture.py -v`
 Expected: PASS, all twelve tests — the plan's ten plus the two normalized-coordinate tests Step 4
 adds.
 
-- [ ] **Step 6: Run the gate and commit**
+- [x] **Step 6: Run the gate and commit**
 
 ```bash
 export PATH="$PWD/.venv-container/bin:$PATH"
@@ -1516,7 +1529,7 @@ one, propose regions, list the proposals.
 - Consumes: `furniture_region_detector` from `core/regions/furniture`.
 - Produces: nothing new. `runner.context["region_detector"]` is set at build time.
 
-- [ ] **Step 1: Write the failing end-to-end test**
+- [x] **Step 1: Write the failing end-to-end test**
 
 Create `tests/integration/test_region_proposal_run_end_to_end.py`:
 
@@ -1623,7 +1636,7 @@ def test_listing_proposals_returns_what_the_run_wrote(toolbar_loaded: Any) -> No
     assert proposals[0]["disposition"] is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/integration/test_region_proposal_run_end_to_end.py -v`
 Expected: the first test FAILS with `KeyError: 'region_detector'`.
@@ -1635,7 +1648,7 @@ check. So the measurement pass completes, the furniture detector sees no bands a
 and the run is still recorded — which is exactly what the second test asserts. The third test injects
 its own detector because the fixture's page has no real furniture to find.
 
-- [ ] **Step 3: Wire the detector in `bootstrap.py`**
+- [x] **Step 3: Wire the detector in `bootstrap.py`**
 
 The `runner.context` keys are populated in one block at `bootstrap.py:483` onward, starting with
 `runner.context["project_state"]` and ending with `runner.context["settings"]`. Add the new key to
@@ -1655,12 +1668,12 @@ Import it at the top of `bootstrap.py`:
 from .core.regions.furniture import furniture_region_detector
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `uv run pytest tests/integration/test_region_proposal_run_end_to_end.py -v`
 Expected: PASS, all three.
 
-- [ ] **Step 5: Run the gate and commit**
+- [x] **Step 5: Run the gate and commit**
 
 ```bash
 export PATH="$PWD/.venv-container/bin:$PATH"

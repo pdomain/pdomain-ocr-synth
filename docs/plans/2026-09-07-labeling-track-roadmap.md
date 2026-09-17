@@ -172,6 +172,15 @@ the guard the split design names against treating model output as data.
 
 ### Slice 4 — The proposal engine, geometry first and no model
 
+**Its first increment shipped on 2026-09-17** in `pdomain-ocr-labeler-spa` `0e35a06`. A
+book-scoped run now proposes page furniture, the running head and the folio, from the ink bands the
+page classifier already marks as furniture. That is the highest-volume region class in a book: 1,089
+of the 1,385 pages across the five aligned corpus books carry one. See
+[the geometry region proposals design](../specs/2026-09-17-geometry-region-proposals-design.md) and
+[its plan](2026-09-17-geometry-region-proposals.md). The rows below that it does not yet cover —
+block boundary, poetry, blockquote, footnote, heading, and the bottom-of-page furniture the
+classifier does not locate — are the remaining increments.
+
 Turns `typography.json` plus PP-DocLayout into proposals. The signals are already measured and
 consumed by nothing:
 
