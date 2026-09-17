@@ -128,13 +128,16 @@ from __future__ import annotations
 def _empty_detector_input() -> object:
     from pdomain_book_tools.ocr.page import Page
     from pdomain_pgdp_measure.page_templates import BookTemplates, PageClassification
-    from pdomain_pgdp_measure.profile_models import PageMeasurement
+    from pdomain_pgdp_measure.profile_models import PageMeasurement, ProfileDiagnostic
 
     from pdomain_ocr_labeler_spa.core.regions.detector import DetectorInput
 
     return DetectorInput(
         page=Page(width=200, height=300, page_index=0, blocks=[]),
         page_index=0,
+        # The unavailable-image shape: every measured field None, ink_bands
+        # None rather than its () default, and a diagnostic. PageMeasurement's
+        # __post_init__ rejects any other combination of those.
         measurement=PageMeasurement(
             page_name="001.png",
             source_path="book1/001.png",
@@ -145,6 +148,8 @@ def _empty_detector_input() -> object:
             foreground_pixels=None,
             foreground_bounds=None,
             margins=None,
+            ink_bands=None,
+            diagnostics=(ProfileDiagnostic(code="image_missing", message="no image"),),
         ),
         classification=PageClassification("001.png", "unknown", None, ()),
         templates=BookTemplates(None, None, None, (), 0.0),
@@ -896,7 +901,7 @@ from pdomain_pgdp_measure.page_templates import (
     PageClassification,
     PageTemplate,
 )
-from pdomain_pgdp_measure.profile_models import InkBand, PageMeasurement
+from pdomain_pgdp_measure.profile_models import CoordinateFrame, InkBand, PageMeasurement
 
 _PAGE_WIDTH = 1000
 _PAGE_HEIGHT = 1600
@@ -960,17 +965,22 @@ def _templates() -> BookTemplates:
     return BookTemplates(100.0, 4.0, 16.0, (template,), 0.9)
 
 
+# ``PageMeasurement.__post_init__`` enforces coherence: a measurement carrying
+# ink bands must also carry the image metadata, foreground pixels, bounds and
+# margins that could only come from a decoded image, and the margins must equal
+# the bounds inset into the source frame. This shape satisfies all of it; I
+# constructed it against the real class to check.
 def _measurement(bands: tuple[InkBand, ...]) -> PageMeasurement:
     return PageMeasurement(
         page_name="001.png",
         source_path="book1/001.png",
-        sha256=None,
-        source_frame=None,
-        image_mode=None,
-        grayscale_threshold=None,
-        foreground_pixels=None,
-        foreground_bounds=None,
-        margins=None,
+        sha256="a" * 64,
+        source_frame=CoordinateFrame(width=_PAGE_WIDTH, height=_PAGE_HEIGHT),
+        image_mode="L",
+        grayscale_threshold=128,
+        foreground_pixels=50_000,
+        foreground_bounds=(100, 100, 900, 1500),
+        margins=(100, 100, _PAGE_WIDTH - 900, _PAGE_HEIGHT - 1500),
         ink_bands=bands,
         page_class="normal_recto",
     )
@@ -1095,8 +1105,20 @@ def test_the_evidence_names_the_band_and_the_cluster_width() -> None:
 Run: `uv run pytest tests/unit/core/regions/test_furniture.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named '...core.regions.furniture'`.
 
-If instead it fails building the page or an `InkBand`, read those constructors and supply what they
-require. Adjust the helper, not the assertions. The helper deliberately builds the page from a dict
+`PageMeasurement`'s coherence rules are the thing most likely to bite here, and the helper above
+already satisfies them. For reference, the two shapes that validate are:
+
+- **Measured:** every one of `sha256`, `source_frame`, `image_mode`, `grayscale_threshold`,
+  `foreground_pixels`, `foreground_bounds`, `margins` and `ink_bands` present, with
+  `margins == (x_start, y_start, frame.width - x_end, frame.height - y_end)` and
+  `foreground_pixels` no larger than the bounds area.
+- **Unavailable:** all of those `None`, including `ink_bands=None`, plus a `diagnostics` entry.
+  `ProfileDiagnostic` needs both `code` and `message`, for example
+  `ProfileDiagnostic(code="image_missing", message="no image")`.
+
+Mixing the two raises `ValueError: Unavailable foreground measurements must have unavailable
+geometry`. If anything else fails to build, read the constructor and supply what it
+requires. Adjust the helper, not the assertions. The helper deliberately builds the page from a dict
 through `Page.from_dict` rather than calling `Word` and `Block` directly, because `Word.__init__`
 takes `text` as its first positional argument and has no `ocr_text` parameter, and `Block.__init__`
 takes `items` first. The dict form is what every other test in this repo uses.
