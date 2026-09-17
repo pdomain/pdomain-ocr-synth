@@ -87,6 +87,8 @@ backend half.
 | file | responsibility | task |
 | --- | --- | --- |
 | `src/stores/rail-store.ts` | `RailTarget` gains `"region"` | 1 |
+| `src/components/shell/Rail.tsx` | four exhaustive `Record<RailTarget, string>` maps gain `region`; a visible region target cell | 1, 2 |
+| `src/lib/bbox-select.ts` | `targetToLayerKey` handles `region`, falling back to words for a drag | 1 |
 | `src/hooks/useRailHotkeys.ts` | key `5` selects the region target | 1 |
 | `src/lib/selection-walk.ts` | `SelectionLevel` gains `"region"`; `SelectionPath` gains `regionId`, `proposalId` | 1 |
 | `src/stores/selection-store.ts` | `selectRegion`, `selectProposal` | 1 |
@@ -158,24 +160,40 @@ export type RailTarget = "block" | "para" | "line" | "word" | "region";
 - `Breadcrumb.tsx`'s `renderChips` shows one chip, `Region` for a `regionId` and `Proposal` for a
   `proposalId`.
 
-- [ ] **Step 1: Write the failing tests.** Extend `src/stores/selection-store.test.ts`: `selectRegion`
+- [x] **Step 1: Write the failing tests.** Extend `src/stores/selection-store.test.ts`: `selectRegion`
   sets level `region`, path `{ regionId }`, and clears all three selected arrays; `selectProposal`
   likewise with `{ proposalId }`; `pathLevel({ proposalId: "p" })` is `"region"`. Extend the rail
   store and rail hotkey tests: pressing `5` sets target `region`; a persisted `"region"` is read back.
   Extend the Breadcrumb test for both chips.
-- [ ] **Step 2: Run them and see them fail** for the stated reason.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run the focused tests, then typecheck.** The typecheck is where a missed exhaustive
+- [x] **Step 2: Run them and see them fail** for the stated reason.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run the focused tests, then typecheck.** The typecheck is where a missed exhaustive
   switch on `SelectionLevel` surfaces; find every consumer, not only the ones named here.
-- [ ] **Step 5: Run the whole Vitest suite, lint and format check, and commit**
+- [x] **Step 5: Run the whole Vitest suite, lint and format check, and commit**
   `feat(frontend): add the region rail target and selection level`.
+
+> **Shipped 2026-09-17** in `feature/region-review` `78641a5`, with the Vitest suite at 1654 passed.
+> **Two consumers this task did not name had to change.** `components/shell/Rail.tsx` holds four
+> exhaustive `Record<RailTarget, string>` maps, and `lib/bbox-select.ts`'s `targetToLayerKey` is a
+> `switch` over `RailTarget` with no default; neither compiles once `RailTarget` grows. A drag under
+> the region target falls back to selecting words, matching `box-select-handler.ts`. **One gap was
+> left for Task 2:** key `5` sets the target, but the rail shows no region cell, so nothing on screen
+> says the target is active.
 
 ---
 
 ### Task 2: Click a region on the canvas
 
 **Files:** new `src/lib/region-hit-test.ts` and `src/lib/region-hit-test.test.ts`;
-`src/components/PageImageCanvas.tsx` and `PageImageCanvas.test.tsx`.
+`src/components/PageImageCanvas.tsx` and `PageImageCanvas.test.tsx`; `src/components/shell/Rail.tsx`
+and its test.
+
+**Show the region target in the rail.** Task 1 made key `5` select the region target but added no
+visible cell, so a person cannot tell a click will now select regions. Add a region target cell
+beside the block, paragraph, line and word cells, following their existing `TargetCell` pattern,
+with the `5` hotkey hint. Colour it with the confirmed-region amber the canvas already uses in
+`BBoxOverlay.tsx`'s `LAYER_COLORS`, so the cell and the shapes it selects match. Test that clicking
+the cell sets the target and that the cell reads as active when the target is `region`.
 
 **Interfaces — Consumes:** Task 1's `selectRegion`, `selectProposal`, `RailTarget`.
 **Produces:**
