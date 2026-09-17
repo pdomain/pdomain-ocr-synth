@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-17"
+kind: archive
+status: retired
 created_at: "2026-09-17T10:23:43Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "8ef2e13774b1424122cf2861e8ceda5ab4adf023"
 supersedes: "2026-09-17-030031-page-kind-lands-end-to-end-region-routes-task-5-now-unblocked.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-17"
+last_verified: "2026-09-17"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-17-122456-slice-3-ships-and-the-region-pipeline-works-on-a-real-book.md`.**
+
 
 # Slice 4 shipped, the labeler proposes regions itself, and the gap threshold is next
 
