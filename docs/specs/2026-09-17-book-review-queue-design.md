@@ -1,5 +1,5 @@
 ---
-Status: draft
+Status: implemented
 Owner: CT
 Created: 2026-09-17
 Last verified: 2026-09-17
@@ -11,7 +11,7 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
 - **Last verified:** 2026-09-17
@@ -20,8 +20,9 @@ Kind: spec
   `core/regions/proposal_log.py`, `core/regions/decision_log.py`, `core/regions/resolver.py`,
   `api/pages.py`, `frontend/src/pages/ProjectPage.tsx`, `frontend/src/hooks/useRegionReviewHotkeys.ts`
   and `frontend/src/lib/hotkeyMap.ts`
-- **Disposition:** Draft. First increment of slice 5 of the labeling track, plus the decision
-  carry-forward the owner ruled on 2026-09-08 and nothing had built.
+- **Disposition:** Implemented 2026-09-17 in `pdomain-ocr-labeler-spa` merge `87e4a7d`. First
+  increment of slice 5 of the labeling track, plus the decision carry-forward the owner ruled on
+  2026-09-08.
 - **Read when:** building book-level review navigation, the review queue route, or anything that
   answers "what should a person or an agent look at next".
 - **Search terms:** slice 5, review queue, undecided proposals, next page with work, review-queue

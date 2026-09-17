@@ -226,6 +226,12 @@ surface.
 What an agent needs beyond what the UI needs is additive and small: confidence and evidence on
 every proposal, whole-page state in one call, and an endpoint answering what to look at next.
 
+**First increment shipped 2026-09-17** in `pdomain-ocr-labeler-spa` merge `87e4a7d`, per the
+[book review queue design](../specs/2026-09-17-book-review-queue-design.md). Decisions now carry
+across proposal runs. `GET .../regions/review-queue` answers what to look at next for regions, in
+reading or confidence order. The SPA moves between pages with work on `[` and `]`. Still owed:
+page kinds, words and glyphs in the queue, and a confidence-ordered review flow in the UI.
+
 ### Slice 6 — Model-proposed semantics
 
 A vision-language model proposes role where geometry cannot separate the cases, poetry against
