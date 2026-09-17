@@ -15,8 +15,8 @@ Level: I2
 - **Status:** implemented
 - **Level:** I2
 - **Last verified:** 2026-09-17
-- **Resolution:** Fixed 2026-09-17 in `pdomain-ocr-labeler-spa` `6ed5156`. The threshold is fitted
-  per book. One caveat remains, below.
+- **Resolution:** Fixed 2026-09-17 in `pdomain-ocr-labeler-spa` `6ed5156`, and hardened on real OCR
+  output in `86105eb`. No caveat remains open.
 - **Severity:** Low now, rising with volume — it costs some wrongly split or wrongly joined
   furniture regions per book, and a reviewer can fix each in one click
 - **Affected version:** `pdomain-ocr-labeler-spa` at the merge of `feature/geometry-proposals`
@@ -55,9 +55,16 @@ proposal's evidence records `gap_threshold_source` as `book_fit` or `fixed_share
 structural protocol, and review caught that `isinstance` would then match anything with a method
 named `fit`, including a scikit-learn-style model.
 
-**One caveat remains.** Two books have valleys only 4 and 5 px wide, `projectID3fc3d7d03c613` and
-`projectID408c1dd9b9318`. The fit is correct on their ink gaps, but the margin is thin, and word-box
-gaps differ slightly from ink gaps. Recheck those two once a book has been through OCR in the labeler.
+**The narrow-valley caveat was checked on real OCR word boxes, and one of the two books failed.**
+Pages 20–49 of both books went through DocTR OCR in the labeler. `projectID3fc3d7d03c613` held: every
+page split its three-part head, author, title and folio, correctly. `projectID408c1dd9b9318` did not.
+Its fit fell back to the fixed share, and four pages merged head and folio. The causes were not the
+threshold itself. One page's furniture band had swallowed the body text and flooded the gap pool,
+and three long running heads ended only 53–55 px before the folio, against word spaces of 26–40 px.
+Both are fixed in `pdomain-ocr-labeler-spa` `86105eb`, which skips bands far taller than their words
+and splits a digits-only folio off a head when its gap is well above the book's median word space.
+Afterwards the two books split head and folio on 17 of 17 and 20 of 20 pages, both with a real book
+fit. Evidence: `/workspaces/pdomain/.m15f-evidence/real-book-region-run/README.md`.
 
 ## The finding
 
