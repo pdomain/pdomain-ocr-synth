@@ -912,7 +912,11 @@ _PAGE_HEIGHT = 1600
 # positionally and has no ``ocr_text`` parameter, and ``Block.__init__`` takes
 # ``items`` first — the dict form sidesteps both and is what the repo already
 # uses everywhere.
-def _bbox(left: int, top: int, right: int, bottom: int, *, normalized: bool = False) -> dict[str, object]:
+# Coordinates are ``float`` rather than ``int``: a normalized box carries
+# fractions, and basedpyright rejects ``0.1`` against an ``int`` parameter.
+def _bbox(
+    left: float, top: float, right: float, bottom: float, *, normalized: bool = False
+) -> dict[str, object]:
     return {
         "top_left": {"x": left, "y": top},
         "bottom_right": {"x": right, "y": bottom},
@@ -921,7 +925,7 @@ def _bbox(left: int, top: int, right: int, bottom: int, *, normalized: bool = Fa
 
 
 def _word(
-    text: str, left: int, top: int, right: int, bottom: int, *, normalized: bool = False
+    text: str, left: float, top: float, right: float, bottom: float, *, normalized: bool = False
 ) -> dict[str, object]:
     return {
         "type": "Word",
@@ -931,22 +935,28 @@ def _word(
     }
 
 
-def _page(words: list[dict[str, object]], *, normalized: bool = False) -> Page:
+def _line(words: list[dict[str, object]]) -> dict[str, object]:
+    # The container boxes stay pixel-space even when the words are normalized.
+    # A box marked normalized must have coordinates inside [0, 1], and a page
+    # box of 1000 by 1600 does not; ``Page.is_content_normalized`` reads only
+    # word boxes, so the containers' convention never matters to it.
+    return {
+        "type": "Block",
+        "child_type": "WORDS",
+        "block_category": "LINE",
+        "items": words,
+        "bounding_box": _bbox(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT),
+    }
+
+
+def _page(*lines: list[dict[str, object]]) -> Page:
     return Page.from_dict(
         {
             "width": _PAGE_WIDTH,
             "height": _PAGE_HEIGHT,
             "page_index": 0,
-            "bounding_box": _bbox(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT, normalized=normalized),
-            "items": [
-                {
-                    "type": "Block",
-                    "child_type": "WORDS",
-                    "block_category": "LINE",
-                    "items": words,
-                    "bounding_box": _bbox(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT, normalized=normalized),
-                }
-            ],
+            "bounding_box": _bbox(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT),
+            "items": [_line(list(words)) for words in lines],
         }
     )
 
@@ -993,12 +1003,13 @@ def _input(
     ordinals: tuple[int, ...] = (0,),
     page_class: str = "normal_recto",
     confidence: float | None = 0.9,
-    normalized: bool = False,
+    extra_line: list[dict[str, object]] | None = None,
 ) -> Any:
     from pdomain_ocr_labeler_spa.core.regions.detector import DetectorInput
 
+    lines = [words] if extra_line is None else [words, extra_line]
     return DetectorInput(
-        page=_page(words, normalized=normalized),
+        page=_page(*lines),
         page_index=0,
         measurement=_measurement(bands),
         classification=PageClassification("001.png", page_class, 2, ordinals, confidence),
@@ -1359,8 +1370,24 @@ def test_a_page_with_normalized_word_boxes_is_skipped() -> None:
     """Ink bands are source-frame pixels; a 0-to-1 box cannot be compared against one."""
     from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
 
-    words = [_word("THE", 0, 0, 0, 0, normalized=True)]
-    assert furniture_region_detector(_input(words, normalized=True)) == []
+    words = [_word("THE", 0.1, 0.05, 0.2, 0.08, normalized=True)]
+    assert furniture_region_detector(_input(words)) == []
+
+
+def test_a_page_mixing_normalized_and_pixel_boxes_is_skipped() -> None:
+    """Page.is_content_normalized raises on a mixed page; a detector cannot pick a side.
+
+    The two words must sit in different LINE blocks. ``Block.from_dict`` refuses
+    a single WORDS block whose words disagree on coordinate system, so a
+    one-line mixed page cannot be built at all.
+    """
+    from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
+
+    detector_input = _input(
+        [_word("THE", 100, 105, 170, 125)],
+        extra_line=[_word("17", 0.9, 0.05, 0.95, 0.08, normalized=True)],
+    )
+    assert furniture_region_detector(detector_input) == []
 ```
 
 The `_bbox` helper stamps `is_normalized` explicitly rather than letting it be inferred, the same
@@ -1368,20 +1395,19 @@ way `tests/integration/conftest.py:_tb_bbox` does.
 
 `Page.is_content_normalized` is verified: it walks every word with a bounding box, returns the
 shared `is_normalized` flag when they all agree, returns `False` when no word has a box, and raises
-`ValueError` when the page mixes the two conventions. So the guard's two branches are both real. Add
-a test for the mixed case as well:
+`ValueError` when the page mixes the two conventions. Both branches of the guard are real, and both
+tests for them are in Step 1 above.
 
-```python
-def test_a_page_mixing_normalized_and_pixel_boxes_is_skipped() -> None:
-    """Page.is_content_normalized raises on a mixed page; a detector cannot pick a side."""
-    from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
+Three things about building those two pages, all checked against the real classes:
 
-    words = [
-        _word("THE", 100, 105, 170, 125),
-        _word("17", 0, 0, 0, 0, normalized=True),
-    ]
-    assert furniture_region_detector(_input(words)) == []
-```
+- A normalized word box must have coordinates inside `[0, 1]`, or `BoundingBox.__post_init__`
+  raises. Use fractions such as `0.1, 0.05, 0.2, 0.08`.
+- The page and line boxes stay pixel-space even on a normalized page, because a 1000-by-1600 box
+  cannot be marked normalized. `Page.is_content_normalized` reads only word boxes, so this is
+  invisible to it.
+- A mixed page needs its two words in **different** `LINE` blocks. `Block.from_dict` refuses a
+  single WORDS block whose words disagree on coordinate system, with "All word bounding boxes in a
+  WORDS block must share the same coordinate system", so the mixed page cannot be built one-line.
 
 **It iterates `self.lines`, so a word outside a `LINE`-category block is invisible to it.**
 `_page_words` walks the whole item tree and is not limited that way, so the page-level guard alone
