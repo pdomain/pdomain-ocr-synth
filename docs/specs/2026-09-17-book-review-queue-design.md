@@ -197,10 +197,12 @@ refetch after every keyboard decision is cheap at that size.
 
 ## What this increment does not build
 
-- **A queue panel listing every item.** The route supports one; the first increment only navigates.
-- **Confidence-ordered navigation in the UI.** The route supports `order=confidence`; the keys use
-  reading order, because jumping around the book by confidence is disorienting for a person. An
-  agent can use the other order today.
+- **A queue panel listing every item.** Built afterwards, in `pdomain-ocr-labeler-spa` merge
+  `0536318`: a Queue drawer tab lists up to 200 undecided proposals and says so when the book holds
+  more.
+- **Confidence-ordered navigation in the UI.** The keys still use reading order, because jumping
+  around the book by confidence is disorienting for a person. The panel offers both orders, and the
+  same merge added the toggle.
 - **Calibration.** The decisions this surface records are what will eventually calibrate the
   detector's confidence scores. Nothing here uses them yet.
 
