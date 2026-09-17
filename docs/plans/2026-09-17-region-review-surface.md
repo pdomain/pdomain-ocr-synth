@@ -184,6 +184,8 @@ export type RailTarget = "block" | "para" | "line" | "word" | "region";
 
 ### Task 2: Click a region on the canvas
 
+> **Shipped 2026-09-17** in `e7e4fd6`. 1673 Vitest tests; includes the visible rail region cell.
+
 **Files:** new `src/lib/region-hit-test.ts` and `src/lib/region-hit-test.test.ts`;
 `src/components/PageImageCanvas.tsx` and `PageImageCanvas.test.tsx`; `src/components/shell/Rail.tsx`
 and its test.
@@ -247,7 +249,7 @@ export function orderedUndecidedProposals(regions: readonly RegionView[]): strin
   stroke than both existing region layers in `LAYER_COLORS`, and let it follow `layerVisibility.block`
   as the other two do.
 
-- [ ] **Step 1: Write the failing pure tests** in `region-hit-test.test.ts`, each with a hand-built
+- [x] **Step 1: Write the failing pure tests** in `region-hit-test.test.ts`, each with a hand-built
   `RegionView[]`:
   - a click inside a large confirmed region and a small proposal inside it hits the proposal;
   - a click inside two nested confirmed regions hits the inner one;
@@ -255,19 +257,21 @@ export function orderedUndecidedProposals(regions: readonly RegionView[]): strin
   - a click outside everything returns `null`;
   - a confirmed `RegionView` with no `region_id` is dropped from candidates;
   - `orderedUndecidedProposals` orders three proposals by `y` then `x` and skips confirmed regions.
-- [ ] **Step 2: Run them and see them fail.**
-- [ ] **Step 3: Implement `region-hit-test.ts`.** Run the pure tests to green.
-- [ ] **Step 4: Write the failing canvas test** in `PageImageCanvas.test.tsx`, following its existing
+- [x] **Step 2: Run them and see them fail.**
+- [x] **Step 3: Implement `region-hit-test.ts`.** Run the pure tests to green.
+- [x] **Step 4: Write the failing canvas test** in `PageImageCanvas.test.tsx`, following its existing
   mocked `@pdomain/pdomain-ui/canvas` and `image-event-surface` pattern: with the rail target
   `region`, a click at a proposal's centre sets the selection level `region` with that
   `proposalId`; with the rail target `word`, the same click does not select the proposal; the
   `bbox-overlay-regions-selected` sidecar's `data-item-count` is `1` after the click.
-- [ ] **Step 5: Implement the canvas changes.** Run the canvas tests, the whole suite, typecheck,
+- [x] **Step 5: Implement the canvas changes.** Run the canvas tests, the whole suite, typecheck,
   lint, format, and commit `feat(frontend): select regions and proposals on the canvas`.
 
 ---
 
 ### Task 3: The mutation and run hooks
+
+> **Shipped 2026-09-17** in `820cece`. 1664 Vitest tests on its branch; knip reports no unused exports.
 
 **Files:** new `src/hooks/useRegionMutations.ts`, `src/hooks/useRegionMutations.test.tsx`,
 `src/hooks/useProposalRuns.ts`, `src/hooks/useProposalRuns.test.tsx`; `src/test/handlers.ts`.
@@ -315,18 +319,20 @@ export function useProposeRegions(projectId: string):
 - Add MSW handlers for all six routes to `src/test/handlers.ts`, returning a minimal valid
   `PagePayload` or `{ job_id: "job-1" }`.
 
-- [ ] **Step 1: Write the failing hook tests**, following `hooks/useLineMutations.test.tsx` with
+- [x] **Step 1: Write the failing hook tests**, following `hooks/useLineMutations.test.tsx` with
   `renderHook` and a `QueryClientProvider` wrapper. For each mutation hook, assert the method, the
   path, the body, and that `["page", projectId, pageIndex]` is invalidated on success. Assert the
   accept body is exactly `{}` with no role and exactly `{ role: "page number" }` with one.
-- [ ] **Step 2: Run and see them fail.**
-- [ ] **Step 3: Implement both hook files and the MSW handlers.**
-- [ ] **Step 4: Run the focused tests, the whole suite, typecheck, lint, format, and commit**
+- [x] **Step 2: Run and see them fail.**
+- [x] **Step 3: Implement both hook files and the MSW handlers.**
+- [x] **Step 4: Run the focused tests, the whole suite, typecheck, lint, format, and commit**
   `feat(frontend): add region mutation and proposal-run hooks`.
 
 ---
 
 ### Task 4: The region detail panel
+
+> **Shipped 2026-09-17** in `c8d28d9`. 1694 Vitest tests after merge.
 
 **Files:** new `src/components/right-panel/RegionDetail.tsx` and `RegionDetail.test.tsx`;
 `src/components/shell/RightPanel.tsx`.
@@ -353,38 +359,36 @@ disposition from `page.proposals`.
   the way `LineDetail.tsx` does around line 379.
 
 **The role list.** Build it from the `RegionRole` type, not from `BlockDetail.tsx`'s local layout
-list, which is different. TypeScript cannot enumerate a string-literal union at runtime, so declare
-a `const` array and make the compiler check it is complete:
+list, which is different. Use an exhaustive record, the idiom `RightPanel.tsx`'s `LEVEL_PLACEHOLDER`
+and `Rail.tsx`'s target maps already use; the compiler rejects it if any `RegionRole` member is
+missing:
 
 ```ts
-const REGION_ROLES = [
-  "paragraph", "sidenote", "page header", "page footer", "page number", "printers mark",
-  "blockquote", "poetry", "recovered", "illustration", "decoration", "caption", "figure", "table",
-  "footnote", "title", "section", "list", "formula", "artefact", "signature mark", "catchword",
-  "press figure", "rule", "brace", "bracket", "group label", "plate", "speaker label",
-  "stage direction", "interlinear gloss", "abandoned", "decorated initial", "unknown",
-] as const satisfies readonly RegionRole[];
-
-// Fails to compile if RegionRole gains a member this list does not have.
-type _MissingRoles = Exclude<RegionRole, (typeof REGION_ROLES)[number]>;
-const _allRolesListed: [_MissingRoles] extends [never] ? true : false = true;
+const REGION_ROLE_RECORD: Record<RegionRole, true> = {
+  paragraph: true, sidenote: true, "page header": true, /* ...every member... */ unknown: true,
+};
+// Object.keys always widens to string[]; the record above already proved completeness.
+const REGION_ROLES = Object.keys(REGION_ROLE_RECORD) as RegionRole[];
 ```
 
-If that exhaustiveness check trips the repo's unused-variable lint, find the repo's own idiom for a
-compile-time assertion and use it; do not suppress.
+> **Correction, found in execution.** This plan first gave a `satisfies` array plus a standalone
+> `_allRolesListed` constant. It compiles under `tsc --noEmit`, and I had checked it that way, but the
+> pre-commit hook runs `tsc -b --noEmit` with `noUnusedLocals` from `tsconfig.app.json`, which
+> rejects the unused constant. ESLint ignores `_`-prefixed names; the TypeScript compiler does not.
+> Verify compile-time claims with the command the hook runs, not a looser one.
 
 In `RightPanel.tsx`, replace Task 1's placeholder with `RegionDetail`.
 
-- [ ] **Step 1: Write the failing panel tests**, following `right-panel/LineDetail.test.tsx`: a
+- [x] **Step 1: Write the failing panel tests**, following `right-panel/LineDetail.test.tsx`: a
   `PagePayload` literal, a `QueryClientProvider` with retries off, the selection driven through
   `selectProposal` and `selectRegion`, and MSW for HTTP. Cover: a selected proposal shows its role,
   confidence and evidence keys; clicking Accept POSTs to the accept route with `{}`; choosing a role
   in Accept as POSTs `{ role }`; Reject POSTs to reject; a selected confirmed region shows its origin;
   Delete does not call the route until the confirm dialog is confirmed; an id in neither list shows
   the not-found message; a stale proposal shows the badge.
-- [ ] **Step 2: Run and see them fail.**
-- [ ] **Step 3: Implement the panel and the `RightPanel` routing.**
-- [ ] **Step 4: Run the focused tests, the whole suite, typecheck, lint, format, and commit**
+- [x] **Step 2: Run and see them fail.**
+- [x] **Step 3: Implement the panel and the `RightPanel` routing.**
+- [x] **Step 4: Run the focused tests, the whole suite, typecheck, lint, format, and commit**
   `feat(frontend): add the region detail panel`.
 
 ---
@@ -443,6 +447,16 @@ displayed.
 ### Task 6: Start the runs, and make an empty run say why
 
 Two halves, one commit each. Do the backend half first.
+
+> **Backend half shipped 2026-09-17** in `99f71a2` and `6589231`. `pages_detected` counts pages
+> that received at least one proposal. Lease failures, missing measurements and detector errors
+> are named in a separate clause when non-zero, because clicking Propose page kinds fixes none of
+> them.
+>
+> **Correction for the frontend half, found before dispatch.** `useJobCompletionInvalidation`'s
+> `onComplete` receives only the job id, so it cannot show the terminal message. It is extended to
+> receive the terminal event, as `onRunning` already does. And its `invalidationKey` is required, so
+> both runs invalidate the page query rather than Propose page kinds invalidating nothing.
 
 **Backend half — `core/jobs/handlers/propose_regions.py`.** The run skips every page with no proposed
 or confirmed page kind and says so only in a server log. Make its **last** `runner.update_progress`
