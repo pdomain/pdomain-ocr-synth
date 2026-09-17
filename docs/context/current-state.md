@@ -6,11 +6,13 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-09-06
+- **Last verified:** 2026-09-17
 - **Provenance:** authored from repository evidence, the 2026-08-24 local PGDP alignment review,
   earlier ranking and geometry-profile corpus runs, tests, plans, CI, the 2026-08-24 PGDP
   architecture promotion, and the 2026-09-06 promotion of the remaining shipped M15 slices with
-  the retirement of their plans
+  the retirement of their plans; the split section re-verified 2026-09-17 against the
+  existence of `pdomain-pgdp-measure`, `pdomain_book_contracts.annotation`, and the absence
+  of `src/pdomain_ocr_synth/pgdp/`
 - **Disposition:** Injected operational ground truth.
 
 M00-M10 are substantially shipped. The repository supports recipe discovery and
@@ -247,15 +249,22 @@ The operating note repeated in three handoffs, "use the `alignment-t2-*`
 reports", is now misleading; it was written when t2 was the only report carrying
 the page-classification fixes.
 
-## A split is proposed and not yet decided
+## The split is decided and executed
 
-A draft design proposes separating the three jobs this repository does. The
-measurement library under `src/pdomain_ocr_synth/pgdp/` would become its own
-package, the region and page-type vocabulary would go to
-`pdomain-book-contracts`, human labeling would move to
-`pdomain-ocr-labeler-spa`, and this repository would consume labeled datasets
-rather than produce its own measurements. Nothing has moved. See the
+The three jobs this repository used to do are now three packages. The
+measurement library that lived at `src/pdomain_ocr_synth/pgdp/` is gone from
+here and is `pdomain-pgdp-measure`. The region and page-type vocabulary is in
+`pdomain_book_contracts.annotation`. Human labeling lives in
+`pdomain-ocr-labeler-spa`, which holds the region stores, the region routes, the
+page-kind classifier, and the review surfaces being built on top of them. This
+repository consumes labeled datasets rather than producing its own measurements.
+See the
 [measurement, labeling, and synthesis split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md).
+
+The labeling work itself is tracked from the
+[labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md), and its
+slice-by-slice plans live in `docs/plans/` here while the code lands in the
+labeler.
 
 ## PGDP ranking verification
 
