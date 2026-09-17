@@ -768,7 +768,59 @@ uv run pytest tests/unit/core/jobs/test_propose_regions_handler.py \
 ```
 Expected: PASS.
 
-- [ ] **Step 11: Run the gate and commit**
+- [ ] **Step 11: Restore the three tests Task 1 pinned to the transitional state**
+
+Task 1 could not build a real `DetectorInput`, so it hard-coded the detector result empty and three
+tests in `tests/integration/test_region_proposals_router.py` were pinned to `recorded == []` and
+`captured == []`. Those three exist to prove that a detector is actually called over a verified page
+lease, which is the defect `0b52899` closed. Task 2 restores a real detector call, so it must
+restore their assertions. **This step is not optional, and the branch must not merge with them
+pinned.**
+
+Each takes a detector typed `(page: Any) -> list[Any]`; retype it to take a `DetectorInput` and read
+`detector_input.page_index` where it used `0`. Restore these exact assertions, and delete the
+"Pinned to the detector seam's widening" docstrings Task 1 added:
+
+`test_an_ordinary_project_detector_sees_the_plain_on_disk_image_path`:
+
+```python
+    assert recorded == [project.image_paths[0]]
+```
+
+`test_a_book_labeling_project_detector_sees_the_sealed_descriptor` — restore its original docstring,
+"The defect this fix closes: a real detector reading the page image on a book-labeling project must
+see the verified sealed descriptor, never the raw manifest path", and its assertions:
+
+```python
+    assert len(recorded) == 1
+    assert str(recorded[0]).startswith("/proc/self/fd/")
+    # The lease is scoped to the ``detector(page)`` call — once the run has
+    # finished, the descriptor it resolved to must no longer be readable.
+    with pytest.raises(OSError):
+        recorded[0].read_bytes()
+```
+
+`test_the_book_lease_is_closed_even_when_the_detector_raises`:
+
+```python
+    # The detector is a swap-in callable, so the handler logs its failure and
+    # skips that page rather than letting it abort the whole run. The lease
+    # must still be closed on that path, which is what this test pins.
+    _run_propose_regions_job(client, detector=_detector)
+
+    assert len(captured) == 1
+    with pytest.raises(OSError):
+        captured[0].read_bytes()
+```
+
+Run `git show master:tests/integration/test_region_proposals_router.py` to see all three as they
+were, if anything above is ambiguous.
+
+Also check `test_a_detector_that_raises_skips_its_page_and_does_not_kill_the_run` in the same file
+and `tests/unit/core/jobs/test_labeling_page_lease.py` — any test that injects a detector needs its
+signature retyped once the seam carries a `DetectorInput`.
+
+- [ ] **Step 12: Run the gate and commit**
 
 ```bash
 export PATH="$PWD/.venv-container/bin:$PATH"
@@ -780,7 +832,7 @@ git add src/pdomain_ocr_labeler_spa/core/page_measurement.py \
   src/pdomain_ocr_labeler_spa/core/jobs/handlers/propose_regions.py \
   tests/unit/core/test_page_measurement.py \
   tests/unit/core/jobs/test_propose_regions_handler.py \
-  tests/unit/core/jobs/conftest.py
+  tests/unit/core/jobs/conftest.py tests/integration/test_region_proposals_router.py
 git commit -m "feat(regions): measure the book from the propose_regions job"
 ```
 
