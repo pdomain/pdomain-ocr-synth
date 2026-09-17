@@ -212,9 +212,11 @@ any page is written. The request is capped at the book's page count.
 The optional `note` is written onto every marker the request creates, the same way the single route
 writes it onto its one marker.
 
-**Measure before deciding whether this must be a job.** The route is synchronous in this design. At
-plan time, time a bulk confirm of every page on the 3fc3 real book. If it takes more than ten seconds,
-make it a background job reporting progress, like `propose_page_kinds`, and say so in the plan.
+**The route stays synchronous, and the SPA sends at most 25 pages per request.** Measured
+2026-09-17 on 32 real OCR'd pages of `projectID3fc3d7d03c613`: a bulk confirm took 1.7 seconds,
+about 53 ms a page, and never called `run_ocr`. That is under the ten-second limit this design set,
+but a 300-page book in one request would take about 16 seconds by the same rate. Batches of 25 take
+about 1.3 seconds each, show progress between them, and need no background job.
 
 ## The page toolbar shows and confirms the current page's kind
 
@@ -257,8 +259,10 @@ The bar offers two actions:
   proposal is `unknown` or missing are left out, and the bar says how many.
 - **Set kind.** A kind select and an apply button confirm every selected page as that one kind.
 
-Both call the bulk route. On completion a toast reports how many pages were confirmed and names any
-that were not, by status. The hook invalidates the `["page-kinds", projectId]` prefix and the
+Both call the bulk route, 25 pages per request, and a loading toast shows how many pages are done
+after each request. If a request fails outright, the toast says how many pages were confirmed before
+it and stops. On completion a toast reports how many pages were confirmed and names any that were
+not, by status. The hook invalidates the `["page-kinds", projectId]` prefix and the
 `["page", projectId]` prefix, because any page in the book may have changed.
 
 **A proposal run and page history both refresh the list.** When a Propose page kinds job completes,
