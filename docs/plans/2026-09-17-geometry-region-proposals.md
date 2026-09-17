@@ -1405,12 +1405,14 @@ def test_listing_proposals_returns_what_the_run_wrote(toolbar_loaded: Any) -> No
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/integration/test_region_proposal_run_end_to_end.py -v`
-Expected: the first test FAILS with `KeyError: 'region_detector'`. Note which of the other two also
-fail and why — the `toolbar_loaded` fixture writes a fake PNG of six bytes, so `profile_page` may
-return an unavailable-image measurement rather than raising. That is fine and is what the third test
-works around by injecting its own detector. If the second test fails because the measurement pass
-raises on an undecodable image, fix `measure_book` to let `profile_page` return its own
-unavailable-page measurement rather than propagating, and say so.
+Expected: the first test FAILS with `KeyError: 'region_detector'`.
+
+The other two should pass once the detector is wired. The `toolbar_loaded` fixture writes a six-byte
+fake PNG, and `profile_page` on that file **returns rather than raises**: a `PageMeasurement` with
+`page_class="unknown"`, `ink_bands=None`, and a diagnostic of `image_decode_failed`. I ran it to
+check. So the measurement pass completes, the furniture detector sees no bands and proposes nothing,
+and the run is still recorded — which is exactly what the second test asserts. The third test injects
+its own detector because the fixture's page has no real furniture to find.
 
 - [ ] **Step 3: Wire the detector in `bootstrap.py`**
 
