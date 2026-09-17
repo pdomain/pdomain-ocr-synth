@@ -229,12 +229,17 @@ every proposal, whole-page state in one call, and an endpoint answering what to 
 **First increment shipped 2026-09-17** in `pdomain-ocr-labeler-spa` merge `87e4a7d`, per the
 [book review queue design](../specs/2026-09-17-book-review-queue-design.md). Decisions now carry
 across proposal runs. `GET .../regions/review-queue` answers what to look at next for regions, in
-reading or confidence order. The SPA moves between pages with work on `[` and `]`. Still owed:
-page kinds, words and glyphs in the queue, and a confidence-ordered review flow in the UI.
+reading or confidence order. The SPA moves between pages with work on `[` and `]`.
 
 **Second increment shipped 2026-09-17** in `pdomain-ocr-labeler-spa` merge `2adbd46`:
 [page-kind review](../specs/2026-09-17-page-kind-review-design.md), which shows each page's proposed
 and confirmed kind and confirms kinds one page or many at a time.
+
+**Third increment shipped 2026-09-17** in `pdomain-ocr-labeler-spa` merge `0536318`: a Queue drawer
+tab lists the book's undecided region proposals in reading or lowest-confidence-first order, each
+with the detector's evidence, and clicking one jumps to it. Still owed in this slice: words and
+glyphs in the queue, and one answer to "what is next" that spans every kind of work rather than
+regions alone.
 
 **Bottom-of-page furniture was measured and ruled out** on 2026-09-17:
 [bottom furniture is too rare, and sits too close to the text](../research/2026-09-17-bottom-of-page-furniture-is-too-rare-and-too-close-to-the-text.md).
