@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-13"
+kind: archive
+status: retired
 created_at: "2026-09-13T17:43:46Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "3988f53f8633b7e18bdbcfa25dc94ea920c92ee0"
 supersedes: "2026-09-09-095107-page-kind-stores-shipped-across-three-repos-merge-decision-open.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-13"
+last_verified: "2026-09-17"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-17-030031-page-kind-lands-end-to-end-region-routes-task-5-now-unblocked.md`.**
+
 
 # Page kind is unblocked, both releases are cut, Task 5 is still unrun
 
