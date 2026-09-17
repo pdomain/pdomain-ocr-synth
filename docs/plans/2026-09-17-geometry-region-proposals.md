@@ -1258,7 +1258,8 @@ class _Cluster:
 
     @property
     def text(self) -> str:
-        return " ".join(w.ground_truth_text or w.ocr_text or "" for w in self.words).strip()
+        # ``Word`` has no ``ocr_text``; its OCR text is the ``text`` property.
+        return " ".join(w.ground_truth_text or w.text or "" for w in self.words).strip()
 
     @property
     def is_folio(self) -> bool:
@@ -1482,7 +1483,8 @@ well.
 - [ ] **Step 5: Run the tests**
 
 Run: `uv run pytest tests/unit/core/regions/test_furniture.py -v`
-Expected: PASS, all ten tests.
+Expected: PASS, all twelve tests — the plan's ten plus the two normalized-coordinate tests Step 4
+adds.
 
 - [ ] **Step 6: Run the gate and commit**
 
