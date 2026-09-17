@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-17"
+kind: archive
+status: retired
 created_at: "2026-09-17T12:24:56Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "94dd97548c572efcef86a788feae0465afd7ce44"
 supersedes: "2026-09-17-102343-slice-4-ships-geometry-engine-live-gap-threshold-next.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-17"
+last_verified: "2026-09-17"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-17-153727-review-queue-ships-and-page-kind-review-is-being-built.md`.**
+
 
 # Slice 3 shipped, and the region pipeline works on a real book
 
