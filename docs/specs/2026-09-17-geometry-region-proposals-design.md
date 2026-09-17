@@ -252,14 +252,18 @@ the projects the whole labeling track exists for.
 
 ## What this design does not settle
 
-- **What a persisted measurement record looks like**, if re-measuring turns out to be too slow.
-  The record needs the measurement, the image digest it was taken from, and a rule for what a
-  region run does when that digest no longer matches the page. A journal beside the page-kind
-  proposals is the obvious home and is not the only one.
-- **Whether a furniture proposal should be one region or two when the cluster gap is marginal.**
-  The rule above splits on a horizontal gap; the threshold for that gap is not chosen here, and it
-  should be derived from the book's own word gaps rather than fixed, for the reason the
-  [word-gap finding](../research/2026-09-03-word-gap-threshold-is-too-low.md) gives.
+One thing is still open: **what a persisted measurement record looks like**, if re-measuring turns
+out to be too slow. That record needs the measurement, the image digest it was taken from, and a
+rule for what a region run does when that digest no longer matches the page. A journal beside the
+page-kind proposals is the obvious home and is not the only one.
+
+The cluster-gap threshold this section used to leave open has since been measured, and it is now a
+filed issue rather than a design question. The shipped detector splits at a fixed 10 percent of the
+book's fitted text width. Across six books the correct range differs in every one, and the six
+ranges have no common point, so no fixed share can work. An Otsu split over each book's own gaps
+finds it cleanly every time, which is the fix the word-gap finding already established one level
+down. See
+[the furniture gap threshold cannot be a fixed share](../issues/2026-09-17-the-furniture-gap-threshold-cannot-be-a-fixed-share.md).
 
 ## Related
 
