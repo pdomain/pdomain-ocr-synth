@@ -767,10 +767,7 @@ from __future__ import annotations
 from typing import Any
 
 from pdomain_book_contracts.annotation import RegionRole
-from pdomain_book_contracts.geometry.bounding_box import BoundingBox
-from pdomain_book_tools.ocr.block import Block, BlockCategory, BlockChildType
 from pdomain_book_tools.ocr.page import Page
-from pdomain_book_tools.ocr.word import Word
 from pdomain_pgdp_measure.page_templates import (
     BookTemplates,
     PageClassification,
@@ -782,22 +779,48 @@ _PAGE_WIDTH = 1000
 _PAGE_HEIGHT = 1600
 
 
-def _word(text: str, left: int, top: int, right: int, bottom: int) -> Word:
-    return Word(
-        bounding_box=BoundingBox.from_ltrb(left, top, right, bottom),
-        ocr_text=text,
-        ground_truth_text=text,
-    )
+# Pages are built from dicts through ``Page.from_dict``, the way
+# tests/integration/conftest.py does. ``Word.__init__`` takes ``text``
+# positionally and has no ``ocr_text`` parameter, and ``Block.__init__`` takes
+# ``items`` first — the dict form sidesteps both and is what the repo already
+# uses everywhere.
+def _bbox(left: int, top: int, right: int, bottom: int, *, normalized: bool = False) -> dict[str, object]:
+    return {
+        "top_left": {"x": left, "y": top},
+        "bottom_right": {"x": right, "y": bottom},
+        "is_normalized": normalized,
+    }
 
 
-def _page(words: list[Word]) -> Page:
-    line = Block(
-        bounding_box=BoundingBox.from_ltrb(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT),
-        block_category=BlockCategory.LINE,
-        child_type=BlockChildType.WORDS,
-        items=list(words),
+def _word(
+    text: str, left: int, top: int, right: int, bottom: int, *, normalized: bool = False
+) -> dict[str, object]:
+    return {
+        "type": "Word",
+        "text": text,
+        "ground_truth_text": text,
+        "bounding_box": _bbox(left, top, right, bottom, normalized=normalized),
+    }
+
+
+def _page(words: list[dict[str, object]], *, normalized: bool = False) -> Page:
+    return Page.from_dict(
+        {
+            "width": _PAGE_WIDTH,
+            "height": _PAGE_HEIGHT,
+            "page_index": 0,
+            "bounding_box": _bbox(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT, normalized=normalized),
+            "items": [
+                {
+                    "type": "Block",
+                    "child_type": "WORDS",
+                    "block_category": "LINE",
+                    "items": words,
+                    "bounding_box": _bbox(0, 0, _PAGE_WIDTH, _PAGE_HEIGHT, normalized=normalized),
+                }
+            ],
+        }
     )
-    return Page(width=_PAGE_WIDTH, height=_PAGE_HEIGHT, page_index=0, blocks=[line])
 
 
 def _templates() -> BookTemplates:
@@ -831,17 +854,18 @@ def _measurement(bands: tuple[InkBand, ...]) -> PageMeasurement:
 
 
 def _input(
-    words: list[Word],
+    words: list[dict[str, object]],
     *,
     bands: tuple[InkBand, ...] = (InkBand(100, 130),),
     ordinals: tuple[int, ...] = (0,),
     page_class: str = "normal_recto",
     confidence: float | None = 0.9,
+    normalized: bool = False,
 ) -> Any:
     from pdomain_ocr_labeler_spa.core.regions.detector import DetectorInput
 
     return DetectorInput(
-        page=_page(words),
+        page=_page(words, normalized=normalized),
         page_index=0,
         measurement=_measurement(bands),
         classification=PageClassification("001.png", page_class, 2, ordinals, confidence),
@@ -948,9 +972,11 @@ def test_the_evidence_names_the_band_and_the_cluster_width() -> None:
 Run: `uv run pytest tests/unit/core/regions/test_furniture.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named '...core.regions.furniture'`.
 
-If instead it fails building `Word`, `Block` or `InkBand`, read those constructors and supply what
-they require. `Word` in particular may need more than `bounding_box` and text. Adjust the helper,
-not the assertions.
+If instead it fails building the page or an `InkBand`, read those constructors and supply what they
+require. Adjust the helper, not the assertions. The helper deliberately builds the page from a dict
+through `Page.from_dict` rather than calling `Word` and `Block` directly, because `Word.__init__`
+takes `text` as its first positional argument and has no `ocr_text` parameter, and `Block.__init__`
+takes `items` first. The dict form is what every other test in this repo uses.
 
 - [ ] **Step 3: Write the detector**
 
@@ -1188,20 +1214,15 @@ def test_a_page_with_normalized_word_boxes_is_skipped() -> None:
     """Ink bands are source-frame pixels; a 0-to-1 box cannot be compared against one."""
     from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
 
-    words = [
-        Word(
-            bounding_box=BoundingBox.from_ltrb(0.1, 0.05, 0.2, 0.08),
-            ocr_text="THE",
-            ground_truth_text="THE",
-        )
-    ]
-    assert furniture_region_detector(_input(words)) == []
+    words = [_word("THE", 0, 0, 0, 0, normalized=True)]
+    assert furniture_region_detector(_input(words, normalized=True)) == []
 ```
 
-If `BoundingBox` does not infer `is_normalized` from the values, pass it explicitly. Read
-`pdomain-book-contracts/pdomain_book_contracts/geometry/bounding_box.py` and
-`Page.is_content_normalized` in `pdomain-book-tools` before writing this test, and say what you
-found.
+The `_bbox` helper stamps `is_normalized` explicitly rather than letting it be inferred, the same
+way `tests/integration/conftest.py:_tb_bbox` does. Read `Page.is_content_normalized` in
+`pdomain-book-tools` before writing this, and say what you found — in particular, whether a page
+with one normalized box and one pixel box raises, which is the second branch the guard handles. If
+it does, add a test for the mixed case too.
 
 - [ ] **Step 5: Run the tests**
 
