@@ -232,6 +232,9 @@ across proposal runs. `GET .../regions/review-queue` answers what to look at nex
 reading or confidence order. The SPA moves between pages with work on `[` and `]`. Still owed:
 page kinds, words and glyphs in the queue, and a confidence-ordered review flow in the UI.
 
+**Second increment designed 2026-09-17:** [page-kind review](../specs/2026-09-17-page-kind-review-design.md),
+which shows each page's proposed and confirmed kind and confirms kinds one page or many at a time.
+
 ### Slice 6 — Model-proposed semantics
 
 A vision-language model proposes role where geometry cannot separate the cases, poetry against
