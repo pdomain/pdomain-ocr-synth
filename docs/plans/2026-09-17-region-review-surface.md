@@ -1,5 +1,5 @@
 ---
-Status: active
+Status: implemented
 Owner: CT
 Created: 2026-09-17
 Last verified: 2026-09-17
@@ -8,6 +8,22 @@ Kind: plan
 
 # Region Review Surface Implementation Plan
 
+> **Shipped 2026-09-17** in `pdomain-ocr-labeler-spa`, merged as `b8c2cd7`. All seven tasks landed,
+> and a Playwright test drives the whole review loop in a real browser.
+>
+> **The whole-branch review found two defects no task-scoped review could see, both fixed before
+> merge.** A decision could be sent twice: the keyboard and the panel held separate mutation
+> instances with no shared pending state, and the reject route appended a duplicate decision each
+> time. The fix shares one `mutationKey` across all four region mutations, guards both paths on it,
+> and makes a repeat reject a no-op. And a region selection outlived its page, so a keyboard accept
+> could reach the new page's route with the old page's proposal id. The fix clears a region
+> selection on page change and checks the selected id is on the current page before acting.
+>
+> **Corrections made during execution are marked inline.** Tasks 1 and 2 had to change consumers the
+> plan did not name. The role-list check needed the exhaustive `Record` idiom. `onComplete` had to be
+> extended to receive the terminal event. The run toasts matched the warning text case-sensitively
+> and would have missed the capitalised early-return message.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking. Dispatch `writing-typescript:ts-implementer` for Tasks 1
@@ -41,7 +57,7 @@ backend half.
 ## Agent Index
 
 - **Kind:** plan
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
 - **Last verified:** 2026-09-17
@@ -50,7 +66,8 @@ backend half.
   `stores/rail-store.ts`, `hooks/useRailHotkeys.ts`, `components/PageImageCanvas.tsx`,
   `api/types.ts`, `package.json`, and backend `api/regions.py`, `api/projects.py`, `api/pages.py`,
   `core/jobs/runner.py`, `core/jobs/handlers/propose_regions.py`
-- **Disposition:** Active. Slice 3 of the labeling track, first increment.
+- **Disposition:** Implemented. Merged 2026-09-17 in `pdomain-ocr-labeler-spa` `b8c2cd7`, with
+  1728 frontend tests, 1697 backend tests and both region browser tests passing.
 - **Read when:** building the region review surface, or adding a rail target, selection level or
   review hotkey.
 - **Search terms:** slice 3, region review, RegionDetail, useRegionMutations, useProposalRuns,
@@ -427,19 +444,19 @@ Register `5`, `n`, `p`, `enter`, `x` and `delete` in `HOTKEY_MAP` under a new `"
 scope so the help modal lists them. Check `hotkey-registry.ts` for how a new scope is named and
 displayed.
 
-- [ ] **Step 1: Write the failing hook tests.** Render the hook with a page carrying three proposals
+- [x] **Step 1: Write the failing hook tests.** Render the hook with a page carrying three proposals
   at known `y` and `x`, set the rail target to `region`, and dispatch key events. Cover: `n` from
   nothing selects the topmost; `n` twice selects the second; `p` from the first wraps to the last;
   `enter` POSTs accept for the selected proposal and then selects the next one in order; `x` on the
   last one POSTs reject, clears selection and shows the toast; `n`, `enter` and `x` do nothing when
   the rail target is not `region`; `delete` on a confirmed region does not call the route before the
   dialog is confirmed.
-- [ ] **Step 2: Add a regression test for the collision the design found.** With the rail target
+- [x] **Step 2: Add a regression test for the collision the design found.** With the rail target
   `region`, pressing `n` must leave `worklistStore`'s `selectedLineIndex` unchanged. This is the test
   that fails if someone later rebinds review to `j` and `k`.
-- [ ] **Step 3: Run and see them fail.**
-- [ ] **Step 4: Implement, mount the hook in `ProjectPage.tsx`, register the keys.**
-- [ ] **Step 5: Run the focused tests, the whole suite, typecheck, lint, format, and commit**
+- [x] **Step 3: Run and see them fail.**
+- [x] **Step 4: Implement, mount the hook in `ProjectPage.tsx`, register the keys.**
+- [x] **Step 5: Run the focused tests, the whole suite, typecheck, lint, format, and commit**
   `feat(frontend): review proposals from the keyboard`.
 
 ---

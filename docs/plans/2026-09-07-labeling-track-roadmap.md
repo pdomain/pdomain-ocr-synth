@@ -166,6 +166,13 @@ Drivable over HTTP the day it lands, before any UI exists.
 
 ### Slice 3 — Region review UI
 
+**Its first increment shipped on 2026-09-17** in `pdomain-ocr-labeler-spa` `b8c2cd7`. A person can
+select a region or proposal on the canvas, decide it from a panel or from the keyboard, and start the
+page-kind and region proposal runs from the page actions. See
+[the design](../specs/2026-09-17-region-review-surface-design.md) and
+[its plan](2026-09-17-region-review-surface.md). Not yet built: drawing a region, resizing a box,
+editing word membership, and reviewing page kinds.
+
 A region layer on the block canvas and rail toggle that already exist. Draw, edit, accept, reject,
 and a keyboard flow. Proposals must render visibly differently from confirmed regions, which is
 the guard the split design names against treating model output as data.
