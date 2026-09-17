@@ -1,5 +1,5 @@
 ---
-Status: active
+Status: implemented
 Owner: CT
 Created: 2026-09-16
 Last verified: 2026-09-17
@@ -7,19 +7,18 @@ Kind: issue
 Level: I1
 ---
 
-# Four of the five parked page-kind defects are fixed, and unpinned image bytes remain
+# All five parked page-kind defects are fixed
 
 ## Agent Index
 
 - **Kind:** issue
-- **Status:** active
+- **Status:** implemented
 - **Level:** I1
 - **Last verified:** 2026-09-17
-- **Resolution:** Four of five fixed 2026-09-17 in `pdomain-ocr-labeler-spa` `8fd6a02`. One
-  remains open: the unpinned-image-bytes item.
-- **Severity:** Medium — the item that blocked every page-kind UI is fixed; the
-  remaining open item can measure unpinned image bytes on a book-labeling
-  project
+- **Resolution:** Fixed. All five items closed 2026-09-17 in `pdomain-ocr-labeler-spa`
+  `8fd6a02` and `0b52899`.
+- **Severity:** Medium at the time. Both the item that blocked every page-kind
+  UI and the one that could measure unpinned image bytes are fixed.
 - **Affected version:** `pdomain-ocr-labeler-spa` at `a64be5c`, the merge of
   `feature/page-kind-job`
 - **Read when:** wiring `page_kind` into the page payload, building the
@@ -29,12 +28,13 @@ Level: I1
   store_unavailable, store_persist_failed, labeling_image_path,
   has_book_labeling_session, `_page_payload`
 
-**Four of the five items below were fixed on 2026-09-17** in
-`pdomain-ocr-labeler-spa` `8fd6a02`, with the suite green at 1645 passed and 4
-skipped. Each section says what landed. The one still open is the unpinned image
-bytes on a book-labeling project, and the
-[geometry region proposals design](../specs/2026-09-17-geometry-region-proposals-design.md)
-now proposes an answer to it.
+**All five items below were fixed on 2026-09-17**, four in
+`pdomain-ocr-labeler-spa` `8fd6a02` and the fifth in `0b52899`, with the suite
+green at 1662 passed and 4 skipped. Each section says what landed.
+
+One question this file raised under "Also worth deciding" is still open: whether
+store-less mode should stay inconsistent. That is a design question, not a
+defect, and it is left as written.
 
 Tasks 6 and 7 of the [page-kind plan](../plans/2026-09-08-page-kind-end-to-end.md)
 shipped and merged. These findings were deliberately parked rather than fixed at
@@ -59,7 +59,7 @@ field on `PagePayload` and `page_kind_reviewed` a `bool`, both populated in
 longer duplicates either into `extra`. `page_kind_reviewed` degrades to `False`
 on a journal read error rather than failing the whole payload.
 
-## Still open: a run on a book-labeling project can measure unpinned bytes
+## Fixed: a run on a book-labeling project could measure unpinned bytes
 
 `propose_page_kinds` reads `project.image_paths` directly. It does not go
 through `ProjectState.labeling_image_path`, which exists to force lease-verified
@@ -90,8 +90,21 @@ book-labeling projects, which are the projects the whole labeling track exists
 for. See the
 [geometry region proposals design](../specs/2026-09-17-geometry-region-proposals-design.md).
 
-This applies to `propose_regions` as well as `propose_page_kinds`. Neither takes
-a lease today.
+**Fixed 2026-09-17 in `0b52899`.** A shared `leased_labeling_page` context
+manager opens, binds, and unconditionally closes one page's lease, and both
+handlers read through it. On an ordinary project it is a no-op and
+`labeling_image_path` degrades to the on-disk path, so one code path serves both
+project kinds. A page whose lease fails to verify is logged and skipped so one
+bad page cannot abort a whole book.
+
+Two things turned up in the doing. Skipping a page opens a gap that
+`classify_pages`' positional index recovery cannot see, so every proposal after
+the gap would have been attributed to the wrong page; the measured page indices
+are now tracked explicitly. And entering the lease with a `with` inside a `try`
+meant any `ValueError` from the work inside it was reported as a failed lease,
+which would have misdirected anyone debugging slice 4's detector; both handlers
+now enter through an `ExitStack` so only the lease's own error is attributed to
+it.
 
 ## Fixed: the book guard read an untyped payload key
 

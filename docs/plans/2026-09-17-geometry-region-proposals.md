@@ -285,8 +285,11 @@ the same three things. Extract that pass into one function both jobs call, then 
   `fit_book_templates`, `classify_pages` from `pdomain_pgdp_measure.page_templates`;
   `DetectorInput` from Task 1.
 - Produces: `MeasuredBook` (frozen dataclass with `measurements: tuple[PageMeasurement, ...]`,
-  `classifications: tuple[PageClassification, ...]`, `templates: BookTemplates`);
-  `async def measure_book(project, *, measure_fn, on_page_measured) -> MeasuredBook`.
+  `classifications: tuple[PageClassification, ...]`, `page_indices: tuple[int, ...]`,
+  `templates: BookTemplates`);
+  `async def measure_book(project, *, project_state, measure_fn, on_page_measured) -> MeasuredBook`.
+  `page_indices[n]` is the original page index of `measurements[n]`, which is not `n` when a page
+  was skipped for a failed lease.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -347,6 +350,7 @@ def test_measure_book_measures_every_image_path_and_reports_progress(tmp_path: P
 
     assert len(result.measurements) == 3
     assert [m.page_name for m in result.measurements] == ["001.png", "002.png", "003.png"]
+    assert result.page_indices == (0, 1, 2)
     assert seen == [(1, 3), (2, 3), (3, 3)]
 
 
@@ -386,6 +390,7 @@ def test_measure_book_on_a_book_with_no_pages_returns_empty(tmp_path: Path) -> N
     )
     assert result.measurements == ()
     assert result.classifications == ()
+    assert result.page_indices == ()
     assert result.templates.has_type_page is False
 ```
 
@@ -451,10 +456,17 @@ ProgressFn = Callable[[int, int], Awaitable[None]]
 
 @dataclass(frozen=True)
 class MeasuredBook:
-    """One book's measured geometry: per page, and fitted across the whole volume."""
+    """One book's measured geometry: per page, and fitted across the whole volume.
+
+    ``page_indices[n]`` is the original page index of ``measurements[n]``. It is
+    not always ``n``: a page whose verified lease could not be opened is skipped,
+    and the gap that leaves is invisible to positional recovery. Every consumer
+    joins through ``page_indices``, never by position.
+    """
 
     measurements: tuple[PageMeasurement, ...]
     classifications: tuple[PageClassification, ...]
+    page_indices: tuple[int, ...]
     templates: BookTemplates
 
 
@@ -486,6 +498,10 @@ async def measure_book(
         await on_page_measured(page_index + 1, total)
 
     templates = fit_book_templates(measurements)
+
+# NOTE: the loop above is the pre-lease shape and is NOT what to write. Read the
+# real loop in propose_page_kinds.py on master before writing this function, and
+# carry it over whole. See "What the lease changes" immediately below.
     classifications = classify_pages(measurements, templates)
     # classify_pages preserves input order, so page_index is recovered by
     # position. That order-preservation is documented behaviour, not a
@@ -497,11 +513,40 @@ async def measure_book(
             f"{len(classifications)} classification(s) for {len(measurements)} measured "
             "page(s) — page_index recovery by position is no longer safe"
         )
-    return MeasuredBook(tuple(measurements), tuple(classifications), templates)
+    return MeasuredBook(
+        tuple(measurements), tuple(classifications), tuple(measured_page_indices), templates
+    )
 
 
 __all__ = ["MeasuredBook", "MeasurePageFn", "ProgressFn", "measure_book"]
 ```
+
+**What the lease changes, and it changes a lot.** `0b52899` landed after this plan was drafted, and
+the measurement loop you are extracting is no longer the simple loop above. On `master` it:
+
+1. Enters a per-page lease through `ExitStack` and `leased_labeling_page(project_state, page_index)`,
+   so a book-labeling project's bytes are read through a verified descriptor.
+2. Reads `project_state.labeling_image_path(page_index)` rather than `image_path`.
+3. Catches `ValueError` from the lease open only, logs it, skips that page, and keeps going.
+4. Tracks `measured_page_indices` alongside `measured`, because a skipped page opens a gap that
+   `classify_pages`' positional index recovery cannot see. Without it, every proposal after the
+   first gap is attributed to the wrong page. This is the bug that tracking exists to prevent — do
+   not drop it.
+5. Returns early when every page failed to lease, rather than calling `fit_book_templates([])`.
+
+`measure_book` therefore needs a `project_state` parameter, must return `measured_page_indices`
+alongside the measurements, and `MeasuredBook` gains a `page_indices: tuple[int, ...]` field.
+`propose_page_kinds` then zips `page_indices` against `classifications` with `strict=True` exactly
+as it does today, and `propose_regions` uses `page_indices` to map a measurement back to its page
+rather than assuming position.
+
+**Read the current `propose_page_kinds.py` before writing `measure_book`, and port its loop
+faithfully.** The code sample above shows the shape of the extraction, not its content. If you find
+the two cannot be reconciled, say so rather than dropping the lease or the index tracking.
+
+Update the tests in Step 1 to pass a `project_state` and to assert `page_indices` matches the pages
+that were measured. A fake project state whose `open_labeling_page` returns `None` and whose
+`labeling_image_path` returns `project.image_paths[i]` reproduces the ordinary-project path.
 
 - [ ] **Step 4: Run the new test**
 
@@ -656,7 +701,12 @@ In `core/jobs/handlers/propose_regions.py`, after the eligibility pass has produ
             message=f"Measuring page {current}/{total_pages}",
         )
 
-    measured = await measure_book(project, measure_fn=measure_fn, on_page_measured=_report_measured)
+    measured = await measure_book(
+        project,
+        project_state=project_state,
+        measure_fn=measure_fn,
+        on_page_measured=_report_measured,
+    )
 ```
 
 Return `ctx` from `_get_required_context` alongside `project_state` and `page_store`, or read
@@ -665,12 +715,16 @@ Return `ctx` from `_get_required_context` alongside `project_state` and `page_st
 Replace the Task 1 guard in the per-page loop with a real `DetectorInput`:
 
 ```python
-        if page is not None and idx < len(measured.measurements):
+        # Map the page index to its measurement through page_indices, never by
+        # position: a page skipped for a failed lease opens a gap, and taking
+        # measurements[idx] would hand page 7's geometry to page 3.
+        measured_at = _position_of(measured.page_indices, idx)
+        if page is not None and measured_at is not None:
             detector_input = DetectorInput(
                 page=page,
                 page_index=idx,
-                measurement=measured.measurements[idx],
-                classification=measured.classifications[idx],
+                measurement=measured.measurements[measured_at],
+                classification=measured.classifications[measured_at],
                 templates=measured.templates,
             )
             # CPU-bound in the general case — slice 4's furniture detector walks
@@ -679,11 +733,26 @@ Replace the Task 1 guard in the per-page loop with a real `DetectorInput`:
             detected = await asyncio.to_thread(detector, detector_input)
 ```
 
-**The index join is the thing to get right.** `measured.measurements` is indexed by position in
-`project.image_paths`, and `idx` is a `ProjectState.page_states` key. They agree today because both
-count pages of the same book from zero. The `idx < len(...)` guard above makes a disagreement
-skip the page rather than raise `IndexError` or, worse, attribute page 7's measurement to page 3.
-Log a warning when it skips, naming both numbers.
+**The index join is the thing to get right.** `measured.page_indices[n]` is the original page index
+of `measured.measurements[n]`, and `idx` is a `ProjectState.page_states` key. They are not the same
+sequence: a page whose lease failed is missing from the measurements entirely. Write the lookup as a
+small helper rather than inline:
+
+```python
+def _position_of(page_indices: Sequence[int], page_index: int) -> int | None:
+    """Where ``page_index`` sits in the measured sequence, or ``None`` when unmeasured.
+
+    A page skipped for a failed lease is absent from the measurements, so
+    position and page index diverge. Looking up by value rather than indexing
+    by position is what keeps one page's geometry off another page.
+    """
+    try:
+        return page_indices.index(page_index)
+    except ValueError:
+        return None
+```
+
+Log a warning when a page has no measurement, naming the page index.
 
 Restore the `detector` lookup and the `RegionDetector` / `null_region_detector` imports that Task 1
 removed.
@@ -1464,10 +1533,9 @@ git commit -m "feat(regions): run the furniture detector by default"
 - **No region review surface.** Slice 3 builds that. Until it lands, a person reads proposals
   through `GET /{project_id}/pages/{page_index}/regions/proposals` and accepts one through
   `POST .../regions/proposals/{proposal_id}/accept`.
-- **No verified page lease.** Both proposal jobs read `project.image_paths` directly, which bypasses
-  the manifest hash pin on a book-labeling project. That is tracked separately and is being fixed on
-  its own branch; if it has landed before this plan runs, `measure_book` is the one place that needs
-  to change.
+- **No change to the verified page lease.** Both proposal jobs already read image bytes through a
+  per-page lease, landed in `0b52899`. This plan must carry that through the Task 2 extraction, not
+  drop it — see the note in Task 2.
 - **No persisted measurement.** A region run re-measures. The design says why, and says what a
   persisted record would have to carry if measurement time ever becomes the bottleneck.
 
