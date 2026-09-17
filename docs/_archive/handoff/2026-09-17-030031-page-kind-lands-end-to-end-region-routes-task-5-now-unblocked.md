@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-17"
+kind: archive
+status: retired
 created_at: "2026-09-17T03:00:31Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "a6a312df41fe296393037e032124d83cb074cb53"
 supersedes: "2026-09-13-174346-page-kind-unblocked-releases-cut-task-5-still-unrun.md"
-handoff_reason: user_requested
-host: claude-code
+handoff_reason: "user_requested"
+host: "claude-code"
+created: "2026-09-17"
+last_verified: "2026-09-17"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-17-102343-slice-4-ships-geometry-engine-live-gap-threshold-next.md`.**
+
 
 # Page kind works end to end, and region-routes Task 5 is finally unblocked
 
