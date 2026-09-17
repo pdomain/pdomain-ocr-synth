@@ -78,8 +78,8 @@ has a `region_id`, so a carried proposal disappears by the rule that already hid
 
 **Deleting a region must reject every proposal that decided it, not only the first.** Today
 `delete_region` records a rejection for the one proposal stored on the region block as
-`source_proposal_id`, so a deleted region's proposal comes back as reviewable work rather than
-vanishing silently. Once carries exist, several proposals' latest decisions can name that region.
+`source_proposal_id`, so a deleted region's proposal stays hidden as refused work rather than
+returning to the review list. Once carries exist, several proposals' latest decisions can name that region.
 Delete must record a rejection for every proposal whose latest decision names the deleted
 `region_id`. Otherwise each carried proposal stays hidden forever behind a decision pointing at a
 region that no longer exists.
@@ -133,7 +133,7 @@ Otherwise `]` can land on a page that shows nothing to review.
   order a person works through a book.
 - `order=confidence`: lowest confidence first, then reading order. This is the roadmap's ranking of
   work "so a person reviews what the model was unsure about", and what an agent triaging a book wants.
-  A proposal with no confidence sorts first, because a missing score is the least certain of all.
+  Every proposal has a confidence: `RegionProposal` requires a value between 0 and 1.
 
 `order` affects only `items`. `pages` is always in page order.
 
