@@ -6,10 +6,11 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-06
-- **Last verified:** 2026-09-06
+- **Last verified:** 2026-09-17
 - **Provenance:** authored from repository evidence in `pdomain-ocr-synth`,
   `pdomain-ocr-labeler-spa`, `pdomain-book-contracts`, and `pdomain-book-tools`, read during
-  the 2026-09-06 session, plus owner direction in that session
+  the 2026-09-06 session, plus owner direction in that session; the x-height spread figure
+  recomputed 2026-09-17 and corrected here
 - **Disposition:** Agreed in principle on 2026-09-06. Step two is planned. The package name is
   decided; five decisions remain open.
 - **Read when:** deciding where measurement, labeling, or synthesis code belongs; planning the
@@ -172,17 +173,17 @@ The structural rules follow from those fields:
 | heading | `page_class` of `chapter_opening`, with elevated x-height spread |
 
 Two page signals are recorded today and consumed by nothing: each page's `page_class` and its
-lines' x-height median and spread. Spread over roughly 8 px marks a mixed-size page, and the
-figure recorded against it is 43 to 67 percent across the five books. This design is their first
-consumer.
+lines' x-height median and spread. Spread over roughly 8 px marks a mixed-size page. This design is
+their first consumer.
 
-**That percentage needs checking before anyone builds on it.** The source sentence, in the
-2026-09-06 handoff and the commit `370288b` that introduced it, can be read two ways: either 43 to
-67 percent of high-spread pages are chapter openings, which would make it a precision figure, or
-43 to 67 percent of chapter openings show high spread, which would make it a recall figure. The
-two say different things about how usable the signal is. No evidence file in
-`/workspaces/pdomain/.m15f-evidence/` records the calculation, so it has to be recomputed rather
-than resolved by reading.
+**The 43-to-67-percent figure once recorded against that spread is wrong, and the heading rule in
+the table above must not depend on it.** It was a precision claim, and recomputing it over the five
+books gives 45 percent pooled and 0 to 85 percent per book, with only two of the five inside the
+recorded range. Recall pools to 50 percent. In one of the five books the chapter openings show no elevated
+spread at all. The base rate the figure was quoted against does hold, so spread is real evidence for
+a chapter opening, but it cannot be a test of one. See
+[x-height spread does not find chapter openings](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md),
+which carries the method and the reproducible evidence the original figure never had.
 
 ## The model proposes semantics, never ground truth
 

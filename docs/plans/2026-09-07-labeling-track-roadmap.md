@@ -6,11 +6,12 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-09-07
+- **Last verified:** 2026-09-17
 - **Provenance:** authored 2026-09-07 from direct inspection of `pdomain-ocr-labeler-spa`,
   `pdomain-book-contracts`, `pdomain-book-tools`, `pdomain-ocr-training`, and
   `pdomain-pgdp-measure`, plus owner direction in that session. Three premises of the
-  2026-09-06 split design were falsified against the code and are corrected here.
+  2026-09-06 split design were falsified against the code and are corrected here. Slice 4's
+  x-height spread figure recomputed 2026-09-17 and corrected here.
 - **Disposition:** Active. Slice 1 and slice 2 are being designed. Slices 3 to 7 are recorded
   here so they are not lost, and each needs its own design before it is built.
 - **Read when:** planning region labeling, the labeler's agent-facing API, the confidence review
@@ -187,10 +188,11 @@ consumed by nothing:
 are the `value` and `median_absolute_deviation` of that page's `x_height_px` estimate. Both are on
 disk today in `/workspaces/pdomain/.extraction-baseline/projectID*/typography.json`.
 
-**One recorded figure must be recomputed before anything is built on it.** The claim that 43 to 67
-percent of pages show high x-height spread can be read as a precision figure or a recall figure,
-and the two say different things about whether the signal is usable. No evidence file records the
-calculation.
+**The heading row above is measured and it does not work as a gate.** The 43-to-67-percent claim
+once recorded against x-height spread was a precision figure, and recomputing it gives 45 percent
+pooled and 0 to 85 percent per book, at 50 percent recall. Use spread to raise confidence in a
+heading proposal, never to decide one. See
+[x-height spread does not find chapter openings](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md).
 
 This is where confidence values actually come from.
 
