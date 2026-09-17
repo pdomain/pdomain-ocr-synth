@@ -878,10 +878,24 @@ only task that knows what a running head looks like.
 - A cluster whose text is entirely digits, roman numerals, or both proposes `PAGE_NUMBER`.
 - Every other cluster proposes `PAGE_HEADER`. A running head is the more common of the two and a
   reviewer corrects a wrong one in a single click.
-- Confidence starts at the page's `classification.confidence`, or `0.5` when the classifier
-  recorded none, and is multiplied by `0.8` when the page produced a single cluster that is not a
-  folio. A page with one wide cluster could be a running head, or it could be the top line of body
-  text on a page whose head band was misplaced.
+- **Confidence comes from the cluster's shape, never from the page's classification confidence.**
+  A numeric cluster scores `0.8`. A non-numeric cluster sharing its band with another scores `0.6`.
+  A lone non-numeric cluster scores `0.4`, because it could be a running head or the top line of
+  body text under a band the classifier misplaced.
+- `page_class_confidence` and `template_residual_px` go in the evidence dict, not in the score.
+
+**Why not the page's classification confidence, which this plan first used.** Measured over the
+1,089 pages carrying a furniture band across the five corpus books, the template residual is 8 px or
+more on 288 of them, and `max(0.0, 1.0 - residual_px / max(first_band_spread_px, 8))` scores those
+exactly 0.0. That is 26 percent pooled, 73 percent in one book and 67 percent in another. The score
+answers how well a page fits its book's template, which is a page-class question, not whether a band
+is a running head. Inheriting it would bury a quarter of all furniture proposals in slice 5's
+confidence-ranked queue. Evidence:
+`/workspaces/pdomain/.m15f-evidence/page_class_confidence_on_furniture.py`.
+
+**The three constants are uncalibrated and the code must say so.** No region ground truth exists
+anywhere in the suite, so there is nothing to calibrate against. They encode an ordering the
+geometry justifies, and slice 5's first review pass is what sets them.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1034,6 +1048,8 @@ def test_a_running_head_and_a_folio_become_two_regions() -> None:
     assert head.box == (100, 105, 320, 125)
     assert folio.role is RegionRole.PAGE_NUMBER
     assert folio.box == (870, 105, 900, 125)
+    assert head.confidence == 0.6
+    assert folio.confidence == 0.8
 
 
 def test_a_roman_numeral_folio_is_a_page_number() -> None:
@@ -1067,30 +1083,43 @@ def test_words_below_the_furniture_band_are_not_furniture() -> None:
     assert detected[0].box == (100, 105, 170, 125)
 
 
-def test_a_lone_wide_cluster_is_a_header_at_reduced_confidence() -> None:
+def test_a_lone_wide_cluster_is_a_header_at_the_lowest_confidence() -> None:
+    """It could be a running head, or body text under a misplaced band."""
     from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
 
     words = [_word("THE", 100, 105, 170, 125), _word("VOYAGE", 180, 105, 320, 125)]
     detected = furniture_region_detector(_input(words, confidence=0.9))
     assert len(detected) == 1
     assert detected[0].role is RegionRole.PAGE_HEADER
-    assert detected[0].confidence == 0.9 * 0.8
+    assert detected[0].confidence == 0.4
 
 
-def test_a_lone_folio_keeps_full_confidence() -> None:
+def test_a_lone_folio_scores_highest() -> None:
     from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
 
     detected = furniture_region_detector(_input([_word("17", 870, 105, 900, 125)], confidence=0.9))
     assert len(detected) == 1
     assert detected[0].role is RegionRole.PAGE_NUMBER
-    assert detected[0].confidence == 0.9
+    assert detected[0].confidence == 0.8
 
 
-def test_a_classification_with_no_confidence_falls_back_to_one_half() -> None:
+def test_the_page_classification_confidence_never_moves_the_score() -> None:
+    """It is a page-class signal, recorded as evidence and nothing more.
+
+    Measured, it is exactly 0.0 on 26 percent of furniture pages, so letting it
+    into the score would bury a quarter of every run's proposals.
+    """
     from pdomain_ocr_labeler_spa.core.regions.furniture import furniture_region_detector
 
-    detected = furniture_region_detector(_input([_word("17", 870, 105, 900, 125)], confidence=None))
-    assert detected[0].confidence == 0.5
+    folio = [_word("17", 870, 105, 900, 125)]
+    scored = furniture_region_detector(_input(folio, confidence=0.9))[0]
+    zeroed = furniture_region_detector(_input(folio, confidence=0.0))[0]
+    absent = furniture_region_detector(_input(folio, confidence=None))[0]
+
+    assert scored.confidence == zeroed.confidence == absent.confidence == 0.8
+    assert scored.evidence["page_class_confidence"] == 0.9
+    assert zeroed.evidence["page_class_confidence"] == 0.0
+    assert absent.evidence["page_class_confidence"] is None
 
 
 def test_an_ordinal_past_the_end_of_the_bands_proposes_nothing() -> None:
@@ -1109,6 +1138,8 @@ def test_the_evidence_names_the_band_and_the_cluster_width() -> None:
     assert detected[0].evidence["band_ordinals"] == [0]
     assert detected[0].evidence["cluster_width_px"] == 70
     assert detected[0].evidence["text_width_px"] == 800
+    assert detected[0].evidence["page_class_confidence"] == 0.9
+    assert detected[0].evidence["template_residual_px"] == 2
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1186,11 +1217,24 @@ This is a starting value and the first review pass over real proposals should
 check it.
 """
 
-_LONE_HEADER_CONFIDENCE_FACTOR = 0.8
-"""A single wide cluster could be a head, or body text under a misplaced band."""
+# The three scores below are UNCALIBRATED. No region ground truth exists anywhere
+# in the suite, so there is nothing to calibrate them against. They encode an
+# ordering the geometry justifies, and slice 5's first review pass is what sets
+# them. They are deliberately not derived from the page's classification
+# confidence: measured over the five corpus books, that score is exactly 0.0 on
+# 26 percent of pages carrying a furniture band, and on 73 and 67 percent in two
+# of them, because it answers how well a page fits its book's template rather
+# than whether a band is a running head.
+_FOLIO_CONFIDENCE = 0.8
+"""A numeric cluster isolated in a furniture band. Two signals agree."""
 
-_NO_CLASSIFIER_CONFIDENCE = 0.5
-"""Used when the classifier recorded no confidence for the page."""
+_HEADER_CONFIDENCE = 0.6
+"""A wide cluster sharing a furniture band. The band is furniture, and this is
+the part of it that is not the folio."""
+
+_LONE_HEADER_CONFIDENCE = 0.4
+"""The only cluster in the band, and not numeric. Could be a running head, or
+the top line of body text under a band the classifier misplaced."""
 
 _FOLIO_PATTERN = re.compile(r"^[0-9ivxlcdmIVXLCDM]+$")
 """Digits, roman numerals, or both. Anything else reads as a running head."""
@@ -1302,22 +1346,22 @@ def furniture_region_detector(detector_input: DetectorInput) -> list[DetectedReg
         return []
 
     clusters = _cluster(in_band, text_width * FOLIO_GAP_SHARE_OF_TEXT_WIDTH)
-    base = detector_input.classification.confidence
-    if base is None:
-        base = _NO_CLASSIFIER_CONFIDENCE
 
     detected: list[DetectedRegion] = []
     for cluster in clusters:
         left, cluster_top, right, cluster_bottom = cluster.box
         is_folio = cluster.is_folio
-        confidence = base
-        if len(clusters) == 1 and not is_folio:
-            confidence = base * _LONE_HEADER_CONFIDENCE_FACTOR
+        if is_folio:
+            confidence = _FOLIO_CONFIDENCE
+        elif len(clusters) == 1:
+            confidence = _LONE_HEADER_CONFIDENCE
+        else:
+            confidence = _HEADER_CONFIDENCE
         detected.append(
             DetectedRegion(
                 role=RegionRole.PAGE_NUMBER if is_folio else RegionRole.PAGE_HEADER,
                 box=(left, cluster_top, right, cluster_bottom),
-                confidence=round(min(1.0, max(0.0, confidence)), 6),
+                confidence=confidence,
                 evidence={
                     "band_ordinals": list(ordinals),
                     "band_y_range": [top, bottom],
@@ -1326,6 +1370,10 @@ def furniture_region_detector(detector_input: DetectorInput) -> list[DetectedReg
                     "text_width_px": text_width,
                     "gap_threshold_px": round(text_width * FOLIO_GAP_SHARE_OF_TEXT_WIDTH, 2),
                     "page_class": detector_input.classification.page_class,
+                    # Recorded, never scored. See the note on the three
+                    # confidence constants above.
+                    "page_class_confidence": detector_input.classification.confidence,
+                    "template_residual_px": detector_input.classification.template_residual_px,
                 },
             )
         )
@@ -1587,7 +1635,9 @@ its own detector because the fixture's page has no real furniture to find.
 
 - [ ] **Step 3: Wire the detector in `bootstrap.py`**
 
-Find where `runner.context` is populated with `project_state` and `notification_queue`, and add:
+The `runner.context` keys are populated in one block at `bootstrap.py:483` onward, starting with
+`runner.context["project_state"]` and ending with `runner.context["settings"]`. Add the new key to
+that block:
 
 ```python
     # The region proposal engine. Slice 4's furniture detector is the default

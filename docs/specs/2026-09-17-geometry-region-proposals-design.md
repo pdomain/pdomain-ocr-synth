@@ -17,7 +17,8 @@ Kind: spec
 - **Last verified:** 2026-09-17
 - **Provenance:** measured 2026-09-17 by
   `/workspaces/pdomain/.m15f-evidence/furniture_band_coverage.py`, whose output is
-  `/workspaces/pdomain/.m15f-evidence/furniture-band-coverage.json`; and authored from direct
+  `/workspaces/pdomain/.m15f-evidence/furniture-band-coverage.json`, and by
+  `page_class_confidence_on_furniture.py` beside it; and authored from direct
   inspection of `pdomain-pgdp-measure`
   `page_templates.py`, `profile_models.py`, `profiling.py`; `pdomain-ocr-labeler-spa`
   `core/jobs/handlers/propose_page_kinds.py`, `core/jobs/handlers/propose_regions.py`,
@@ -119,26 +120,56 @@ is the more common of the two, and a reviewer can correct it in one click.
 This is the same rule the band analysis already applies vertically, applied horizontally, and it
 needs no new measurement.
 
-## Confidence comes from the fit, not from a constant
+## Confidence comes from the cluster's shape, and the page fit goes in the evidence
 
-`_confidence_from_residual` already turns a template residual into a 0-to-1 score by inverting it
-and scaling it against the template's own fitted spread. A furniture proposal should inherit that
-page's classification `confidence`, then adjust it by how well the band itself fits the book. A
-head band sitting where the book's head band usually sits is worth more than one that sits 40 px
-low.
+**A furniture proposal must not inherit its page's classification confidence.** This design first
+said it should, and measurement says that is wrong.
 
-Two rules follow from what has been measured.
+`_confidence_from_residual` in `pdomain-pgdp-measure` scores a page as
+`max(0.0, 1.0 - residual_px / max(first_band_spread_px, 8))`. Over the 1,089 pages carrying a
+furniture band across the five corpus books, the template residual is 8 px or more on 288 of them,
+which scores exactly 0.0 at any fitted spread of 8 or less. That is 26 percent of furniture pages
+pooled. Per book it is 73 percent in `projectID603d7d5e04ca0` and 67 percent in
+`projectID67a80fde44d34`, against 0 to 1 percent in the other three.
+
+The error is one of kind, not calibration. `classification.confidence` answers how well a page fits
+its book's fitted template, which is a page-class question. It does not answer whether a band is a
+running head. A page whose head band sits 40 px below the book's median still has a head band; the
+head is just lower. Inheriting that score would hand a quarter of all furniture proposals a
+confidence of exactly zero, and two thirds of them in two books, so slice 5's confidence-ranked
+queue would bury the proposals a person most needs to see.
+
+**Score from the cluster's own shape instead.** Three cases, in descending order of how much the
+geometry says:
+
+- **A numeric cluster isolated in a furniture band scores highest.** Two signals agree: the
+  classifier called the band furniture, and the cluster reads as a folio.
+- **A wide cluster sharing a band with something else scores next.** The band is furniture and this
+  is the part of it that is not the folio.
+- **A lone non-numeric cluster scores lowest.** It could be a running head, or the top line of body
+  text under a band the classifier misplaced.
+
+**Those three numbers are uncalibrated, and the design should say so rather than imply otherwise.**
+No region ground truth exists anywhere in the suite, so there is nothing to calibrate against. The
+first review pass in slice 5 is what sets them, and until then they encode an ordering the geometry
+justifies rather than a measured accuracy.
+
+**Carry the page fit in the evidence.** `page_class_confidence` and `template_residual_px` belong in
+every proposal's evidence dict. A reviewer and slice 5 both need to see how well the page fits its
+book, without that fit being allowed to zero out a good proposal.
+
+Two further rules follow from what has been measured.
 
 - **Never gate a proposal on x-height spread.** The recorded figure claiming 43 to 67 percent of
   high-spread pages are chapter openings is wrong. Recomputed, precision is 45 percent pooled and
-  0 to 85 percent per book, at 50 percent recall. In one of five books, the chapter openings show
+  0 to 85 percent per book, at 50 percent recall, and in one of five books the chapter openings show
   no elevated spread at all. Spread may raise a heading proposal's confidence and must never decide
   one. See
   [x-height spread does not find chapter openings](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md).
 - **A page the classifier declined to classify gets no furniture proposals.** When
   `fit_book_templates` finds a book whose first band wanders, it returns no templates at all rather
   than widening the window until everything classifies. A detector must honour that refusal.
-  `furniture_band_ordinals` is empty for an unclassified page and for a chapter opening. Empty
+  `furniture_band_ordinals` is empty for an unclassified page and for a chapter opening, and empty
   means propose nothing, never "guess from the top band".
 
 ## The detector seam has to widen, and it should widen to a fitted book
