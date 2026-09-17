@@ -1,5 +1,5 @@
 ---
-Status: active
+Status: implemented
 Owner: CT
 Created: 2026-09-17
 Last verified: 2026-09-17
@@ -7,16 +7,16 @@ Kind: issue
 Level: I2
 ---
 
-# The furniture gap threshold is a fixed share of text width, and no fixed share works
+# The furniture gap threshold is now fitted per book, because no fixed share worked
 
 ## Agent Index
 
 - **Kind:** issue
-- **Status:** active
+- **Status:** implemented
 - **Level:** I2
 - **Last verified:** 2026-09-17
-- **Resolution:** Open. The shipped constant works well enough to produce proposals a person can
-  review; replacing it is the first thing the review pass should act on.
+- **Resolution:** Fixed 2026-09-17 in `pdomain-ocr-labeler-spa` `6ed5156`. The threshold is fitted
+  per book. One caveat remains, below.
 - **Severity:** Low now, rising with volume — it costs some wrongly split or wrongly joined
   furniture regions per book, and a reviewer can fix each in one click
 - **Affected version:** `pdomain-ocr-labeler-spa` at the merge of `feature/geometry-proposals`
@@ -24,6 +24,40 @@ Level: I2
   geometry detector that needs a per-book threshold
 - **Search terms:** FOLIO_GAP_SHARE_OF_TEXT_WIDTH, furniture gap, running head, folio, Otsu,
   per-book threshold, slice 4.
+
+## What shipped
+
+**The threshold is fitted to each book's own gaps, and fed the real gaps from the same six books it
+lands strictly inside every valley.** Merged 2026-09-17 in `pdomain-ocr-labeler-spa` `6ed5156`, with
+the suite green at 1692 passed and 4 skipped.
+
+| book | fitted threshold | valley |
+|---|---:|---|
+| `projectID657550412c8dc` | 91.0 px | 64 to 118 px |
+| `projectID609bfa0449bdf` | 129.0 px | 104 to 154 px |
+| `projectID64a479f51ce5b` | 156.5 px | 136 to 177 px |
+| `projectID3f1a5d4e86d06` | 158.5 px | 121 to 196 px |
+| `projectID3fc3d7d03c613` | 137.0 px | 135 to 139 px |
+| `projectID408c1dd9b9318` | 132.5 px | 130 to 135 px |
+
+All six chose the fitted threshold; none fell back to the fixed share.
+
+**It fits on OCR word boxes, not on image ink, and that corrects this issue's own first
+recommendation.** The section below says the fit belongs in `measure_book`. It does not: that pass
+discards each image after measuring it, so fitting there would decode every page a second time. The
+detector already holds every page's word boxes, which are exactly what it splits. `FurnitureDetector`
+pools every in-band word gap across the book, Otsu-splits them, and places the threshold at the
+midpoint of the valley. It falls back to the fixed share when the book has fewer than 8 gaps, an Otsu
+class has fewer than 2 members, or the fit lands outside 2 to 40 percent of the text width. Every
+proposal's evidence records `gap_threshold_source` as `book_fit` or `fixed_share`.
+
+**A detector opts into the whole-book step by subclassing `BookFittedDetector`.** It started as a
+structural protocol, and review caught that `isinstance` would then match anything with a method
+named `fit`, including a scikit-learn-style model.
+
+**One caveat remains.** Two books have valleys only 4 and 5 px wide, `projectID3fc3d7d03c613` and
+`projectID408c1dd9b9318`. The fit is correct on their ink gaps, but the margin is thin, and word-box
+gaps differ slightly from ink gaps. Recheck those two once a book has been through OCR in the labeler.
 
 ## The finding
 
