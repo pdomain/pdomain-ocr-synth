@@ -292,6 +292,38 @@ One thing the survey settled: a model-proposed role needs no new provenance. `Re
 `ProposalRun` already carry `model_id`, `model_version` and an open `evidence` dict, so a model is
 a new run scored against the geometry it replaces, exactly as the provenance design intended.
 
+**The premise was measured the same day, and it does not hold.**
+[Ragged right finds poetry; blockquote has no geometric signature](../research/2026-09-18-ragged-right-finds-poetry-blockquote-has-no-geometric-signature.md),
+over the same five aligned books as the furniture note. Three findings change this slice:
+
+- **Poetry separates, but on the wrong signal.** Right-edge raggedness reaches 87.5 percent
+  precision and 93.3 percent recall, stable across a sevenfold range of thresholds. The indent this
+  roadmap named is a smear, because verse lines fall short of the measure and so look indented on
+  both sides. That is exactly why the two rules as written collide on 834 blocks, 14.9 percent,
+  until raggedness is added as the tiebreaker.
+- **A one-line text rule beats every geometric signal.** Whether each line starts with a capital
+  reaches 95.4 percent precision and 96.3 percent recall. No model of any kind is needed to find
+  poetry.
+- **Blockquote is the honest unknown.** The best rule found reaches 2.3 percent precision. But the
+  ground truth is 44 spans across the whole corpus and heterogeneous, covering letters, stage
+  directions, a chapter summary and a dateline, many with no indent at all. That is the corpus
+  failing to answer, not a measured no.
+
+So **slice 6 loses its standard example.** Poetry belongs in the geometry track beside the
+furniture rules, as raggedness plus line-initial capitals. Whatever justifies a model has to be
+argued from a case that survives measurement, and nobody has named one yet.
+
+Read the caveat in the note before quoting its numbers. The pooled figures are carried almost
+entirely by one book that is a poetry anthology. The other four books, the ordinary book with an
+occasional stanza that this slice is actually about, hold 22 confirmed poetry blocks between them,
+and per-book precision on that handful swings from 12.5 to 88.9 percent.
+
+**The survey's "no ground truth exists" finding was wrong, and this is the more useful discovery.**
+The PGDP F2 formatting round's own `/* poetry */` and `/# blockquote #/` markup is region role
+ground truth, already sitting in the corpus, and it lined up with measured ink bands on 801 of
+1,193 usable pages. Every future role claim can be measured against it instead of waiting for
+someone to label pages by hand.
+
 ### Slice 7 — Build our own trainer, and train our own layout models
 
 On the corpus slices 2 through 5 produce.
