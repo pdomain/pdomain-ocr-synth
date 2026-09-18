@@ -52,7 +52,7 @@ Measured on 80 pages and 18,463 words of `projectID3fc3d7d03c613`.
 | region proposals | two JSONL journals, read once each | 0.41 ms, 1.46 ms on a larger run |
 | page kinds | two JSONL journals, read once each | 0.74 ms |
 | words | the string `validated` inside each page's content blob | 42 to 46 ms a page to parse, about 14 s for 300 pages |
-| typography | a journal for the numerator, the page for the denominator | numerator projected cheap, not measured; denominator as above |
+| typography | a journal for the numerator, the page for the denominator | measured: about 80 µs a row — 15 ms at 1% of a book's words corrected, 1.5 s at 100%; denominator as above |
 | glyphs | nothing produces predictions | no work exists to count |
 
 **Regions and page kinds are already cheap**, because a person's decision about
@@ -64,10 +64,34 @@ field lives only inside the page's content blob. Counting a book means parsing
 every page. That is the same shape the project list rejected on 2026-09-18 at
 206 ms against 22 ms, and this is worse.
 
-**Typography's numerator is projected, not measured.** The one book measured
-has no typography correction history, so its journal is effectively empty. The
-numerator should stay labeled as an expectation, not a fact, until a book with
-real correction history is measured.
+**Typography's numerator is measured, and it is not cheap once a book has
+real correction history.** The one book measured has no typography correction
+history, so its journal was effectively empty and said nothing about cost at
+scale. A fixture built afterwards, at the same 18,463-word scale, with real
+correction rows at several coverage levels, timed
+`TypographyCorrectionLog.records()` plus the reviewed-word filter together:
+
+| corrections | rows | file size | time |
+|---|---|---|---|
+| 1% of words | 184 | 421 KB | 15 ms |
+| 5% of words | 923 | 2.1 MB | 68 ms |
+| 10% of words | 1,846 | 4.2 MB | 143 ms |
+| 25% of words | 4,615 | 10.6 MB | 355 ms |
+| 100% of words | 18,463 | 42.3 MB | 1,521 ms |
+
+The cost is in parsing every row of the corrections journal: about 80
+microseconds a row, almost entirely pydantic's validation of each row's
+nested `WordTypography` replacement rather than the file read itself (raw
+JSON parsing alone was 36 ms of the 143 ms at 10% coverage; pydantic
+construction accounted for the rest). This is why the labeler's review-queue
+route reports the typography kind `available: false` with a reason above a
+512 KiB journal size (about 224 rows) — the size a single `stat()` call, not
+a read, can rule out in advance — rather than compute a count that can cost
+over a second. Below that size the read stays in the low tens of
+milliseconds (about 16 ms at 512 KiB itself). The real fix is a per-page
+typography rollup written where a correction is accepted, the same shape as
+the word-review-counts journal; see `pdomain-ocr-labeler-spa`'s
+`docs/issues/2026-09-18-typography-numerator-needs-a-per-page-rollup.md`.
 
 **Glyphs have nothing to count.** `IGlyphPredictor.predict` is never called,
 only `NoneGlyphPredictor` exists, and 0 of the 18,463 real words examined carry
