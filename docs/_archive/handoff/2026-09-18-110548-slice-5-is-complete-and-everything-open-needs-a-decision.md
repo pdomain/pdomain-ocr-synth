@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-18"
+kind: archive
+status: retired
 created_at: "2026-09-18T11:05:49Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "10af84e034c5d1d4effc529d168e5cad133e7106"
 supersedes: "2026-09-18-071345-the-labeler-backlog-is-down-to-decisions.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-18"
+last_verified: "2026-09-18"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-18-171724-the-labeler-shipped-v030-and-slice-6-lost-its-premise.md`.**
+
 
 # Slice 5 is complete, and everything still open needs a decision
 
