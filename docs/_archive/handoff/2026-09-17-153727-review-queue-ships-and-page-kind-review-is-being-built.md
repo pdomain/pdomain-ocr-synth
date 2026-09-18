@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-17"
+kind: archive
+status: retired
 created_at: "2026-09-17T15:37:32Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "63b6589ef42fcd3a4576e7101691c5bac522fe56"
 supersedes: "2026-09-17-122456-slice-3-ships-and-the-region-pipeline-works-on-a-real-book.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-17"
+last_verified: "2026-09-18"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-18-011928-slice-5-complete-and-ten-product-honesty-bugs-closed.md`.**
+
 
 # The book review queue shipped, and page-kind review is being built
 
