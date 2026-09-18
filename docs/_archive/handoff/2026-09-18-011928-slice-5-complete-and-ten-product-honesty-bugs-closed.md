@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-18"
+kind: archive
+status: retired
 created_at: "2026-09-18T01:19:30Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "252d8930d30238ca6ef988367379d7cd54ce60b8"
 supersedes: "2026-09-17-153727-review-queue-ships-and-page-kind-review-is-being-built.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-18"
+last_verified: "2026-09-18"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-18-071345-the-labeler-backlog-is-down-to-decisions.md`.**
+
 
 # Slice 5 is done, and ten surfaces that lied now tell the truth
 
