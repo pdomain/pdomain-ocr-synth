@@ -241,6 +241,12 @@ with the detector's evidence, and clicking one jumps to it. Still owed in this s
 glyphs in the queue, and one answer to "what is next" that spans every kind of work rather than
 regions alone.
 
+**The last owed increment is designed**, 2026-09-18:
+[one answer to what to review next](../specs/2026-09-18-one-answer-to-what-to-review-next.md).
+One route answers for every kind of work in the order the work has to happen, and one per-page
+count journal makes words and typography countable at all: today counting a 300-page book's word
+validation means parsing every page, about 14 seconds.
+
 **Bottom-of-page furniture was measured and ruled out** on 2026-09-17:
 [bottom furniture is too rare, and sits too close to the text](../research/2026-09-17-bottom-of-page-furniture-is-too-rare-and-too-close-to-the-text.md).
 Marks appear on 6.6 percent of pages against 78.6 percent for top furniture, and they sit at
