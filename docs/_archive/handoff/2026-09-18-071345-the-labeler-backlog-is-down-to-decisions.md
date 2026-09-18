@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-18"
+kind: archive
+status: retired
 created_at: "2026-09-18T07:13:46Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "5584165a7e100e4b3c893a6e1ced9c64886c9287"
 supersedes: "2026-09-18-011928-slice-5-complete-and-ten-product-honesty-bugs-closed.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-18"
+last_verified: "2026-09-18"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-18-110548-slice-5-is-complete-and-everything-open-needs-a-decision.md`.**
+
 
 # What is left in the labeler needs a decision, not more code
 
