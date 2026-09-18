@@ -1,5 +1,5 @@
 ---
-Status: draft
+Status: implemented
 Owner: CT
 Created: 2026-09-18
 Last verified: 2026-09-18
@@ -11,7 +11,7 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-18
 - **Last verified:** 2026-09-18
@@ -23,7 +23,8 @@ Kind: spec
   `core/page_state.py` (`save_page_content_to_store`),
   `core/glyph/predictions.py`, `core/jobs/handlers/export.py` and
   `core/jobs/handlers/propose_regions.py`
-- **Disposition:** Draft. The last owed increment of slice 5 of the labeling
+- **Disposition:** Implemented 2026-09-18 in `pdomain-ocr-labeler-spa` merges
+  `f175297` and `0451f98`. The last owed increment of slice 5 of the labeling
   track, after the [book review queue](2026-09-17-book-review-queue-design.md)
   and [page-kind review](2026-09-17-page-kind-review-design.md).
 - **Read when:** adding a kind of review work to the queue, counting outstanding

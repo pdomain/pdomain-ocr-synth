@@ -241,7 +241,14 @@ with the detector's evidence, and clicking one jumps to it. Still owed in this s
 glyphs in the queue, and one answer to "what is next" that spans every kind of work rather than
 regions alone.
 
-**The last owed increment is designed**, 2026-09-18:
+**Slice 5 is complete**, 2026-09-18, with `pdomain-ocr-labeler-spa` merges `f175297`
+and `0451f98`. One route answers for every kind of review work, and the SPA follows it.
+Two kinds report honestly rather than counting: glyphs have no predictor, and a
+typography journal past 512 KiB costs too much to read per request. The labeler's own
+issue `2026-09-18-typography-numerator-needs-a-per-page-rollup.md` tracks the fix.
+What remains in the track is slice 6, model-proposed semantics, and slice 7.
+
+**The last owed increment was designed** on 2026-09-18:
 [one answer to what to review next](../specs/2026-09-18-one-answer-to-what-to-review-next.md).
 One route answers for every kind of work in the order the work has to happen, and one per-page
 count journal makes words and typography countable at all: today counting a 300-page book's word
