@@ -93,5 +93,6 @@ venv directories the way `pdomain-book-tools` always did.
 
 ## Pointers
 
-- [previous handoff](2026-08-31-183553-m15b-gates-pass-and-merged.md)
+- previous handoff: `2026-08-31-183553-m15b-gates-pass-and-merged.md`, pruned
+  from the archive on 2026-09-18 by the keep-20 policy; it survives in Git history
 - Book-contracts extraction plan: `../pdomain-ops/docs/plans/2026-09-01-extract-book-contracts-and-retire-pd-repos.md`
