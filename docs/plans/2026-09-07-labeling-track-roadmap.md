@@ -269,6 +269,29 @@ dependency." That ruling stands.
 
 No LLM or VLM code exists anywhere in the workspace today. This is the first.
 
+**Slice 6 is not designed, and should not be until its premise is tested (2026-09-18).** The slice
+rests on the claim that geometry cannot separate poetry from blockquote. Nobody has ever measured
+that. A survey on 2026-09-18 found no per-role accuracy measurement anywhere in the workspace, and
+no human correction data to mine: `region-decisions.jsonl` does not exist on this machine at all,
+so not one proposal has ever been reviewed. The only region proposals that exist are page headers
+and page numbers from the evidence-run null detector.
+
+The comparable claim that *was* tested failed. X-height spread was expected to find chapter
+openings and reached 45 percent precision, recorded in
+[the x-height note](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md). A
+design built on an untested "geometry cannot do this" is the same bet.
+
+So the next step in this slice is measurement, not design: run the indent, ragged-right and leading
+signals this roadmap already tables over the aligned corpus and find out whether the two roles form
+separable populations, how often either appears at all, and how many blocks match both. Two
+outcomes change the slice. If they separate, slice 6 loses its standard example and needs a
+different one. If the OCR text alone settles it, and verse lines that do not fill the measure
+suggest it might, then a language model reading text may be enough and no vision model is needed.
+
+One thing the survey settled: a model-proposed role needs no new provenance. `RegionProposal` and
+`ProposalRun` already carry `model_id`, `model_version` and an open `evidence` dict, so a model is
+a new run scored against the geometry it replaces, exactly as the provenance design intended.
+
 ### Slice 7 — Build our own trainer, and train our own layout models
 
 On the corpus slices 2 through 5 produce.
