@@ -217,6 +217,48 @@ selected kind.
 A kind blocked by another says what it is waiting for, rather than showing zero
 and looking finished.
 
+## A project loaded from a labeling bundle counts differently
+
+Everything above assumes an ordinary project, where a person's edits reach
+`save_page_content_to_store`. A project loaded from a labeling bundle never
+calls it: text validation is a CAS append to `ImportedTextValidationLog`
+instead, keyed by the bundle's own word ids, and typography corrections for
+such a project are keyed by the bundle's own `page_id`
+(`api/typography.py`'s `_logical_page_id`), not `stable_page_id`. Both facts
+apply to two different project shapes, which the route answers differently.
+
+**A single-page bundle project counts from the real thing.** Loading a
+`labeling-bundle.json` project keeps its one bundle resident for the whole
+session — it is read once at load time, not per request — so its word list
+costs nothing extra to read, and `ImportedTextValidationLog`'s own read is a
+plain-dict JSONL, the same shape as the region and page-kind journals, not
+the nested-model shape that makes the typography-corrections journal
+expensive. Measured at the scale a book's page-kind journal was measured at
+(184 rows, matching 1% of the reference book's per-page word count): 1.3 ms.
+At 1,846 rows: 14 ms. Both hold the "journal-cheap" bar this design set for
+region and page-kind work. So for this shape, `word` counts from the bundle's
+word list and the validation journal's latest decision per word id, and
+`typography` counts against the bundle's `page_id` instead of
+`stable_page_id`.
+
+**A multi-page labeling-bundle book cannot answer `word`, so it cannot
+answer `typography` either.** This shape — a `book-labeling-manifest.json`
+project, a "book labeling session" — holds one page's bundle resident at a
+time, materializing each on demand as a person opens it. Its manifest gives
+every page's identity (`page_index` to `page_id`) without any I/O, but never
+a page's word count; only that page's own materialized bundle carries one,
+and materializing it is exactly the per-page I/O this route does not do. So
+`word` reports `available: false`, with a reason naming the cause, and
+`typography` — which cannot say whether words are done without knowing
+`word`'s answer — reports unavailable too, rather than silently reporting
+zero outstanding of zero total for a book whose review work has not started.
+
+**Page kind, region, and glyph are unaffected.** Neither project shape has a
+page-kind or region review workflow to begin with, so those two kinds
+correctly read empty journals and report zero of zero — a true zero, not a
+missing answer. Glyphs are unaffected for the same reason they are
+unaffected everywhere else in this design.
+
 ## What this does not build
 
 - **Per-kind item lists for words and typography.** The route answers counts and
