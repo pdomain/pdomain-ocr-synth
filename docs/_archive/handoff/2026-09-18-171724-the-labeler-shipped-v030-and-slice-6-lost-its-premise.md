@@ -1,17 +1,21 @@
 ---
-kind: handoff
-status: "active"
-created: "2026-09-18"
+kind: archive
+status: retired
 created_at: "2026-09-18T17:17:24Z"
-owner: CT
-branch: master
-scope: pgdp-synthesis
-worktree: /workspaces/pdomain/pdomain-ocr-synth
+owner: "CT"
+branch: "master"
+scope: "pgdp-synthesis"
+worktree: "/workspaces/pdomain/pdomain-ocr-synth"
 base_commit: "e718ef8e704fb9a9cf03eed023da7f379fca9be4"
 supersedes: "2026-09-18-110548-slice-5-is-complete-and-everything-open-needs-a-decision.md"
-handoff_reason: material_resume_change
-host: claude-code
+handoff_reason: "material_resume_change"
+host: "claude-code"
+created: "2026-09-18"
+last_verified: "2026-09-19"
 ---
+
+> **Retired — superseded by `docs/handoff/2026-09-19-005040-five-releases-and-the-labeler-backlog-is-empty.md`.**
+
 
 # The labeler shipped v0.3.0, and slice 6 lost its premise
 
