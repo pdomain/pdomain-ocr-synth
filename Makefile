@@ -161,11 +161,9 @@ pre-commit-check: ## Run pre-commit on all files
 	@echo "🪝 Running pre-commit on all files..."
 	uv run pre-commit run --all-files
 
-update-hooks: ## Bump pinned pre-commit hook revisions in .pre-commit-config.yaml
+update-hooks: ## Bump hooks to their latest releases, frozen to commit SHAs
 	@echo "⬆️  Updating pinned pre-commit hook revisions..."
-	@# The hook exits non-zero when it rewrites the config, which is the success
-	@# case here, so its status is not the target's status.
-	-@uv run pre-commit run pre-commit-update --all-files --hook-stage manual
+	@uv run pre-commit autoupdate --freeze
 	@echo "✅ Hook revisions updated — review the .pre-commit-config.yaml diff."
 
 typecheck: ## Run basedpyright at recommended mode (workspace canonical)
