@@ -49,10 +49,10 @@ vocabulary normally. No git-rev pins remain.
 Read each plan before starting it; they carry real code and exact commands.
 
 1. **Region routes and the proposal run**, 7 tasks —
-   `docs/plans/2026-09-08-region-routes-and-proposal-run.md`. Needs the region stores, which
+   `docs/architecture/measurement-and-labeling.md`. Needs the region stores, which
    shipped. This is the next natural step.
 2. **Word and glyph provenance**, 7 tasks — `docs/plans/2026-09-08-word-and-glyph-provenance.md`.
-3. **Page kind end to end**, 7 tasks — `docs/plans/2026-09-08-page-kind-end-to-end.md`. Its Task 6
+3. **Page kind end to end**, 7 tasks — `docs/architecture/measurement-and-labeling.md`. Its Task 6
    has the labeler depend on `pdomain-pgdp-measure` as a package. That repo is now published but
    has **no release**, so it needs the same `scripts/do-release.sh` treatment book-contracts got
    before this task can work.

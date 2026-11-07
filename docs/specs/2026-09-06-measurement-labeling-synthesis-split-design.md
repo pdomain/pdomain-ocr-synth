@@ -256,11 +256,11 @@ belongs in this repository because this repository is its only consumer.
 
 Steps 1 and 2 are independent and can run together.
 
-Step 2 is planned in detail in the
-[measurement library extraction plan](../plans/2026-09-06-extract-pgdp-measurement-library.md).
-Its first task captures a byte-identity baseline at current `HEAD`, which also re-runs the
-measurement chain on the alignment that now accepts 713 pages rather than 665. So the stale-report
-question is answered as a side effect of making the extraction verifiable.
+Step 2 shipped on 2026-09-07. The cutover is
+[Measurement lives in pdomain-pgdp-measure](../architecture/measurement-and-labeling.md#measurement-lives-in-pdomain-pgdp-measure).
+The extraction compared 927 files on 2026-09-07 and recorded `BYTE IDENTICAL — EXTRACTION IS CLEAN` after normalizing
+`tool_version` and `alignment_sha256`. The 713 accepted pages against 665 are the 2026-09-06 alignment those files
+already held.
 
 ## Open decisions
 
@@ -277,8 +277,10 @@ question is answered as a side effect of making the extraction verifiable.
   `*-pgdp` subcommands are removed along with the modules, so `pdomain-ocr-synth` becomes a
   synthesizer only. Callers move to `pgdp-measure rank`, `profile`, `align`, `typography`, and
   `glyphs`.
-- **How region proposals persist in the labeler:** as `Block` objects with `block_role_labels`,
-  which already round-trips, or in the `extensions["labeler"]` namespaced slot on `PageRecord`.
+- ~~How region proposals persist in the labeler.~~ **Decided by what shipped.** Confirmed
+  regions are `Block` objects. Proposals and decisions are JSONL journals, not the
+  `extensions["labeler"]` slot. See
+  [Measurement and labeling](../architecture/measurement-and-labeling.md#region-stores-and-routes).
 - **Whether the labeler ingests PGDP corpora directly,** or only reads the measurement package's
   reports.
 

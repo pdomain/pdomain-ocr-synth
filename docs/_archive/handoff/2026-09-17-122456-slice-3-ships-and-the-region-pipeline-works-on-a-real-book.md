@@ -138,11 +138,11 @@ real data does not use. Run on real data before calling anything done.
 ## Pointers
 
 - Slice 3 design: `docs/specs/2026-09-17-region-review-surface-design.md`
-- Slice 3 plan, implemented: `docs/plans/2026-09-17-region-review-surface.md`
+- Slice 3 plan, implemented: `docs/architecture/measurement-and-labeling.md`
 - Slice 4 design: `docs/specs/2026-09-17-geometry-region-proposals-design.md`
-- Slice 4 plan, implemented: `docs/plans/2026-09-17-geometry-region-proposals.md`
+- Slice 4 plan, implemented: `docs/architecture/measurement-and-labeling.md`
 - The gap-threshold issue, fixed with one caveat:
-  `docs/issues/2026-09-17-the-furniture-gap-threshold-cannot-be-a-fixed-share.md`
+  `docs/architecture/measurement-and-labeling.md`
 - Roadmap: `docs/plans/2026-09-07-labeling-track-roadmap.md`
 - The selection issue:
   `/workspaces/pdomain/pdomain-ocr-labeler-spa/docs/issues/2026-09-17-a-word-or-line-selection-jumps-to-another-item-on-page-change.md`

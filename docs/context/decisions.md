@@ -6,7 +6,7 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-08-31
+- **Last verified:** 2026-11-06
 - **Provenance:** authored from migration-time adversarial review, shipped code, tests, commit
   history, the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement, and
   the 2026-08-31 whole-book yield measurement over five books and 1385 pages
@@ -376,3 +376,126 @@ where truth lived when each plan retired.
   small-caps records; see
   [the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md). The 490
   flat-ascender words queued in each manifest are also unreviewed.
+
+### 2026-11-06 Retired: measurement library extraction plan
+
+- Old path: `docs/plans/2026-09-06-extract-pgdp-measurement-library.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the one-step cutover, the missing dependency, and the unchanged wire strings
+  are in that architecture note. The command contracts stay in `pdomain-pgdp-measure`.
+- Remaining work: none in this repository. Gate 3 stays with the measurement package.
+
+### 2026-11-06 Retired: annotation vocabularies plan
+
+- Old path: `docs/plans/2026-09-08-annotation-vocabularies-in-book-contracts.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: `RegionRole` (34 values), `PageKind`, provenance enums, mappings, and
+  `ReviewMetadata` source are in that note.
+- Remaining work: none for this plan.
+
+### 2026-11-06 Retired: annotation preconditions plan
+
+- Old path: `docs/plans/2026-09-08-annotation-preconditions-in-book-tools-and-measure.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the duplication check, the folio mapping, the template spread, and the
+  34 block roles are in that note.
+- Remaining work: none for this plan.
+
+### 2026-11-06 Retired: region stores and resolver plan
+
+- Old path: `docs/plans/2026-09-08-region-stores-and-resolver.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: proposal and decision journals, and `resolve_regions`, are in that note.
+- Remaining work: none for this plan.
+
+### 2026-11-06 Retired: region routes and proposal run plan
+
+- Old path: `docs/plans/2026-09-08-region-routes-and-proposal-run.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the region routes, the round-trip fixture, and the two canvas layers are in
+  that note.
+- Remaining work: drawing, resizing, and editing word membership in the UI are still open on
+  the labeling roadmap.
+
+### 2026-11-06 Retired: page kind end to end plan
+
+- Old path: `docs/plans/2026-09-08-page-kind-end-to-end.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the book-scoped proposal job, the payload fields, and the reviewed-marker
+  store are in that note.
+- Remaining work: whether store-less mode should stay inconsistent. See
+  `docs/issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md`.
+
+### 2026-11-06 Retired: geometry region proposals plan
+
+- Old path: `docs/plans/2026-09-17-geometry-region-proposals.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the per-book furniture gap fit and the default composite detector are in
+  that note.
+- Remaining work: block boundary, blockquote, footnote, and heading proposals were never this
+  plan's scope. Poetry did ship beside furniture. See the labeling roadmap.
+
+### 2026-11-06 Retired: region review surface plan
+
+- Old path: `docs/plans/2026-09-17-region-review-surface.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: keyboard review, the shared mutation key, and clearing selection on page
+  change are in that note.
+- Remaining work: drawing a region, resizing a box, and editing word membership are still
+  named on the labeling roadmap.
+
+### 2026-11-06 Retired: furniture gap threshold issue
+
+- Old path: `docs/issues/2026-09-17-the-furniture-gap-threshold-cannot-be-a-fixed-share.md`
+- Outcome: implemented
+- Superseded by: `docs/architecture/measurement-and-labeling.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the 10 percent share missed the valley, and the labeler now fits the
+  threshold per book, with the fallback conditions in that note.
+- Remaining work: none.
+
+### 2026-11-06 Retired: weekly dep-refresh issue
+
+- Old path: `docs/issues/2026-08-08-dep-refresh-cannot-auto-land.md`
+- Outcome: abandoned
+- Superseded by: `docs/architecture/development-and-recipe-system.md`
+- Removal commit: the unique local commit with subject
+  `docs: record shipped plans as architecture and list remaining work` (resolve with
+  `git log --grep='^docs: record shipped plans as architecture and list remaining work$'`).
+- Rationale kept: the workflow file is gone. Commit `0068970` (2026-09-13) deleted
+  `.github/workflows/`, including `dep-refresh.yml`, so the dated-branch design cannot run.
+- Remaining work: none. Releases are local; this note does not change that procedure.

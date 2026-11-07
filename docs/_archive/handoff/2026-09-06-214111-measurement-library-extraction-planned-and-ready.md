@@ -151,7 +151,7 @@ difference is the finding. Report which files differ and where the chain first d
 
 ## Resume steps
 
-1. Read the plan at `docs/plans/2026-09-06-extract-pgdp-measurement-library.md`.
+1. Read the plan at `docs/architecture/measurement-and-labeling.md`.
 2. Run Task 0 to capture the baseline, including Step 6, which proves the baseline reproduces.
 3. Report Task 0 Step 7's page counts to the owner whatever they show. That is the
    stale-alignment answer.
@@ -159,7 +159,7 @@ difference is the finding. Report which files differ and where the chain first d
 
 ## Pointers
 
-- Extraction plan: `docs/plans/2026-09-06-extract-pgdp-measurement-library.md`
+- Extraction plan: `docs/architecture/measurement-and-labeling.md`
 - Split design: `docs/specs/2026-09-06-measurement-labeling-synthesis-split-design.md`
 - Roadmap, both tracks: `docs/plans/README.md`
 - Live glyph plan, Gate 3 open: `docs/plans/2026-09-05-pgdp-per-book-glyph-inventory.md`

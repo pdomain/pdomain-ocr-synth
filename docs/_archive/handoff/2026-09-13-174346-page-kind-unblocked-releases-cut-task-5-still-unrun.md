@@ -182,8 +182,8 @@ mode, and another found a real bug in a checker script I wrote.
 
 ## Pointers
 
-- The plan with Tasks 6 and 7: `docs/plans/2026-09-08-page-kind-end-to-end.md`
-- The plan whose Task 5 is next: `docs/plans/2026-09-08-region-routes-and-proposal-run.md`
+- The plan with Tasks 6 and 7: `docs/architecture/measurement-and-labeling.md`
+- The plan whose Task 5 is next: `docs/architecture/measurement-and-labeling.md`
 - Roadmap with the slice inventory: `docs/plans/2026-09-07-labeling-track-roadmap.md`
 - The design every remaining plan argues from:
   `docs/specs/2026-09-07-region-provenance-and-persistence-design.md`

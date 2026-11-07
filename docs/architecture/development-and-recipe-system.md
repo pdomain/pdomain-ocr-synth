@@ -6,8 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-07-14
-- **Provenance:** verified from the shipped source, tests, Make targets, and cited commits during the docgraph migration
+- **Last verified:** 2026-11-06
+- **Provenance:** verified from the shipped source, tests, Make targets, and cited commits during the docgraph
+  migration; the GitHub Actions sentence was re-checked on 2026-11-06 against commit `0068970` and the absence of
+  `.github/workflows/`
 - **Disposition:** Current truth promoted from implemented M01 and M02 plans and CLI/spec documentation.
 - **Promotes:** implemented M01/M02 plans and specs 01/03.
 
@@ -23,8 +25,8 @@ implementation contracts and why they exist.
 the supported gates. `make ci` performs setup, pre-commit, formatting,
 type-checking, tests, and package build. `AI=1` captures verbose output in
 `.ci-ai.log`. `make schema` regenerates the committed JSON Schema from the
-Pydantic models. The managed workflows in `.github/workflows/` use the same
-locked environment and Make targets.
+Pydantic models. GitHub Actions workflows were removed on 2026-09-13 in
+commit `0068970`. `make ci` is the local gate.
 
 Dependency state comes from `pyproject.toml` and `uv.lock`. The current
 `upgrade-deps` target upgrades the lock and syncs it; it does not implement the
@@ -80,7 +82,7 @@ directories, which is also supported.
 ## Evidence
 
 - Code: `Makefile`, `pyproject.toml`, `.pre-commit-config.yaml`,
-  `.github/workflows/ci.yml`, `src/pdomain_ocr_synth/cli.py`,
+  `src/pdomain_ocr_synth/cli.py`,
   `src/pdomain_ocr_synth/recipe/`, `src/pdomain_ocr_synth/recipe_init.py`, and
   `src/pdomain_ocr_synth/validation.py`.
 - Tests: `tests/test_cli.py`, `tests/test_recipe_loader.py`,

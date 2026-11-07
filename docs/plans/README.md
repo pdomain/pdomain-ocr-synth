@@ -1,4 +1,4 @@
-# Roadmap — pdomain-ocr-synth implementation
+# Remaining work
 
 ## Agent Index
 
@@ -6,232 +6,80 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-09-06
-- **Provenance:** agent-verified from repository evidence, plan and architecture Agent Index
-  fields, shipped code, and the measured five-book PGDP corpus runs during the 2026-09-06
-  roadmap refresh
-- **Disposition:** Retained as the current roadmap for both tracks.
-- **Read when:** asking what shipped, what is open, or where a milestone number belongs.
-- **Search terms:** roadmap, milestone, M11, M12, M14, M15, PGDP track, synth product track.
+- **Last verified:** 2026-11-06
+- **Provenance:** rewritten 2026-11-06 from the plans still on disk and from code checks in this repository and its
+  sibling packages. Shipped behavior is in `docs/architecture/`.
+- **Disposition:** The live index of work that is not finished.
+- **Read when:** asking what is still open.
+- **Search terms:** remaining work, roadmap, M11, M12, labeling track.
 
 ## Goal
 
-Give the repository one milestone map. It states what shipped, what remains partial, and what is
-still planned, and it routes readers to the detailed plan or architecture doc without claiming
-that open work is complete.
+This index names only the work that is still open.
+
+Each item is one line and includes the path of its plan or issue.
 
 ## Architecture
 
-The repository runs two tracks that share one codebase. Read the track frame below before reading
-either table. Shipped slices move out of `docs/plans/` and into `docs/architecture/`, which is
-current truth. A plan that still appears here is not yet shipped, or shipped with a gate open.
+Shipped behavior is [Development and recipe system](../architecture/development-and-recipe-system.md),
+[Output and publishing](../architecture/output-and-publishing.md), and
+[Measurement and labeling live in other repositories](../architecture/measurement-and-labeling.md).
 
 ## Tech Stack
 
-Both tracks use the repository's Python and uv toolchain, Make verification targets, pytest,
-Ruff, basedpyright, pre-commit, and HarfBuzz rendering. The PGDP track adds Pillow-based scan
-measurement and reads OCR geometry records produced elsewhere. It runs no model itself. The
-preview UI track adds FastAPI and a React single-page application, per the workspace pattern
-described under "M11 is a FastAPI and React SPA, not NiceGUI".
+This package is Python 3.13, uv, pytest, Ruff, and basedpyright.
+
+The open preview UI has no chosen stack in code yet.
+
+Labeling work that is still open lands in `pdomain-ocr-labeler-spa`, `pdomain-book-tools`, or `pdomain-book-contracts`,
+not here.
 
 ## Global Constraints
 
-Each milestone must leave a runnable slice, reuse existing seams, and preserve deterministic
-output and trainer compatibility. Status comes from repository evidence. Deferred UI,
-annotations, extra recipes, and cloud work must stay visibly unshipped.
+A plan stays in `docs/plans/` until its code and tests show it is finished.
 
-## Two tracks share this repository
+Partial plans stay even when most of their tasks have shipped.
 
-Nothing before this refresh mapped the two numbering schemes against each other, which made the
-roadmap hard to read.
+## Still open in this repository
 
-**The synth product, M00 to M12.** The original goal: recipe-driven synthetic OCR training data,
-first target Cló Gaelach. It invents typography from a recipe and renders it. M00 to M10 are
-substantially shipped. M11 and M12 are the two open milestones, and neither has started.
+- Bootstrap left two files unwritten: there is no `LICENSE` file and no `DEVELOPMENT.md`.
+  [docs/plans/00-bootstrap.md](00-bootstrap.md)
+- Corpus providers that ship are local, web, and Wikisource. Further providers stay deferred.
+  [docs/plans/03-corpus.md](03-corpus.md)
+- Rendering still has deferred font-coverage and sampling work. [docs/plans/05-rendering.md](05-rendering.md)
+- Degradation still has optional stages, including perspective and bleed-through. They are not a public extension
+  contract. [docs/plans/06-degradation.md](06-degradation.md)
+- Detection publishing is ImageFolder. Parquet sharding is not built.
+  [docs/plans/09-detection-mode.md](09-detection-mode.md)
+- Stretch still has extra recipes, cloud rendering, and live statistics. [docs/plans/10-stretch.md](10-stretch.md)
+- The preview UI is not built. NiceGUI is not the direction. [docs/plans/11-preview-ui.md](11-preview-ui.md) and
+  [docs/plans/11-preview-ui-scoping.md](11-preview-ui-scoping.md)
+- Glyph-annotation emission is not built. Nothing in `src/` writes `glyph_annotations`.
+  [docs/plans/12-glyph-annotations.md](12-glyph-annotations.md)
 
-**The PGDP program, M14 to M19.** Added on 2026-08-22 by the
-[typography and structure synthesis design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md).
-It stops inventing typography and learns it from real scans instead: measure a book's geometry and
-type from its own page images, compile that into a versioned profile, then synthesize pages from
-the profile. M14 and every M15 slice have shipped. M16 to M19 have not started.
+## Still open, with the code in another repository
 
-The tracks meet at M16. Until then the PGDP track only measures, and the synth product only
-renders. Nothing yet composes a page from a measured profile.
+- Explicit membership and matching: `matcher.py` and `tests/ocr/test_sibling_region_membership.py` are not in the
+  sibling trees.
+  [docs/plans/2026-09-08-explicit-membership-and-matching.md](2026-09-08-explicit-membership-and-matching.md)
+- Word and glyph provenance: `test_words_ground_truth_provenance.py` and `test_glyph_mark_staleness.py` are absent.
+  [docs/plans/2026-09-08-word-and-glyph-provenance.md](2026-09-08-word-and-glyph-provenance.md)
+- Style-span review: no `StyleSpanDecisionLog`.
+  [docs/plans/2026-09-08-style-span-review-surface.md](2026-09-08-style-span-review-surface.md)
+- Editorial corrections: no `EditorialCorrection` type.
+  [docs/plans/2026-09-08-editorial-corrections.md](2026-09-08-editorial-corrections.md)
+- Labeling slices 6 and 7 are not built. Drawing or resizing a region is not built. Slice 6 lost poetry as its example.
+  [docs/plans/2026-09-07-labeling-track-roadmap.md](2026-09-07-labeling-track-roadmap.md)
 
-There is no M13. The numbering jumps from M12 to M14 because the PGDP program was scoped as a
-later continuation rather than an insertion.
+## Page-kind confirm and save_page
 
-## Track one: the synth product, M00 to M12
+- Page-kind confirm requires the event store. Without one, it returns 503. `save_page` still allows a store-less save.
+  The five defects in the same file are fixed.
+  [docs/issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md](../issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md)
 
-| # | Milestone | Status | Goal | Outcome |
-|---|-----------|--------|------|---------|
-| [00](00-bootstrap.md) | Bootstrap | mostly done (LICENSE + DEVELOPMENT.md pending) | Repo exists with workspace conventions | `git clone` works; matches peer-project layout |
-| 01 | Dev tooling parity | ✅ archived | Make / lint / test / pre-commit / CI | `make setup && make test && make lint` all green on a stub |
-| 02 | Recipe schema + validator | ✅ archived | Recipes load, validate, list, init | `pdomain-ocr-synth validate gaelic` passes |
-| [03](03-corpus.md) | Corpus providers + cache | mostly done (deferred providers noted) | Pull text from local + web + Wikisource | `pdomain-ocr-synth fetch gaelic` warms a cache |
-| [04](../archive/plans/04-text-transforms.md) | Text transforms | ✅ archived | Lenition, long-s, Tironian et, base ops | Round-trip transform tests pass |
-| [05](05-rendering.md) | Rendering | mostly done (deferred UX features noted) | HarfBuzz, fonts, word-crop layout | Single sample renders deterministically |
-| [06](06-degradation.md) | Degradation pipeline | mostly done (deferred stages noted) | Geometric + optical + paper + jpeg stages | Sample with degradation looks plausible |
-| 07 | Output: recognition mode | ✅ archived | Writer for `pdomain-ocr-training/v1` recognition | Trainer can read 50k Gaelic crops |
-| 08 | HF publish | ✅ archived | Push rendered output to HF dataset repo | A dataset on HF that the trainer can consume |
-| [09](09-detection-mode.md) | Output: detection mode | mostly done (future HF parquet work noted) | Layouts: paragraphs, pages; bbox-aware degradations | Trainer detection profile fed |
-| [10](10-stretch.md) | Stretch | partially done (extra recipes + cloud render remain) | Extra recipes, cloud render, polish | Opt-in follow-ups |
-| [11](11-preview-ui.md) | Preview UI | not started; being re-scoped onto FastAPI + React | Visual recipe tuning in the browser | `pdomain-ocr-synth-ui` serves API and SPA from one wheel |
-| [12](12-glyph-annotations.md) | Glyph-level annotations | not started | Per-word ligature / long-s / swash side channel | Synth emits `glyph_annotations.json` alongside `labels.json` |
+The issue index is [One issue is still open](../issues/README.md).
 
-## Track two: the PGDP program, M14 to M19
+## Not this repository's remaining work
 
-| # | Slice | Status | Delivers |
-|---|-------|--------|----------|
-| 14 | Discovery and review queue | ✅ shipped; architecture now in `pdomain-pgdp-measure` | `pgdp-measure rank` ranks projects and pages from F2 evidence |
-| 15 | Scan measurement and book profiles | ✅ shipped in seven slices; see below | Measured geometry, typography, and a glyph inventory |
-| 16 | Styled text and typography controls | not started | Styled spans, font families, variable axes, tracking, kerning |
-| 17 | Structured-page compositor | not started | Shared page graph, then columns, tables, braces, poetry, notes |
-| 18 | Local semantic inference | not started | Models for poetry, blockquotes, headings, notes, tables |
-| 19 | Scan matching and evaluation | not started | Fit degradation, compare against held-out pages, measure OCR gains |
-
-## M15 became seven slices, and all but one letter shipped
-
-**Every M15 command now lives in `pdomain-pgdp-measure`.** The measurement library was extracted on
-2026-09-07 and this repository cut over in one step, keeping no dependency on it. The five
-subcommands are `pgdp-measure rank`, `profile`, `align`, `typography`, and `glyphs`; flags,
-arguments, and wire contracts are unchanged. The architecture docs in the "current truth" column
-below moved with them.
-
-M15 was scoped as one milestone and grew lettered sub-slices as it ran. The letters appear only
-inside each plan's own text, so this table is the first place they are collected.
-
-| slice | delivers | status | current truth |
-|---|---|---|---|
-| M15a | `pgdp-measure profile`: foreground bounds, margins, ink bands, page templates, page classes | shipped | observed geometry profiling in `pdomain-pgdp-measure` |
-| M15b | `pgdp-measure align`: bind F2 source lines to scan rows, `pgdp-alignment/v3` | shipped | source-line alignment in `pdomain-pgdp-measure` |
-| M15c | rectification and dewarping | **reserved, not started** | none; the alignment and typography plans both say not to start it |
-| M15d | `pgdp-measure typography`: baseline, x-height, stroke, skew, word runs, all font-free | shipped | font-free typography in `pdomain-pgdp-measure` |
-| M15e | OCR witness for continuation fragments, the `--geometry` flag | shipped | font-free typography in `pdomain-pgdp-measure` |
-| M15f | `pgdp-measure glyphs`: per-book labelled glyph inventory and atlas | shipped, **Gate 3 open** | glyph inventory in `pdomain-pgdp-measure` |
-
-M15a absorbed page classification and M15b absorbed the fragmented-band correction. Both are
-covered by the architecture docs above rather than by separate slice letters.
-
-**M15f shipped with Gate 3 failing.** Label correctness on the `transcribed` tier measures 0.978
-pooled against a floor of 0.98, and two of five books fail. That is the recorded result. See the
-glyph inventory architecture in `pdomain-pgdp-measure`.
-
-## The measurement chain runs on a stale alignment report
-
-**Every downstream PGDP slice was measured from alignment reports that predate the three
-band-identification fixes.** M15d, M15e, and M15f all ran against the `alignment-t2-*` reports,
-which were written on 2026-08-31 between 17:59 and 18:18. The three fixes landed in commits
-`c7c63ab` and `aa5c567` at 22:08 and 22:09 the same day, seventeen commits after the version the
-reports record in their own `tool_version` field.
-
-Those fixes raised accepted pages from 665 to 713, moved 35 pages out of `unknown`, raised
-accepted-line precision from 0.9974 to 1.0000, and cut accepted pages where a dense thin band
-bound a source line from four to zero. So the typography and glyph inventories are built on 665
-pages of an alignment that now accepts 713, and on bindings that the fixes were written to remove.
-
-Re-running the chain is untried and its effect is unmeasured. It is worth doing before more
-geometry work, because the fixes removed exactly the wrong-ink bindings that Gate 3's failures
-look like. Treat that as a hypothesis to test, not a diagnosis.
-
-The operating note repeated in three handoffs, "use the `alignment-t2-*` reports", is now
-misleading. It was written when t2 was the only report carrying the page-classification fixes,
-and it stayed after later fixes made t2 stale.
-
-## A proposed split would move measurement and labeling out of this repository
-
-A draft design proposes separating the three jobs this repository currently does. The measurement
-library would become its own package, the region and page-type vocabulary would live in
-`pdomain-book-contracts`, human labeling would move to `pdomain-ocr-labeler-spa`, and this
-repository would consume labeled datasets rather than produce its own measurements. Under it,
-M16 through M19 stop meaning "measure more" and start meaning "consume labels".
-
-The split is agreed in principle, and its measurement-library step shipped on 2026-09-07. The
-labeling side is now the active track: see the
-[labeling track roadmap](2026-09-07-labeling-track-roadmap.md) for its seven slices, three
-corrections to the split design's premises, and the finding that no region ground truth exists
-anywhere in the suite. See also the
-[measurement, labeling, and synthesis split](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)
-for the design, and the
-[measurement library extraction plan](2026-09-06-extract-pgdp-measurement-library.md) for the
-sequenced migration. The new package is named `pdomain-pgdp-measure`. Five decisions in the design are still
-open.
-
-The extraction's first task captures a byte-identity baseline at current `HEAD`, which also
-re-runs the measurement chain on the alignment that now accepts 713 pages. That answers the stale
-report question above as a side effect of making the move verifiable.
-
-The one live PGDP plan is the
-per-book glyph inventory in `pdomain-pgdp-measure`, kept open because Gate 3
-fails.
-
-## M11 is a FastAPI and React SPA, not NiceGUI
-
-M11's earlier design chose NiceGUI and an MVVM layering by pointing at a workspace pattern:
-`pd-ocr-labeler` and `pd-ocr-trainer` both used NiceGUI with the same layered shape. That
-rationale has expired. Both repositories are retired, and the workspace has since moved to a
-different pattern that two live repositories share.
-
-`pdomain-ocr-labeler-spa` describes itself as a "FastAPI + React SPA replacement for
-pd-ocr-labeler — single wheel that serves API + bundled SPA". `pdomain-ocr-trainer-spa`
-describes itself as a "FastAPI + React SPA for OCR model training — replaces
-pdomain-ocr-training NiceGUI UI". Both sit on `pdomain-ops` for shared FastAPI infrastructure and
-consume the shared `@pdomain/pdomain-ui` component library.
-
-M11 adopts that pattern. The [preview UI spec](../specs/11-preview-ui.md) carries the detail and
-the re-scoping.
-
-## Working principles for the roadmap
-
-1. **Vertical slices.** Every milestone leaves something the user can run. No "lay the
-   foundation" milestones with no demo.
-2. **Dev tooling first.** M00 and M01 are weighted toward developer experience because every
-   later milestone benefits.
-3. **One recipe drives the synth track.** `recipes/gaelic.yaml` is the integration test through
-   every milestone.
-4. **Measurement drives the PGDP track.** A slice states numeric gates before it runs and records
-   what they measured, passing or failing.
-5. **Spec is the contract.** When in doubt the spec wins. If a milestone reveals the spec is
-   wrong, update the spec before the code.
-6. **No stubs in main.** A milestone is done when its surface is real, not when there is a
-   placeholder. Push work in progress to a branch.
-7. **Shipped work moves to architecture.** When a plan's gates pass, promote it to
-   `docs/architecture/` and retire the plan. A gate that fails stays visible.
-
-## Sequencing notes
-
-- M00 and M01 are pure setup. No recipe execution.
-- M02 unlocks `validate` and `list`, useful even before render works.
-- M03 through M06 are pipeline stages. Each is testable in isolation against fixtures.
-- M07 ties them together end-to-end into recognition output.
-- M08 follows M07 so the publish path has real output to ship.
-- M09 is gated separately because it needs bbox-aware geometric degradation.
-- M11 depends on M07 only. It can land alongside M08 and M09.
-- The PGDP track is strictly ordered: each slice reads the previous slice's report and refuses a
-  profile that does not hash to the value the previous report recorded.
-- Alignment is the bottleneck for everything downstream of it. The chain reaches five books of
-  286.
-
-## Sizing
-
-Each milestone is sized for a focused session, not weeks. If a milestone drags past its scope,
-split it or move work to a later one. These are aspirational orders of magnitude, not
-commitments.
-
-| Milestone | Rough scope |
-|-----------|-------------|
-| 00 | half a session |
-| 01 | one session |
-| 02 | one session |
-| 03 | one to two sessions |
-| 04 | one session |
-| 05 | two sessions |
-| 06 | two sessions |
-| 07 | one session |
-| 08 | one session |
-| 09 | two sessions |
-| 10 | open-ended |
-| 11 | re-scoping in progress; the SPA move invalidates the earlier two-session estimate |
-| 12 | one to two sessions (depends on M07 + M09 + pdomain-book-tools data model) |
-| 14, 15a–15f | shipped |
-| 16–19 | unscoped; each needs its own plan and numeric gates before an estimate is honest |
+Open measurement gates, including glyph Gate 3, live with `pdomain-pgdp-measure`. The note is
+[the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).

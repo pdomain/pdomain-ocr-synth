@@ -151,7 +151,7 @@ invocation applies `failOnWarnings` and fails on 176 informational warnings.
 
 ## Pointers
 
-- Extraction plan, shipped: `docs/plans/2026-09-06-extract-pgdp-measurement-library.md`
+- Extraction plan, shipped: `docs/architecture/measurement-and-labeling.md`
 - Gate 3 recheck: `docs/research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md`
 - Split design, three decisions closed: `docs/specs/2026-09-06-measurement-labeling-synthesis-split-design.md`
 - Roadmap, both tracks: `docs/plans/README.md`

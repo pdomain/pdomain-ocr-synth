@@ -36,7 +36,7 @@ One question this file raised under "Also worth deciding" is still open: whether
 store-less mode should stay inconsistent. That is a design question, not a
 defect, and it is left as written.
 
-Tasks 6 and 7 of the [page-kind plan](../plans/2026-09-08-page-kind-end-to-end.md)
+Tasks 6 and 7 of the [page-kind plan](../architecture/measurement-and-labeling.md#page-kind)
 shipped and merged. These findings were deliberately parked rather than fixed at
 the time. This file is where they live, because the execution ledger that
 recorded them was deleted with the plan's workspace.
@@ -173,7 +173,7 @@ when no store is present.
 
 ## Related
 
-- [Page kind, end to end](../plans/2026-09-08-page-kind-end-to-end.md) — the
+- [Page kind, end to end](../architecture/measurement-and-labeling.md#page-kind) — the
   plan these tasks carried out, now carrying five inline corrections that
   execution found in it.
 - [Annotation provenance and persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md)

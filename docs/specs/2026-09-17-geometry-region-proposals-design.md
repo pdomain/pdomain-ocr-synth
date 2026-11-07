@@ -263,7 +263,7 @@ book's fitted text width. Across six books the correct range differs in every on
 ranges have no common point, so no fixed share can work. An Otsu split over each book's own gaps
 finds it cleanly every time, which is the fix the word-gap finding already established one level
 down. See
-[the furniture gap threshold cannot be a fixed share](../issues/2026-09-17-the-furniture-gap-threshold-cannot-be-a-fixed-share.md).
+[the furniture gap threshold cannot be a fixed share](../architecture/measurement-and-labeling.md#furniture-proposals).
 
 ## Related
 
@@ -271,7 +271,7 @@ down. See
   design this builds on, and the source of the open item on how a book-scoped run reaches pages.
 - [Region vocabulary](2026-09-07-region-vocabulary-design.md) — the 34 roles and the hierarchy
   rules this design obeys.
-- [Region routes and proposal run](../plans/2026-09-08-region-routes-and-proposal-run.md) — Task 5
+- [Region routes and proposal run](../architecture/measurement-and-labeling.md#region-stores-and-routes) — Task 5
   built the detector seam this design widens.
 - [Labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md) — where slice 4 sits.
 - [X-height spread does not find chapter openings](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md)

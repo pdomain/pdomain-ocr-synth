@@ -6,10 +6,11 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-09-06
+- **Last verified:** 2026-11-06
 - **Provenance:** authored from all 32 evidence-backed migration analyzer records, current repository
   state, the evidence-backed 2026-08-24 PGDP architecture promotion, and the 2026-09-06 promotion
-  of the remaining shipped M15 slices with the retirement of their plans
+  of the remaining shipped M15 slices with the retirement of their plans; the active list was
+  checked again on 2026-11-06 against the plans still on disk
 - **Disposition:** Injected ground truth for active, deferred, blocked, rejected, and owner-dependent intent.
 
 This map preserves useful unbuilt work after separating shipped truth from old
@@ -17,61 +18,27 @@ delivery scaffolding. Each item cites its source document or replacement.
 
 ## Active
 
-- **Carry out the rest of the split.** The measurement half is done: `pdomain-pgdp-measure` was
-  extracted on 2026-09-07 and reproduces the pre-move baseline byte for byte, and this repository
-  cut over in one step with no dependency on it. Three of the five open decisions in the design are
-  now closed. What remains is the region and page-type vocabulary moving to
-  `pdomain-book-contracts`, and human labeling to `pdomain-ocr-labeler-spa`
-  ([split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)).
-- **Compare the M15d and M15e reports against the re-run chain.** The chain was re-run at
-  `f9fdfef` on 2026-09-06 as Task 0 of the extraction plan, and the alignment question is settled:
-  current code accepts 713 pages against the 665 the `alignment-t2-*` reports carry, a gain of 48
-  with 38 of them in `projectID603d7d5e04ca0` alone. Fresh reports for all five books now exist in
-  `/workspaces/pdomain/.extraction-baseline/`. Gate 3 has been compared and the answer was no
-  change, so what remains is the typography side
-  ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
-- **Close Gate 3, or restate it, against a corrected number.** Label correctness on the
-  `transcribed` tier measures 0.978 against a floor of 0.98, and two of five books fail. Filtering
-  the five quality flags gives 0.994 with every book clear. Either the gate measures the filtered
-  inventory, or flagged glyphs stop being emitted, or the book is accepted at a stated lower
-  number. The call is the owner's; the gate was not redefined to pass it
-  (glyph inventory in `pdomain-pgdp-measure`).
-  Two routes to a better number are now closed. Re-running the chain changes nothing: all 23
-  marked glyphs survive the band-identification fixes. And the review sheet now shows
-  `label_style`, which recovers the three correct `small_caps` marks and takes the pooled rate
-  from 0.978 to 0.981 — but the worse book is untouched at 0.943, and neither failing book clears
-  the floor. Filtering remains the only route that passes as measured
-  ([Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)).
-- **Work the flat-ascender queues.** 490 words across the five books sit unreviewed in each
-  manifest's `flat_ascender_words`. `.m15f-evidence/render_flat_queue.py <book> <start> <count>`
-  renders them as labelled crops.
-- **Decide the atlas policy.** The corpus atlases are 7.4 MB across five books and live in the
-  evidence directory rather than the repository. The glyph plan's decision 1 says atlases ship,
-  and that the policy is due now that five books have landed. At the measured rate the full
-  286-project corpus would reach roughly 16 million glyphs.
-- **Consume the two unused page signals.** Every page records its `page_class` and its lines'
-  x-height median and spread, and nothing reads them. Feeding either back into page
-  classification is a slice of its own. The recorded chapter-opening figure of 43 to 67 percent
-  is ambiguous between precision and recall and must be recomputed before it is relied on.
-- Calibrate the 30-page book admission minimum. It is an uncalibrated seed, because nothing fits
-  typography from an aligned page yet and so no consumer can state its real requirement ([whole-book
-  yield gate design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md)). Partial answer as
-  of 2026-09-04: pooled x-height, baseline pitch, and stroke width settle within 0.5 px at 5 body
-  pages in four books and 20 in the fifth, and word gap settles at 5, 50, 5, 30, and 5.
-- **M11 preview UI is unbuilt and being re-scoped.** NiceGUI is no longer the direction. The plan
-  and spec justified it by pointing at `pd-ocr-labeler` and `pd-ocr-trainer`, both retired, and
-  the workspace has since moved to FastAPI with a React single-page application, shared through
-  `pdomain-ops` and `@pdomain/pdomain-ui`. The scope is also unsettled: the region and glyph
-  review work M11 was being sized for is moving to the labeler under the proposed split. Rewrite
-  the spec and plan once the split is decided
-  (`docs/plans/11-preview-ui*.md`, `docs/specs/11-preview-ui.md`).
+The open list is [Remaining work](../plans/README.md). The items below are the ones that still
+change what this repository should do next.
+
+- **M11 preview UI is unbuilt.** NiceGUI is not the direction. The region and glyph review work
+  that M11 was being sized for now lives in the labeler, and much of it has shipped. What M11
+  should show for this synthesizer is still unset
+  (`docs/plans/11-preview-ui.md`, `docs/plans/11-preview-ui-scoping.md`,
+  `docs/specs/11-preview-ui.md`).
 - M12 glyph annotations: confirm the sibling shared model and the semantic-text
   versus presentation invariant, prototype GSUB/cluster mapping, then implement
   the Gaelic/Roman v1 model, char spans, validation, additive recognition and
   detection outputs, and disabled behavior (`docs/plans/12-glyph-annotations.md`,
   `docs/specs/12-glyph-annotations-emission.md`).
-- Keep the roadmap index current and separate committed milestones from
-  demand-driven ideas (`docs/plans/README.md`, `docs/specs/00-overview.md`).
+- Four labeling plans are only partly proved: explicit membership, word and glyph provenance,
+  style-span review, and editorial corrections. Their files stay in `docs/plans/`.
+- Slice 6 of the labeling track has no model case left, because poetry separated without one.
+  Slice 7, a layout trainer, is not built
+  ([labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md)).
+- Gate 3, the flat-ascender queue, the atlas policy, unused page signals, and the 30-page
+  admission minimum belong to `pdomain-pgdp-measure`, not to this package. The numbers are in
+  [the Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md).
 
 ## Deferred
 
@@ -142,32 +109,34 @@ design choices to settle, but both remain actionable discovery work.
 
 ## Needs owner decision
 
-These are open questions repository evidence cannot settle. The five remaining from the split
-design block the largest structural decision here.
+These are open questions repository evidence cannot settle.
 
 From the [split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md):
 
 - ~~The measurement package's name.~~ Decided on 2026-09-06: `pdomain-pgdp-measure`,
   importing as `pdomain_pgdp_measure`, with a `pgdp-measure` console script.
-- Whether the glyph inventory moves with the measurement library. It is measurement, so it
-  should, but its Gate 3 is open and moving a milestone with a failing gate needs a deliberate
-  answer.
-- Whether this repository keeps a dependency on the measurement package during the transition, or
-  cuts over once.
-- How region proposals persist in the labeler: as `Block` objects with `block_role_labels`, which
-  already round-trips, or in the `extensions["labeler"]` slot on `PageRecord`. The labeler's
-  2026-05-07 scope freeze pinned `UserPageEnvelope` v2.1 byte for byte, and region annotation is
-  new persisted state, so the freeze has to be addressed rather than worked around.
+- ~~Whether the glyph inventory moves with the measurement library.~~ Decided on 2026-09-07: it
+  moved. `pgdp-measure glyphs` is in that package. Gate 3 stays open there.
+- ~~Whether this repository keeps a dependency during the transition.~~ Decided on 2026-09-07:
+  one-step cutover, no dependency. See
+  [Measurement and labeling](../architecture/measurement-and-labeling.md).
+- ~~How region proposals persist.~~ The labeler stores confirmed regions as `Block` objects and
+  stores proposals and decisions in JSONL journals, not in `extensions["labeler"]`. See the same
+  architecture note.
 - Whether the labeler ingests PGDP corpora directly, or only reads the measurement package's
   reports.
 - The labeled-dataset contract this repository will consume. It is unspecified and is the join
   between the two halves of the suite.
 
+Page-kind confirm returns 503 when no event store is wired, and `save_page` still allows a
+store-less save. Either every mutation should refuse, or the interface should hide confirm.
+The issue is
+[page-kind follow-ups](../issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md).
+
 For M11, the four earlier product choices are withdrawn. The package name, NiceGUI version pin,
 default port, and UI test marker were all asked under a NiceGUI design that is no longer the
-direction. Two of them no longer exist as questions. Re-ask them against the FastAPI and React
-pattern once M11's scope settles, and note that the sibling SPAs differ on whether Tailwind is
-used, which is the one live divergence between them.
+direction. Re-ask them only after M11's scope is chosen. The sibling SPAs differ on whether
+Tailwind is used.
 
 ## Legacy-unverified sweep
 
@@ -181,5 +150,6 @@ and publishing specification were promoted into current architecture and usage, 
 `docs/context/decisions.md`, and removed. Plans 00, 03-06, 09, and 10 and specs
 00, 02, 04-07, and 09 remain partial. M11 is active, M12 is draft/active design,
 and spec 13 remains draft. The plan index, writing standard, lint catalogue,
-and Gaelic font reference remain active. Every analyzer record has a completed
-lifecycle classification; the four open M11 product choices are recorded above.
+and Gaelic font reference remain active. Every analyzer record from that sweep has a
+lifecycle classification. The 2026-11-06 pass retired the plans whose code and tests
+were complete and left the partial plans listed under Active.

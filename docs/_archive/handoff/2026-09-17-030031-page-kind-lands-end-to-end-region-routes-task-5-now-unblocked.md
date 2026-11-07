@@ -121,7 +121,7 @@ persist leaves the kind set in memory with no marker.
 
 ## The plan now carries five inline corrections
 
-`docs/plans/2026-09-08-page-kind-end-to-end.md` is marked where execution proved it wrong: the
+`docs/architecture/measurement-and-labeling.md` is marked where execution proved it wrong: the
 stale pyproject snippet, the unsatisfiable test data, the missing `asyncio.to_thread`, the error
 identifier, and the confirm route's persist-or-refuse shape. Each correction sits in prose ahead
 of the code it corrects.
@@ -200,9 +200,9 @@ not a hand edit; commit it.
 
 ## Pointers
 
-- The plan whose Task 5 is next: `docs/plans/2026-09-08-region-routes-and-proposal-run.md`
+- The plan whose Task 5 is next: `docs/architecture/measurement-and-labeling.md`
 - The plan that just finished, now carrying five corrections:
-  `docs/plans/2026-09-08-page-kind-end-to-end.md`
+  `docs/architecture/measurement-and-labeling.md`
 - The four parked page-kind follow-ups:
   `docs/issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md`
 - Roadmap with the slice inventory: `docs/plans/2026-09-07-labeling-track-roadmap.md`

@@ -1346,7 +1346,7 @@ git commit -m "feat(typography): record and enforce CAS-bound style span decisio
   plan implements one slice of.
 - [Region vocabulary](../specs/2026-09-07-region-vocabulary-design.md) — the sibling annotation
   level with the same eight-property bar; unrelated code.
-- [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — the plan-format template
+- [Region stores and resolver](../architecture/measurement-and-labeling.md#region-stores-and-routes) — the plan-format template
   this document matches; independent work, no shared files.
 - [Labeling track roadmap](2026-09-07-labeling-track-roadmap.md) — the seven slices this plan is
   part of.

@@ -146,14 +146,14 @@ worktrees and sessions; use a tagged push and apply by SHA.
 
 - Slice 4 design: `docs/specs/2026-09-17-geometry-region-proposals-design.md`
 - Slice 4 plan, implemented, carrying its corrections inline:
-  `docs/plans/2026-09-17-geometry-region-proposals.md`
+  `docs/architecture/measurement-and-labeling.md`
 - The gap-threshold issue, resume step 1:
-  `docs/issues/2026-09-17-the-furniture-gap-threshold-cannot-be-a-fixed-share.md`
+  `docs/architecture/measurement-and-labeling.md`
 - The x-height finding: `docs/research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md`
 - The page-kind issue, all five items fixed:
   `docs/issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md`
 - Roadmap: `docs/plans/2026-09-07-labeling-track-roadmap.md`
-- Region routes plan, all eight tasks shipped: `docs/plans/2026-09-08-region-routes-and-proposal-run.md`
+- Region routes plan, all eight tasks shipped: `docs/architecture/measurement-and-labeling.md`
 - The furniture detector: `/workspaces/pdomain/pdomain-ocr-labeler-spa/src/pdomain_ocr_labeler_spa/core/regions/furniture.py`
 - The shared measurement pass: `/workspaces/pdomain/pdomain-ocr-labeler-spa/src/pdomain_ocr_labeler_spa/core/page_measurement.py`
 - Evidence scripts:

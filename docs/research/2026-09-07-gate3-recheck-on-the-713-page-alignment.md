@@ -265,7 +265,8 @@ It says nothing about the `recognized` tier. Gate 3 samples `transcribed` only.
   plan Gate 3 belongs to.
 - Glyph inventory architecture in `pdomain-pgdp-measure` — where the gate and the
   quality flags are defined.
-- [Extraction plan](../plans/2026-09-06-extract-pgdp-measurement-library.md) — Task 0 captured the
+- [Extraction plan](../architecture/measurement-and-labeling.md#measurement-lives-in-pdomain-pgdp-measure) — Task 0
+  captured the
   713-page inventories this recheck reads.
 - [What word reconciliation still misses](2026-09-04-what-word-reconciliation-still-misses.md) —
   the earlier finding that a line-level metric overstates a per-unit error rate.

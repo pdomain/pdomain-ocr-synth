@@ -46,7 +46,7 @@ missing", and "When a decision store is required".
   `core/page_to_line_matches.py`, `adapters/ocr/local_doctr.py`, `api/pages.py`, its Makefile and
   `pyproject.toml`; and `pdomain-book-contracts` `pdomain_book_contracts/ocr/review.py` and
   `ocr/glyph_annotations.py`, and the companion plan
-  `2026-09-08-annotation-vocabularies-in-book-contracts.md`
+  `docs/architecture/measurement-and-labeling.md`
 - **Disposition:** Active. Depends on the vocabularies plan's Task 5 (`ReviewMetadata.source` /
   `.state`) and Task 1 (`KnowledgeState`, `LabelSource` importable from
   `pdomain_book_contracts.annotation`) already being released.
@@ -1759,7 +1759,7 @@ git commit -m "feat(glyph): mark sub-word annotations stale when their text chan
   needed only when the human's answer is sparse against the machine's output — a word has one answer
   and a glyph annotation set is per-word, so the existing `review`/`glyph_annotations_map` marker is
   enough. Regions are the level that needed a journal, and that is the sibling
-  `2026-09-08-region-stores-and-resolver.md` plan.
+  `docs/architecture/measurement-and-labeling.md` plan.
 - It does not change page kind or region provenance. Those are the sibling plans' work.
 - It does not add a UI affordance for the reject-prediction route. The frontend `GlyphChip` /
   `GlyphAnnotationPanel` components already render accept/reject as a pair per the spec; wiring the
@@ -1774,10 +1774,11 @@ git commit -m "feat(glyph): mark sub-word annotations stale when their text chan
 - [Annotation provenance and
   persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md) — the design.
 - [Annotation vocabularies in
-  book-contracts](2026-09-08-annotation-vocabularies-in-book-contracts.md) — must land first; this
+  book-contracts](../architecture/measurement-and-labeling.md#shared-annotation-vocabulary) — must land first; this
   plan consumes `ReviewMetadata.source`/`.state` (Task 5) and `KnowledgeState`/`LabelSource` (Task 1)
   from it.
-- [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — the sibling plan for the
+- [Region stores and resolver](../architecture/measurement-and-labeling.md#region-stores-and-routes) — the sibling plan
+  for the
   one annotation level that does need a decision journal, and the pattern this plan's Global
   Constraints borrows the `RegionProposal.confidence` precedent from.
 - [Labeling track roadmap](2026-09-07-labeling-track-roadmap.md) — the seven slices.

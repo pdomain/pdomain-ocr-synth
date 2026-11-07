@@ -67,7 +67,7 @@ corrections say what the page should have said, and never touch ground truth."
 - **This plan depends on two companion plans landing first, in either order relative to each other,
   both before this plan's Task 1:**
   - [Annotation vocabularies in
-    book-contracts](2026-09-08-annotation-vocabularies-in-book-contracts.md) — Task 1 imports
+    book-contracts](../architecture/measurement-and-labeling.md#shared-annotation-vocabulary) — Task 1 imports
     `ConfidenceTier`, `KnowledgeState`, `LabelSource` from `pdomain_book_contracts.annotation`, which
     that plan creates. **This dependency is satisfied.** That plan was implemented and merged on
     2026-09-08 at `bfcb7dd`, and `pdomain_book_contracts.annotation` now exports 34 `RegionRole`
@@ -1892,13 +1892,13 @@ git commit -m "feat(typography): record and enforce CAS-bound editorial correcti
   persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md) — the design, section
   "Editorial corrections say what the page should have said, and never touch ground truth."
 - [Annotation vocabularies in
-  book-contracts](2026-09-08-annotation-vocabularies-in-book-contracts.md) — must land first; supplies
+  book-contracts](../architecture/measurement-and-labeling.md#shared-annotation-vocabulary) — must land first; supplies
   `pdomain_book_contracts.annotation`.
 - [Style span review surface](2026-09-08-style-span-review-surface.md) — must land first; this plan's
   Tasks 2–5 extend the same two labeler files immediately after the classes and routes it adds, and
   its `stable_style_span_id` is the identity-derivation precedent `stable_editorial_correction_id`
   follows.
-- [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — the sibling annotation
+- [Region stores and resolver](../architecture/measurement-and-labeling.md#region-stores-and-routes) — the sibling annotation
   level with the same eight-property bar; unrelated code, no shared files.
 - [Labeling track roadmap](2026-09-07-labeling-track-roadmap.md) — the seven slices this plan is part
   of.

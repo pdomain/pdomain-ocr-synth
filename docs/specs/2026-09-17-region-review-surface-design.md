@@ -21,8 +21,8 @@ Kind: spec
   `hooks/useLineMutations.ts`, `hooks/useJobProgress.ts`, `hooks/useJobCompletionInvalidation.ts`,
   `components/PageActionsCompact.tsx`, `lib/hotkeyMap.ts`), the backend request and view models in
   `api/regions.py` and `core/models.py`, and the furniture coverage measurement behind slice 4
-- **Disposition:** Active. Slice 3 of the labeling track, first increment. Planned at
-  `docs/plans/2026-09-17-region-review-surface.md`.
+- **Disposition:** Active. Slice 3 of the labeling track, first increment, shipped.
+  Current behavior is `docs/architecture/measurement-and-labeling.md`.
 - **Read when:** building any region or proposal UI in the labeler, adding a rail target, or
   adding review keyboard shortcuts.
 - **Search terms:** slice 3, region review, proposal review, RegionDetail, rail target region,
@@ -223,6 +223,6 @@ different role lists until `BlockDetail` is changed.
   produces what this surface reviews.
 - [Region provenance and persistence](2026-09-07-region-provenance-and-persistence-design.md) — the
   accept, edit and reject dispositions this surface records.
-- [Region routes and proposal run](../plans/2026-09-08-region-routes-and-proposal-run.md) — the
+- [Region routes and proposal run](../architecture/measurement-and-labeling.md#region-stores-and-routes) — the
   routes this surface calls, and the canvas region layer it makes clickable.
 - [Labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md) — where slice 3 sits.

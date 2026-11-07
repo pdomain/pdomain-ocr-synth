@@ -6,14 +6,14 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-06
 - **Provenance:** authored 2026-09-07 from direct inspection of `pdomain-ocr-labeler-spa`,
   `pdomain-book-contracts`, `pdomain-book-tools`, `pdomain-ocr-training`, and
   `pdomain-pgdp-measure`, plus owner direction in that session. Three premises of the
   2026-09-06 split design were falsified against the code and are corrected here. Slice 4's
   x-height spread figure recomputed 2026-09-17 and corrected here.
-- **Disposition:** Active. Slice 1 and slice 2 are being designed. Slices 3 to 7 are recorded
-  here so they are not lost, and each needs its own design before it is built.
+- **Disposition:** Active. Vocabulary, stores, routes, page kind, furniture proposals, and region review have shipped;
+  see `docs/architecture/measurement-and-labeling.md`. Slices 6 and 7, and drawing or resizing a region, are still open.
 - **Read when:** planning region labeling, the labeler's agent-facing API, the confidence review
   queue, or training a layout model for historical books.
 - **Search terms:** region labeling, region proposals, label vocabulary, confidence queue, LLM
@@ -116,15 +116,18 @@ can feed geometry proposals.
 
 ## The slices, in order
 
-Slices 1 and 2 are being designed now. The rest are recorded so they are not lost. Each needs its
-own design before it is built.
+Slices 1 through 5 have a first shipped increment. Slice 6 and slice 7 are not built. The
+paragraphs below keep the original design notes, including claims that were true on 2026-09-07
+and are not true now. The shipped behavior is
+[Measurement and labeling](../architecture/measurement-and-labeling.md).
 
 ### Slice 1 — Region vocabulary in `pdomain-book-contracts`
 
 **Designed and reviewed on 2026-09-07:
 [region vocabulary](../specs/2026-09-07-region-vocabulary-design.md).** Thirty-four roles, the
-twenty that ship today unchanged plus fourteen additions, under an additive-only rule. Two
-adversarial reviews and a recheck; no code has moved.
+twenty that ship today unchanged plus fourteen additions, under an additive-only rule. The vocabulary has since shipped
+in `pdomain-book-contracts`.
+See [Shared annotation vocabulary](../architecture/measurement-and-labeling.md#shared-annotation-vocabulary).
 
 The role enum and a `PageKind` enum, plus mappings from PP-DocLayout's 14 `RegionType` values and
 `Block`'s 20 strings so the new enum replaces them as the authority rather than becoming a third
@@ -170,8 +173,9 @@ Drivable over HTTP the day it lands, before any UI exists.
 select a region or proposal on the canvas, decide it from a panel or from the keyboard, and start the
 page-kind and region proposal runs from the page actions. See
 [the design](../specs/2026-09-17-region-review-surface-design.md) and
-[its plan](2026-09-17-region-review-surface.md). Not yet built: drawing a region, resizing a box,
-editing word membership, and reviewing page kinds.
+[its plan](../architecture/measurement-and-labeling.md#region-review). Not built in that increment: drawing a region,
+resizing a box,
+and editing word membership. Page-kind review shipped later.
 
 A region layer on the block canvas and rail toggle that already exist. Draw, edit, accept, reject,
 and a keyboard flow. Proposals must render visibly differently from confirmed regions, which is
@@ -184,9 +188,9 @@ book-scoped run now proposes page furniture, the running head and the folio, fro
 page classifier already marks as furniture. That is the highest-volume region class in a book: 1,089
 of the 1,385 pages across the five aligned corpus books carry one. See
 [the geometry region proposals design](../specs/2026-09-17-geometry-region-proposals-design.md) and
-[its plan](2026-09-17-geometry-region-proposals.md). The rows below that it does not yet cover —
-block boundary, poetry, blockquote, footnote, heading, and the bottom-of-page furniture the
-classifier does not locate — are the remaining increments.
+[its plan](../architecture/measurement-and-labeling.md#furniture-proposals). Poetry later shipped
+beside it as `PoetryDetector`. Still not covered by that increment: block boundary, blockquote,
+footnote, heading, and the bottom-of-page furniture the classifier does not locate.
 
 Turns `typography.json` plus PP-DocLayout into proposals. The signals are already measured and
 consumed by nothing:
@@ -377,47 +381,26 @@ Training does not fit this machine. The box has an RTX 3070 Ti Laptop with 8 GB,
 `pd-ocr-trainer/docs/plans/roadmap.md` puts real fine-tuning on rented cloud GPUs, in A10G or A100
 territory, with Modal provisioning per run.
 
-## What has a plan, and what is still owed
+## What has shipped, and what is still owed
 
-Eight plans were written on 2026-09-08 and gap-scanned twice against the design. This records what
-they cover so nothing is mistaken for planned.
+Checked on 2026-11-06. Shipped plans are in
+[Measurement and labeling](../architecture/measurement-and-labeling.md): vocabulary, preconditions,
+region stores, region routes, page kind, furniture proposals, and the region review surface.
 
-The first three came out of the design directly:
+These plans are still files because their named tests or types are missing:
 
-- [Annotation vocabularies](2026-09-08-annotation-vocabularies-in-book-contracts.md) — region
-  roles, page kinds, the provenance enums, and `ReviewMetadata.source`.
-- [Annotation preconditions](2026-09-08-annotation-preconditions-in-book-tools-and-measure.md) —
-  the word duplication check, the page template spread, and the folio fix.
-- [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — the proposal store, the
-  decision store, and the one read path.
+- [Word and glyph provenance](2026-09-08-word-and-glyph-provenance.md)
+- [Explicit membership and matching](2026-09-08-explicit-membership-and-matching.md)
+- [Style span review surface](2026-09-08-style-span-review-surface.md)
+- [Editorial corrections](2026-09-08-editorial-corrections.md). The plan exists. The
+  `EditorialCorrection` type does not. A post-processor that would apply a correction still has
+  no plan, and the plan itself says it does not apply corrections.
 
-All eight gaps from the first scan now have plans, written 2026-09-08:
+A ground-truth text digest beside each glyph annotation set is still part of the provenance
+plan. `LigatureMark.char_span` and `long_s_positions` index into `Word.ground_truth_text`.
 
-- [Region routes and proposal run](2026-09-08-region-routes-and-proposal-run.md) — the eight
-  routes, the proposal-run job, the conformance fixture, and the browser test.
-- [Word and glyph provenance](2026-09-08-word-and-glyph-provenance.md) — the writers that fill
-  `ground_truth_text`, persisted glyph predictions, and the reject route.
-- [Page kind end to end](2026-09-08-page-kind-end-to-end.md) — the typed field, the book-scoped
-  proposal, the residual-to-confidence conversion, and the reviewed marker.
-- [Explicit membership and matching](2026-09-08-explicit-membership-and-matching.md) — the
-  proposal generator, the sibling-disjointness check, and the page-and-box matcher.
-- [Style span review surface](2026-09-08-style-span-review-surface.md) — span identity and
-  span-scoped review routes.
-
-A second scan on 2026-09-08 read the design against all eight plans with a different lens: what the
-data model cannot represent, and which flow states have no defined behavior. Six of its eight
-findings were settled in the design, and two were owner rulings. Three items it opened still have
-no plan:
-
-1. **Editorial corrections.** The ink reads one way and editorial direction says another. The
-   labeler records them; a post-processor applies them. They must never enter `ground_truth_text`,
-   and they need their own model because a zero-width insertion is legal and `StyleSpan` forbids it.
-2. **The post-processor itself.** Its input shape is settled; nothing else about it is.
-3. **A ground-truth text digest beside each glyph annotation set.** `LigatureMark.char_span` and
-   `long_s_positions` index into `Word.ground_truth_text`, which four writers rewrite, so the marks
-   go stale silently today.
-
-Slices 3 to 7 remain unplanned by intent: each needs its own design first.
+Slice 6 and slice 7 are the labeling work that still has no implementation plan of its own.
+Slice 6's poetry example failed measurement. Slice 7 is the layout trainer.
 
 ## What this roadmap does not settle
 
@@ -425,7 +408,8 @@ Slices 3 to 7 remain unplanned by intent: each needs its own design first.
   of the suite and still unspecified.
 - Whether the book labeling manifest is extended to carry line geometry, or a second lane is
   added.
-- The exact region role vocabulary. Slice 1's design decides it.
+- ~~The exact region role vocabulary.~~ Shipped as 34 `RegionRole` values in
+  `pdomain-book-contracts`.
 - Whether the confirmed corpus is large enough to train on, which cannot be known until slices 2
   to 5 have run on real books.
 
@@ -442,6 +426,6 @@ tests plus a dependency bump, touching the book labeling manifest. Same area as 
 - [PGDP typography and page-structure synthesis
   design](../specs/2026-08-22-pgdp-typography-structure-synthesis-design.md) — the ruling that
   model output is never ground truth.
-- [Measurement library extraction plan](2026-09-06-extract-pgdp-measurement-library.md) — slice 2
-  of the split, shipped 2026-09-07.
-- [Roadmap](README.md) — both tracks.
+- [Measurement and labeling](../architecture/measurement-and-labeling.md) — the cutover and the
+  labeling behavior that shipped.
+- [Remaining work](README.md) — the short list.

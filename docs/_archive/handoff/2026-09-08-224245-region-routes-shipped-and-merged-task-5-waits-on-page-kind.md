@@ -49,11 +49,11 @@ execute Task 5 alone.
 
 ## The next four plans, in the order that unblocks the most
 
-1. **Page kind end to end**, 7 tasks — `docs/plans/2026-09-08-page-kind-end-to-end.md`. Do this
+1. **Page kind end to end**, 7 tasks — `docs/architecture/measurement-and-labeling.md`. Do this
    next. Its Tasks 3 to 5 build the `core/page_kind` stores that region-routes Task 5 imports. Its
    own Task 6 still needs a `pdomain-pgdp-measure` release, which is an open owner decision, but
    Tasks 1 to 5 and 7 do not.
-2. **Region routes Task 5 only** — `docs/plans/2026-09-08-region-routes-and-proposal-run.md`. The
+2. **Region routes Task 5 only** — `docs/architecture/measurement-and-labeling.md`. The
    plan carries an execution-status banner saying exactly this. One task: the `propose_regions` job,
    the `null_region_detector` seam, and `POST /regions/propose`.
 3. **Word and glyph provenance**, 7 tasks — `docs/plans/2026-09-08-word-and-glyph-provenance.md`.
@@ -148,7 +148,7 @@ refusing an instruction with evidence, including a test I specified that was unr
 
 1. Read `docs/specs/2026-09-07-region-provenance-and-persistence-design.md` if you have not. It is
    the design and every remaining plan argues from it.
-2. Execute `docs/plans/2026-09-08-page-kind-end-to-end.md`. Tasks 1 to 5 and 7 are unblocked; Task 6
+2. Execute `docs/architecture/measurement-and-labeling.md`. Tasks 1 to 5 and 7 are unblocked; Task 6
    needs the `pdomain-pgdp-measure` release decision.
 3. Then execute region-routes Task 5 alone. Its brief is unchanged and the plan's banner explains
    the dependency.
@@ -163,8 +163,8 @@ refusing an instruction with evidence, including a test I specified that was unr
 - The design, all five levels: `docs/specs/2026-09-07-region-provenance-and-persistence-design.md`
 - Region vocabulary, section one: `docs/specs/2026-09-07-region-vocabulary-design.md`
 - Roadmap with the plan inventory: `docs/plans/2026-09-07-labeling-track-roadmap.md`
-- The plan just executed, with its status banner: `docs/plans/2026-09-08-region-routes-and-proposal-run.md`
-- The plan to run next: `docs/plans/2026-09-08-page-kind-end-to-end.md`
+- The plan just executed, with its status banner: `docs/architecture/measurement-and-labeling.md`
+- The plan to run next: `docs/architecture/measurement-and-labeling.md`
 - The split design this carries out: `docs/specs/2026-09-06-measurement-labeling-synthesis-split-design.md`
 - Gate 3 recheck: `docs/research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md`
 - Current state: `docs/context/current-state.md` — **stale**, line 250 still says the split is

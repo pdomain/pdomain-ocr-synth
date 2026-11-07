@@ -165,7 +165,7 @@ once the branches land.
    unblocks other work.
 2. Get the two release decisions made, or explicitly defer them. They are the only thing standing
    between here and a page kind a human can actually confirm.
-3. Then run `docs/plans/2026-09-08-page-kind-end-to-end.md` Tasks 6 and 7, landing the
+3. Then run `docs/architecture/measurement-and-labeling.md` Tasks 6 and 7, landing the
    `proposal_log.py` guard alongside Task 6 rather than after it.
 4. Then region-routes Task 5 alone, which is what finally makes proposals appear in production —
    every proposal in the system today was still written by a test.
@@ -175,12 +175,12 @@ once the branches land.
 
 ## Pointers
 
-- The plan just executed, now corrected twice: `docs/plans/2026-09-08-page-kind-end-to-end.md`
+- The plan just executed, now corrected twice: `docs/architecture/measurement-and-labeling.md`
 - The design every remaining plan argues from:
   `docs/specs/2026-09-07-region-provenance-and-persistence-design.md`
 - Region vocabulary: `docs/specs/2026-09-07-region-vocabulary-design.md`
 - Roadmap with the plan inventory: `docs/plans/2026-09-07-labeling-track-roadmap.md`
-- The plan that needs its Task 5 run: `docs/plans/2026-09-08-region-routes-and-proposal-run.md`
+- The plan that needs its Task 5 run: `docs/architecture/measurement-and-labeling.md`
 - Still unrun: `docs/plans/2026-09-08-word-and-glyph-provenance.md`,
   `docs/plans/2026-09-08-explicit-membership-and-matching.md`
 - The split design this carries out:

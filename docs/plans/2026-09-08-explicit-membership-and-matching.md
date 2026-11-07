@@ -1029,13 +1029,13 @@ git commit -m "feat(regions): match a confirmed region back to its proposal by I
 - [Annotation provenance and
   persistence](../specs/2026-09-07-region-provenance-and-persistence-design.md) — the design,
   especially "Reading order follows explicit membership, not geometry".
-- [Region stores and resolver](2026-09-08-region-stores-and-resolver.md) — defines `RegionProposal`
+- [Region stores and resolver](../architecture/measurement-and-labeling.md#region-stores-and-routes) — defines `RegionProposal`
   and `ResolvedRegion`, which Task 3 consumes.
 - [Annotation preconditions in book-tools and
-  measure](2026-09-08-annotation-preconditions-in-book-tools-and-measure.md) — defines
+  measure](../architecture/measurement-and-labeling.md#annotation-preconditions) — defines
   `find_duplicated_words`, which Task 2 depends on and does not duplicate.
 - [Annotation vocabularies in
-  book-contracts](2026-09-08-annotation-vocabularies-in-book-contracts.md) — defines `RegionRole`,
+  book-contracts](../architecture/measurement-and-labeling.md#shared-annotation-vocabulary) — defines `RegionRole`,
   used by Task 3's tests.
 - [Labeling track roadmap](2026-09-07-labeling-track-roadmap.md) — the seven slices this plan's three
   tasks sit inside.
