@@ -1376,7 +1376,7 @@ def test_spec_04_provider_section_dispatch_complete() -> None:
 #
 # Every transform documented in ``docs/specs/05-text-transforms.md`` must
 # be either registered with the runtime ``default_registry()`` or tracked
-# as deferred in ``docs/roadmap/04-text-transforms.md``. The companion
+# as a deferred proposal in the intent map. The companion
 # validation check ``text_transform_not_implemented`` (this iter) catches
 # *recipe-named* drift at validate time; this meta-test catches *spec-vs-
 # code* drift at test time. Together they mirror the iter-65 / iter-73
@@ -1431,9 +1431,8 @@ def _registered_text_transform_names() -> set[str]:
     return set(default_registry().names())
 
 
-# Roadmap-tracked deferred transforms, per
-# ``docs/roadmap/04-text-transforms.md`` "Antique-conventions
-# built-ins" and "``python:`` inline loader". Keep this list short; it
+# Deferred transforms, per the deferred proposals in spec 05 and the
+# Transforms line of ``docs/context/intent-map.md``. Keep this list short; it
 # should shrink to empty once the transforms ship. If a new transform
 # gets added to spec 05 ahead of implementation, it lands here too —
 # but the long-term goal is for this set to equal the empty set and
@@ -1468,7 +1467,7 @@ def test_spec_05_transforms_match_registry_or_roadmap() -> None:
     assert not spec_only, (
         "docs/specs/05-text-transforms.md documents transforms that are "
         "neither registered with default_registry() nor tracked as "
-        f"deferred in docs/roadmap/04-text-transforms.md: {spec_only}.\n"
+        f"deferred in docs/context/intent-map.md: {spec_only}.\n"
         "Either ship the transform (and add it to register_builtins()), "
         "remove the spec section, or add the name to "
         "_ROADMAP_DEFERRED_TEXT_TRANSFORMS in this test "

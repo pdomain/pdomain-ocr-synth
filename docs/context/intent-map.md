@@ -59,7 +59,7 @@ change what this repository should do next.
 - Transforms: revisit `u_v_swap`, `i_j_swap`, ligature markers, per-transform
   probability semantics, and recipe-local loading only when a second recipe
   requires them. Entry points remain the supported reusable seam
-  (`docs/archive/plans/04-text-transforms.md`, `docs/specs/05-text-transforms.md`).
+  (`docs/specs/05-text-transforms.md`).
 - Rendering: improve font-coverage UX and GSUB diagnostics; consider alternate
   corpus sampling, Pillow fallback, antialiasing/subpixel controls, headings,
   and drop caps only with demonstrated demand. Keep geometric glyph runs

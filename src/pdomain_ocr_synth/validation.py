@@ -455,11 +455,10 @@ def _check_text_transforms(recipe: Recipe) -> list[ValidationIssue]:
     ``corpus_provider_not_implemented`` precedents: tell the user up
     front before they kick off corpus fetch + render.
 
-    Currently this catches the spec-05 transforms left deferred in the
-    M04 roadmap: ``u_v_swap``, ``i_j_swap``, ``ct_st_ligature_marker``
+    Currently this catches the transforms spec 05 lists as deferred
+    proposals: ``u_v_swap``, ``i_j_swap``, ``ct_st_ligature_marker``
     (antique-conventions), and the ``python:`` inline loader. See
-    ``docs/roadmap/04-text-transforms.md`` "Antique-conventions
-    built-ins" / "``python:`` inline loader" for status.
+    ``docs/specs/05-text-transforms.md`` for their status.
 
     Note this is a strict catalog check — third-party transforms
     registered through the ``pdomain_ocr_synth.text_transforms`` entry-point
@@ -480,8 +479,7 @@ def _check_text_transforms(recipe: Recipe) -> list[ValidationIssue]:
                     f"text transform '{transform.name}' is in the recipe schema but not "
                     f"yet implemented by the M04 runtime; render would raise. "
                     f"Implemented transforms: {', '.join(sorted(registered))}. "
-                    "See docs/roadmap/04-text-transforms.md "
-                    "(Antique-conventions built-ins / python: inline loader)."
+                    "See the deferred proposals in docs/specs/05-text-transforms.md."
                 ),
                 location=f"text_transforms[{i}].name",
             )

@@ -47,7 +47,7 @@ Partial plans stay even when most of their tasks have shipped.
 - Corpus providers that ship are local, web, and Wikisource. Further providers stay deferred.
   [docs/plans/03-corpus.md](03-corpus.md)
 - Text transforms still defer antique-convention transforms and recipe-local loading.
-  [M04's partial plan](../archive/plans/04-text-transforms.md) remains open despite its archive path.
+  Their deferred proposals are in [spec 05](../specs/05-text-transforms.md).
 - Rendering still has deferred font-coverage and sampling work. [docs/plans/05-rendering.md](05-rendering.md)
 - Degradation still has optional stages, including perspective and bleed-through. They are not a public extension
   contract. [docs/plans/06-degradation.md](06-degradation.md)

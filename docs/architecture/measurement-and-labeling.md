@@ -111,6 +111,11 @@ written into the page blob.
 
 `resolve_regions` is the read path that joins the page, the proposal log, and the decision log.
 
+The region API always speaks source pixels: proposal boxes, request bodies, and served
+`RegionView.box`. A confirmed region's stored `Block.bounding_box` follows the page's own word-box
+convention, normalized 0-to-1 or pixel-space. Boxes convert at the boundary in the labeler's
+`core/regions/coordinates.py`, the same rule `_bbox_to_model` applies to words.
+
 The region routes do this work:
 
 - They create, edit, and delete a region.

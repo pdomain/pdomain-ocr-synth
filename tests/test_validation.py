@@ -320,8 +320,7 @@ def test_unimplemented_text_transform_is_error(tmp_path: Path) -> None:
 
     ``u_v_swap`` is documented in spec 05 ("Built-in: scriptio
     continua / antique conventions") but the M04 runtime registry does
-    not register it yet — see ``docs/roadmap/04-text-transforms.md``
-    "Antique-conventions built-ins". Calling render on a recipe that
+    not register it yet — spec 05 lists it as a deferred proposal. Calling render on a recipe that
     uses it would raise
     :class:`pdomain_ocr_synth.text_transforms.UnknownTransformError` deep in
     :func:`pdomain_ocr_synth.text_transforms.apply_pipeline`, well after
@@ -348,7 +347,7 @@ def test_unimplemented_text_transform_is_error(tmp_path: Path) -> None:
     # Error message points at the roadmap so the user knows where to
     # look for status / contribute, matching the
     # ``corpus_provider_not_implemented`` shape.
-    assert "04-text-transforms.md" in msg
+    assert "05-text-transforms.md" in msg
     assert "u_v_swap" in msg
 
 

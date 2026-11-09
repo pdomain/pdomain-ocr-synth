@@ -537,3 +537,18 @@ what worked across that sweep. They are history, not repository rules.
   `ee3be65`, and `5194dfe` rejected the partial caption fix. Its parked
   labeler items are in the labeler's current state and decisions.
 - Remaining work: none beyond the intent map and roadmap
+
+### 2026-11-09 Retired: the archive folders
+
+- Old paths: `docs/_archive/handoff/` (21 session handoffs, 2026-09-02 to 2026-09-18) and
+  `docs/archive/` (the M04 text-transforms plan and empty placeholder folders)
+- Outcome: deleted; retired docs live in Git history, not an archive folder
+- Superseded by: [measurement and labeling](../architecture/measurement-and-labeling.md),
+  [spec 05](../specs/05-text-transforms.md) and the [intent map](intent-map.md)
+- Removal commit: (fill after commit)
+- Rationale kept: Measurement and labeling now records that the region API speaks source pixels.
+  pgdp-measure's architecture now records baseline overshoot and why it keeps its own F2 parser.
+  Spec 05 and the intent map hold the M04 deferred transforms, and the validation error now
+  points at spec 05. Read the old files with `git show 2e02d92:docs/_archive/handoff/<file>` and
+  `git show 2448622:docs/archive/plans/04-text-transforms.md`.
+- Remaining work: the deferred transforms in the intent map

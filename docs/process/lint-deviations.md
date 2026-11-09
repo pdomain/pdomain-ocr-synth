@@ -247,8 +247,8 @@ marker, and inline safety rationale to appear here.
 | `src/pdomain_ocr_synth/recipe/models.py:169` | `pyright: ignore[reportIncompatibleVariableOverride,reportGeneralTypeIssues]` | required field narrows base str \| None |
 | `tests/test_publish_idempotency.py:255` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
 | `tests/test_render_paragraph_box.py:132` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
-| `tests/test_validation.py:2034` | `noqa: N802` | test name mirrors the exported uppercase validation constant |
-| `tests/test_validation.py:2062` | `noqa: N802` | test name mirrors the exported uppercase validation constant |
+| `tests/test_validation.py:2033` | `noqa: N802` | test name mirrors the exported uppercase validation constant |
+| `tests/test_validation.py:2061` | `noqa: N802` | test name mirrors the exported uppercase validation constant |
 | `tests/test_cli_preview.py:556` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
 | `tests/test_cli_preview.py:623` | `pyright: ignore[reportUnknownParameterType,reportMissingParameterType]` | spy accepts the dynamic call shape from the code under test |
 | `tests/test_fonts.py:109` | `pyright: ignore[reportAttributeAccessIssue]` | test intentionally mutates protected state to exercise the failure path |
