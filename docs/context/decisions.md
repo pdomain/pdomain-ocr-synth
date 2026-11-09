@@ -545,7 +545,7 @@ what worked across that sweep. They are history, not repository rules.
 - Outcome: deleted; retired docs live in Git history, not an archive folder
 - Superseded by: [measurement and labeling](../architecture/measurement-and-labeling.md),
   [spec 05](../specs/05-text-transforms.md) and the [intent map](intent-map.md)
-- Removal commit: (fill after commit)
+- Removal commit: `08854687`
 - Rationale kept: Measurement and labeling now records that the region API speaks source pixels.
   pgdp-measure's architecture now records baseline overshoot and why it keeps its own F2 parser.
   Spec 05 and the intent map hold the M04 deferred transforms, and the validation error now
