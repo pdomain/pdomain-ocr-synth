@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against pyproject.toml, the CLI, recipe and render modules,
+  output writers, and tests. Partial milestones and deferred UI/annotation scope remain in the plans index.
 - **Disposition:** Retained as the project entry point.
 
 Synthetic OCR training-data generator. Produces labeled image+text pairs for
@@ -15,7 +16,8 @@ historical and specialty typography (first target: Cló Gaelach / early Irish
 typography), in the format `pdomain-ocr-training` reads as its profile
 directories.
 
-**Status:** M00–M10 substantially shipped. M11 (preview UI) and M12 (glyph annotations) remain.
+**Status:** M00–M10 substantially shipped, with residual work in M00, M03–M06, M09, and M10.
+M11 (preview UI) and M12 (glyph annotations) remain unbuilt. See the [remaining work](docs/plans/README.md).
 The `docs/specs/` set is the authoritative design reference; `docs/plans/` tracks milestone progress.
 See the [documentation map](docs/README.md) for current documentation and
 [`AGENTS.md`](AGENTS.md) for contributor and agent guidance.
@@ -71,7 +73,7 @@ Read the specs in order:
 | 08 | [Output and publishing](docs/architecture/output-and-publishing.md) | Trainer layouts and publishing |
 | 09 | [Extending](docs/specs/09-extending.md) | Adding providers / transforms / degradations |
 | 10 | [Output and publishing](docs/architecture/output-and-publishing.md) | Push rendered datasets to Hugging Face |
-| 11 | [Preview UI](docs/specs/11-preview-ui.md) | NiceGUI for visual recipe tuning with explicit create/save actions |
+| 11 | [Preview UI](docs/specs/11-preview-ui.md) | Unbuilt visual recipe tuning; the earlier NiceGUI design is superseded in part |
 | 12 | [Glyph annotations emission](docs/specs/12-glyph-annotations-emission.md) | Per-word ligature / long-s side channel |
 | 13 | [Dev-local mode and deps](docs/specs/13-dev-local-mode-and-deps.md) | `upgrade-deps` must not silently revert dev-local venvs |
 

@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against degradation/pipeline.py, builtins.py, validation.py,
+  and tests/test_degradation.py. The six unregistered stages remain catalog-only design intent.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 The degradation pipeline takes a clean rendered image and produces a
@@ -50,7 +51,11 @@ degradation:
 |-----|---------|---------|
 | `kind` | required | Stage type (see catalog below) |
 | `probability` | `1.0` | Per-sample probability of applying the stage |
-| `name` | derived | Optional label recorded in the manifest |
+| `name` | unset | Optional label recorded in the manifest |
+
+`name` has no generated default; it is omitted when unset. The manifest's `degradations_applied`
+list records configured kinds, probabilities, and optional names. It does not record which probability
+gates ran or the sampled option values.
 
 Order matters. The list is applied top-to-bottom. JPEG and resize-down
 should generally be last.
@@ -65,15 +70,18 @@ Affine rotation around the image center.
   fill: background          # background | white | black | transparent
 ```
 
+Rotation expands the canvas and updates every bbox collection. Output remains RGB;
+`transparent` uses white fill and does not produce an alpha channel.
+
 ### `perspective`
-Random 4-point warp.
+Deferred design: random 4-point warp. Validation rejects this stage.
 ```yaml
 - kind: perspective
   max_corner_offset_px: { min: 0, max: 10 }
 ```
 
 ### `scale`
-Uniform or non-uniform resize. Useful for simulating bad scan resolution.
+Deferred design: uniform or non-uniform resize for bad scan resolution. Validation rejects this stage.
 ```yaml
 - kind: scale
   factor_x: { min: 0.7, max: 1.0 }
@@ -160,7 +168,7 @@ Adds reddish-brown spots characteristic of aged paper.
 ```
 
 ### `bleed_through`
-Faint mirror of text from the back of the page.
+Deferred design: faint mirror of text from the back of the page. Validation rejects this stage.
 ```yaml
 - kind: bleed_through
   source: same_corpus       # same_corpus | text_file | rendered_other
@@ -169,7 +177,7 @@ Faint mirror of text from the back of the page.
 ```
 
 ### `scratches`
-Linear streaks.
+Deferred design: linear streaks. Validation rejects this stage.
 ```yaml
 - kind: scratches
   count: { min: 0, max: 3 }
@@ -179,7 +187,7 @@ Linear streaks.
 ```
 
 ### `fold_line`
-Adds a horizontal or vertical fold shadow.
+Deferred design: a horizontal or vertical fold shadow. Validation rejects this stage.
 ```yaml
 - kind: fold_line
   axis: random              # horizontal | vertical | random
@@ -211,6 +219,7 @@ Adds a horizontal or vertical fold shadow.
 ```
 
 ### `binarize`
+Deferred design. Validation rejects this stage.
 ```yaml
 - kind: binarize
   method: otsu              # otsu | sauvola | niblack | adaptive
@@ -246,8 +255,8 @@ A `preset:` entry expands inline. Presets are local to one recipe.
 
 ## Custom degradation stages
 
-Same extension contract as transforms / providers — see
-[09 — Extending](09-extending.md).
+Custom-stage entry-point loading remains unimplemented. The proposed contract is in
+[09 — Extending](09-extending.md); only the internal stage registry exists today.
 
 ## Adversarial Review
 

@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against top-level files, pyproject.toml, Makefile,
+  and commit 0068970. LICENSE and DEVELOPMENT.md remain absent; the original checklist is historical.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal
@@ -22,8 +23,8 @@ This milestone defines repository structure rather than runtime architecture: to
 
 ## Tech Stack
 
-The repository uses Python 3.13+, uv, Make, pytest, Ruff, basedpyright, pre-commit, and GitHub
-Actions as declared in current project configuration.
+The repository uses Python 3.13, uv, Make, pytest, Ruff, basedpyright, and pre-commit.
+GitHub Actions workflows were removed in `0068970`; `make ci` is the local gate.
 
 ## Global Constraints
 

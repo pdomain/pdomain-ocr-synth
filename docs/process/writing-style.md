@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-28
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration;
+  guidance and linked local entry points checked on 2026-11-07
 - **Disposition:** Retained as current intent or process guidance.
 
 Use this style for docs, reports, issue text, PR text, and user-facing copy.

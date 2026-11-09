@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** measured 2026-09-17 by
   `/workspaces/pdomain/.m15f-evidence/furniture_band_coverage.py`, whose output is
   `/workspaces/pdomain/.m15f-evidence/furniture-band-coverage.json`, and by
@@ -32,6 +32,15 @@ Kind: spec
   machine may propose, or deciding where a proposal run gets its geometry.
 - **Search terms:** slice 4, geometry engine, region detector, RegionDetector, BookTemplates,
   PageClassification, furniture_band_ordinals, ink bands, page furniture, running head, folio.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What this settles
 
@@ -264,6 +273,12 @@ ranges have no common point, so no fixed share can work. An Otsu split over each
 finds it cleanly every time, which is the fix the word-gap finding already established one level
 down. See
 [the furniture gap threshold cannot be a fixed share](../architecture/measurement-and-labeling.md#furniture-proposals).
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The measurement evidence above does not establish independent design review. The open questions remain recorded
+under "What this design does not settle."
 
 ## Related
 

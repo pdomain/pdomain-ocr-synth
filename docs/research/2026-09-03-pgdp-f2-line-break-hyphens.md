@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-03
-Last verified: 2026-09-04
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-03
-- **Last verified:** 2026-09-04
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-09-03 over 41,708 F2 lines in the five whole-book PGDP projects
   under `/workspaces/pdomain-data/pgdp-corpus`, against the M15d word-reconciliation results
 - **Disposition:** Active finding. Its predicted consequence was retracted on 2026-09-03 and
@@ -24,6 +24,17 @@ Kind: research
   whether the pipeline needs OCR.
 - **Search terms:** PGDP, F2, hyphen, line break, dehyphenation, word reconciliation, over-split,
   Gate 6, OCR witness.
+
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `.m15d-evidence/fragment-test.json` under `/mnt/work/projects/pdomain/` records the
+leading-fragment repair counts. The measurement package's `docs/architecture/pgdp-font-free-typography.md`
+still documents F2 rejoining and the optional OCR witness. No corpus or image measurement was re-run.
 
 ## Goal
 

@@ -6,11 +6,14 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against recipe/models.py, loader.py, validation.py,
+  recipe.schema.json, and tests/test_recipe_schema_artifact.py. Catalog-only entries remain design intent.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
-This is the reference for the YAML schema. For a tutorial walkthrough, see
+This is a partial design for the YAML schema, including reserved and unimplemented entries.
+The generated `recipe.schema.json` and validation code define accepted behavior.
+For a tutorial walkthrough, see
 [Recipe workflow](../usage/recipe-workflow.md).
 
 ## Current implementation status
@@ -91,15 +94,18 @@ inferred from the `min`/`max` types.
 
 ```yaml
 output:
-  format: pdomain-ocr-training/v1     # required; see spec 08
+  format: pdomain-ocr-training/v1     # required string; reserved, not a writer selector
   mode: recognition             # required; recognition | detection
   destination: ${PD_ML_MODELS}/ml-recognition/gaelic/recognition
   count: 50000                  # required; total samples
-  manifest: manifest.jsonl      # optional; default per spec 08
+  manifest: manifest.jsonl      # reserved; writers always use this filename
 ```
 
-`destination` is created if missing. If non-empty and not the same recipe's
-prior output, render aborts unless `--force` is passed.
+`format` is retained as an arbitrary string; the runtime does not select or validate an output adapter from it.
+`manifest` is also retained but ignored by the writers, which always write `manifest.jsonl`.
+
+`destination` is created if missing. A non-empty destination requires `--force` to clear it or
+`--resume` to continue when the saved recipe snapshot matches. The two flags are mutually exclusive.
 
 ## `corpus`
 
@@ -150,7 +156,7 @@ See [05 — Text transforms](05-text-transforms.md) for built-ins.
 fonts:
   - path: ./fonts/bungc/bungc.otf
     weight: 0.4
-    license: gaelchlo-celtic-free    # informational; surfaced in manifest
+    license: gaelchlo-celtic-free    # informational; retained in the recipe snapshot
     source: https://www.gaelchlo.com/bungc.zip
   - path: ./fonts/seangc/seangc.otf
     weight: 0.4
@@ -175,7 +181,7 @@ time is **deferred**: today, missing glyphs surface at render time as
 
 ```yaml
 rendering:
-  shaping_engine: harfbuzz       # harfbuzz | pillow (pillow is a fallback)
+  shaping_engine: harfbuzz       # only runnable engine; pillow is reserved and validation rejects it
   font_size_pt: { min: 10, max: 20 }
   dpi: { min: 200, max: 400 }
   ink_color:
@@ -195,9 +201,9 @@ See [06 — Rendering](06-rendering.md).
 
 ```yaml
 layout:
-  mode: word_crops               # word_crops | lines | paragraphs | pages
+  mode: paragraphs              # word_crops | lines | paragraphs | pages
   padding_px: { min: 4, max: 12 }
-  max_width_px: 800              # only for lines/paragraphs
+  max_width_px: 800              # lines/paragraphs/pages
   line_spacing: { min: 1.1, max: 1.4 }
 ```
 
@@ -251,8 +257,8 @@ command line. CLI flags always override recipe values.
 
 1. Required top-level keys are present.
 2. `schema_version` matches a supported version.
-3. Filesystem-rooted paths resolve and exist (font files, local corpus
-   files, paper-texture directories, optional `publish.hf_dataset.description_file`).
+3. Required filesystem assets exist: fonts, local corpus paths, and paper-texture directories.
+   Missing optional fonts and `publish.hf_dataset.description_file` produce warnings rather than errors.
 4. Each font opens cleanly and reports a non-empty cmap.
 5. Corpus / text-transform / shaping-engine / degradation `kind`
    discriminators that the recipe schema accepts but the runtime
@@ -268,10 +274,9 @@ command line. CLI flags always override recipe values.
 Network reachability is **not** checked at validate time. Validate
 accepts `--offline` for symmetry with `lint`, but the flag is a
 pass-through today: per-corpus-entry cache-presence checks are
-deferred. The `--offline` contract is enforced at fetch time —
-`pdomain-ocr-synth fetch` (and the corpus stage of `render`) raise
-`OfflineCacheMissError` on a cache miss when offline. See
-`docs/roadmap/03-corpus.md` "Cache layer" for the runtime semantics.
+deferred. Neither `fetch` nor `render` exposes an offline flag. Programmatic providers can receive
+`ProviderContext(offline=True)`; the web and Wikisource providers raise `OfflineCacheMissError` for uncached remote data.
+These CLI commands do not set that context flag.
 
 Any failure exits with code 3 and a structured error report.
 

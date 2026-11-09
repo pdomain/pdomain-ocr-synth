@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against degradation/pipeline.py, degradation/builtins.py,
+  validation.py, and tests/test_degradation.py. Deferred stages remain rejected; no image review was rerun.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal

@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-04
-Last verified: 2026-09-04
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-04
-- **Last verified:** 2026-09-04
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-09-04 over 17,205 matched lines in the five whole-book
   `alignment-t2-*` reports at each book's shipped `ink-profile-word-runs/v2` threshold, with the
   replay validated line for line against a full-evidence pipeline run of
@@ -26,6 +26,17 @@ Kind: research
   segmentation needs a witness beyond gap width.
 - **Search terms:** word reconciliation, over-split, per-gap error, Gate 6, letterspacing,
   residual, threshold jitter, leading fragment, line-break hyphen.
+
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `.m15d-evidence/attribution.json` and `fragment-test.json` under `/mnt/work/projects/pdomain/`
+record the disagreement and leading-run repair counts. The measurement package's
+`docs/architecture/pgdp-font-free-typography.md` documents the per-gap metrics and witness. No replay was run.
 
 ## Goal
 

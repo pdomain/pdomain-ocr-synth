@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-08-31
-- **Last verified:** 2026-08-31
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-08-31 from the reproduced fixed 25-page M15b review set, the v1
   extractor code, and owner design approval in this session
 - **Disposition:** Active design for the M15b fragmented-band extractor correction.
@@ -16,6 +16,15 @@
 Version 2 stops rejecting a whole page because one ink band splits into several clusters. It merges
 clusters that overlap horizontally, ignores clusters holding almost no ink when it counts
 fragmentation, and excludes a page only when a large share of its bands stay fragmented.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What the correction must achieve
 

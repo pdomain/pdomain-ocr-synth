@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-07
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against recipe/models.py, render/sample.py, and output/.
+  This remains unbuilt design intent; shared-model ownership and default-on policy are not confirmed contracts.
 - **Disposition:** Retained as current intent or process guidance.
 
 This spec defines how the synth pipeline emits **per-word glyph

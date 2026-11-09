@@ -46,6 +46,8 @@ Partial plans stay even when most of their tasks have shipped.
   [docs/plans/00-bootstrap.md](00-bootstrap.md)
 - Corpus providers that ship are local, web, and Wikisource. Further providers stay deferred.
   [docs/plans/03-corpus.md](03-corpus.md)
+- Text transforms still defer antique-convention transforms and recipe-local loading.
+  [M04's partial plan](../archive/plans/04-text-transforms.md) remains open despite its archive path.
 - Rendering still has deferred font-coverage and sampling work. [docs/plans/05-rendering.md](05-rendering.md)
 - Degradation still has optional stages, including perspective and bleed-through. They are not a public extension
   contract. [docs/plans/06-degradation.md](06-degradation.md)
@@ -68,7 +70,8 @@ Partial plans stay even when most of their tasks have shipped.
   [docs/plans/2026-09-08-style-span-review-surface.md](2026-09-08-style-span-review-surface.md)
 - Editorial corrections: no `EditorialCorrection` type.
   [docs/plans/2026-09-08-editorial-corrections.md](2026-09-08-editorial-corrections.md)
-- Labeling slices 6 and 7 are not built. Drawing or resizing a region is not built. Slice 6 lost poetry as its example.
+- Slice 6 remains held after losing poetry as its example. Slice 7 has an export loader and a training loop,
+  but requires a caller-supplied model. Region drawing, resizing, and membership editing ship in the labeler.
   [docs/plans/2026-09-07-labeling-track-roadmap.md](2026-09-07-labeling-track-roadmap.md)
 
 ## Page-kind confirm and save_page

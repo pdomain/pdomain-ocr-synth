@@ -5,11 +5,15 @@
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let a labeler record that a page's ink should have read differently — a printer's error,
+## Goal
+
+Let a labeler record that a page's ink should have read differently — a printer's error,
 a dropped word, a name misspelled through a chapter — without that claim ever entering
 `Word.ground_truth_text`. Corrections are captured and held apart, never applied.
 
-**Architecture:** `EditorialCorrection` is a new portable pydantic model in `pdomain-book-contracts`,
+## Architecture
+
+`EditorialCorrection` is a new portable pydantic model in `pdomain-book-contracts`,
 sibling to `StyleSpan`, over a half-open grapheme range that — unlike `StyleSpan` — may be empty, to
 represent a printer's dropped word as a zero-extent insertion. It carries no id and no page hash of
 its own, the same restraint `StyleSpan` shows; identity is derived in the labeler. The labeler adds
@@ -20,7 +24,9 @@ stores the record), and `EditorialCorrectionDecisionLog` records a reviewer's co
 verdict per correction, CAS-bound the same way `StyleSpanDecisionLog` is. Three routes expose this:
 record, list, and decide.
 
-**Tech Stack:** Python 3.11+ (book-contracts), Python 3.13 (labeler), pydantic `BaseModel`,
+## Tech Stack
+
+Python 3.11+ (book-contracts), Python 3.13 (labeler), pydantic `BaseModel`,
 `StrEnum`, JSONL journals with an OS append lock, FastAPI, pytest, ruff, basedpyright.
 
 **Spec:** [Annotation provenance and
@@ -33,7 +39,7 @@ corrections say what the page should have said, and never touch ground truth."
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-08
-- **Last verified:** 2026-09-08
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-08 from the spec above and direct inspection of
   `pdomain-book-contracts/pdomain_book_contracts/typography/spans.py` (`StyleSpan._validate_range`,
   `CanonicalModel`), `typography/records.py` (`ParserNoteEvidence`, `ParserNoteStatus`),
@@ -63,6 +69,12 @@ corrections say what the page should have said, and never touch ground truth."
   correction, half-open grapheme range, insertion, deletion.
 
 ## Global Constraints
+
+Verification scope, 2026-11-07: the sibling contracts tree still has no
+`EditorialCorrection`, and the labeler still has no `StyleSpanDecisionLog`.
+The plan remains open behind the style-span dependency. The task code and command
+examples below are the 2026-09-08 implementation sketch; they were not executed or
+revalidated as a patch during this check.
 
 - **This plan depends on two companion plans landing first, in either order relative to each other,
   both before this plan's Task 1:**

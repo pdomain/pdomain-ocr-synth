@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-09
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration;
+  guidance and linked local entry points checked on 2026-11-07
 - **Disposition:** Retained as authoritative repository guidance.
 
 Start with [`AGENTS.md`](AGENTS.md) for the guidance chain and
@@ -15,10 +16,11 @@ Start with [`AGENTS.md`](AGENTS.md) for the guidance chain and
 
 Recipe-driven synthetic OCR training-data generator; produces labeled
 image+text pairs for historical and specialty typography (first target:
-Cló Gaelach / early Irish). Status: M00–M10 substantially shipped;
-M11 (preview UI) and M12 (glyph annotations) are the remaining milestones.
+Cló Gaelach / early Irish). Status: M00–M10 substantially shipped, with
+residual work in M00, M03, M04, M05, M06, M09, and M10. M11 (preview UI)
+and M12 (glyph annotations) are unbuilt. See [remaining work](docs/plans/README.md).
 PGDP measurement left this repo on 2026-09-07 for `pdomain-pgdp-measure`;
-this repo renders and publishes, and consumes measurement reports.
+this repo renders and publishes. Its future labeled-dataset input contract is still unspecified.
 Architecture: `docs/specs/00-overview.md`.
 
 ## Commands

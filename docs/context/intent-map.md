@@ -6,11 +6,12 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-07
 - **Provenance:** authored from all 32 evidence-backed migration analyzer records, current repository
   state, the evidence-backed 2026-08-24 PGDP architecture promotion, and the 2026-09-06 promotion
   of the remaining shipped M15 slices with the retirement of their plans; the active list was
-  checked again on 2026-11-06 against the plans still on disk
+  checked again on 2026-11-06 against the plans still on disk. Region editing and partial layout training
+  were checked against current sibling code on 2026-11-07.
 - **Disposition:** Injected ground truth for active, deferred, blocked, rejected, and owner-dependent intent.
 
 This map preserves useful unbuilt work after separating shipped truth from old
@@ -34,7 +35,8 @@ change what this repository should do next.
 - Four labeling plans are only partly proved: explicit membership, word and glyph provenance,
   style-span review, and editorial corrections. Their files stay in `docs/plans/`.
 - Slice 6 of the labeling track has no model case left, because poetry separated without one.
-  Slice 7, a layout trainer, is not built
+  Slice 7 has a region-export loader and training loop. It requires a caller-supplied model,
+  so the full model work stays open
   ([labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md)).
 - Gate 3, the flat-ascender queue, the atlas policy, unused page signals, and the 30-page
   admission minimum belong to `pdomain-pgdp-measure`, not to this package. The numbers are in

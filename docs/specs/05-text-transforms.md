@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against text_transforms/builtins.py, pipeline.py,
+  registry.py, validation.py, and tests/test_text_transforms.py. Antique and inline extensions remain unbuilt.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 Transforms run on the concatenated corpus text **before** tokenization. They
@@ -21,8 +22,7 @@ third-party entry-point registration ship in
 
 `u_v_swap`, `i_j_swap`, and `ct_st_ligature_marker` are not implemented.
 Recipe-relative Python transforms and renderer consumption of `ct`/`st`
-markers are also unsupported. Probability granularity varies by transform;
-the universal per-token wording below is not a current guarantee.
+markers are also unsupported. Probability handling belongs to individual transforms, as described below.
 
 ```yaml
 text_transforms:
@@ -92,7 +92,7 @@ the corresponding dotted consonants (`ḃ`, `ċ`, `ḋ`, `ḟ`, `ġ`, `ṁ`, `�
 
 | Mode | Behavior |
 |------|----------|
-| `conservative` | Only converts when followed by a vowel and not part of a known English digraph |
+| `conservative` | Only converts when followed by a vowel; no English-digraph detection |
 | `aggressive` | Converts every matched digraph |
 
 If the corpus is already in pre-reform spelling, skip this transform.
@@ -111,9 +111,9 @@ with optional probability so the corpus stays mixed.
 
 ### `long_s_medial`
 
-Replace `s` with `ſ` (long s) in word-medial position only — never word-
-final, never before another `s`. Models early-modern typographic
-conventions.
+Replace eligible lowercase `s` with `ſ` (long s), including token-initial `s`.
+The implementation splits on whitespace. It skips the last character of each token and `s` before another
+`s` or `h`; it does not strip punctuation first. Thus `s,` becomes `ſ,`. Uppercase `S` stays unchanged.
 
 ```yaml
 - long_s_medial:
@@ -130,7 +130,8 @@ with default options.
 
 ### `u_v_swap` / `i_j_swap`
 
-Random interchange of `u`↔`v` and `i`↔`j` per early-modern conventions.
+Deferred proposal: randomly interchange `u`↔`v` and `i`↔`j` per early-modern conventions.
+Neither transform is registered; validation rejects them.
 
 ```yaml
 - u_v_swap:
@@ -141,14 +142,15 @@ Random interchange of `u`↔`v` and `i`↔`j` per early-modern conventions.
 
 ### `ct_st_ligature_marker`
 
-Tag `ct` and `st` so the renderer can substitute the OpenType `liga`
-feature even when the font's default doesn't enable it. (No visible
-character change; sets internal markers consumed by the renderer.)
+Deferred proposal: tag `ct` and `st` for the renderer to substitute ligatures without changing visible characters.
+The transform and renderer marker handling are not implemented; validation rejects the transform.
 
 ## Probabilities and ordering
 
-- A transform with `probability: p` is applied per-token (or per-match)
-  with that probability, drawn from the recipe seed.
+- `apply_lenition_dots` and its `seimhiu_to_dot` alias draw per eligible digraph match.
+  `tironian_et` draws per matching word occurrence. `long_s_medial` draws per eligible lowercase `s`.
+- The pipeline does not apply a general probability gate. Other built-ins, including `dot_to_seimhiu`,
+  ignore a `probability` option. Each step receives its own RNG derived from the recipe seed and step index.
 - Order matters. `normalize_whitespace` should run first so later
   transforms see consistent input.
 - Codepoint-level transforms (`apply_lenition_dots`, `long_s_medial`)
@@ -161,8 +163,7 @@ A transform is a Python callable
 `pdomain_ocr_synth.text_transforms` entry point. See
 [09 — Extending](09-extending.md) for the full contract.
 
-For one-off transforms, drop a `transforms.py` next to the recipe file and
-reference it inline:
+Deferred proposal: load a one-off `transforms.py` next to the recipe file through this inline form:
 
 ```yaml
 text_transforms:
@@ -173,8 +174,8 @@ text_transforms:
         foo: bar
 ```
 
-The module is loaded relative to the recipe directory and is not
-auto-installed system-wide.
+No module is loaded by this form today; the `python` transform is unregistered and validation rejects it.
+The proposal would resolve the module relative to the recipe without installing it system-wide.
 
 ## Adversarial Review
 

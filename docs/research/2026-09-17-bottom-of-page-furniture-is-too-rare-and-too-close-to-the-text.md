@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** measured 2026-09-17 over all 1,385 pages of the five baseline corpus books by
   `/workspaces/pdomain/.m15f-evidence/bottom-furniture/` (`measure_bands.py`, `ocr_bands.py`,
   `analyze_bottom.py`, per-book band JSON, `summary.json`), which re-measures each page with
@@ -28,7 +28,29 @@ Kind: research
 - **Search terms:** bottom furniture, footer, catchword, signature mark, press figure, drop folio,
   footnote detection, direction line, furniture_band_ordinals.
 
-## Do not build a bottom-furniture detector from geometry
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `/mnt/work/projects/pdomain/.m15f-evidence/bottom-furniture/summary.json` agrees with the
+1,385-page total, 1,328 eligible pages, and 88 marked pages. It also agrees with the position rule's
+78 true positives and 71 false positives. This was an artifact comparison; the visual review was not repeated.
+
+## Goal
+
+Test whether the top-furniture detector's geometric approach can identify bottom marks and footnotes.
+
+## Method
+
+The 2026-09-17 study measured all 1,385 pages, read bottom bands with Tesseract, and checked
+a seeded 100-page sample and all 97 flagged pages by eye. The provenance above names the scripts.
+
+## Conclusions
+
+### Do not build a bottom-furniture detector from geometry
 
 Bottom marks are rare, and nothing sets them apart from the surrounding text. Across 1,328 eligible
 pages, only 88 carry a confirmed bottom mark, 6.6 percent. Top-of-page furniture is far more
@@ -44,7 +66,9 @@ splits a furniture band from the body by a gap fitted per book. Bottom marks do 
 they sit at ordinary line spacing. 81 of the 88 sit within 1.25 line pitches of the last body line,
 with a median of 1.05. Only 32 pooled pages have a short last band set off by 1.5 pitches or more.
 
-## The marks are signature marks, drop folios and press figures
+## Evidence
+
+### The marks are signature marks, drop folios and press figures
 
 The 88 confirmed marks are 57 signature marks, 17 drop folios and 14 probable press figures.
 
@@ -85,7 +109,9 @@ single flagged page is a table rule.
 The reason is the body bottom itself. Its median absolute deviation is 4 to 11 pixels in four
 books, and 53 pixels in the poetry book, whose pages end where the stanza ends.
 
-## A later pass would need four things
+## Next steps
+
+### A later pass would need four things
 
 - **Books with catchwords**, which means earlier printing than this corpus.
 - **The word text, not just the band.** Which mark it is comes from reading it: a folio from the
@@ -99,7 +125,9 @@ books, and 53 pixels in the poetry book, whose pages end where the stanza ends.
   from `_classify_page`, all in `pdomain-pgdp-measure`'s `page_templates.py`. The profile drops each
   band's x-extent and ink count today, and a bottom detector would need both.
 
-## The evidence here is thin in four places
+## What this does NOT establish
+
+### The evidence here is thin in four places
 
 - Press figures rest on one book and one numeral, identified by recurrence.
 - Footnotes rest on two books and 94 truth pages, most of them a single line reading "* See page N."

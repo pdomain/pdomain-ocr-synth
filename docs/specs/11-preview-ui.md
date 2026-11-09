@@ -1,4 +1,4 @@
-# 11 — Preview UI (NiceGUI)
+# 11 — Preview UI
 
 ## Agent Index
 
@@ -6,11 +6,12 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against pyproject.toml, render/preview.py,
+  tests/test_cli_preview.py, and this document's 2026-09-06 partial supersession. UI scope remains unsettled.
 - **Disposition:** Retained as current intent or process guidance.
 
-A small, preview-focused NiceGUI surface for tuning recipes by sight. The
+A small, preview-focused surface for tuning recipes by sight. The
 picker may create a new recipe through the existing CLI. Modifying an existing
 recipe requires the separate diff-and-save flow. The CLI remains the contract;
 the UI is a faster feedback loop
@@ -35,17 +36,15 @@ the explicit recipe create/save actions are also out of scope.
 
 ## Current implementation status
 
-M11 is not implemented. The optional NiceGUI dependency and deterministic
-backend preview primitive exist, but there is no UI package, console script,
+M11 is not implemented. The deterministic backend preview primitive exists, but the NiceGUI
+dependency was removed. There is no UI package, console script,
 page, viewmodel, or UI test. See `src/pdomain_ocr_synth/render/preview.py`,
 `tests/test_cli_preview.py`, and the current scoping plan.
 
-The current scoping direction builds the UI under `pdomain_ocr_synth.ui` and
-presents over `render.preview.run_preview`; the package name still needs owner
-confirmation. Diff-and-save is sequenced as M11.5 and introduces `ruamel.yaml`
-under the `ui` extra. The older `pdomain_ocr_synth.preview.app`, direct
-`render.run_recipe` integration, and M10 cloud-renderer dependency are not
-current implementation guidance.
+The earlier scoping plan proposed `pdomain_ocr_synth.ui` over `render.preview.run_preview`, with
+diff-and-save in M11.5. Its package name and `ruamel.yaml` dependency are not settled for the
+replacement design. The older `pdomain_ocr_synth.preview.app`, direct `render.run_recipe`
+integration, and M10 cloud-renderer dependency are not current implementation guidance.
 
 ## Goal
 

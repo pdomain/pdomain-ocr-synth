@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-07
-Last verified: 2026-09-07
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-09-07
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-09-07 against the five whole-book inventories captured at
   commit `f9fdfef` in `/workspaces/pdomain/.extraction-baseline/`, compared glyph for glyph with
   the M15f inventories in `/workspaces/pdomain/.m15f-evidence/` and the 23 cells marked wrong in
@@ -30,6 +30,17 @@ Kind: research
   glyph inventories, or judging whether a measurement re-run is worth the time.
 - **Search terms:** Gate 3, label correctness, small caps, label_style, quality flags,
   band identification, line_ordinal, glyph identity, italic word gap, glyph mislabel.
+
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `/mnt/work/projects/pdomain/.m15f-evidence/gate3-review.json` records 1,050 reviewed cells,
+23 marks, and three small-caps marks. The measurement package's `docs/architecture/pgdp-glyph-inventory.md`
+still records the open gate. This check did not rescore crops, draw a new sample, or re-run the extraction.
 
 ## Goal
 

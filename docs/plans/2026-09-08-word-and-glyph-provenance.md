@@ -5,11 +5,15 @@
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Close the two annotation levels the provenance design left half-built. Every writer of
+## Goal
+
+Close the two annotation levels the provenance design left half-built. Every writer of
 `Word.ground_truth_text` stamps which source produced it. Glyph predictions survive past the request
 that computed them, a rejection is recorded as a fact, and a reject route exists to record it.
 
-**Architecture:** Words already have the right shape — `text`/`ocr_confidence` (the machine's claim),
+## Architecture
+
+Words already have the right shape — `text`/`ocr_confidence` (the machine's claim),
 `_ground_truth_text` (the human's answer), and `review: ReviewMetadata | None` (the marker
 distinguishing unreviewed from reviewed). Nothing new is stored. `Word` gains one method that sets
 `ground_truth_text` and stamps `review.source`/`review.state` in the same call, and the four writers
@@ -21,7 +25,9 @@ that rejection as a `KnowledgeState.VERIFIED_NEGATIVE` fact rather than leaving 
 design's rule, neither level needs a decision journal: a word has one answer and a glyph annotation
 set is per-word, so a diff plus the existing reviewed marker is enough.
 
-**Tech Stack:** Python 3.11+ (book-tools) / 3.13 (labeler-spa), dataclasses, Pydantic v2, pytest,
+## Tech Stack
+
+Python 3.11+ (book-tools) / 3.13 (labeler-spa), dataclasses, Pydantic v2, pytest,
 ruff, basedpyright.
 
 **Spec:** [Annotation provenance and
@@ -35,7 +41,7 @@ missing", and "When a decision store is required".
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-08
-- **Last verified:** 2026-09-08
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-08 from the design spec above and direct inspection of
   `pdomain-book-tools` `pdomain_book_tools/ocr/word.py`, `ocr/ground_truth_matching.py`,
   `ocr/review.py`, `ocr/glyph_annotations.py`, its Makefile and `pyproject.toml`, and
@@ -58,6 +64,14 @@ missing", and "When a decision store is required".
   LabelerSidecars.
 
 ## Global Constraints
+
+Verification scope, 2026-11-07: book-tools still has no
+`set_ground_truth_text_with_provenance`; the labeler still has no
+`test_words_ground_truth_provenance.py` or `test_glyph_mark_staleness.py`.
+`glyph_predictions_map` exists, but remains keyed by line and word indices; its
+existence alone does not complete this plan. The task code and command examples
+below are the 2026-09-08 implementation sketch; they were not executed or
+revalidated as a patch during this check.
 
 - **`ReviewMetadata.source` and `.state` must already exist in a released `pdomain-book-contracts`
   version before Task 1 starts.** They land in the vocabularies plan's Task 5. Verify inside the

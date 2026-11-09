@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against corpus/registry.py, providers/, recipe/models.py,
+  validation.py, and tests/test_corpus*.py. The catalog below retains unimplemented provider intent.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 A `corpus` entry has a `type` that selects a provider. All providers emit
@@ -52,8 +53,8 @@ Read text from local files.
 `path` may be a single file, a glob (`./corpora/*.txt`), or a directory
 (read recursively, alphabetical order).
 
-Parsers are inferred from extension (`.txt` plain, `.html` html-text,
-`.xml` tei-text) or set explicitly with `parser:`.
+The current local provider accepts only plain UTF-8 text. It infers plain text for `.txt` and
+rejects HTML/XML parser inference; web parsing supports those formats separately.
 
 ## `web`
 
@@ -78,9 +79,8 @@ Parsers:
 | `tei-text` | TEI XML → extract `<text>` content (CELT, OpenGreekAndLatin) |
 | `json` | Apply `field_path` (e.g. `$.entries[*].body`) to extract strings |
 
-Web fetches honor `robots.txt` if `respect_robots: true` (default
-`true`). Polite defaults: 1 req/sec per host, 30s timeout, 3 retries
-with backoff.
+The design reserves `respect_robots: true`, but the current fetcher does not enforce `robots.txt`.
+The HTTP layer supplies rate limiting, timeouts, and retries with backoff.
 
 ## `web_list`
 

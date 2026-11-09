@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against pyproject.toml, corpus registries, recipe models,
+  render dispatch, output writers, and the remaining-work index. Partial design intent remains open.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Purpose
@@ -89,13 +90,17 @@ script-specific transforms.
 
 ## Scan-derived typography and structure
 
-The active [PGDP typography and page-structure design](2026-08-22-pgdp-typography-structure-synthesis-design.md)
+The retained [PGDP typography and page-structure design](2026-08-22-pgdp-typography-structure-synthesis-design.md)
 extends the original recognition-first scope. It defines a measurement-first program for learning
 book styles from PGDP scans and generating structured pages with mixed typography.
 
-The active [PGDP source-line alignment design](2026-08-23-pgdp-source-line-alignment-design.md)
+The retained [PGDP source-line alignment design](2026-08-23-pgdp-source-line-alignment-design.md)
 defines M15b. It conservatively aligns byte-preserved F2 lines with source-frame image candidates
 on eligible single-column pages. Rectification remains a separate M15c milestone.
+
+These are historical cross-repository designs. Measurement code and its current gates moved to
+`pdomain-pgdp-measure`; they are not active synthesis implementation instructions here.
+See [Measurement and labeling](../architecture/measurement-and-labeling.md).
 
 ## Open questions
 

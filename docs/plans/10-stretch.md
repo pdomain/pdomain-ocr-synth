@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against cli.py, audit.py, lint.py, render/run.py,
+  and tests/test_spec_docs.py. Closeout test counts below are historical, not a new test run.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal
@@ -62,7 +63,8 @@ fix), `07dccd1` (audit `schema_version` forward-compat skip),
 Subsequent QoL chunks: audit global aggregate cache + `audit
 --global` reader.
 
-Test count: 890 passed / 4 skipped under default `make ci`.
+The M10 closeout recorded 890 passed / 4 skipped under default `make ci`.
+That historical count was not rerun for the 2026-11-07 documentation review.
 
 ## M10 polish — done
 
@@ -247,10 +249,7 @@ This is only worth doing once render time becomes a bottleneck —
 
 ### Real-time stats during render
 
-- [ ] Render progress today reports on completion (rendered /
-      skipped counts in the audit entry). Streaming per-sample
-      progress through a callback / TUI surface — words/second,
-      ETA, current font + degradation pipeline being applied —
-      would help when iterating on a slow recipe. Likely lands as
-      a `--progress {none,bar,json}` flag on `render` rather than
-      its own subcommand.
+- [ ] The current renderer shows a throttled count, percentage, and samples/second on a TTY,
+      then a final summary on every run. A public callback, ETA, current font/stage details, and
+      selectable `--progress {none,bar,json}` modes remain unbuilt. Add those only when a slow
+      recipe needs them.

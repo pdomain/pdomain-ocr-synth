@@ -5,7 +5,9 @@
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stop treating geometric containment as region membership. In `pdomain-book-tools`, turn the
+## Goal
+
+Stop treating geometric containment as region membership. In `pdomain-book-tools`, turn the
 word-tagging pass that currently writes a `layout:<type>` label for every region a word's centre
 falls in into a proposal generator that also names which candidate is the innermost and which
 words are genuinely disputed between siblings, and add the block-tree invariant that no word is
@@ -13,7 +15,9 @@ reachable from two sibling regions. In `pdomain-ocr-labeler-spa`, add the geomet
 finds which proposal a confirmed region came from, on page and box, never on list position or
 ordinal.
 
-**Architecture:** Two independent repos, three tasks. `tag_words_with_layout` keeps its existing
+## Architecture
+
+Two independent repos, three tasks. `tag_words_with_layout` keeps its existing
 side effect (writing a tag for every candidate region a word's centre falls in) so the two existing
 consumers of that tag — the figure-internal-noise drop pass and the block-role bubble-up — see no
 behaviour change. What changes is that the same per-word geometry is now exposed as a typed,
@@ -25,7 +29,9 @@ in the labeler is unrelated to either book-tools change; it consumes `RegionProp
 `ResolvedRegion` records already defined by a separate plan and picks the best-overlapping proposal
 for a confirmed region using the IoU helper that already exists in `pdomain-book-contracts`.
 
-**Tech Stack:** book-tools — Python `>=3.11,<3.14`, pytest, ruff, basedpyright. labeler-spa — Python
+## Tech Stack
+
+book-tools — Python `>=3.11,<3.14`, pytest, ruff, basedpyright. labeler-spa — Python
 `>=3.13,<3.14`, frozen dataclasses, pytest, ruff, basedpyright.
 
 **Spec:** [Annotation provenance and
@@ -39,7 +45,7 @@ by its position in a list".
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-08
-- **Last verified:** 2026-09-08
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-08 from the design spec above and direct inspection of
   `pdomain-book-tools` `pdomain_book_tools/ocr/layout_aware_reorg.py`,
   `pdomain_book_tools/ocr/reorganize_page_utils.py`, `pdomain_book_tools/ocr/block.py`,
@@ -59,6 +65,12 @@ by its position in a list".
   identity by page and box, ragged figure notch.
 
 ## Global Constraints
+
+Verification scope, 2026-11-07: `propose_word_regions` and
+`find_words_in_multiple_sibling_regions` are still absent from book-tools, and the
+labeler still has no `core/regions/matcher.py`. The plan remains open. The task
+code and command examples below are the 2026-09-08 implementation sketch; they
+were not executed or revalidated as a patch during this check.
 
 - **book-tools:** Python `>=3.11,<3.14`. `filterwarnings = ["error"]`, `--strict-markers`,
   `--strict-config`. Branch coverage is on. Run targets with `AI=1` to capture verbose output to

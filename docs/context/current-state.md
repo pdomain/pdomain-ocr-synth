@@ -6,10 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-07
 - **Provenance:** rewritten 2026-11-06 from the tree at `aaecea1` plus inspection of sibling packages. The long PGDP run
   digest that this file held through `aaecea1` stays in that commit. Research notes below keep the measurements that
-  still matter.
+  still matter. Current region-editing and layout-training status checked against sibling code on 2026-11-07.
 - **Disposition:** Injected operational ground truth.
 
 Measurement and human labeling are in other packages. See
@@ -25,12 +25,16 @@ The contracts are [Development and recipe system](../architecture/development-an
 
 The list is [Remaining work](../plans/README.md). In short:
 
-- Partial synth milestones M00, M03, M05, M06, M09, and M10
+- Partial synth milestones M00, M03, M04, M05, M06, M09, and M10
 - The preview UI, M11
 - Glyph-annotation emission, M12
-- Membership matching, word and glyph provenance, style-span review, and editorial corrections
-- The labeling roadmap's slices 6 and 7
+- Proposal-to-region matching and the sibling-region membership invariant
+- Word and glyph provenance, style-span review, and editorial corrections
+- The labeling roadmap's held slice 6 and partial slice 7, whose training loop requires a caller-supplied model
 - One page-kind store question
+
+Manual region drawing, resizing, and member-word editing ship in the labeler. Layout training has an export loader
+and an injected-model loop in `pdomain-ocr-training`; it has no default model backend.
 
 ## GitHub Actions workflows are gone
 

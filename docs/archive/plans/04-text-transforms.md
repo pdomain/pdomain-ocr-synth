@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against text_transforms/builtins.py, pipeline.py,
+  registry.py, and tests/test_text_transforms.py. Antique transforms and inline loading remain unbuilt.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal

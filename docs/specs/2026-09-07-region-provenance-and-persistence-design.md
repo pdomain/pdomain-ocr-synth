@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-09-08
+- **Last verified:** 2026-11-07
 - **Provenance:** designed 2026-09-07 and 2026-09-08 with the owner, from direct inspection of
   `pdomain-pgdp-measure/page_templates.py`, `pdomain-prep-for-pgdp/core/models.py`,
   `core/auto_detect.py`, `core/pipeline/stage_registry.py`, `api/data/project_stages.py`,
@@ -32,6 +32,15 @@
 
 **Spec:** [Region vocabulary](2026-09-07-region-vocabulary-design.md) is section one. This carries
 sections two to five.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What this settles
 
@@ -679,6 +688,12 @@ being run later. It also lets a person filter for carried decisions and spot-che
   else about it is.
 - Whether an editorial correction can span a page boundary. A word broken across pages is already
   known to be handled poorly, and a correction to one is unmodeled.
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The data-model scan corrections above are recorded evidence, but do not identify an independent design review.
+The unresolved design questions remain under "What this does not settle."
 
 ## Related
 

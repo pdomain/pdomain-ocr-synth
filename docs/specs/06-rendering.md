@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against render/, recipe/models.py, validation.py,
+  output writers, and tests/test_render*.py. YAML examples were checked against the current recipe models.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 Rendering turns transformed text + a chosen font into a clean (un-degraded)
@@ -39,8 +40,8 @@ Arabic, Devanagari, Gaelic dotted forms when stored as base + combining
 mark rather than precomposed).
 
 The HarfBuzz path uses `uharfbuzz` for shaping and `freetype-py` for
-rasterization. Anti-aliasing is on by default; `subpixel: false` is a
-common knob to harden against sub-pixel artifacts.
+rasterization. Anti-aliasing is on; disabling it is rejected. The earlier `subpixel: false`
+proposal is not a recipe field.
 
 ## Font selection
 
@@ -57,9 +58,9 @@ fonts:
       calt: true
 ```
 
-For each sample, a font is drawn by weight. `features` enables / disables
-specific OpenType features for the renderer. (Defaults: `liga: true`,
-`calt: true`, others off.)
+For each sample, a font is drawn by weight. `features` overrides OpenType features for the renderer.
+The renderer explicitly enables `liga` and `calt` by default. HarfBuzz controls other default features;
+they are not all disabled.
 
 The validator inspects each font on disk and surfaces these issues at
 `pdomain-ocr-synth validate` time:
@@ -77,7 +78,7 @@ cover raises `MissingGlyphError` and the preview / render writer
 records `missing_glyph` as the manifest skip reason (with the missing
 codepoints listed). A pre-render corpus-vs-font coverage report and
 inspection of `liga`/`calt` GSUB feature presence are deferred — see
-`docs/roadmap/05-rendering.md` "Font validation" closeout.
+[M05's font-validation closeout](../plans/05-rendering.md#font-validation).
 
 ## Size, color, DPI
 
@@ -94,7 +95,6 @@ rendering:
     g: { min: 210, max: 245 }
     b: { min: 195, max: 235 }
   antialiasing: true
-  subpixel: false
 ```
 
 Per-sample, each value is drawn from its distribution. Independent draws
@@ -113,10 +113,11 @@ The default for recognition training. Each sample is a single word.
 layout:
   mode: word_crops
   padding_px: { min: 4, max: 14 }
-  baseline_jitter_px: { min: -2, max: 2 }   # vertical wiggle
 ```
 
 Output: tight image around the word; ground truth = the word string.
+
+`baseline_jitter_px` is accepted by the model but no current renderer applies it.
 
 ### `lines`
 
@@ -127,11 +128,12 @@ layout:
   mode: lines
   max_width_px: 800
   padding_px: { min: 4, max: 12 }
-  word_spacing: { min: 1.0, max: 1.4 }
-  baseline_jitter_px: { min: -2, max: 2 }
 ```
 
 Output: image of N words on one baseline; ground truth = the line.
+
+The earlier `word_spacing` control is not a recipe field. Spaces use the font's shaped advances.
+The line renderer also ignores `baseline_jitter_px`.
 
 ### `paragraphs`
 
@@ -141,32 +143,35 @@ Wrapped multi-line block.
 layout:
   mode: paragraphs
   max_width_px: 800
-  max_lines: 8
   line_spacing: { min: 1.1, max: 1.5 }
-  alignment: justify        # left | right | center | justify
-  paragraph_indent_em: 0
+  paragraph_alignment: justify   # left | right | center | justify
 ```
 
 Output: image of a paragraph; ground truth = paragraph text plus per-line
 bounding boxes (used by detection mode in spec 08).
 
+`max_lines`, `alignment`, and `paragraph_indent_em` were earlier proposals, not accepted recipe keys.
+The current alignment key is `paragraph_alignment`. Pixel indentation uses `paragraph_indent_px` in pages mode.
+
 ### `pages`
 
-Multi-paragraph page synthesis. v1 supports a single column with
-configurable margins and chapter-style headings; multi-column is a stretch
-goal.
+Multi-paragraph page synthesis supports one column with sampled padding, paragraph spacing, and
+first-line indentation. Headings, drop caps, and multiple columns remain deferred.
 
 ```yaml
 layout:
   mode: pages
   page_size_px: [1200, 1800]
-  margins_px: { min: 60, max: 140 }
-  paragraphs_per_page: { min: 3, max: 8 }
-  heading_probability: 0.2
-  drop_cap_probability: 0.1
+  max_width_px: 1000
+  padding_px: { min: 60, max: 140 }
+  paragraph_spacing: { min: 0.8, max: 1.2 }
+  paragraph_indent_px: 24
 ```
 
 Output: page image + per-paragraph + per-line + per-word bounding boxes.
+
+The earlier `margins_px`, `paragraphs_per_page`, `heading_probability`, and `drop_cap_probability`
+controls are not recipe fields.
 
 `page_size_px` is optional. When unset, the page canvas is auto-sized
 to the natural extent of the composed paragraphs plus padding. When
@@ -192,11 +197,14 @@ Regardless of layout mode, each rendered sample emits:
 | `dpi` | Drawn DPI |
 | `bbox` | Tight bounding box of the inked region (px) |
 | `glyph_runs` | Per-glyph (or per-cluster) bbox + cluster index, when shaping_engine = harfbuzz |
-| `lines` | (lines/paragraphs/pages) per-line bbox + text |
-| `words` | (lines/paragraphs/pages) per-word bbox + text |
+| `line_boxes` | Per-line bbox + text in paragraphs/pages; empty for word crops and single-line samples |
+| `word_boxes` | Per-word bbox + text in lines/paragraphs/pages; empty for word crops |
+| `paragraph_boxes` | Per-paragraph bbox + text in paragraphs/pages; empty for word crops and lines |
 
-This metadata flows into the manifest (spec 08). Detection-mode output
-uses `lines`/`words` to write `labels.json`-compatible records (an
+The writers persist selected metadata, not the whole `RenderedSample`. Recognition manifests retain
+`word_boxes` when present; detection labels group word boxes under `lines` and retain `paragraphs` when present.
+Neither writer persists `glyph_runs`. Detection-mode output
+uses these boxes to write `labels.json`-compatible records (an
 earlier draft of spec 08 called this file `pages.json`; the trainer's
 `DetectionDataset` reader is the canonical contract).
 
@@ -207,7 +215,7 @@ earlier draft of spec 08 called this file `pages.json`; the trainer's
   is bad. Validate visually; prefer precomposed codepoints when both forms
   exist.
 - **Tofu / .notdef.** A square box means the font doesn't have that glyph.
-  The validator should catch this; the renderer skips and logs.
+  Coverage is checked at render time; the renderer skips and records missing codepoints.
 - **Hinting.** TrueType vs CFF/PostScript fonts hint differently at small
   sizes — let DPI variation cover this rather than sweeping hint settings.
 - **Italic fonts at low DPI.** Glyphs touch and confuse the model. Use

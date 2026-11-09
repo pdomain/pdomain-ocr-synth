@@ -145,9 +145,9 @@ lock and its history outside one.
 ## Pointers
 
 - Labeler decisions, where every retired issue's reasoning lives:
-  `/workspaces/pdomain/pdomain-ocr-labeler-spa/docs/context/decisions.md`
+  `/mnt/work/projects/pdomain/pdomain-ocr-labeler-spa/docs/context/decisions.md`
 - Labeler current state:
-  `/workspaces/pdomain/pdomain-ocr-labeler-spa/docs/context/current-state.md`
+  `/mnt/work/projects/pdomain/pdomain-ocr-labeler-spa/docs/context/current-state.md`
 - The poetry measurement:
   `docs/research/2026-09-18-ragged-right-finds-poetry-blockquote-has-no-geometric-signature.md`
 - Roadmap, slice 6 held:

@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-18
-Last verified: 2026-09-18
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-18
-- **Last verified:** 2026-09-18
+- **Last verified:** 2026-11-07
 - **Provenance:** measured 2026-09-18 over the five aligned corpus books the bottom-furniture note
   used (1,385 pages) by `/workspaces/pdomain/.m15f-evidence/poetry-blockquote/`
   (`measure_blocks.py`, `analyze_blocks.py`, `blocks.json`, `summary.json`). Reuses
@@ -35,7 +35,24 @@ Kind: research
 - **Search terms:** poetry, blockquote, block quote, ragged right, justified, indent, slice 6,
   vision-language model, VLM, region proposal, capital-initial rule, F2 formatting markup.
 
-## Geometry does separate poetry, just not by the signal the roadmap named
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `/mnt/work/projects/pdomain/.m15f-evidence/poetry-blockquote/summary.json` agrees with
+801 aligned pages, 44 blockquote spans, the 87.5/93.3 percent raggedness precision/recall, and the
+95.4/96.3 percent capital-initial result. No line alignment, ground-truth reading, or detector evaluation was re-run.
+
+## Goal
+
+Test whether geometry separates poetry and blockquote, using PGDP formatting markup as ground truth.
+
+## Conclusions
+
+### Geometry does separate poetry, just not by the signal the roadmap named
 
 [The labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md) defers poetry against
 blockquote to slice 6, a vision-language model, because "geometry cannot separate the cases." That
@@ -76,7 +93,9 @@ line, regardless of where a sentence falls — scores 95.4 percent precision and
 pooled. No vision model, and no language model, is needed to reach that number. See "Can a person
 tell from the text alone," below.
 
-## The corpus and how it was measured
+## Method
+
+### The corpus and how it was measured
 
 The corpus is the same five aligned PGDP books used in
 [the bottom-furniture note](2026-09-17-bottom-of-page-furniture-is-too-rare-and-too-close-to-the-text.md):
@@ -116,7 +135,9 @@ at a different position in the F2 file than its physical band on the page. Every
 number in this note comes from that 801-page subset; `analyze_blocks.py` produces the full
 breakdown as `summary.json`.
 
-## What the corpus contains
+## Evidence
+
+### What the corpus contains
 
 | | count |
 |---|---:|
@@ -337,7 +358,9 @@ For blockquote, the ground truth is too sparse and too varied (a letter, a stage
 chapter-summary header, a dateline) for this note to say text alone would settle it. That needs
 its own investigation with more confirmed examples than this corpus supplies.
 
-## What this settles, and what it does not
+## What this does NOT establish
+
+### What this settles, and what it does not
 
 Geometry separates poetry from prose and from blockquote, cleanly, through right-edge raggedness —
 not through the indentation the roadmap named. That corrects the roadmap's mechanism, not just its
@@ -351,6 +374,8 @@ fully answer this" finding for blockquote specifically, not a confident no.
 The roadmap's stated reason for slice 6 was that "geometry cannot separate the cases, poetry
 against blockquote being the standard example." That reasoning is wrong for poetry, where a
 working, threshold-stable geometric rule exists. It is unproven either way for blockquote.
+
+## Next steps
 
 A much cheaper approach is worth trying before a vision-language model. For poetry, that could be
 a text rule as simple as checking capitalized line starts — or, short of that, a plain language

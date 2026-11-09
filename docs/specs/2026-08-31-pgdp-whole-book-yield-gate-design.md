@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-08-31
-- **Last verified:** 2026-08-31
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-08-31 from five whole-book `pgdp-alignment/v3` runs over 1385
   pages, the M14 ranking feature table, the shipped review-gate code, and owner decisions in this
   session
@@ -20,6 +20,15 @@ A book now qualifies for synthesis by yielding at least 30 accepted pages, and c
 eligible-page coverage stops being a gate. Coverage remains measured and reported per book. The two
 surviving corpus gates are 98 percent accepted-line precision and zero accepted declared-complex
 pages.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## The gate splits into two evaluations
 
@@ -174,6 +183,11 @@ the first and make replay depend on which one ran.
 
 The wire format does not change. Both evaluations derive from fields the report already carries, so
 the alignment schema version stays where it is.
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The uncalibrated 30-page seed and the unmeasured uniqueness-margin rejection risk remain stated above.
 
 ## How to tell this shipped
 

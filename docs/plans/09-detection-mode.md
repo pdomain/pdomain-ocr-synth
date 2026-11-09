@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against render/run.py, output/detection.py, publish/detection.py,
+  and tests/integration/test_trainer_dataset_contract.py. The original checklist retains deferred intent.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal

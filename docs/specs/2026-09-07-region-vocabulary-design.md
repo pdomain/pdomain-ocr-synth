@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-09-07
+- **Last verified:** 2026-11-07
 - **Provenance:** designed 2026-09-07 with the owner, from direct inspection of
   `pdomain-book-tools/pdomain_book_tools/ocr/block.py`, `dropcap.py`, `layout_aware_reorg.py`,
   `layout/_mappings.py`, `pdomain-book-contracts/pdomain_book_contracts/layout/types.py`, and
@@ -24,7 +24,18 @@
 **Spec:** [Splitting measurement, labeling, and
 synthesis](2026-09-06-measurement-labeling-synthesis-split-design.md)
 
-## Review history
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
+
+## Adversarial Review
+
+### Review history
 
 Two adversarial reviews and one recheck. The first round returned nine findings, all verified
 against the code; the recheck returned four, all verified and folded in.
@@ -33,6 +44,9 @@ The reviews changed the design twice in ways that mattered. Every rename propose
 would have silently broken shipped code. And a `drop cap` region role was withdrawn, then partly
 reinstated as `decorated initial` once the recheck showed a purely graphic initial has no home at
 either the word or the region level.
+
+The recorded stage was design review. The source was the two adversarial reviews and recheck
+named above. The remaining constraints and open items are recorded below; this cleanup adds no new review verdict.
 
 ## Purpose
 

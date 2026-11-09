@@ -6,7 +6,7 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-06
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** authored from repository evidence in `pdomain-ocr-synth`,
   `pdomain-ocr-labeler-spa`, `pdomain-book-contracts`, and `pdomain-book-tools`, read during
   the 2026-09-06 session, plus owner direction in that session; the x-height spread figure
@@ -21,6 +21,15 @@
 This repository holds three different things, and only one of them is a synthesizer. This design
 separates them, gives each an owner, and turns the synthesizer into a consumer of labeled data
 rather than a producer of its own measurements.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## The problem is that one repository is doing three jobs
 

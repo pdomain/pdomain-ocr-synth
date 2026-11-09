@@ -6,14 +6,16 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-07 from direct inspection of `pdomain-ocr-labeler-spa`,
   `pdomain-book-contracts`, `pdomain-book-tools`, `pdomain-ocr-training`, and
   `pdomain-pgdp-measure`, plus owner direction in that session. Three premises of the
   2026-09-06 split design were falsified against the code and are corrected here. Slice 4's
-  x-height spread figure recomputed 2026-09-17 and corrected here.
+  x-height spread figure recomputed 2026-09-17 and corrected here. Current UI and trainer status checked
+  against labeler `5b0a624c` and training `1fb52d5` on 2026-11-07.
 - **Disposition:** Active. Vocabulary, stores, routes, page kind, furniture proposals, and region review have shipped;
-  see `docs/architecture/measurement-and-labeling.md`. Slices 6 and 7, and drawing or resizing a region, are still open.
+  see `docs/architecture/measurement-and-labeling.md`. Drawing, resizing, and membership editing also ship.
+  Slice 6 remains held; slice 7 has a loader and training loop but requires a caller-supplied model.
 - **Read when:** planning region labeling, the labeler's agent-facing API, the confidence review
   queue, or training a layout model for historical books.
 - **Search terms:** region labeling, region proposals, label vocabulary, confidence queue, LLM
@@ -31,6 +33,29 @@ a layout model trained on what the humans confirmed.
 The owner's direction on 2026-09-07: a full human review surface **and** an LLM able to drive all
 of the labeler, so a person reviews the pages a model flags at low confidence and can also spot
 check the high-confidence ones. The 2026-05-07 scope freeze is lifted for this work.
+
+## Architecture
+
+The design makes the synthesizer a future consumer of labeled data. Measurement belongs to `pdomain-pgdp-measure`;
+human review belongs to `pdomain-ocr-labeler-spa`, using shared annotation types in
+`pdomain-book-contracts` and page models in `pdomain-book-tools`. The current shipped
+contracts are in [Measurement and labeling](../architecture/measurement-and-labeling.md).
+
+## Tech Stack
+
+The labeler uses Python 3.13, FastAPI, and a React/TypeScript frontend. The shared
+contracts and book-tools packages support Python 3.11 through 3.13. Slice 7 now has a Python export loader
+and model-injected training loop; a complete layout-model backend remains open.
+
+## Global Constraints
+
+Machine proposals remain separate from human answers. The labeled-dataset contract
+is still unspecified. Slice 6 stays held until a measured failure justifies a model.
+
+The sections below preserve the September design history. In particular, the next
+section's claim that no region ground truth exists was overturned on 2026-09-18;
+see [the measured correction](#slice-6--model-proposed-semantics). Historical machine
+specifications and branch notes describe that planning session, not this host.
 
 ## The one fact that drives the whole track
 
@@ -116,7 +141,8 @@ can feed geometry proposals.
 
 ## The slices, in order
 
-Slices 1 through 5 have a first shipped increment. Slice 6 and slice 7 are not built. The
+Slices 1 through 5 ship, including region drawing, resizing, and membership editing. Slice 6 remains held.
+Slice 7 is partial: region-export loading and a training loop ship, but no default layout model is supplied. The
 paragraphs below keep the original design notes, including claims that were true on 2026-09-07
 and are not true now. The shipped behavior is
 [Measurement and labeling](../architecture/measurement-and-labeling.md).
@@ -162,8 +188,9 @@ the export job all write `ground_truth_text` and nothing records which. Adding `
 
 **Every region carries `source`, `confidence`, and `evidence` from its first stored byte.** This
 is the one thing that cannot be retrofitted: adding it later rewrites every stored region.
-Confidence barely exists in the labeler today, three occurrences in the backend, all in
-auto-rotate.
+At the September planning date, the confidence inventory found only three backend occurrences, all in auto-rotate.
+That inventory is obsolete. Region proposals now persist confidence, furniture and poetry detectors emit it,
+and the review queue can sort undecided proposals by confidence. These scores are not a claim of corpus calibration.
 
 Drivable over HTTP the day it lands, before any UI exists.
 
@@ -223,9 +250,9 @@ model was unsure about, and can spot check what it was sure about.
 
 **The LLM driver is a client of the same REST API, not a parallel surface.** The SPA exists
 because the old labeler had no REST surface and forced clients to drive the DOM through
-Playwright. There are already 88 routes, a committed `frontend/openapi.json`, and 288 KB of
-generated TypeScript types. A second agent-facing API would fork that contract and double the test
-surface.
+Playwright. The original inventory recorded 88 routes and 288 KB of generated TypeScript types;
+those counts are historical. `frontend/openapi.json` is generated and ignored by Git, not committed.
+A second agent-facing API would fork the existing REST contract and double the test surface.
 
 What an agent needs beyond what the UI needs is additive and small: confidence and evidence on
 every proposal, whole-page state in one call, and an endpoint answering what to look at next.
@@ -330,6 +357,15 @@ someone to label pages by hand.
 
 ### Slice 7 — Build our own trainer, and train our own layout models
 
+Current status, 2026-11-07: `pdomain-ocr-training` loads the labeler's `regions/labels.json`
+through `load_layout_export`. `train_layout_from_config` runs training and validation batches,
+emits progress, and saves a checkpoint. `LocalTrainingRunner.train_layout` exposes that path.
+The caller must supply a `LayoutModel`; without one, training refuses to start. This is a partial
+implementation, not evidence that a default model or a trained layout checkpoint exists.
+See [the current architecture](../architecture/measurement-and-labeling.md#layout-training).
+
+The rest of this section preserves the September design rationale.
+
 On the corpus slices 2 through 5 produce.
 
 **Two models, not one, by owner direction on 2026-09-08.** A book layout model proposing page kind,
@@ -353,7 +389,7 @@ produces such a checkpoint.
 **We build our own trainer. deepdoctection is a reference implementation to study, not a
 dependency to adopt.** Owner direction, 2026-09-07.
 
-`pdomain-ocr-training` cannot train a layout model today: its `ITrainingRunner` and `IEvalRunner`
+At the planning date, `pdomain-ocr-training` could not train a layout model: its `ITrainingRunner` and `IEvalRunner`
 protocols hard-wire two task pairs, detection and recognition, both doctr word-level, with no
 registry or plugin seam. Widening those protocols to carry a third task pair is the work, and it
 is the same repository that already owns the doctr training loops, so layout training lands beside
@@ -399,8 +435,8 @@ These plans are still files because their named tests or types are missing:
 A ground-truth text digest beside each glyph annotation set is still part of the provenance
 plan. `LigatureMark.char_span` and `long_s_positions` index into `Word.ground_truth_text`.
 
-Slice 6 and slice 7 are the labeling work that still has no implementation plan of its own.
-Slice 6's poetry example failed measurement. Slice 7 is the layout trainer.
+Slice 6's poetry example failed measurement and it remains held. Slice 7 now has a partial layout trainer;
+model implementation and evaluation still need to meet the original page-level and book-level goals.
 
 ## What this roadmap does not settle
 

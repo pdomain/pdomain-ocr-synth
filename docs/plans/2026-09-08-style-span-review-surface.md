@@ -5,11 +5,15 @@
 > superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give a person a way to confirm or reject one `StyleSpan` at a time. `StyleSpan` is a
+## Goal
+
+Give a person a way to confirm or reject one `StyleSpan` at a time. `StyleSpan` is a
 grapheme range on `TypographyPageRecord.style_spans`, and today nothing lets a reviewer act on it
 at that granularity — the only typography review routes are word-scoped.
 
-**Architecture:** Style spans are read, never written. `TypographyPageRecord` (and its
+## Architecture
+
+Style spans are read, never written. `TypographyPageRecord` (and its
 `style_spans` field) is already validated on every book-labeling-session page load but is not
 retained anywhere — this plan re-derives it from bytes the session already hash-verified, rather
 than changing what `BookLabelingSession` retains. A span carries no id of its own, so a
@@ -22,7 +26,9 @@ solves a different problem. A span's word-crossing extent is surfaced read-only,
 `project_style_span` alignment utility — it is never merged into `stable_word_id` or the
 word-scoped `TypographyCorrectionLog`, which stay untouched by every route this plan adds.
 
-**Tech Stack:** Python 3.13, pydantic `BaseModel`, `StrEnum`, JSONL journals with an OS append
+## Tech Stack
+
+Python 3.13, pydantic `BaseModel`, `StrEnum`, JSONL journals with an OS append
 lock, FastAPI, pytest, ruff, basedpyright.
 
 **Spec:** [Annotation provenance and
@@ -35,7 +41,7 @@ have the model and the wrong review granularity."
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-08
-- **Last verified:** 2026-09-08
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-08 from the spec above and direct inspection of
   `pdomain-book-contracts/pdomain_book_contracts/typography/spans.py`, `labels.py`, `records.py`
   (`TypographyPageRecord`, `Grapheme`, `OcrTokenRef`, and the `_validate_record` /
@@ -61,6 +67,12 @@ have the model and the wrong review granularity."
   ImportedTextValidationLog, verified_negative, TypographyCorrectionLog, word-scoped correction.
 
 ## Global Constraints
+
+Verification scope, 2026-11-07: the labeler's `core/typography_review.py` and
+`api/typography.py` still contain no `StyleSpanDecisionLog` or
+`stable_style_span_id`. The plan remains open. The task code and command examples
+below are the 2026-09-08 implementation sketch; they were not executed or
+revalidated as a patch during this check.
 
 - Python floor is `>=3.13,<3.14` for `pdomain-ocr-labeler-spa`. `make AI=1 <target>` captures
   verbose output to `.ci-ai.log`; run `make AI=1 ci` before committing.

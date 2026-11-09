@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-08-22
-- **Last verified:** 2026-08-22
+- **Last verified:** 2026-11-07
 - **Provenance:** authored from repository evidence, the local PGDP corpus, typography research, and
   owner direction in this session
 - **Disposition:** Active design for scan-derived typography and structure synthesis.
@@ -17,6 +17,15 @@
 
 The synthesizer will learn reusable book styles from PGDP scans, then generate pages with explicit
 typography, structure, semantics, and scan appearance.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## The first pilot proves the whole learning loop
 

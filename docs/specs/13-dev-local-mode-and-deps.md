@@ -6,8 +6,9 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-05-07
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against Makefile and pyproject.toml. upgrade-deps still syncs
+  unconditionally; the proposed guard remains deferred, and sibling editable-install assumptions remain unverified.
 - **Disposition:** Retained as deferred design pending implementation.
 
 This spec captures a workspace-wide hazard around `uv sync` and how

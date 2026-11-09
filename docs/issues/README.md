@@ -2,7 +2,7 @@
 
 ## Agent Index
 
-- **Kind:** issue
+- **Kind:** usage
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-11-06

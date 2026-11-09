@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-08-31
-- **Last verified:** 2026-08-31
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-08-31 from whole-book profiles of four PGDP books, the fixed
   25-page M15b review set, and owner direction in this session
 - **Disposition:** Active design for whole-book page templates and page classification.
@@ -16,6 +16,15 @@
 
 M15a will measure each book's type page from every page it has, then classify each page against a
 small set of templates. M15b will read the class and stop matching running heads to source lines.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What the classification must achieve
 

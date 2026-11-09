@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against corpus/registry.py, providers/local.py,
+  providers/wikisource.py, cli.py, and tests/test_corpus*.py. The original milestone checklist remains historical.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal
@@ -24,7 +25,7 @@ surface.
 ## Tech Stack
 
 The implementation uses Python provider protocols, HTTPX, filesystem caching, recipe validation,
-Typer CLI commands, and pytest coverage in the corpus tests.
+argparse CLI commands, and pytest coverage in the corpus tests.
 
 ## Global Constraints
 
@@ -151,8 +152,7 @@ ls ~/.cache/pdomain-ocr-synth/web/
 # → shows .txt and .meta.json for each URL.
 
 pdomain-ocr-synth fetch gaelic    # second run
-# → CELT entries served from cache. Wikisource fetches again because
-#   gaelic uses cache: true on the wikisource entry too — verified.
+# → CELT and Wikisource entries are served from cache when their keys exist.
 ```
 
 ## Risks / open items (still open)
@@ -180,6 +180,5 @@ pdomain-ocr-synth fetch gaelic    # second run
 - The deferred providers are all small wrappers: `web_list` is
   literally a loop over `web`; `gutenberg` and `internet_archive`
   are special-cased URL builders. Estimate <1 day each.
-- `pdomain-ocr-synth clean <recipe>` is the only deferred CLI surface
-  that should land before M04 starts using the cache for
-  text-transform staging.
+- `pdomain-ocr-synth clean <recipe>` now ships in `cli.py`; it removes the recipe's
+  remote-provider cache entries. Its earlier deferral no longer blocks text transforms.

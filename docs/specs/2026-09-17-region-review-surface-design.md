@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-17 from a read-only survey of `pdomain-ocr-labeler-spa/frontend/`
   (`PageImageCanvas.tsx`, `BBoxOverlay.tsx`, `shell/RightPanel.tsx`, `right-panel/BlockDetail.tsx`,
   `stores/selection-store.ts`, `stores/rail-store.ts`, `hooks/useRailHotkeys.ts`,
@@ -27,6 +27,15 @@ Kind: spec
   adding review keyboard shortcuts.
 - **Search terms:** slice 3, region review, proposal review, RegionDetail, rail target region,
   accept proposal, reject proposal, review hotkeys, propose regions button.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What this settles
 
@@ -216,6 +225,12 @@ a separate question.
 **`BlockDetail` keeps its own local list of layout types** rather than the backend's `RegionRole`
 enum. `RegionDetail` must use `RegionRole` from the generated types, so the two panels will offer
 different role lists until `BlockDetail` is changed.
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The shipped first increment does not establish a design review. The excluded editing UI and the two recorded
+inconsistencies remain separate work in this dated design.
 
 ## Related
 

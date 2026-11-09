@@ -6,10 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-07
 - **Provenance:** verified from the shipped source, tests, Make targets, and cited commits during the docgraph
   migration; the GitHub Actions sentence was re-checked on 2026-11-06 against commit `0068970` and the absence of
-  `.github/workflows/`
+  `.github/workflows/`. Recipe mutability, validation, and CLI behavior were rechecked against code on 2026-11-07.
 - **Disposition:** Current truth promoted from implemented M01 and M02 plans and CLI/spec documentation.
 - **Promotes:** implemented M01/M02 plans and specs 01/03.
 
@@ -39,14 +39,14 @@ outside automated setup.
 `src/pdomain_ocr_synth/recipe/models.py` defines the Pydantic recipe graph.
 `load_recipe()` in `recipe/loader.py` reads YAML with PyYAML, validates it, and
 resolves recipe-relative paths through `recipe/paths.py`. Resolved models are
-frozen so a run cannot silently mutate configuration. The loader retains the
+frozen against attribute reassignment, but nested lists and dictionaries remain mutable. The loader retains the
 source path for snapshots and provenance.
 
 The checked-in `docs/specs/recipe.schema.json` is generated from those models;
 it is an interoperability artifact, not a second schema authority. Runtime
 validation in `validation.py` distinguishes malformed recipes, missing required
-assets, optional missing fonts, unsupported catalog values, and network-aware
-checks. A schema-accepted future provider or transform can therefore still be
+assets, optional missing fonts, and unsupported catalog values. Validation does not access the network;
+its `offline` argument is currently a no-op. A schema-accepted future provider or transform can therefore still be
 rejected as not implemented.
 
 ## CLI contract
@@ -56,7 +56,8 @@ rejected as not implemented.
 `publish`, `audit`, and `clean`. Each subcommand owns its options; `fetch`, for
 example, accepts cache controls but not render count, output, seed, worker, or
 dry-run controls. `preview` and `render` share render-family options, while
-`publish --render-first` accepts the relevant overrides for its chained run.
+`publish --render-first` uses the recipe's count and seed and accepts only the publish command's options,
+including its local-output override. It does not expose the render command's count, seed, worker, or cache controls.
 
 Recipes remain the only persistent configuration surface. CLI flags are
 bounded run-time overrides or operational controls. This split makes snapshots
@@ -90,4 +91,4 @@ directories, which is also supported.
   `tests/test_package.py`.
 - Commits: `445c493`, `dde147a`, `29c26c9`, `14bdbde`, `1f3bd61`, and
   `332e36a`.
-- Verified: 2026-07-14 by repository inspection during the docgraph migration.
+- Verified: 2026-11-07 against the recipe models, CLI parser and handlers, validation, and Make targets.

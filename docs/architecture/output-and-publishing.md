@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-07-14
-- **Provenance:** verified from shipped output and publishing code, tests, and cited commits during the docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against output writers, snapshots, render dispatch,
+  publish modules, and trainer-contract tests. The 2026-09-02 trainer measurement below is historical.
 - **Disposition:** Current truth promoted from implemented M07/M08 plans and specs 08/10.
 - **Promotes:** implemented M07/M08 plans and specs 08/10.
 
@@ -23,15 +24,16 @@ text. The manifest carries per-sample rendering metadata, and the snapshot
 captures the resolved recipe and input hashes.
 
 Detection output uses the same top-level filenames. Its `labels.json` records
-image size and doctr-compatible polygons for words and the available line and
-paragraph collections. Page layouts produce fixed canvases; paragraph layouts
-retain their rendered extents. Integration tests validate both layouts against
+image dimensions and doctr-compatible line polygons. Word bboxes are nested under each line;
+unassigned words and paragraph records are retained when present. Page layouts produce fixed canvases only
+when `layout.page_size_px` is set; otherwise pages and paragraphs retain their rendered extents.
+Integration tests validate both layouts against
 the trainer-facing profile shape.
 
 ## The trainer profile contract, captured
 
-The layout above was harmonized against `pd-ocr-trainer`'s `dataset_store.py`, which is being
-retired. These are the facts this repository's writer depends on, recorded here so they survive
+The layout above was harmonized against the retired `pd-ocr-trainer`'s `dataset_store.py`.
+These are historical facts about that reader, recorded here so they survive
 that repository's removal. Measured from
 `pd-ocr-trainer/src/pd_ocr_trainer/dataset_store.py` at commit `9a074050` on 2026-09-02.
 
@@ -39,8 +41,8 @@ The profile tree is `<split>/<profile>/<task>/`, with `task` one of `detection` 
 `recognition`, and the base profile named `all`. An older layout used `base-ocr` for the same
 profile and `dataset_store` migrated it forward.
 
-Each task directory holds `images/` and a `labels.json` that is a flat JSON object mapping an
-image filename to its ground-truth text. It is `labels.json`, not `labels.csv`. A directory
+Each task directory holds `images/` and a `labels.json`. Recognition maps an image filename to
+ground-truth text; detection maps it to dimensions and polygon data. It is `labels.json`, not `labels.csv`. A directory
 counts as a profile only if at least one task under it has a `labels.json`.
 
 Two naming rules carry information in the filename rather than in a field.
@@ -54,12 +56,14 @@ underscore-separated segments. So a stem carries its project, then its page, the
 recognition case its crop box, with nothing declaring which is which.
 
 Both rules are positional and unversioned. Anything reading them is guessing structure from a
-string, which is why `pdomain-ocr-training` supersedes this format rather than extending it.
+string. These historical filename rules are not required by this repository's writers.
+`pdomain-ocr-training` reads the task's `labels.json` through doctr's recognition and detection readers.
 
 ## Determinism and safe continuation
 
 Every sample derives its randomness from the run seed and stable sample index.
-Changing worker count does not change current output bytes. Writers refuse to
+Changing worker count preserves image, label, and manifest payloads in the tested environment.
+The wall time in `stats.json` and timestamps in the audit log vary between runs. Writers refuse to
 overwrite an existing destination unless `--force` or `--resume` is selected;
 those modes are mutually exclusive. Resume requires the stored recipe snapshot
 to match and skips completed indices. This is a same-environment run contract,
@@ -83,7 +87,9 @@ cached Hugging Face login through the SDK. The orchestrator can create the
 dataset repository, upload files, and create a requested tag. Content-hash
 comparison makes a repeated unchanged publish a no-op unless the caller forces
 the relevant operation. `--dry-run` performs preflight and reports the plan
-without uploading; `--render-first` renders before staging.
+without uploading. `--render-first` renders before staging with `force=True`, clearing and replacing
+existing local output. It still does that when combined with `--dry-run`; dry-run suppresses remote uploads,
+not this chained local render. Count and seed overrides require a separate `render` command.
 
 The large-folder Hub API cannot honor the CLI's custom commit-message field, so
 the command warns and the transport ignores that field. Repository and tag
@@ -115,4 +121,4 @@ not part of shipped output.
   `tests/integration/test_publish_live_hf.py`.
 - Commits: `db867fa`, `0f9cb5f`, `ab9d1bf`, `72d3cd5`, `2be2145`,
   `2ee525b`, `540511d`, `200d5d5`, `5b84bf3`, `2d5ac0e`, and `e090040`.
-- Verified: 2026-07-14 by repository inspection during the docgraph migration.
+- Verified: 2026-11-07 by code and test inspection. Tests and remote publishing were not rerun for this review.

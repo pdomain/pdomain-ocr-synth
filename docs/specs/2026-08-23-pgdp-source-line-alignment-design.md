@@ -6,7 +6,7 @@
 - **Status:** draft
 - **Owner:** CT
 - **Created:** 2026-08-23
-- **Last verified:** 2026-08-23
+- **Last verified:** 2026-11-07
 - **Provenance:** derived from the active PGDP typography design, shipped M14 and M15a code, local
   corpus inspection, and owner direction in this session
 - **Disposition:** Active M15b design for conservative F2 source-line alignment.
@@ -16,6 +16,15 @@
 
 M15b will align byte-preserved F2 source lines to scan line candidates on eligible single-column
 pages. It will preserve ambiguity instead of turning weak matches into typography evidence.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## Goal
 

@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-22
-- **Last verified:** 2026-08-22
-- **Provenance:** agent-verified against the current suppression inventory
+- **Last verified:** 2026-11-07
+- **Provenance:** verified with `make test-single AI=1 TEST=tests/test_lint_deviations_doc.py`
+  on 2026-11-07 against the current suppression inventory and `pyproject.toml` overrides.
 - **Disposition:** Retained as current intent or process guidance.
 
 This file records standing lint-rule suppressions and per-file overrides. Each

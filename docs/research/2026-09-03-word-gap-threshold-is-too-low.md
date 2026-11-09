@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-03
-Last verified: 2026-09-04
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,7 +14,7 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-03
-- **Last verified:** 2026-09-04
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-09-03 over 17,205 matched lines in the five whole-book
   `alignment-t2-*` reports, sweeping the gap threshold from 2 to 20 px per book and comparing
   against an Otsu split of each page's own gap-length distribution
@@ -24,6 +24,17 @@ Kind: research
 - **Read when:** changing word segmentation, reading Gate 6, or judging whether the reconciliation
   ceiling is real.
 - **Search terms:** word gap, threshold, over-split, Gate 6, Otsu, reconciliation, ink profile.
+
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `/mnt/work/projects/pdomain/.m15d-evidence/book-otsu.json` records the five thresholds
+10, 6, 8, 15, and 9 px and the book-level comparison below. The measurement package's
+`docs/architecture/pgdp-font-free-typography.md` documents the shipped v2 rule. No measurement was re-run.
 
 ## Goal
 

@@ -6,13 +6,21 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** local workflow rechecked 2026-11-07 against recipes/gaelic.yaml,
+  scripts/fetch-fonts-gaelic.sh, Makefile, and fonts.py. Upstream URLs and license descriptions
+  retain their 2026-07-14 attribution; this review did not fetch fonts or reverify external terms.
 - **Disposition:** Retained as the active operational font reference.
 
-This is a non-normative reference for the four free font families used by
-`recipes/gaelic.yaml`. None are bundled in the repo. Download them yourself
-and place the unzipped files in `recipes/gaelic/fonts/`.
+This is a non-normative reference for the Gaelic font workflow. `recipes/gaelic.yaml` names
+Bunchló, Seanchló, Glanchló, Úrchló, Gadelica, Cianchló, and optional Gaedhilge.
+Cló Tuamach is an additional reference, not a recipe font.
+None are bundled in the repo. Download them yourself and place the unzipped files in
+`recipes/gaelic/fonts/`.
+
+The upstream URLs and license descriptions below are the reference recorded by the 2026-07-14
+review. They were not checked online on 2026-11-07. Read the terms shipped with each download
+before relying on them for a new use; the local workflow review does not establish current permissions.
 
 ## Summary
 
@@ -25,18 +33,17 @@ and place the unzipped files in `recipes/gaelic/fonts/`.
 
 ## Project licensing posture
 
-`pdomain-ocr-synth` and the Gaelic recipe are **non-commercial**. Under the
-Gaelchló terms, that means **two independent grounds for permission**:
+The recorded project posture is that `pdomain-ocr-synth` and the Gaelic recipe are **non-commercial**.
+The 2026-07-14 reference described **two independent grounds for permission** under the Gaelchló terms:
 
 1. The output is Celtic-language content (Irish OCR training data) —
    Gaelchló is free for any Celtic-language use.
 2. The project is non-commercial — Gaelchló is free for non-commercial
    use in any language.
 
-So all four font families in the recipe are unambiguously permitted for
-**use** here. What is *not* permitted is bundling Gaelchló in this repo
-(no redistribution without permission), and modification of any of the
-non-OFL families is ambiguous.
+That reference treated the listed fonts as permitted for **use** here, while recording no
+redistribution of Gaelchló without permission and ambiguity around modification of non-OFL families.
+These are dated license descriptions, not a fresh verification of current upstream terms.
 
 ## Why none are bundled
 
@@ -56,7 +63,7 @@ which downloads each one directly from its upstream source (no mirror,
 no re-distribution):
 
 ```bash
-./scripts/fetch-fonts-gaelic.sh                    # the three default families
+./scripts/fetch-fonts-gaelic.sh                    # six precompiled default downloads
 ./scripts/fetch-fonts-gaelic.sh --with-gaedhilge   # also fetch Gaedhilge .sfd
 ```
 
@@ -81,7 +88,7 @@ the same as if you opened the link in a browser. (This is the same
 pattern Linux distros use for non-redistributable assets.) We do not
 mirror or cache the binaries on infrastructure we control.
 
-## Direct download URLs (all verified live)
+## Direct download URLs (recorded 2026-07-14)
 
 ### Gaelchló — Vincent Morley
 

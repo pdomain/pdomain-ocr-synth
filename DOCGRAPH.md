@@ -7,8 +7,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-07-14
-- **Provenance:** created and agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** created and agent-verified from repository evidence during the 2026-07-14 docgraph migration;
+  guidance and linked local entry points checked on 2026-11-07
 - **Disposition:** Retained as authoritative documentation governance.
 - **Read when:** starting docgraph work, retrieving repo docs, checking doc
   lifecycle state, or updating docgraph-managed context.

@@ -6,9 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-11-06
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-07
 - **Provenance:** verified 2026-11-06 by inspection of this repository and of the sibling packages named below. Tests
-  were read, not re-run.
+  were read, not re-run. Region editing and layout-training status rechecked against current sibling code on 2026-11-07.
 - **Disposition:** Current truth for the 2026-09-07 measurement cutover and for the labeling work whose plans lived here
   and whose code landed elsewhere.
 - **Promotes:** the measurement extraction plan, the annotation vocabulary and preconditions plans, the region store,
@@ -166,13 +166,40 @@ A repeat reject writes nothing new.
 
 Changing page clears a region selection so a key cannot apply the previous page's proposal id.
 
+The UI also supports drawing a confirmed region, resizing its box, and editing its member words.
+The canvas captures the box; `RegionDetail` selects its role and creates it through `useCreateRegion`.
+Resize handles submit through `useEditRegion`, and member-word changes use `set_region_word_membership`.
+This does not implement the separate proposal-to-region matcher or the planned sibling-membership invariant.
+
 ### Evidence for region review
 
 - Code: `pdomain-ocr-labeler-spa/frontend/src/hooks/useRegionMutations.ts` and `useRegionReviewHotkeys.ts`.
 - Tests: `frontend/src/hooks/useRegionMutations.test.tsx`, `useRegionReviewHotkeys.test.tsx`,
   `useRegionReviewHotkeys.crossInstance.test.tsx`, and `tests/e2e/test_region_review_loop.py`.
+  Drawing and resizing are covered by `frontend/src/components/PageImageCanvas.test.tsx`,
+  `components/right-panel/RegionDetail.test.tsx`, and `lib/region-geometry.test.ts` under the same frontend source root.
 - Verified: 2026-11-06 by reading the hook comments and confirming the test files exist. This pass did not execute the
   suites. The plan records the merge as `pdomain-ocr-labeler-spa` `b8c2cd7` on 2026-09-17.
+- Verified editing behavior: 2026-11-07 by reading `PageImageCanvas.tsx`, `RegionDetail.tsx`, and the region mutation hooks
+  at labeler `5b0a624c`. The sibling frontend suite was not rerun in this audit.
+
+## Layout training
+
+`pdomain-ocr-training` loads confirmed regions from the labeler's `regions/labels.json` export.
+The loader validates the export and pairs each page with its detection image, mapping roles to `RegionRole` class indices.
+
+`train_layout_from_config` runs training and validation batches through a caller-supplied `LayoutModel`,
+emits progress, and asks that model to save a checkpoint. `LocalTrainingRunner.train_layout` exposes this loop.
+There is no default model: omitting it raises an error instead of downloading weights.
+This is partial slice 7 plumbing, not a completed layout-model backend or book-scoped classifier.
+
+### Evidence for layout training
+
+- Code: `pdomain-ocr-training/pdomain_ocr_training/layout_regions.py`, `layout.py`, `local.py`, and `protocols.py`.
+- Tests: `pdomain-ocr-training/tests/test_layout_regions.py` covers export loading, injected-model training,
+  finite-loss checks, and refusal without a model. These tests use an injected model;
+  they do not establish trained-model quality.
+- Verified: 2026-11-07 by source and test inspection at training `1fb52d5`. The sibling suite was not rerun here.
 
 ## Furniture proposals
 

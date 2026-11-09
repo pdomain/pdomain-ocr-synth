@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against corpus/registry.py, text_transforms/registry.py,
+  degradation/pipeline.py, and pyproject.toml. Inline and degradation entry-point sections remain proposals.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 This design considers corpus providers, text transforms, and degradation
@@ -27,8 +28,8 @@ reported through the clear migration feedback described below.
 
 ## Inline (per-recipe) extensions
 
-For one-off code that lives next to the recipe, reference a Python module
-by path. Lookups are relative to the recipe directory.
+Deferred proposal: load one-off code next to the recipe by module path, relative to the recipe directory.
+The YAML below is not accepted as a runnable extension by the current recipe model and registries.
 
 ```yaml
 text_transforms:
@@ -53,12 +54,12 @@ degradation:
     options: {}
 ```
 
-Inline extensions are isolated: they don't pollute the global registry
-and only apply within the recipe that names them.
+The proposed inline extensions would apply only within their recipe, without changing the global registry.
+No such isolation mechanism is implemented.
 
 ## Package extensions (entry points)
 
-For reusable extensions, register via `pyproject.toml`:
+Corpus and text-transform registries discover these package entry-point groups:
 
 ```toml
 [project.entry-points."pdomain_ocr_synth.corpus_providers"]
@@ -67,11 +68,17 @@ my_corpus = "my_pkg.providers:MyCorpus"
 [project.entry-points."pdomain_ocr_synth.text_transforms"]
 my_transform = "my_pkg.transforms:my_transform"
 
+```
+
+Discovery is lazy, when a registry lists its entries or misses a lookup. A new corpus discriminator
+still requires a recipe-model change; entry-point loading does not extend the Pydantic corpus union.
+
+Degradation entry-point discovery remains a proposal; the current runtime does not load this group:
+
+```toml
 [project.entry-points."pdomain_ocr_synth.degradation_stages"]
 my_stage = "my_pkg.degradation:my_stage"
 ```
-
-The CLI auto-discovers anything installed in the active Python env.
 
 ## Interface — corpus provider
 
@@ -81,6 +88,7 @@ from pdomain_ocr_synth.corpus import ProviderContext
 
 class MyCorpus:
     type_name = "my_corpus"
+    schema_version = 1
 
     def fetch(self, ctx: ProviderContext, options: dict) -> Iterable[str]:
         """
@@ -101,7 +109,8 @@ class MyCorpus:
 |------|------|---------|
 | `recipe_dir` | `Path` | For resolving relative paths |
 | `cache_dir` | `Path` | Where to write cache files |
-| `http` | `httpx.Client` | Pre-configured client (UA, retries, rate limit) |
+| `cache` | `CacheStore` | Cache metadata and content access; `cache_dir` returns its root |
+| `http` | `object` or `None` | Optional caller-supplied HTTP object; no client is guaranteed |
 | `offline` | `bool` | If true, raise instead of fetching |
 | `logger` | `Logger` | Structured logger |
 
@@ -120,6 +129,8 @@ concatenated corpus (post-fetch, pre-tokenization).
 
 ## Interface — degradation stage
 
+These are the internal registry's callable shapes. Loading them through package entry points remains unimplemented.
+
 ```python
 from PIL import Image
 from random import Random
@@ -133,7 +144,7 @@ Stages may also accept and return ground-truth metadata when geometry
 changes. The richer signature:
 
 ```python
-from pdomain_ocr_synth.types import RenderedSample
+from pdomain_ocr_synth.render.sample import RenderedSample
 
 def my_stage(sample: RenderedSample, options: dict, rng: Random) -> RenderedSample:
     """For stages that affect geometry (skew, perspective, scale)."""
@@ -146,19 +157,18 @@ JPEG) use the simpler `Image -> Image` form.
 
 ## Validation hooks
 
-A custom extension can opt into recipe-validation:
+Deferred proposal: let a custom extension opt into recipe validation. The hook below is not called by the current CLI:
 
 ```python
 def validate(options: dict, ctx: ValidationContext) -> list[ValidationIssue]:
     """Return zero or more issues. Empty list = OK."""
 ```
 
-This runs during `pdomain-ocr-synth validate` so the CLI surfaces problems
-before render time.
+The proposed hook would run during `pdomain-ocr-synth validate` to surface problems before rendering.
 
 ## Versioning the registry
 
-Each extension declares the schema version it expects:
+The corpus provider protocol declares `schema_version`:
 
 ```python
 class MyCorpus:
@@ -166,12 +176,12 @@ class MyCorpus:
     schema_version = 1
 ```
 
-If a recipe targets `schema_version: 1` but the loaded extension declares
-`2`, validation fails with a clear migration prompt.
+The current loader does not compare a provider's version with the recipe's version.
+Rejecting mismatches with a migration prompt remains deferred.
 
 ## Testing your extension
 
-The repo ships a `pdomain_ocr_synth.testing` module with helpers:
+The proposed `pdomain_ocr_synth.testing` module is not shipped. Its intended helpers are:
 
 - `make_recipe(...)` — minimal recipe builder
 - `dummy_rng()` — deterministic RNG
@@ -187,13 +197,13 @@ A custom extension's test suite should cover:
 
 ## Boundaries (what extensions can't do)
 
-- Mutate the recipe object after load (it's frozen post-validation).
-- Read or write files outside `cache_dir`, `recipe_dir`, or
-  `output.destination`.
-- Make network calls when `ctx.offline` is true.
+- Frozen Pydantic models block attribute reassignment, but nested lists and dictionaries remain mutable.
+  Extensions should not mutate that configuration.
+- The proposed restriction to `cache_dir`, `recipe_dir`, and `output.destination` is not enforced by a sandbox.
+- Providers must honor `ctx.offline` themselves; the registry does not prevent their network calls.
 
-These constraints exist so `validate` and `--dry-run` give honest
-signals.
+The filesystem and network restrictions are intended extension obligations, not guarantees supplied by
+`validate` or `--dry-run`.
 
 ## Adversarial Review
 

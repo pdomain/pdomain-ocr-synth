@@ -2,7 +2,7 @@
 Status: implemented
 Owner: CT
 Created: 2026-09-18
-Last verified: 2026-09-18
+Last verified: 2026-11-07
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-18
-- **Last verified:** 2026-09-18
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-18 from a measured inventory of every kind of
   review work in `pdomain-ocr-labeler-spa` at `a9a90fb`, taken on 80 real pages
   and 18,463 real words of `projectID3fc3d7d03c613`; sources read include
@@ -31,6 +31,15 @@ Kind: spec
   work for a book, or wondering why word counts are not free.
 - **Search terms:** review queue, what to review next, outstanding work, word
   validation count, typography completion, review counts journal, slice 5.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## One route and one journal answer every kind of review work
 
@@ -282,6 +291,12 @@ unaffected everywhere else in this design.
   corrections still need rework. The route must label the typography count as a
   lower bound, and the SPA must not present it as completion. Making it exact
   means caching that staleness check, which is its own increment.
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The recorded implementation merges are not evidence of a design review. In particular, the typography count's
+lower-bound limitation remains explicit above.
 
 ## Related
 

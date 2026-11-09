@@ -2,7 +2,7 @@
 Status: implemented
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-17 from the shipped region review surface and a run of the region
   pipeline on real OCR'd books, and from direct inspection of `pdomain-ocr-labeler-spa`
   `core/regions/proposal_log.py`, `core/regions/decision_log.py`, `core/regions/resolver.py`,
@@ -27,6 +27,15 @@ Kind: spec
   answers "what should a person or an agent look at next".
 - **Search terms:** slice 5, review queue, undecided proposals, next page with work, review-queue
   route, bracket keys, confidence ranking, agent affordance, carried decision, carry-forward.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What this settles
 
@@ -205,6 +214,11 @@ refetch after every keyboard decision is cheap at that size.
   same merge added the toggle.
 - **Calibration.** The decisions this surface records are what will eventually calibrate the
   detector's confidence scores. Nothing here uses them yet.
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The recorded implementation merge is not evidence of a design review. Calibration remains outside this increment.
 
 ## Related
 

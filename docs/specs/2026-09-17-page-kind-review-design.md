@@ -2,7 +2,7 @@
 Status: implemented
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** authored 2026-09-17 from direct inspection of `pdomain-ocr-labeler-spa` at
   master `3087aa0`: `api/pages.py` (`PagePayload`, `confirm_page_kind`, `ConfirmPageKindRequest`),
   `core/page_kind/models.py`, `core/page_kind/proposal_log.py`, `core/page_kind/reviewed_store.py`,
@@ -29,6 +29,15 @@ Kind: spec
   or confirming page kinds for many pages at once.
 - **Search terms:** page kind review, confirm page kind, bulk confirm, page kinds list, proposed
   kind, reviewed marker, page-kind confidence, slice 5.
+
+## Record verification, 2026-11-07
+
+This is a dated design record. Its descriptions of the code and commands refer to the design date.
+The verification date records a check of its scope against
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md),
+[remaining work](../plans/README.md), and the [intent map](../context/intent-map.md).
+It does not record a new corpus run or certify that every proposed feature shipped.
+Use those current documents to distinguish shipped behavior from residual intent.
 
 ## What's missing today, and what this design adds
 
@@ -315,6 +324,11 @@ with the person.
 - **Page kinds in the review queue.** The queue answers for regions only. Adding page kinds to its
   count and to `[` and `]` waits until this surface has been used on a book.
 - **Detectors that use confirmed kinds.** Region proposal still reads the measured page class.
+
+## Adversarial Review
+
+No adversarial review record was found in this design. This is a documentation gap, not a review pass.
+The recorded implementation merge is not evidence of a design review. The excluded work remains listed above.
 
 ## Related
 

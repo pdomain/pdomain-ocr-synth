@@ -1,4 +1,4 @@
-# M11 — Preview UI (NiceGUI)
+# M11 — Preview UI
 
 ## Agent Index
 
@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against pyproject.toml, render/preview.py,
+  tests/test_cli_preview.py, and the spec's 2026-09-06 supersession. No UI implementation exists.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal
@@ -17,20 +18,22 @@ creation is explicit, and existing recipes change only through the gated diff-an
 
 ## Architecture
 
-The current direction is a `pdomain_ocr_synth.ui` presentation layer over
-`render.preview.run_preview`, with picker, recipe, and sample-detail pages. The package name still
-requires owner confirmation, and no UI module is shipped yet.
+The reusable backend is `render.preview.run_preview`. Picker, recipe, and sample-detail pages remain
+design intent. No UI module is shipped, and its package name still needs confirmation.
 
 ## Tech Stack
 
-The proposed stack uses NiceGUI from the optional `ui` extra, existing recipe and preview helpers,
-pytest UI tests, and `ruamel.yaml` only when the M11.5 save flow lands.
+NiceGUI is no longer the direction, and `pyproject.toml` has no `ui` extra. The workspace direction
+is FastAPI with a React single-page application served from one wheel. M11 has no selected
+dependencies yet. Existing recipe and preview helpers remain reusable.
 
 ## Global Constraints
 
 The CLI remains the contract, rendering logic must not be duplicated, and the server stays
-local-only by default. Confirm package name, NiceGUI version, port, and test marker before
-implementation.
+local-only by default. Re-scope the UI before choosing its package name, dependencies, port, or tests.
+
+The NiceGUI deliverables below record the earlier design. They are not an implementation checklist
+for the current direction. See the [spec's partial supersession](../specs/11-preview-ui.md).
 
 **Goal:** ship the preview UI specced in
 [`11-preview-ui.md`](../specs/11-preview-ui.md) — a preview-first NiceGUI app

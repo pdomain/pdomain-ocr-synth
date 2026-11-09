@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-08-22
-- **Provenance:** verified against the CLI, recipe system, bundled recipe, and PGDP ranking implementation
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against cli.py, audit.py, recipe models, validation,
+  corpus providers, and tests/test_spec_docs.py. PGDP measurement commands now live elsewhere.
 - **Disposition:** Replaces the implemented CLI spec and stale recipe tutorial as current usage.
 - **Provenance note:** Promoted from the retired CLI and recipe-tutorial documents; see `docs/context/decisions.md`.
 
@@ -80,8 +81,9 @@ layouts and continuation guarantees.
 
 ## Inspect and publish
 
-`describe my-recipe --format json` prints resolved configuration and corpus
-information. `audit OUTPUT` reads the render audit; use `--global`,
+`describe my-recipe --format json` prints resolved configuration, including corpus entries.
+It does not fetch or count corpus text.
+`audit OUTPUT` reads the render audit; use `--global`,
 `--audit-file`, time bounds, recipe-SHA filtering, limits, or `--summary` for
 other views.
 
@@ -93,6 +95,9 @@ pdomain-ocr-synth publish my-recipe --repo OWNER/NAME --render-first
 Publishing accepts visibility, license, tag, token, local-output, repository
 creation, and dry-run controls. A custom message is accepted, but the current
 large-folder Hub transport cannot apply it and reports that limitation.
+
+`publish --render-first` clears and replaces the local output before publishing. Combining it with
+`--dry-run` still performs that local render and may fetch corpus data; only the upload is suppressed.
 
 ## CLI reference
 
@@ -127,29 +132,29 @@ pdomain-ocr-synth = "pdomain_ocr_synth.cli:main"
 | `list` | List recipes discovered on the recipe search path |
 | `validate <recipe>` | Schema-check a recipe; verify fonts and corpus paths |
 | `lint <recipe>` | Run `validate` + heuristic lint checks (M10) |
-| `describe <recipe>` | Print resolved config + corpus stats (word count, etc.) |
-| `schema` | Emit the recipe JSON Schema (default: write `docs/specs/recipe.schema.json`) |
-| `fetch <recipe>` | Pre-fetch and cache all web/HF corpora for a recipe |
-| `preview <recipe>` | Render N samples to a preview directory for visual review |
+| `describe <recipe>` | Print resolved configuration without fetching corpus text or computing text statistics |
+| `schema` | Emit the recipe JSON Schema to stdout; use `--output` to write a file |
+| `fetch <recipe>` | Pre-fetch and cache web and Wikisource corpora; local text is read directly |
+| `preview <recipe>` | Render word-crop samples to a preview directory; other layout modes are rejected |
 | `render <recipe>` | Full run; writes the dataset to the output destination |
 | `publish <recipe>` | Upload rendered output to a Hugging Face dataset repo (see [10 — Publishing](../architecture/output-and-publishing.md)) |
-| `clean <recipe>` | Remove cached corpora (and optionally rendered output) |
+| `clean <recipe>` | Remove this recipe's corpus-cache entries; rendered output is untouched |
 | `audit [output-dir]` | Read back the per-render audit JSONL log written by `render` (M10) |
 
 ## Render-family options
 
-Apply to `preview` and `render` (and to `publish` via
-`--render-first`):
+Apply to `preview` and `render`. `publish` has separate output and dry-run options;
+`--render-first` does not expose the other render-family overrides.
 
 | Flag | Meaning |
 |------|---------|
 | `-c, --count N` | Override sample count from the recipe |
 | `-o, --output PATH` | Override output destination |
 | `-s, --seed N` | Override random seed (default from recipe, then 0) |
-| `-w, --workers N` | Parallel render workers (default: CPU count) |
+| `-w, --workers N` | Parallel workers; auto uses all cores for 1–2 CPUs, otherwise `min(cpu_count - 1, 8)` |
 | `--cache-dir PATH` | Corpus cache root (default: `~/.cache/pdomain-ocr-synth/`) |
 | `--no-cache` | Bypass corpus cache (force re-fetch) |
-| `--dry-run` | Validate + plan only; no fetch, no render |
+| `--dry-run` | Plan without rendering; it collects corpus text and may fetch remote data on a cache miss |
 
 `fetch` is corpus-only. It walks `recipe.corpus` and warms the cache, so it
 accepts only the two cache-related flags: `--cache-dir` and `--no-cache`. The
@@ -222,7 +227,7 @@ parser, and every parser flag must appear here. A meta-test in
 | `--message TEXT` | Custom commit message for the dataset upload |
 | `--token TOKEN` | HF auth token (overrides env / cached login) |
 | `-o, --output PATH` | Override the local render output path being uploaded |
-| `--render-first` | Run `render` before publishing (chained step) |
+| `--render-first` | Replace local output by rendering the recipe before publishing, even with `--dry-run` |
 | `--no-create` | Refuse to create the repo if it doesn't exist (default: create on first publish) |
 | `--dry-run` | Preview the publish plan without uploading |
 
@@ -310,15 +315,15 @@ or code to only one of them is a hard test failure.
 | `lint_zero_weight_font` | A declared font has `weight=0.0` and will never be sampled; almost always a typo or a leftover from a temporarily disabled font. |
 | `lint_all_optional_fonts` | Every font is marked `optional=True`; if no font files are present on disk the loader ends up with an empty font set and rendering fails. |
 
-All lint issues use `severity="warning"`. A recipe that triggers every lint
-check still renders correctly. Lint alone never exits non-zero unless
-`--strict` is passed. See the exit codes below.
+All lint issues use `severity="warning"`; they do not prove that rendering will succeed.
+Lint warnings alone do not cause a nonzero exit unless `--strict` is passed. Validation errors still fail.
+See the exit codes below.
 
 ## Validation codes
 
-Every issue from `validate <recipe>` carries a stable `code` field, as do the
-validation phases of `lint <recipe>`, `render`, `preview`, `fetch`, and
-`publish`. Each issue also carries `severity` and a free-form `message`. The
+Every issue from `validate <recipe>` and the validation phase of `lint <recipe>` carries a stable `code` field.
+`render`, `preview`, `fetch`, and `publish` load the recipe models but do not call semantic validation.
+Run `validate` explicitly before them. Each validation issue also carries `severity` and a free-form `message`. The
 codes appear verbatim in the human-readable `[severity] [code] location:
 message` output, the `--json` payload, and structured logs. They are safe to
 grep or filter.
@@ -422,9 +427,10 @@ errors keep their stricter exit code 3 either way. Strict mode never
 ## Logging
 
 - Default: human-readable progress to stderr; results summary to stdout.
-- `--log-format json` emits one JSON record per line (for piping into
-  `jq`, log collectors, or wrapping scripts).
-- Render reports rate (samples/sec), ETA, and a final manifest path.
+- Structured payloads are command-specific: `lint --json`, `describe --format json`,
+  and `audit --json`. There is no global `--log-format` flag.
+- Render reports sample count, percentage, and rate on a TTY, then a final count/rate summary.
+  It does not report ETA.
 
 ## Evidence
 
@@ -434,4 +440,4 @@ errors keep their stricter exit code 3 either way. Strict mode never
 - Tests: `tests/test_cli.py`, `tests/test_recipe_loader.py`,
   `tests/test_validation.py`, `tests/test_cli_preview.py`, and
   `tests/test_cli_render.py`.
-- Verified: 2026-07-14 by repository inspection during the docgraph migration.
+- Verified: 2026-11-07 by code and test inspection; commands and remote fetches were not rerun here.

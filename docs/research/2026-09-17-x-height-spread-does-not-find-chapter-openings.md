@@ -2,7 +2,7 @@
 Status: active
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: research
 ---
 
@@ -14,21 +14,38 @@ Kind: research
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Provenance:** measured on 2026-09-17 over the 1,040 pages carrying a recorded
   `line_x_height_spread_px` in the five `.m15f-evidence/inventory-projectID*` harvest manifests,
   by `/workspaces/pdomain/.m15f-evidence/xheight_spread_vs_page_class.py`, whose output is
   `/workspaces/pdomain/.m15f-evidence/xheight-spread-vs-page-class.json`; the origin of the
   disputed figure traced to `pdomain_pgdp_measure.glyphs._x_height_spread`'s docstring
 - **Disposition:** Active finding. Settles the open question the split design raised against the
-  "43 to 67 percent" figure. Changes how slice 4 should use the signal, and leaves one wrong
-  docstring to correct in `pdomain-pgdp-measure`.
+  "43 to 67 percent" figure. Changes how slice 4 should use the signal. The requested
+  `pdomain-pgdp-measure` docstring correction is confirmed shipped on 2026-11-07.
 - **Read when:** designing the heading proposal, choosing a geometry signal for slice 4, or citing
   the x-height spread figure.
 - **Search terms:** x-height spread, chapter opening, page_class, heading proposal, precision,
   recall, slice 4, mixed-size page, `_x_height_spread`.
 
-## Recall is 50 percent, precision is 45 percent
+## Record verification, 2026-11-07
+
+The measurements below remain the dated study, not a new run. The verification date records a
+check against retained evidence and the current
+[measurement and labeling architecture](../architecture/measurement-and-labeling.md).
+The original measurement dates and limitations still apply.
+
+The retained `/mnt/work/projects/pdomain/.m15f-evidence/xheight-spread-vs-page-class.json` agrees with
+the 1,040 measured pages, 62 chapter openings, 69 high-spread pages, and 31 overlapping pages.
+The current sibling `_x_height_spread` docstring was also read; its correction is recorded below.
+
+## Goal
+
+Check the claimed 43 to 67 percent chapter-opening figure and whether x-height spread can gate a heading proposal.
+
+## Conclusions
+
+### Recall is 50 percent, precision is 45 percent
 
 At the recorded 8 px threshold, x-height spread catches 31 of the 62 chapter openings it could have
 caught. Of the 69 pages it flags, 31 are chapter openings. That is 50 percent recall and 45
@@ -55,7 +72,9 @@ weaker and far less stable than the recorded figure claims.
 twice.** Per-book precision spans 0 to 85 percent and per-book recall 6 to 92 percent. A signal that
 strong in one book and absent in the next cannot gate a proposal.
 
-## What the five books actually show
+## Evidence
+
+### What the five books actually show
 
 | book | high-spread pages | chapter openings | both | precision | recall |
 |---|---|---|---|---|---|
@@ -129,7 +148,9 @@ failing exactly this way, and a distribution-derived one fixing it. That fix doe
 The ceiling is the data: no threshold can find separation in a book whose chapter openings have
 none.
 
-## What slice 4 should do instead
+## Next steps
+
+### What slice 4 should do instead
 
 **Do not gate the heading proposal on x-height spread.** Gating it costs half the chapter openings,
 in exchange for a precision that is still close to a coin flip. In one of five books, it costs 15
@@ -146,7 +167,9 @@ requires, applied to this signal.
 low-confidence heading in `projectID609bfa0449bdf` needs to know the signal is dead in that book,
 not merely quiet on that page.
 
-## What this measurement cannot tell you
+## What this does NOT establish
+
+### What this measurement cannot tell you
 
 **`page_class` is itself a machine proposal, not confirmed ground truth.** Every number here is
 agreement between two automated signals, so it bounds how much spread adds over what `profile-pgdp`
@@ -164,12 +187,17 @@ to do so.
 
 ## One docstring to correct
 
-`_x_height_spread` in `pdomain-pgdp-measure/src/pdomain_pgdp_measure/glyphs.py` still states the 43
+At the time of this study, `_x_height_spread` in `pdomain-pgdp-measure/src/pdomain_pgdp_measure/glyphs.py` stated the 43
 to 67 percent figure as measured fact, and that docstring is the origin of every other copy of the
-claim. It should record what this recomputation found instead, or the next reader will rediscover
+claim. The study recommended recording what this recomputation found, or the next reader would rediscover
 the same wrong number.
 
-## How to reproduce this measurement
+Checked on 2026-11-07: that docstring now records 45 percent pooled precision, 50 percent recall,
+and the per-book ranges. The requested correction has shipped.
+
+## Method
+
+### How to reproduce this measurement
 
 ```bash
 python3 /workspaces/pdomain/.m15f-evidence/xheight_spread_vs_page_class.py        # 8 px, the default

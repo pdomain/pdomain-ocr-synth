@@ -2,7 +2,7 @@
 Status: implemented
 Owner: CT
 Created: 2026-09-16
-Last verified: 2026-09-17
+Last verified: 2026-11-07
 Kind: issue
 Level: I1
 ---
@@ -14,7 +14,7 @@ Level: I1
 - **Kind:** issue
 - **Status:** implemented
 - **Level:** I1
-- **Last verified:** 2026-09-17
+- **Last verified:** 2026-11-07
 - **Resolution:** Fixed. All five items closed 2026-09-17 in `pdomain-ocr-labeler-spa`
   `8fd6a02` and `0b52899`.
 - **Severity:** Medium at the time. Both the item that blocked every page-kind
@@ -28,6 +28,8 @@ Level: I1
   store_unavailable, store_persist_failed, labeling_image_path,
   has_book_labeling_session, `_page_payload`
 
+## Summary
+
 **All five items below were fixed on 2026-09-17**, four in
 `pdomain-ocr-labeler-spa` `8fd6a02` and the fifth in `0b52899`, with the suite
 green at 1662 passed and 4 skipped. Each section says what landed.
@@ -40,6 +42,37 @@ Tasks 6 and 7 of the [page-kind plan](../architecture/measurement-and-labeling.m
 shipped and merged. These findings were deliberately parked rather than fixed at
 the time. This file is where they live, because the execution ledger that
 recorded them was deleted with the plan's workspace.
+
+## Impact
+
+The fixed defects affected page-kind payloads, verified image access, project guards,
+rollback after failed persistence, and progress reporting. The remaining store-less
+mode question affects whether the UI offers a confirmation it cannot persist.
+
+## Environment / versions
+
+The original findings concern labeler commit `a64be5c`. The fixes and test counts
+below are the 2026-09-17 record, not a new test run.
+
+## Evidence
+
+On 2026-11-07, source inspection confirmed typed page-kind payload fields and
+review-marker reads in `api/pages.py`, the `store_unavailable` refusal in
+`confirm_page_kind`, and the store-less success path in `save_page`.
+`core/jobs/handlers/propose_page_kinds.py` uses the typed `job.project_id`,
+tracks measured page indices, acquires page leases, and derives its total from
+`len(project.image_paths)`. Tests were not rerun for this document check.
+
+## Root-cause hypotheses
+
+The original findings below identify missing payload wiring and inconsistent
+persistence and job-input handling. They are preserved beside the fixes that
+answered them.
+
+## Defects to fix
+
+None of the five recorded defects remains open. The store-less mode question is
+a design decision; see [Also worth deciding](#also-worth-deciding-store-less-mode-is-now-inconsistent).
 
 ## Fixed: the confirmed kind never reached a plain GET
 
@@ -170,6 +203,16 @@ confirmation that did not reach durable storage. But it means that with no store
 wired, every other mutation route appears to work and this one always returns
 503. Either `save_page` should refuse too, or the interface should hide confirm
 when no store is present.
+
+## Next steps
+
+Decide whether `save_page` should refuse without a store or whether the UI should
+hide page-kind confirm in that mode. This document does not choose either policy.
+
+## Resolution
+
+The five parked defects were fixed in the commits recorded above. The store-less
+mode policy remains undecided; the implemented status covers those five fixes.
 
 ## Related
 

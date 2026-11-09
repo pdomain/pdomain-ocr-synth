@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-06
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against pyproject.toml, render/preview.py,
+  tests/test_cli_preview.py, and the spec's 2026-09-06 supersession. NiceGUI chunks remain historical.
 - **Disposition:** Retained as current intent or process guidance.
 
 > **Superseded in part, 2026-09-06.** NiceGUI is no longer the direction for M11. The two
@@ -34,13 +35,14 @@ overrides, gated diff-and-save, sample detail, and polish.
 
 ## Tech Stack
 
-The proposed stack uses the existing `ui` extra with NiceGUI, pytest's NiceGUI user plugin, current
-recipe/validation helpers, and `ruamel.yaml` only in the M11.5 save chunk.
+The earlier NiceGUI stack and `ui` extra were removed. FastAPI with a React single-page application
+served from one wheel is the workspace direction; this repository has no chosen UI dependencies.
+Current recipe and preview helpers remain reusable. The NiceGUI chunk details below are historical.
 
 ## Global Constraints
 
-Reuse the deterministic preview backend and keep the headless CLI independent. Confirm package name,
-NiceGUI version, default port, and test marker before M11.1; all UI implementation remains unbuilt.
+Reuse the deterministic preview backend and keep the headless CLI independent. Re-scope M11 before
+choosing dependencies, package name, default port, or tests; all UI implementation remains unbuilt.
 
 Companion to [`11-preview-ui.md`](./11-preview-ui.md) and the spec at
 [`../specs/11-preview-ui.md`](../specs/11-preview-ui.md). Written ahead of

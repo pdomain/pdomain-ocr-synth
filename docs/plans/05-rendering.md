@@ -6,8 +6,9 @@
 - **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-05-05
-- **Last verified:** 2026-07-14
-- **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration
+- **Last verified:** 2026-11-07
+- **Provenance:** rechecked 2026-11-07 against render/, recipe/models.py, validation.py,
+  and tests/test_render*.py. The original M05 checklist predates the shipped M06–M09 integration.
 - **Disposition:** Retained because shipped behavior and unresolved intent both remain.
 
 ## Goal
