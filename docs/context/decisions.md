@@ -530,7 +530,7 @@ what worked across that sweep. They are history, not repository rules.
 - Outcome: superseded
 - Superseded by: [intent map](intent-map.md) and the
   [labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md)
-- Removal commit: (fill after commit)
+- Removal commit: `da77cc93`
 - Rationale kept: Its operating lessons are recorded in the entry above.
   Slice 6's held premise and the missing first `region-decisions.jsonl` are in
   the intent map and roadmap. The book-tools backlog items shipped in
