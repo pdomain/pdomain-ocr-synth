@@ -499,3 +499,41 @@ where truth lived when each plan retired.
 - Rationale kept: the workflow file is gone. Commit `0068970` (2026-09-13) deleted
   `.github/workflows/`, including `dep-refresh.yml`, so the dated-branch design cannot run.
 - Remaining work: none. Releases are local; this note does not change that procedure.
+
+### 2026-09-19 Operating lessons from the labeler backlog sweep
+
+These lessons come from the 2026-09-19 handoff, retired below. They record
+what worked across that sweep. They are history, not repository rules.
+
+- **Measure before designing.** Five designs changed once measured: project
+  progress, the typography numerator, word validation state, slice 6's
+  premise, and the folio lookalike substitutions. The substitutions came from
+  a real run's evidence rather than a guessed list.
+- **Check a finding against the code before building to it.** Of 24 open
+  issues in `pdomain-book-tools`, 11 were real, 3 stale and 10 not defects.
+  Two of the labeler's six findings were stale the same way.
+- **Ask the implementer to say when the instruction is wrong.** It happened
+  eight times, and each was an improvement. One example: line merge re-sorts
+  rather than appends, so no offset formula works.
+- **A subagent that starts a background task and stops never gets its
+  result.** Six lost time this way. Tell them to block in the foreground.
+- **Do not run git in a shared checkout an agent is using.** A branch
+  operation landed an agent's commit on `master`. It was recovered through the
+  reflog. Use a worktree.
+- **Surfaces that look like they work hide chained defects.** Each labeler
+  fix exposed the next for a full day. For example, per-word sidecars did not
+  follow their words through eleven structural routes, and nothing errored.
+
+### 2026-11-09 Retired: Five releases and the labeler backlog handoff (2026-09-19)
+
+- Old path: `docs/handoff/2026-09-19-005040-five-releases-and-the-labeler-backlog-is-empty.md`
+- Outcome: superseded
+- Superseded by: [intent map](intent-map.md) and the
+  [labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md)
+- Removal commit: (fill after commit)
+- Rationale kept: Its operating lessons are recorded in the entry above.
+  Slice 6's held premise and the missing first `region-decisions.jsonl` are in
+  the intent map and roadmap. The book-tools backlog items shipped in
+  `ee3be65`, and `5194dfe` rejected the partial caption fix. Its parked
+  labeler items are in the labeler's current state and decisions.
+- Remaining work: none beyond the intent map and roadmap
