@@ -6,8 +6,9 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-19
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-12
 - **Provenance:** checked against the documentation tree and docgraph's orphan findings on 2026-11-07.
+  The roadmap and synthesis-pipeline note were added to this index on 2026-11-12.
 - **Disposition:** Retained as the documentation entry point.
 
 How documentation is organized in this repo.
@@ -35,8 +36,9 @@ Cross-repository GitHub task routing is described in [CLAUDE.md](../CLAUDE.md#gh
 ## Current documentation
 
 - [Current state](context/current-state.md) describes this package's scope.
-- [Remaining work](plans/README.md) lists open synth and labeling work.
-- [Intent map](context/intent-map.md) preserves deferred work and unresolved decisions.
+- [Roadmap](plans/README.md) is the only open schedule, including work that belongs in another repository.
+- [Synthesis pipeline](architecture/synthesis-pipeline.md) is how a recipe becomes an image.
+- [Intent map](context/intent-map.md) keeps deferred names that older notes cite, plus unresolved decisions.
 - [Decisions](context/decisions.md) records why shipped plans were retired.
 
 ## Retained historical designs and plans

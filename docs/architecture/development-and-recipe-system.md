@@ -6,7 +6,7 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-12
 - **Provenance:** verified from the shipped source, tests, Make targets, and cited commits during the docgraph
   migration; the GitHub Actions sentence was re-checked on 2026-11-06 against commit `0068970` and the absence of
   `.github/workflows/`. Recipe mutability, validation, and CLI behavior were rechecked against code on 2026-11-07.
@@ -16,7 +16,8 @@
 The repository ships a Make- and `uv`-based development workflow and a typed,
 recipe-driven CLI. The current recipe-author workflow is in
 [Recipe workflow](../usage/recipe-workflow.md); this document records the
-implementation contracts and why they exist.
+implementation contracts and why they exist. How a loaded recipe becomes an
+image is [Synthesis pipeline](synthesis-pipeline.md).
 
 ## Development workflow
 

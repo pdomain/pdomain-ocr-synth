@@ -6,7 +6,7 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-09-07
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-12
 - **Provenance:** authored 2026-09-07 from direct inspection of `pdomain-ocr-labeler-spa`,
   `pdomain-book-contracts`, `pdomain-book-tools`, `pdomain-ocr-training`, and
   `pdomain-pgdp-measure`, plus owner direction in that session. Three premises of the
@@ -23,6 +23,10 @@
 
 **Spec:** [Splitting measurement, labeling, and
 synthesis](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md)
+
+This file is a record of labeling work. The schedule for this repository is the
+[roadmap](README.md). The code for this track lives in `pdomain-ocr-labeler-spa`,
+`pdomain-book-contracts`, `pdomain-book-tools`, and `pdomain-ocr-training`.
 
 ## Goal
 

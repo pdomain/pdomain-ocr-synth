@@ -6,7 +6,7 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-12
 - **Provenance:** authored from migration-time adversarial review, shipped code, tests, commit
   history, the evidence-backed 2026-08-24 PGDP architecture promotion and plan retirement, and
   the 2026-08-31 whole-book yield measurement over five books and 1385 pages
@@ -552,3 +552,28 @@ what worked across that sweep. They are history, not repository rules.
   points at spec 05. Read the old files with `git show 2e02d92:docs/_archive/handoff/<file>` and
   `git show 2448622:docs/archive/plans/04-text-transforms.md`.
 - Remaining work: the deferred transforms in the intent map
+
+## 2026-11-12: One roadmap, and the image pipeline is architecture
+
+The open schedule is [the roadmap](../plans/README.md). The intent map keeps the deferred
+names that older tombstones and catalog tests cite. It is not a second schedule.
+
+Shipped corpus, transform, render, and degradation behavior is
+[Synthesis pipeline](../architecture/synthesis-pipeline.md). Partial specs 04, 05, 06, and 07
+stay on disk because they still hold the unbuilt names and the tests read those spec headings.
+
+Two efforts need a new repository when they start. PGDP page synthesis gets one when that
+program starts, depending on the measure package and on this renderer. A labeled-dataset
+converter gets one only after shared types exist in `pdomain-book-contracts` and the join
+has its own command line. The browser preview is a home decision. The CLI `preview` command
+stays here. A browser UI is still an M11 goal for this package: FastAPI and a React
+single-page application served from one wheel. A new UI repository is only for the case
+where this package, `pdomain-ui`, `pdomain-ocr-simple-gui`, and `pdomain-ocr-trainer-spa`
+should not own that screen. Matching, provenance, style spans, editorial corrections, and
+the layout-model backend stay in the labeler, `pdomain-book-tools`, `pdomain-book-contracts`,
+or `pdomain-ocr-training`.
+
+Long design files were not deleted. The labeler specs are still the only full design record,
+and the measurement research notes are still the citations in current state. An archive
+folder was not recreated. The 2026-11-09 tombstone above records that retired docs live in
+Git history.

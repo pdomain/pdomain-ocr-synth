@@ -6,9 +6,10 @@
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-05-09
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-12
 - **Provenance:** agent-verified from repository evidence during the 2026-07-14 docgraph migration;
-  guidance and linked local entry points checked on 2026-11-07
+  guidance and linked local entry points checked on 2026-11-07. The status paragraph and the
+  milestone rule were pointed at the roadmap on 2026-11-12.
 - **Disposition:** Retained as authoritative repository guidance.
 
 Start with [`AGENTS.md`](AGENTS.md) for the guidance chain and
@@ -16,12 +17,10 @@ Start with [`AGENTS.md`](AGENTS.md) for the guidance chain and
 
 Recipe-driven synthetic OCR training-data generator; produces labeled
 image+text pairs for historical and specialty typography (first target:
-Cló Gaelach / early Irish). Status: M00–M10 substantially shipped, with
-residual work in M00, M03, M04, M05, M06, M09, and M10. M11 (preview UI)
-and M12 (glyph annotations) are unbuilt. See [remaining work](docs/plans/README.md).
-PGDP measurement left this repo on 2026-09-07 for `pdomain-pgdp-measure`;
-this repo renders and publishes. Its future labeled-dataset input contract is still unspecified.
-Architecture: `docs/specs/00-overview.md`.
+Cló Gaelach / early Irish). Shipped behavior is in `docs/architecture/`.
+The only schedule is [the roadmap](docs/plans/README.md). PGDP measurement
+left this repo on 2026-09-07 for `pdomain-pgdp-measure`; this repo renders
+and publishes. Its future labeled-dataset input contract is still unspecified.
 
 ## Commands
 
@@ -47,8 +46,7 @@ output for debugging.
 - Make targets first; fall back to `uv run …` only when no target exists.
 - Never `python -m pytest`. Always `uv run pytest -n auto` or `make test`.
   Bare `python`/`python3`/`.venv/bin/python` miss the venv.
-- Milestone-driven spec-first repo: next open milestones are M11 (preview UI) and M12 (glyph annotations).
-  Do not add scope beyond the current milestone.
+- The schedule is [the roadmap](docs/plans/README.md). Do not add scope beyond it.
 - Before writing any code, read the relevant milestone spec and plan end-to-end and propose a plan.
 - If pydantic recipe models change, run `make schema` to regenerate `docs/specs/recipe.schema.json`.
 - Never commit fonts — they are user-provided and license-sensitive; `make fetch-fonts` is interactive by design.
@@ -62,13 +60,16 @@ output for debugging.
 
 ## Specs
 
-Full spec set in `docs/specs/00-N.md` (read in order). Roadmap milestones in `docs/plans/`.
+Shipped behavior is in `docs/architecture/`. The schedule is `docs/plans/README.md`.
+Other files in `docs/plans/` and `docs/specs/` are records, not a second schedule.
 
 ## Sibling repos
 
 - `../pdomain-ocr-training/` — consumes synth output; reads the profile directory layout
-  this repo must match. Supersedes the retired `pd-ocr-trainer`.
-- `../pdomain-book-tools/` — shared OCR/image primitives (potential future dependency).
+  this repo must match. Supersedes the retired `pd-ocr-trainer`. Layout-model training stays there.
+- `../pdomain-ocr-labeler-spa/` — human review of pages, regions, and glyphs.
+- `../pdomain-book-contracts/` — shared annotation types.
+- `../pdomain-book-tools/` — shared OCR and page primitives, including the glyph-annotation model.
 - `../pdomain-pgdp-measure/` — the PGDP measurement library, extracted from this repo on
   2026-09-07. It owns scan geometry, alignment, typography, and glyph cutting, and the
   `pgdp-measure` CLI. This repo cut over in one step and keeps no dependency on it.
@@ -91,8 +92,8 @@ When shipping a plan task:
 
 This repo follows the workspace docs/ template — see [`docs/README.md`](docs/README.md). Active
 folders: `architecture/`, `decisions/`, `plans/`, `process/`, `research/`,
-`runbooks/`, `specs/`, `templates/`, `usage/`, plus parallel `archive/`
-subfolders.
+`runbooks/`, `specs/`, `templates/`, `usage/`. Retired docs live in Git history.
+There is no `docs/archive/` tree.
 
 **Superpowers redirect.** When a superpowers skill (e.g. `brainstorming`,
 `writing-plans`) instructs you to save to `docs/superpowers/specs/<file>.md`
