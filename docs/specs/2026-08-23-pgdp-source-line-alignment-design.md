@@ -3,13 +3,13 @@
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-23
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** derived from the active PGDP typography design, shipped M14 and M15a code, local
   corpus inspection, and owner direction in this session
-- **Disposition:** Active M15b design for conservative F2 source-line alignment.
+- **Disposition:** Implemented bounded measurement contract; current ownership is pdomain-pgdp-measure.
 - **Read when:** implementing or reviewing PGDP line candidates, F2 source spans, or scan-to-text
   alignment.
 - **Search terms:** PGDP, M15b, F2, source line, alignment, dynamic programming, gutter, ink band.
@@ -338,3 +338,17 @@ geometry as normalized typography.
   single-column pages.
 - **Residual risks:** Candidate extraction may reject decorative or irregular lines. The initial
   costs are heuristics until reviewed corpus evidence supports calibration.
+
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design and
+  measure `alignment_source.py`, `alignment_image.py`, `alignment_dp.py`, `alignment_models.py`,
+  `alignment_review.py`, their corresponding tests, and the owning alignment architecture.
+- **Findings:** The review returned no actionable finding on this source-line contract.
+  Its actionable precision-provenance and seed-admission findings belong to the separate yield-gate design,
+  where they are now recorded as unfulfilled criteria.
+- **Resolution:** The shipped bounded alignment contract is documented in the measure package.
+  The pending review text above remains the historical record; this section records today's actual review.
+- **Residual limits:** No rectification, new corpus calibration, or new precision review is claimed.
+  These remain outside the bounded source-frame implementation.
+- **Verification:** Code and tests were read, not rerun. The original metadata and evidence were not replaced.

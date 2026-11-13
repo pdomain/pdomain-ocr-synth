@@ -1,8 +1,8 @@
 ---
-Status: implemented
+Status: partial
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-11-07
+Last verified: 2026-11-13
 Kind: spec
 ---
 
@@ -11,10 +11,10 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** implemented
+- **Status:** partial
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** authored 2026-09-17 from the shipped region review surface and a run of the region
   pipeline on real OCR'd books, and from direct inspection of `pdomain-ocr-labeler-spa`
   `core/regions/proposal_log.py`, `core/regions/decision_log.py`, `core/regions/resolver.py`,
@@ -27,6 +27,13 @@ Kind: spec
   answers "what should a person or an agent look at next".
 - **Search terms:** slice 5, review queue, undecided proposals, next page with work, review-queue
   route, bracket keys, confidence ranking, agent affordance, carried decision, carry-forward.
+
+## Current implementation, 2026-11-13
+
+Book review and geometric carry-forward ship in the labeler. Current code also carries real human rejections.
+The original proposal deferred rejection carry and left hand-drawn overlap handling undecided.
+No owner approval of those policies is established by this review. Preserve the design until the owner
+ratifies the implemented behavior or chooses another policy; this migration changes no runtime behavior.
 
 ## Record verification, 2026-11-07
 
@@ -219,6 +226,19 @@ refetch after every keyboard decision is cheap at that size.
 
 No adversarial review record was found in this design. This is a documentation gap, not a review pass.
 The recorded implementation merge is not evidence of a design review. Calibration remains outside this increment.
+
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design,
+  labeler source and relevant unit, integration, and UI test files. This is today's review,
+  not a claim that the missing historical review occurred.
+- **Accepted findings:** Rejection carry implements a policy that this design deferred.
+  The current undecided behavior for hand-drawn overlaps also needs an explicit owner choice.
+- **Resolution:** The current-implementation note above distinguishes today's source from the original design.
+  Historical review-gap statements and original exclusions remain as dated evidence.
+- **Residual work:** Owner decisions on rejection carry and hand-drawn overlaps, plus calibration limits.
+  The bounded shipped code does not establish approval of these policy choices.
+- **Verification:** Code and tests were inspected at labeler `d4c7daa5`; sibling tests were not executed.
 
 ## Related
 

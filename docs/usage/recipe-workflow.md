@@ -54,8 +54,8 @@ The five measurement subcommands left this repository on 2026-09-07. `rank-pgdp`
 unchanged, and the reports carry the same wire contracts. Their walkthrough lives in that
 package at `docs/usage/measuring-a-pgdp-corpus.md`.
 
-This repository renders synthetic pages and publishes them. It consumes measurement reports; it no
-longer produces them.
+This repository renders synthetic pages and publishes them. Measurement is owned by the separate package.
+The labeled-dataset input contract for this renderer is still unspecified.
 
 ## Validate and render
 
@@ -67,7 +67,8 @@ pdomain-ocr-synth preview my-recipe --count 200
 pdomain-ocr-synth render my-recipe
 ```
 
-Use `validate --offline` when checks must not touch the network. `fetch` warms
+Validation currently performs no network requests; `validate --offline` is accepted but adds no further checks.
+`fetch` warms
 remote corpus caches and accepts `--cache-dir` and `--no-cache`; it does not
 accept render controls. `preview --no-degrade` isolates the renderer from the
 degradation pipeline. `render --resume` continues only when the saved snapshot
@@ -180,13 +181,13 @@ parser, and every parser flag must appear here. A meta-test in
 
 | Flag | Meaning |
 |------|---------|
-| `--offline` | Skip network-touching checks |
+| `--offline` | Accepted; validation currently performs no network requests |
 
 ### `lint <recipe>`
 
 | Flag | Meaning |
 |------|---------|
-| `--offline` | Skip network-touching checks (forwarded to validate) |
+| `--offline` | Forwarded to validation, which currently performs no network requests |
 | `--json` | Emit a JSON object of validation + lint issues (machine-readable) |
 | `--strict` | Treat lint warnings as failures: exit 1 if any warning is present (validation errors still take precedence with exit 3); use as a CI / pre-commit gate |
 

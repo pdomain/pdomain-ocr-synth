@@ -3,13 +3,13 @@
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-31
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** measured on 2026-08-31 from the reproduced fixed 25-page M15b review set, the v1
   extractor code, and owner design approval in this session
-- **Disposition:** Active design for the M15b fragmented-band extractor correction.
+- **Disposition:** Implemented bounded measurement contract; current ownership is pdomain-pgdp-measure.
 - **Read when:** implementing or reviewing the `pgdp-alignment/v2` line-candidate extractor.
 - **Search terms:** PGDP, M15b, fragmented band, line candidate, cluster join, extractor v2.
 

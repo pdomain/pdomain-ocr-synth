@@ -2,7 +2,7 @@
 Status: implemented
 Owner: CT
 Created: 2026-09-18
-Last verified: 2026-11-07
+Last verified: 2026-11-13
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-18
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** authored 2026-09-18 from a measured inventory of every kind of
   review work in `pdomain-ocr-labeler-spa` at `a9a90fb`, taken on 80 real pages
   and 18,463 real words of `projectID3fc3d7d03c613`; sources read include
@@ -31,6 +31,15 @@ Kind: spec
   work for a book, or wondering why word counts are not free.
 - **Search terms:** review queue, what to review next, outstanding work, word
   validation count, typography completion, review counts journal, slice 5.
+
+## Current implementation, 2026-11-13
+
+The unified queue ships, but two counting details changed or remain bounded. Typography uses a per-page rollup;
+the original 512 KiB reading ceiling is superseded. Counts can still be lower bounds.
+Word-count rows include content hashes, but the queue does not compare them with live page heads.
+Existing rows therefore do not prove current completeness after every external mutation.
+Untouched pages are not backfilled, glyph prediction remains unavailable, and word/typography item lists
+are not cross-book review lists.
 
 ## Record verification, 2026-11-07
 
@@ -297,6 +306,19 @@ unaffected everywhere else in this design.
 No adversarial review record was found in this design. This is a documentation gap, not a review pass.
 The recorded implementation merges are not evidence of a design review. In particular, the typography count's
 lower-bound limitation remains explicit above.
+
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design,
+  labeler source and relevant unit, integration, and UI test files. This is today's review,
+  not a claim that the missing historical review occurred.
+- **Accepted findings:** The obsolete typography ceiling and the unverified word-row freshness claim overstated
+  current behavior.
+- **Resolution:** The current-implementation note above distinguishes today's source from the original design.
+  Historical review-gap statements and original exclusions remain as dated evidence.
+- **Residual work:** Exact word/typography freshness, untouched-page backfill, glyph prediction, and broader item lists
+  remain explicit limits; no new implementation or freshness guarantee is claimed.
+- **Verification:** Code and tests were inspected at labeler `d4c7daa5`; sibling tests were not executed.
 
 ## Related
 

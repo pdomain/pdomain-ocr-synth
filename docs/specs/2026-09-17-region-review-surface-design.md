@@ -1,8 +1,8 @@
 ---
-Status: active
+Status: implemented
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-11-07
+Last verified: 2026-11-13
 Kind: spec
 ---
 
@@ -11,22 +11,28 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** authored 2026-09-17 from a read-only survey of `pdomain-ocr-labeler-spa/frontend/`
   (`PageImageCanvas.tsx`, `BBoxOverlay.tsx`, `shell/RightPanel.tsx`, `right-panel/BlockDetail.tsx`,
   `stores/selection-store.ts`, `stores/rail-store.ts`, `hooks/useRailHotkeys.ts`,
   `hooks/useLineMutations.ts`, `hooks/useJobProgress.ts`, `hooks/useJobCompletionInvalidation.ts`,
   `components/PageActionsCompact.tsx`, `lib/hotkeyMap.ts`), the backend request and view models in
   `api/regions.py` and `core/models.py`, and the furniture coverage measurement behind slice 4
-- **Disposition:** Active. Slice 3 of the labeling track, first increment, shipped.
+- **Disposition:** Implemented bounded increment. Slice 3 of the labeling track, first increment, shipped.
   Current behavior is `docs/architecture/measurement-and-labeling.md`.
 - **Read when:** building any region or proposal UI in the labeler, adding a rail target, or
   adding review keyboard shortcuts.
 - **Search terms:** slice 3, region review, proposal review, RegionDetail, rail target region,
   accept proposal, reject proposal, review hotkeys, propose regions button.
+
+## Current implementation, 2026-11-13
+
+The first region-review increment ships. The active status was stale; later drawing, editing, and book navigation
+are additional shipped behavior. This does not complete the separate general matcher, sibling-membership invariant,
+word/glyph provenance, style-span review, or editorial corrections.
 
 ## Record verification, 2026-11-07
 
@@ -231,6 +237,18 @@ different role lists until `BlockDetail` is changed.
 No adversarial review record was found in this design. This is a documentation gap, not a review pass.
 The shipped first increment does not establish a design review. The excluded editing UI and the two recorded
 inconsistencies remain separate work in this dated design.
+
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design,
+  labeler source and relevant unit, integration, and UI test files. This is today's review,
+  not a claim that the missing historical review occurred.
+- **Accepted findings:** The first increment was still labelled active despite its implemented source and tests.
+- **Resolution:** The current-implementation note above distinguishes today's source from the original design.
+  Historical review-gap statements and original exclusions remain as dated evidence.
+- **Residual work:** The separate matcher, membership, provenance, span, and editorial plans remain live.
+  Historical BlockDetail inconsistencies are not declared fixed by retiring this first increment.
+- **Verification:** Code and tests were inspected at labeler `d4c7daa5`; sibling tests were not executed.
 
 ## Related
 

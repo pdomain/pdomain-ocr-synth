@@ -244,3 +244,90 @@ A roman numeral stays on the head.
 - Verified: 2026-11-06 by reading `furniture.py` and those tests. This pass did not execute the suite. The plan records
   the first merge as `0e35a06`. It records the fit as `6ed5156`. The narrow-valley follow-up is in `86105eb`. All three
   are on 2026-09-17.
+
+## Extracted alignment contracts
+
+The fragmented-band correction and whole-book page templates ship in `pdomain-pgdp-measure`.
+They do not add measurement commands or a measurement dependency to this renderer.
+
+The extractor merges clusters that overlap horizontally and discounts minor ink when measuring fragmentation.
+Its fragmented-band limit is 0.35. Height-aware speck filtering keeps short lines of type,
+and dense thin rules are removed before they become ordinary line candidates.
+These changes retain conservative page-level quality checks rather than treating extractor eligibility as acceptance.
+
+Page templates group sides from measured geometry instead of trusting scan filenames.
+They separate running furniture from body candidates, so deleted F2 running heads do not steal source lines.
+A speck in the head window still identifies only the first measured band.
+Per-group spread survives the serialized profile.
+The current head-deviation and chapter-sink constants are 25 px and 150 px respectively;
+the original design's unset constants are resolved in code.
+
+Extractor eligibility does not establish accepted-line precision for a new corpus.
+The historical `053.png` example became extractor-eligible but still failed alignment quality checks.
+The old low-margin diagnosis led to furniture suppression; it is not a new acceptance-policy decision.
+Class coverage and threshold calibration beyond the measured books remain limits.
+The [713-page recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md)
+remains the dated evidence for the open glyph gate, not a new experiment performed by this migration.
+
+### Evidence for extracted alignment contracts
+
+- Code: sibling `pdomain-pgdp-measure` at `fd854f5`,
+  `src/pdomain_pgdp_measure/alignment_image.py` and `page_templates.py`.
+- Tests: `tests/test_pgdp_alignment_image.py`, including exact fragmentation-boundary,
+  short-line, rule-band, and furniture-suppression cases; `tests/test_pgdp_page_templates.py`,
+  including first-band specks and per-template spread round trips.
+- Owning reference: `pdomain-pgdp-measure/docs/architecture/pgdp-source-line-alignment.md`
+  and `pgdp-observed-geometry-profiling.md`.
+- Verified: 2026-11-13 by fresh independent source/test inspection. No sibling test suite or corpus run was executed.
+
+## Page-kind persistence and the remaining storage policy
+
+The five parked page-kind defects are fixed in the labeler.
+The page payload reports confirmed kind and reviewed state.
+A failed durable confirmation restores both prior kind and generation.
+Book-scoped proposal jobs use the typed project guard, hold each page's verified read lease,
+log skipped pages, and preserve explicit page-index mapping.
+Progress uses the same image sequence that the job actually traverses.
+Reviewed-marker reads are best-effort and typed.
+
+One policy remains undecided.
+Confirm refuses with 503 when no event store is available, while general `save_page` still permits a store-less save.
+The owner must choose whether all mutations should refuse, or the interface should hide unsupported confirmation.
+Retiring the five-defect issue does not choose between those behaviors.
+
+### Evidence for page-kind persistence
+
+- Code: sibling `pdomain-ocr-labeler-spa` at `d4c7daa5`, `api/pages.py`,
+  `core/jobs/handlers/propose_page_kinds.py`, and the page-kind reviewed store.
+- Tests: `tests/unit/api/test_page_kind_endpoint.py`,
+  `tests/unit/core/jobs/test_propose_page_kinds_handler.py`, and
+  `tests/unit/core/page_kind/test_reviewed_store.py`.
+- Verified: 2026-11-13 by fresh source/test inspection; sibling suites were not rerun.
+
+## Default detector and limits of geometric evidence
+
+The current labeler bootstrap composes furniture, poetry, and text-layout detectors.
+The older two-detector composition recorded above is the 2026-11-06 inspection snapshot.
+
+Bottom furniture remains outside the bounded geometry detector.
+The [bottom-furniture study](../research/2026-09-17-bottom-of-page-furniture-is-too-rare-and-too-close-to-the-text.md)
+does not justify a general geometry-only catchword or footer classifier.
+[X-height spread](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md)
+is confidence evidence, not a chapter-opening gate.
+The [ragged-right study](../research/2026-09-18-ragged-right-finds-poetry-blockquote-has-no-geometric-signature.md)
+supports the measured poetry heuristic; it does not prove cross-book performance or universal blockquote impossibility.
+
+- Code: labeler `bootstrap.py`, `core/regions/text_layout.py`, `furniture.py`, and `poetry.py` at `d4c7daa5`.
+- Tests: labeler `tests/unit/core/regions/` detector tests, inspected on 2026-11-13 without execution.
+
+## Admission counts do not certify human-reviewed precision
+
+The measure package reports whether a book clears its 30-page admission seed.
+That is not a calibrated synthesis guarantee, and this renderer has no consumer for that flag.
+The historical 713-page result was model-reviewed, not an auditable human-review record.
+The yield design's human-review criterion therefore remains unfulfilled.
+Whether auditable human evidence is required or a different evidence rule should be adopted is an owner decision.
+
+- Evidence: measure `alignment_review.py`, its `BookYield` tests, the
+  [retained yield design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md),
+  and the 2026-11-13 independent post-implementation review. No measurement or human review was rerun.

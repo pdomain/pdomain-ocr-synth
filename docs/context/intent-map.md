@@ -46,7 +46,8 @@ names that older notes and tests still cite.
 - Output hardening: per-sample provenance, a byte-mutation test, and an interruption exercise
   ([output architecture](../architecture/output-and-publishing.md)).
 - Stretch: further recipes, cloud rendering, and live statistics (`docs/plans/10-stretch.md`).
-- Extensibility: third-party plugins (`docs/specs/09-extending.md`).
+- Extensibility: recipe-local Python loaders, degradation entry-point discovery, registry schema negotiation,
+  and public testing helpers remain deferred (`docs/specs/09-extending.md`). Corpus and transform entry points ship.
 - Dev-local upgrade guard (`docs/specs/13-dev-local-mode-and-deps.md`).
 - Gaelic font URL and license checks (`docs/specs/fonts-gaelic.md`).
 
@@ -112,4 +113,21 @@ and publishing specification were promoted into current architecture and usage, 
 and spec 13 remains draft. The plan index, writing standard, lint catalogue,
 and Gaelic font reference remain active. Every analyzer record from that sweep has a
 lifecycle classification. The 2026-11-06 pass retired the plans whose code and tests
-were complete and left the partial plans listed under Active.
+were complete and left the partial plans now linked through the sole roadmap; their deferred names remain above.
+
+## Decisions retained by the 2026-11-13 retirement review
+
+- **Needs owner decision — book-region carry policy.** The labeler carries real human rejections,
+  although the original book-queue design deferred rejection carry. Ratify that behavior or choose another policy.
+  Hand-drawn overlaps remain undecided; that policy also needs an explicit choice.
+  The [book-queue design](../specs/2026-09-17-book-review-queue-design.md) remains partial.
+- **Needs owner decision — human-review evidence.** The yield design calls for human-reviewed precision,
+  but the recorded 713-page result was model-reviewed and the ledger has no reviewer-provenance field.
+  The criterion is not established. Choose the required auditable evidence before claiming it passed.
+  [Yield limits](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md#current-implementation-limits-2026-11-13)
+  also preserve admission calibration and the missing consuming integration.
+- **Deferred — detector and count limits.** The 0.7 carry threshold is uncalibrated.
+  Exact word/typography freshness, untouched-page backfill, glyph prediction, kind-conditioned detectors,
+  and broader item lists remain future work. These are not completed by documenting the bounded review increments.
+- **Deferred — extracted alignment limits.** Calibration beyond the measured books, additional page classes,
+  and rectification remain future work in the measure package. No new corpus or human precision review was run.

@@ -1,8 +1,8 @@
 ---
-Status: active
+Status: implemented
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-11-07
+Last verified: 2026-11-13
 Kind: spec
 ---
 
@@ -11,10 +11,10 @@ Kind: spec
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** active
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** measured 2026-09-17 by
   `/workspaces/pdomain/.m15f-evidence/furniture_band_coverage.py`, whose output is
   `/workspaces/pdomain/.m15f-evidence/furniture-band-coverage.json`, and by
@@ -25,13 +25,20 @@ Kind: spec
   `core/regions/detector.py`, `core/regions/block_adapter.py`, `core/project_state.py`,
   `api/dependencies.py`; `pdomain-book-tools` `ocr/block.py`; and the 2026-09-17 recomputation of
   the x-height spread figure
-- **Disposition:** Active. Slice 4 of the labeling track. Neither open decision blocks a plan:
+- **Disposition:** Implemented bounded increment. Slice 4 of the labeling track. Neither open decision blocks a plan:
   the persisted-measurement record is contingent on a performance problem that has not happened,
   and the cluster-gap threshold has a stated direction the plan can settle.
 - **Read when:** designing or building the region proposal engine, choosing which region roles a
   machine may propose, or deciding where a proposal run gets its geometry.
 - **Search terms:** slice 4, geometry engine, region detector, RegionDetector, BookTemplates,
   PageClassification, furniture_band_ordinals, ink bands, page furniture, running head, folio.
+
+## Current implementation, 2026-11-13
+
+The bounded geometry increment ships in the labeler. Book-fitted furniture splitting uses Otsu on pooled gaps,
+with the fixed share retained as a fallback. The original fixed-share-only description is superseded.
+Proposal runs remeasure and refit in the worker; they do not assume persisted measurements are authoritative.
+Bottom furniture and braced groups remain excluded from the first increment.
 
 ## Record verification, 2026-11-07
 
@@ -280,6 +287,19 @@ No adversarial review record was found in this design. This is a documentation g
 The measurement evidence above does not establish independent design review. The open questions remain recorded
 under "What this design does not settle."
 
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design,
+  labeler source and relevant unit, integration, and UI test files. This is today's review,
+  not a claim that the missing historical review occurred.
+- **Accepted findings:** The shipped increment had retained its active status.
+  Its fixed-share description did not account for fitted Otsu splitting and the fallback.
+- **Resolution:** The current-implementation note above distinguishes today's source from the original design.
+  Historical review-gap statements and original exclusions remain as dated evidence.
+- **Residual work:** Calibration and future bottom furniture, braced groups, and persisted-measurement design
+  remain separate scope.
+- **Verification:** Code and tests were inspected at labeler `d4c7daa5`; sibling tests were not executed.
+
 ## Related
 
 - [Region provenance and persistence](2026-09-07-region-provenance-and-persistence-design.md) — the
@@ -289,5 +309,6 @@ under "What this design does not settle."
 - [Region routes and proposal run](../architecture/measurement-and-labeling.md#region-stores-and-routes) — Task 5
   built the detector seam this design widens.
 - [Labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md) — where slice 4 sits.
-- [X-height spread does not find chapter openings](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md)
+- [X-height spread does not find chapter
+  openings](../research/2026-09-17-x-height-spread-does-not-find-chapter-openings.md)
   — why the heading signal cannot gate a proposal.

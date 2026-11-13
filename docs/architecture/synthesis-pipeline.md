@@ -41,7 +41,7 @@ Resume is off unless the caller asks for it.
   directory.
 - Invalid `labels.json` raises `SnapshotMismatchError`.
 - Resume also raises `SnapshotMismatchError` unless the tool version, seed, input
-  hashes, and recipe match.
+  hashes, and recipe match. Input hashes cover font files and local corpus files, not remote responses or paper textures.
 
 `output.count` may grow. Resume keeps indexes that already have a successful manifest
 row and renders the rest.

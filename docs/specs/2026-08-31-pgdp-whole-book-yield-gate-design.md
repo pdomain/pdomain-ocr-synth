@@ -30,6 +30,17 @@ The verification date records a check of its scope against
 It does not record a new corpus run or certify that every proposed feature shipped.
 Use those current documents to distinguish shipped behavior from residual intent.
 
+## Current implementation limits, 2026-11-13
+
+The measurement package computes a reported `BookYield.admitted` flag from the 30-page seed.
+That flag is not a calibrated guarantee of synthesis suitability, and this renderer has no consuming integration.
+The historical design below retains its original policy wording.
+
+The design's human-reviewed precision criterion is not established by the recorded model-reviewed result.
+The current ledger has no reviewer-provenance field, and the 713-page result was model-reviewed.
+Do not claim the human-review criterion passed without auditable human review or an explicit owner decision
+about the evidence required. No new corpus review was run here.
+
 ## The gate splits into two evaluations
 
 The single three-part gate splits into two evaluations that run on different reports.
@@ -201,3 +212,15 @@ The uncalibrated 30-page seed and the unmeasured uniqueness-margin rejection ris
   three books and leaving out two.
 - Whole-book reports carry no human line decisions, so they are never passed to
   `validate_review_gate`, which would fail them on unmeasured precision.
+
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design, the
+  source-line design, measure alignment/review code and tests, and the 713-page research note.
+- **Accepted findings:** The recorded precision evidence does not prove the stated human-review criterion.
+  The 30-page seed reports admission; it does not prove a calibrated synthesis contract or a consuming integration.
+- **Resolution:** The current-limits section above makes both gaps explicit. The original design and dated
+  evidence remain intact. This is today's review, not evidence that the missing historical review occurred.
+- **Residual work:** Auditable human-review evidence or an owner decision on admissible evidence,
+  admission calibration, and a downstream consumer. The design stays live and is not retired as implemented.
+- **Verification:** Source and tests were inspected; no measurement tests, corpus run, or human review was executed.

@@ -21,7 +21,8 @@ transport without changing the local training contract.
 Recognition output contains `images/`, `labels.json`, `manifest.jsonl`,
 `recipe.snapshot.yaml`, and `stats.json`. Labels map image names to ground-truth
 text. The manifest carries per-sample rendering metadata, and the snapshot
-captures the resolved recipe and input hashes.
+captures the resolved recipe and input hashes. Those hashes cover font files and local corpus files only;
+remote responses and paper textures are not hashed.
 
 Detection output uses the same top-level filenames. Its `labels.json` records
 image dimensions and doctr-compatible line polygons. Word bboxes are nested under each line;

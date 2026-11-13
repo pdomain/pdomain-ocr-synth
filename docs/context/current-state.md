@@ -88,3 +88,9 @@ The labeled-dataset contract this repository would consume is still unspecified.
 Whether the labeler ingests PGDP corpora directly is still unspecified.
 
 See the [split design](../specs/2026-09-06-measurement-labeling-synthesis-split-design.md).
+
+## Review contracts and retirement limits
+
+[Labeler review contracts](../architecture/labeler-review-contracts.md) records the shipped review increments.
+The 2026-11-13 review preserved owner choices about rejection carry, hand-drawn overlaps, and auditable precision evidence
+in the [intent map](intent-map.md). This migration does not choose those policies or add a renderer integration.

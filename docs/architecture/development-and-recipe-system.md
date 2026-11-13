@@ -35,6 +35,8 @@ commit `0068970`. `just ci` is the local gate.
 Dependency state comes from `pyproject.toml` and `uv.lock`. The current
 `upgrade-deps` recipe refuses when either supported local-mode marker exists,
 then upgrades the lock and syncs it. The broader dev-local detection in spec 13 remains deferred.
+The supported markers are `.pdomain-local-mode` and `.pdomain-dev-local` under
+`UV_PROJECT_ENVIRONMENT`, or `.venv` when that variable is unset.
 Fonts are user-supplied licensed assets, and the interactive `just fetch-fonts` path is deliberately
 outside automated setup.
 
@@ -96,3 +98,8 @@ directories, which is also supported.
 - Commits: `445c493`, `dde147a`, `29c26c9`, `14bdbde`, `1f3bd61`, and
   `332e36a`.
 - Verified: 2026-11-07 against the recipe models, CLI parser and handlers, validation, and Make targets.
+
+## Further runtime contracts
+
+[Recipe runtime contracts](recipe-runtime-contracts.md) records preset expansion, random-state ownership,
+working extension points, lint, and audit. The broader unbuilt proposals remain in their partial specs.

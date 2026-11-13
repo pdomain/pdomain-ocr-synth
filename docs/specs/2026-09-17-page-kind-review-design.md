@@ -2,7 +2,7 @@
 Status: implemented
 Owner: CT
 Created: 2026-09-17
-Last verified: 2026-11-07
+Last verified: 2026-11-13
 Kind: spec
 ---
 
@@ -14,7 +14,7 @@ Kind: spec
 - **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-09-17
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** authored 2026-09-17 from direct inspection of `pdomain-ocr-labeler-spa` at
   master `3087aa0`: `api/pages.py` (`PagePayload`, `confirm_page_kind`, `ConfirmPageKindRequest`),
   `core/page_kind/models.py`, `core/page_kind/proposal_log.py`, `core/page_kind/reviewed_store.py`,
@@ -29,6 +29,12 @@ Kind: spec
   or confirming page kinds for many pages at once.
 - **Search terms:** page kind review, confirm page kind, bulk confirm, page kinds list, proposed
   kind, reviewed marker, page-kind confidence, slice 5.
+
+## Current implementation, 2026-11-13
+
+The page-kind review increment ships in the labeler. The later unified queue includes page kinds,
+so the original exclusion from the book queue is superseded. That does not claim a new keyboard editing flow
+or detectors conditioned on confirmed kind.
 
 ## Record verification, 2026-11-07
 
@@ -329,6 +335,18 @@ with the person.
 
 No adversarial review record was found in this design. This is a documentation gap, not a review pass.
 The recorded implementation merge is not evidence of a design review. The excluded work remains listed above.
+
+### Current post-implementation review, 2026-11-13
+
+- **Stage and source:** Fresh independent `adversarial-review-reviewer` inspection of this design,
+  labeler source and relevant unit, integration, and UI test files. This is today's review,
+  not a claim that the missing historical review occurred.
+- **Accepted findings:** The original book-queue exclusion is superseded by the unified queue implementation.
+- **Resolution:** The current-implementation note above distinguishes today's source from the original design.
+  Historical review-gap statements and original exclusions remain as dated evidence.
+- **Residual work:** Future kind-conditioned detectors and calibration remain separate design work, not missing
+  first-increment code.
+- **Verification:** Code and tests were inspected at labeler `d4c7daa5`; sibling tests were not executed.
 
 ## Related
 

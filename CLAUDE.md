@@ -33,7 +33,7 @@ and publishes. Its future labeled-dataset input contract is still unspecified.
 | `AI=1 just ci` | setup → pre-commit → lint-check → typecheck → test → build → strict docgraph |
 | `AI=1 just schema` | regenerate `docs/specs/recipe.schema.json` from pydantic models |
 | `just fetch-fonts` | download Gaelic fonts (interactive — do not run non-interactively) |
-| `AI=1 just gaelic-preview` | render 50 preview samples for the Gaelic recipe (requires M07) |
+| `AI=1 just gaelic-preview` | render 50 preview samples for the Gaelic recipe (requires the recipe fonts) |
 | `AI=1 just build` | wheel + sdist into `dist/` |
 
 `AI=1 just <recipe>` captures verbose output to `.ci-ai.log`. It prints

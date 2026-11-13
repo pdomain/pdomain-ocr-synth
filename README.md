@@ -18,7 +18,8 @@ directories.
 
 **Status:** M00–M10 substantially shipped, with residual work in M00, M03–M06, M09, and M10.
 M11 (preview UI) and M12 (glyph annotations) remain unbuilt. See the [remaining work](docs/plans/README.md).
-The `docs/specs/` set is the authoritative design reference; `docs/plans/` tracks milestone progress.
+The architecture notes describe current behavior; specs preserve partial and deferred designs.
+The [roadmap](docs/plans/README.md) is the sole schedule.
 See the [documentation map](docs/README.md) for current documentation and
 [`AGENTS.md`](AGENTS.md) for contributor and agent guidance.
 
@@ -58,15 +59,16 @@ captured contract.
 
 ## Getting started
 
-Read the specs in order:
+Start with the architecture and usage references for shipped behavior. The specs retain partial or deferred design.
+The [roadmap](docs/plans/README.md) is the sole schedule.
 
-| # | Spec | What it covers |
+| # | Documentation | What it covers |
 |---|------|----------------|
 | 00 | [Overview](docs/specs/00-overview.md) | Goals, non-goals, integration |
 | 01 | [Development and recipe system](docs/architecture/development-and-recipe-system.md) | CLI and recipe architecture |
 | 02 | [Recipe format](docs/specs/02-recipe-format.md) | YAML schema reference |
 | 03 | [Recipe workflow](docs/usage/recipe-workflow.md) | Create, validate, render, and publish a recipe |
-| 04 | [Corpus providers](docs/specs/04-corpus-providers.md) | Local, web, Wikisource, HF datasets |
+| 04 | [Corpus providers](docs/specs/04-corpus-providers.md) | Local, web, Wikisource; HF datasets remain unimplemented |
 | 05 | [Text transforms](docs/specs/05-text-transforms.md) | Lenition, long-s, Tironian et |
 | 06 | [Rendering](docs/specs/06-rendering.md) | Fonts, shaping, layouts |
 | 07 | [Degradation](docs/specs/07-degradation.md) | Augmentation pipeline |

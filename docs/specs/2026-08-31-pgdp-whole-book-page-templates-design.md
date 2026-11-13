@@ -3,13 +3,13 @@
 ## Agent Index
 
 - **Kind:** spec
-- **Status:** draft
+- **Status:** implemented
 - **Owner:** CT
 - **Created:** 2026-08-31
-- **Last verified:** 2026-11-07
+- **Last verified:** 2026-11-13
 - **Provenance:** measured on 2026-08-31 from whole-book profiles of four PGDP books, the fixed
   25-page M15b review set, and owner direction in this session
-- **Disposition:** Active design for whole-book page templates and page classification.
+- **Disposition:** Implemented bounded measurement contract; current ownership is pdomain-pgdp-measure.
 - **Read when:** implementing page classification, running-head suppression, or book-level geometry.
 - **Search terms:** PGDP, M15a, type page, page template, running head, chapter opening, recto,
   verso, page class.
