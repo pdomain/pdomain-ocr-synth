@@ -110,9 +110,18 @@ source = "vcs"
 # Virtual environments must never reach the sdist: they contain absolute
 # symlinks to the uv-managed interpreter, which uv refuses to unpack.
 # Without this, `uv build` fails whenever a local .venv-container exists.
+# Hatch can include ignored local state, so keep generated data and nested checkouts out explicitly.
 exclude = [
     ".venv/**",
     ".venv-container/**",
+    ".ci-ai.log",
+    ".coverage*",
+    ".docgraph/**",
+    ".superpowers/**",
+    ".worktrees/**",
+    "worktrees/**",
+    "**/node_modules/**",
+    ".cache/**",
 ]
 
 [tool.hatch.build.targets.wheel]
