@@ -136,10 +136,10 @@ revalidated as a patch during this check.
   that — it adds no logger either. `api/typography.py` likewise declares none.
 - Python floor: `>=3.11,<3.14` for `pdomain-book-contracts`; `>=3.13,<3.14` for
   `pdomain-ocr-labeler-spa`.
-- Book-contracts commands: `make test`, `make ci` (lint, typecheck, test, build,
+- Book-contracts commands: `just test`, `just ci` (lint, typecheck, test, build,
   `docgraph check --strict`). No `AI=1` convention.
-- Labeler commands: `make AI=1 <target>` captures verbose output to `.ci-ai.log`; run
-  `make AI=1 ci` before committing. `make test` excludes `e2e/` and the `slow`/`integration` markers
+- Labeler commands: `AI=1 just <recipe>` captures verbose output to `.ci-ai.log`; run
+  `AI=1 just ci` before committing. `just test` excludes `e2e/` and the `slow`/`integration` markers
   by default.
 - Journals are append-only. An existing record is never rewritten; a decision journal represents a
   change of mind as a new record with an advanced revision, exactly like `StyleSpanDecisionLog`.
@@ -427,7 +427,7 @@ Expected: PASS, including `tests/test_torch_free_import.py` — no change needed
 (verified: `test_every_subpackage_imports_without_heavy_stack` imports
 `pdomain_book_contracts.typography` as a whole, not module-by-module).
 
-Run: `make ci`
+Run: `just ci`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -1854,10 +1854,10 @@ Expected: PASS, all nine tests in the file.
 Run: `uv run pytest tests/unit/core/test_typography_review.py tests/unit/api/ -v`
 Expected: PASS, including every pre-existing typography test file (no regression).
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS.
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS. `openapi-export` regenerates `frontend/src/api/types.ts` with the three new routes;
 include that regenerated file in the commit.
 

@@ -60,7 +60,7 @@ enums.
       validated against the pdomain-book-tools enum), `features.swash`.
 - [ ] Default `annotations.enabled: true` so existing recipes opt in
       automatically; document the back-compat in the M02 changelog.
-- [ ] Update `recipe.schema.json` via `make schema`.
+- [ ] Update `recipe.schema.json` via `just schema`.
 
 ### Pipeline plumbing
 

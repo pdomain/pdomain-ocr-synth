@@ -34,7 +34,7 @@ def test_sdk_unavailable_error_is_transport_error() -> None:
 
 def test_make_default_transport_returns_hf_hub_transport_when_sdk_present() -> None:
     """With ``huggingface_hub`` installed (the ``[publish]`` extra is
-    in the all-dev group used by ``make ci``), the factory returns the
+    in the all-dev group used by ``just ci``), the factory returns the
     real adapter rather than raising."""
 
     transport = make_default_transport("hf_fake_token")

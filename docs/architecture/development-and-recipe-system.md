@@ -13,7 +13,7 @@
 - **Disposition:** Current truth promoted from implemented M01 and M02 plans and CLI/spec documentation.
 - **Promotes:** implemented M01/M02 plans and specs 01/03.
 
-The repository ships a Make- and `uv`-based development workflow and a typed,
+The repository ships a `just` and `uv` development workflow and a typed,
 recipe-driven CLI. The current recipe-author workflow is in
 [Recipe workflow](../usage/recipe-workflow.md); this document records the
 implementation contracts and why they exist. How a loaded recipe becomes an
@@ -21,18 +21,21 @@ image is [Synthesis pipeline](synthesis-pipeline.md).
 
 ## Development workflow
 
-`make setup` runs `uv sync` and installs pre-commit hooks. `make lint`,
-`make format`, `make typecheck`, `make test`, `make build`, and `make ci` are
-the supported gates. `make ci` performs setup, pre-commit, formatting,
-type-checking, tests, and package build. `AI=1` captures verbose output in
-`.ci-ai.log`. `make schema` regenerates the committed JSON Schema from the
-Pydantic models. GitHub Actions workflows were removed on 2026-09-13 in
-commit `0068970`. `make ci` is the local gate.
+`just setup` runs `uv sync --locked --group all-dev` and installs pre-commit hooks.
+`just lint` fixes imports and lint issues; `just format` formats Python only.
+`just lint-check` checks formatting and lint without changing files.
+`just ci` runs setup, pre-commit, lint-check, typecheck, test, build, and strict docgraph.
+`AI=1 just <recipe>` captures the full output in `.ci-ai.log` and prints one result line.
+On failure, it also prints filtered failure sections.
+
+`just schema` regenerates the committed JSON Schema from the Pydantic models.
+GitHub Actions workflows were removed on 2026-09-13 in
+commit `0068970`. `just ci` is the local gate.
 
 Dependency state comes from `pyproject.toml` and `uv.lock`. The current
-`upgrade-deps` target upgrades the lock and syncs it; it does not implement the
-deferred dev-local protection described by spec 13. Fonts are user-supplied
-licensed assets, and the interactive `make fetch-fonts` path is deliberately
+`upgrade-deps` recipe refuses when either supported local-mode marker exists,
+then upgrades the lock and syncs it. The broader dev-local detection in spec 13 remains deferred.
+Fonts are user-supplied licensed assets, and the interactive `just fetch-fonts` path is deliberately
 outside automated setup.
 
 ## Recipe model and loading
@@ -83,7 +86,7 @@ directories, which is also supported.
 
 ## Evidence
 
-- Code: `Makefile`, `pyproject.toml`, `.pre-commit-config.yaml`,
+- Code: `justfile`, `pyproject.toml`, `.pre-commit-config.yaml`,
   `src/pdomain_ocr_synth/cli.py`,
   `src/pdomain_ocr_synth/recipe/`, `src/pdomain_ocr_synth/recipe_init.py`, and
   `src/pdomain_ocr_synth/validation.py`.

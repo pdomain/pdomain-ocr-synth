@@ -74,8 +74,8 @@ were not executed or revalidated as a patch during this check.
 
 - **book-tools:** Python `>=3.11,<3.14`. `filterwarnings = ["error"]`, `--strict-markers`,
   `--strict-config`. Branch coverage is on. Run targets with `AI=1` to capture verbose output to
-  `.ci-ai.log`. Run `make ci AI=1` before committing.
-- **labeler-spa:** Python `>=3.13,<3.14`. Warnings are errors. Run `make AI=1 ci` before committing;
+  `.ci-ai.log`. Run `AI=1 just ci` before committing.
+- **labeler-spa:** Python `>=3.13,<3.14`. Warnings are errors. Run `AI=1 just ci` before committing;
   its `ci` target includes `typecheck`, so basedpyright runs on every change.
 - **Geometry only proposes membership; nothing in this plan stores confirmed membership.** The
   route that lets a person set a region's word membership as an explicit edge is the fourth
@@ -261,7 +261,7 @@ class TestProposeWordRegions:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make test-single TEST='tests/layout/test_layout_aware_reorg.py::TestProposeWordRegions'`
+Run: `TEST='tests/layout/test_layout_aware_reorg.py::TestProposeWordRegions' just test-single`
 Expected: FAIL with `ImportError: cannot import name 'propose_word_regions'`
 
 - [ ] **Step 3: Write the implementation**
@@ -472,12 +472,12 @@ __all__ = [
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make test-single TEST='tests/layout/test_layout_aware_reorg.py::TestProposeWordRegions'`
+Run: `TEST='tests/layout/test_layout_aware_reorg.py::TestProposeWordRegions' just test-single`
 Expected: PASS, all five tests.
 
 - [ ] **Step 5: Run the whole file to confirm the tagging side effect is unchanged**
 
-Run: `make test-single TEST='tests/layout/test_layout_aware_reorg.py'`
+Run: `TEST='tests/layout/test_layout_aware_reorg.py' just test-single`
 Expected: PASS, every existing class including `TestTagWordsWithLayout` and
 `TestDropFigureInternalWords` — the latter is the regression guard for the multi-tag behaviour this
 refactor must not touch.
@@ -650,7 +650,7 @@ def test_non_strict_mode_returns_the_errors_without_raising() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make test-single TEST='tests/ocr/test_sibling_region_membership.py'`
+Run: `TEST='tests/ocr/test_sibling_region_membership.py' just test-single`
 Expected: FAIL with `ImportError: cannot import name 'find_words_in_multiple_sibling_regions'`
 
 - [ ] **Step 3: Write the implementation**
@@ -755,7 +755,7 @@ def raise_if_words_in_multiple_siblings(
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make test-single TEST='tests/ocr/test_sibling_region_membership.py'`
+Run: `TEST='tests/ocr/test_sibling_region_membership.py' just test-single`
 Expected: PASS, all seven tests.
 
 - [ ] **Step 5: Wire it into the reconcile step**
@@ -776,7 +776,7 @@ tree `post_words` is gathered from a few lines above, so no new argument is need
 
 - [ ] **Step 6: Run the full suite to confirm no existing test regressed**
 
-Run: `make test AI=1`
+Run: `AI=1 just test`
 Expected: PASS. Pay particular attention to `tests/ocr/test_reconcile_dropped_words.py`,
 `tests/ocr/test_word_duplication.py`, and `tests/layout/test_layout_aware_reorg.py`, which exercise
 the reconcile path and Task 1's refactor together.
@@ -784,7 +784,7 @@ the reconcile path and Task 1's refactor together.
 - [ ] **Step 7: Run the gate and commit**
 
 ```bash
-make ci AI=1
+AI=1 just ci
 git add pdomain_book_tools/ocr/reorganize_page_utils.py tests/ocr/test_sibling_region_membership.py
 git commit -m "feat(ocr): assert no word is a member of two sibling regions"
 ```
@@ -1001,10 +1001,10 @@ Expected: PASS, all six tests.
 
 - [ ] **Step 5: Run the fast suite and the gate**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS with no regression in the existing suite.
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**

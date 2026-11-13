@@ -326,7 +326,7 @@ geometry as normalized typography.
 - CLI tests cover required flags, exit codes, safe output paths, atomic writes, and deterministic
   output.
 - JSON Schema fixtures validate the typed wire model and reject unknown major versions.
-- Focused tests and `make ci AI=1` pass before each implementation commit.
+- Focused tests and `AI=1 just ci` pass before each implementation commit.
 - Corpus and visual validation meet the precision-first gate above.
 
 ## Adversarial Review

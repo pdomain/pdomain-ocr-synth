@@ -106,9 +106,6 @@ cython_debug/
 # VSCode
 .vscode/
 
-# Local Makefile extensions
-Makefile.local
-
 # Project-local generated content
 recipes/*/cache/
 recipes/*/preview/
@@ -138,5 +135,5 @@ recipes/**/.overrides.yaml
 .worktrees/
 
 
-# AI=1 make output capture log
+# AI=1 just output capture log
 .ci-ai.log

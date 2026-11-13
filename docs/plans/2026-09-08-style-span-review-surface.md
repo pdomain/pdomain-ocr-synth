@@ -74,8 +74,8 @@ Verification scope, 2026-11-07: the labeler's `core/typography_review.py` and
 below are the 2026-09-08 implementation sketch; they were not executed or
 revalidated as a patch during this check.
 
-- Python floor is `>=3.13,<3.14` for `pdomain-ocr-labeler-spa`. `make AI=1 <target>` captures
-  verbose output to `.ci-ai.log`; run `make AI=1 ci` before committing.
+- Python floor is `>=3.13,<3.14` for `pdomain-ocr-labeler-spa`. `AI=1 just <recipe>` captures
+  verbose output to `.ci-ai.log`; run `AI=1 just ci` before committing.
 - **Style spans are never edited.** `TypographyPageRecord.style_spans` is immutable
   content addressed by its page's `page_sha256`. Nothing in this plan mutates a `StyleSpan` or
   writes to a page's materialized `page-record.json`; it only records what a person decided about
@@ -1315,10 +1315,10 @@ def record_style_span_decision(
 Run: `uv run pytest tests/unit/api/test_typography_spans.py -v`
 Expected: PASS, all six tests in the file.
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS with no regression in the existing typography test files.
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS. `openapi-export` regenerates `frontend/src/api/types.ts` with the two new routes;
 include that regenerated file in the commit.
 

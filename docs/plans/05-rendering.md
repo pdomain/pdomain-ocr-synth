@@ -120,8 +120,8 @@ Spec: [`06-rendering.md`](../specs/06-rendering.md).
       emoji absent from the Gaelic font) raises `MissingGlyphError`
       with the missing codepoints set; preview records the same as a
       manifest skip reason.
-- [ ] Visual eyeball test: `make gaelic-preview` produces 50 samples a
-      human can spot-check. Deferred — depends on `make fetch-fonts`
+- [ ] Visual eyeball test: `just gaelic-preview` produces 50 samples a
+      human can spot-check. Deferred — depends on `just fetch-fonts`
       which is interactive (license confirmation).
 
 ## Validation criteria

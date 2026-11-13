@@ -41,7 +41,7 @@ and an injected-model loop in `pdomain-ocr-training`; it has no default model ba
 
 Commit `0068970` on 2026-09-13 removed the GitHub Actions workflows, including the weekly dep-refresh workflow.
 
-`make ci` is the local gate.
+`just ci` is the local gate.
 
 ## Where the old measurement numbers are
 

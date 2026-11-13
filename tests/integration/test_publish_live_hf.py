@@ -20,7 +20,7 @@ CI without secrets)").
 
 How to run
 ----------
-The default ``make ci`` (and any plain ``pytest`` invocation) skips
+The default ``just ci`` (and any plain ``pytest`` invocation) skips
 this test. To run it live::
 
     export PD_OCR_SYNTH_HF_E2E=1
@@ -58,7 +58,7 @@ Place opt-in tests under ``tests/integration/``. Mark them with
         reason="set PD_OCR_SYNTH_HF_E2E=1 + HF_TOKEN to run live",
     )
 
-so they collect cleanly under ``make ci`` (visible as skips, not
+so they collect cleanly under ``just ci`` (visible as skips, not
 errors). The env-var prefix ``PD_OCR_SYNTH_<SUITE>_…`` keeps each
 opt-in suite self-contained.
 """
@@ -300,7 +300,7 @@ def test_live_test_skipped_without_env() -> None:
     Without this, a refactor that accidentally inverts ``_live_enabled``
     (or hardcodes the truthy set wrong) would only get caught in a live
     run — at which point the live test would *try* to run with no token.
-    Cheap to assert here; runs as a normal unit test under ``make ci``.
+    Cheap to assert here; runs as a normal unit test under ``just ci``.
     """
 
     # Save and clear the env so we're testing the helper, not the

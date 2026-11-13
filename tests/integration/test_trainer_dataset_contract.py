@@ -16,7 +16,7 @@ Two layers
    of pdomain-ocr-synth (and shouldn't be — synth produces, doesn't read).
    So we re-implement the *exact* shape checks the doctr readers do,
    as plain ``json.load + assertions``, against tiny synthetic
-   outputs we build in-process. These run under ``make ci`` on every
+   outputs we build in-process. These run under ``just ci`` on every
    commit and catch ``labels.json`` schema drift the moment it
    happens. The shape predicates are inlined from
    ``doctr/datasets/recognition.py`` and ``doctr/datasets/detection.py``
@@ -27,7 +27,7 @@ Two layers
    ``PD_OCR_SYNTH_TRAINER_E2E=1``. These import
    ``doctr.datasets.RecognitionDataset`` / ``DetectionDataset``
    directly and feed them the synthetic output. Skipped under default
-   ``make ci`` (doctr isn't installed in synth's env), and on
+   ``just ci`` (doctr isn't installed in synth's env), and on
    developer machines where the trainer's venv is reachable they
    provide the strongest possible drift signal: the actual
    trainer-side reader instantiates without error and yields the
@@ -448,7 +448,7 @@ def test_detection_dataset_loads_synth_output(tmp_path: Path) -> None:
 
 
 def test_e2e_disabled_without_env() -> None:
-    """The gating helper returns False under default ``make ci``.
+    """The gating helper returns False under default ``just ci``.
 
     Save & restore the env so a developer running with the variable
     set locally still gets their live run after this test.

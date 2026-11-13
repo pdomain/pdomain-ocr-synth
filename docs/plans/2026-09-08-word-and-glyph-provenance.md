@@ -81,9 +81,9 @@ revalidated as a patch during this check.
 - **book-tools floor is `>=3.11,<3.14`; labeler-spa floor is `>=3.13,<3.14`.** Both run
   `filterwarnings = ["error"]` (book-tools) or an equivalent strict pytest config; nothing in this
   plan emits a warning.
-- book-tools commands: `make AI=1 test`, `make AI=1 test-single TEST='tests/...::test_name'`,
-  `make AI=1 ci`. No bare `uv run pytest` — the Makefile wraps `--cov-config` and `-n auto`.
-- labeler-spa commands: `make AI=1 test`, `make AI=1 ci`. `make AI=1 ci` includes `openapi-export`,
+- book-tools commands: `AI=1 just test`, `AI=1 TEST='tests/...::test_name' just test-single`,
+  `AI=1 just ci`. No bare `uv run pytest` — the justfile wraps `--cov-config` and `-n auto`.
+- labeler-spa commands: `AI=1 just test`, `AI=1 just ci`. `AI=1 just ci` includes `openapi-export`,
   which regenerates `frontend/src/api/types.ts` — required after Task 6 adds a route, and a CI job
   fails on drift if it is skipped.
 - **Word identity, not position.** The four writers this plan touches all mutate a `Word` object
@@ -108,7 +108,7 @@ revalidated as a patch during this check.
   with an existing legacy-keyed map is migrated once, at load time, while the current page structure
   still resolves the old positions — see Task 5.
 - After Task 1 releases a new book-tools version, Task 2 must run
-  `make update-pdomain-deps` in labeler-spa (or hand-edit the `pdomain-book-tools==X.Y.Z` pin in
+  `just update-pdomain-deps` in labeler-spa (or hand-edit the `pdomain-book-tools==X.Y.Z` pin in
   `pyproject.toml`) before its own tests can import the new `Word` method.
 
 ---
@@ -218,7 +218,7 @@ no longer matches.
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make AI=1 test-single TEST='tests/ocr/test_word_review.py'`
+Run: `AI=1 TEST='tests/ocr/test_word_review.py' just test-single`
 Expected: FAIL — `AttributeError: 'Word' object has no attribute 'set_ground_truth_text_with_provenance'`
 on the first two new tests, and a dict-equality failure on the third (proving the stale assertion is
 really stale before it's replaced).
@@ -349,19 +349,19 @@ before this test is finalized.
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make AI=1 test-single TEST='tests/ocr/test_word_review.py'`
-Run: `make AI=1 test-single TEST='tests/ocr/test_ground_truth_matching.py'`
+Run: `AI=1 TEST='tests/ocr/test_word_review.py' just test-single`
+Run: `AI=1 TEST='tests/ocr/test_ground_truth_matching.py' just test-single`
 Expected: PASS.
 
 - [ ] **Step 5: Run the full gate and release**
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS.
 
 Release a new book-tools version so labeler-spa's Task 2 can pin to it:
 
 ```bash
-make release-patch
+just release-patch
 ```
 
 - [ ] **Step 6: Commit**
@@ -403,7 +403,7 @@ reading.
 - [ ] **Step 1: Bump the pin**
 
 ```bash
-make update-pdomain-deps
+just update-pdomain-deps
 ```
 
 Confirm `pyproject.toml`'s `pdomain-book-tools==X.Y.Z` line now names the version released in Task 1.
@@ -502,7 +502,7 @@ def test_export_fallback_does_not_touch_a_word_with_real_ground_truth() -> None:
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: the two new files fail — the first two tests pass immediately (they exercise book-tools
 directly, already fixed in Task 1), but the export test fails because `_prepare_page_gt_first` has
 not been changed yet: `word.review is None`.
@@ -576,13 +576,13 @@ def _prepare_page_gt_first(page: Any) -> None:
 
 - [ ] **Step 5: Run the tests**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS, including the existing `test_glyph_endpoints.py` / `test_glyph_bulk_mark.py` suites
 (unaffected by this task).
 
 - [ ] **Step 6: Run the full gate**
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
@@ -671,7 +671,7 @@ def test_glyph_annotations_model_accepts_a_model_prediction_a_person_agreed_with
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: FAIL — `TypeError: GlyphAnnotationsModel() got an unexpected keyword argument 'confidence'`.
 
 - [ ] **Step 3: Write the implementation**
@@ -728,7 +728,7 @@ class GlyphAnnotationsModel(BaseModel):
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -821,7 +821,7 @@ def test_apply_sidecars_to_page_state_replaces_glyph_predictions_map() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: FAIL — `TypeError: LabelerSidecars() got an unexpected keyword argument 'glyph_predictions_map'`.
 
 - [ ] **Step 3: Write the implementation**
@@ -941,7 +941,7 @@ currently reads "Predictions are NOT persisted; this sidecar is rebuilt on each 
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS, including the existing sidecar tests exercising `char_bboxes_map` /
 `glyph_annotations_map` (unaffected by the new field's defaults).
 
@@ -1200,7 +1200,7 @@ constructor shape. Likewise confirm `PageLoadOutcome`'s exact field for carrying
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: FAIL — the first two on `TypeError`/attribute mismatch before the Protocol is corrected;
 the third on `pstate.glyph_predictions_map == {}` (nothing calls `.predict()` yet); the fourth
 (migration) on `ModuleNotFoundError` / `ImportError` for `word_identity_key` and
@@ -1391,12 +1391,12 @@ before the `logical_page_id` block that follows it):
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS.
 
 - [ ] **Step 5: Run the full gate**
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -1451,7 +1451,7 @@ fixture shape here.
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: FAIL — `ImportError: cannot import name 'RejectGlyphPredictionRequest'`.
 
 - [ ] **Step 3: Write the implementation**
@@ -1608,16 +1608,16 @@ correction removes (see Global Constraints and Task 3).
 
 - [ ] **Step 4: Run the tests**
 
-Run: `make AI=1 test`
+Run: `AI=1 just test`
 Expected: PASS.
 
 - [ ] **Step 5: Regenerate the OpenAPI client and run the full gate**
 
-Run: `make openapi-export`
+Run: `just openapi-export`
 Expected: `frontend/src/api/types.ts` gains the new `reject-prediction` operation; commit the
 regenerated file alongside the route.
 
-Run: `make AI=1 ci`
+Run: `AI=1 just ci`
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -1754,7 +1754,7 @@ Expected: PASS, all five tests.
 - [ ] **Step 5: Run the gate and commit**
 
 ```bash
-make ci
+just ci
 git add pdomain_book_contracts/ocr/glyph_annotations.py tests/test_glyph_mark_staleness.py
 git commit -m "feat(glyph): mark sub-word annotations stale when their text changes"
 ```

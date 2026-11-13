@@ -40,7 +40,7 @@ is now [M11](11-preview-ui.md) with its own
 
 The engine-quality polish chunks shipped in M10 — recipe linter,
 per-render audit log, and visual regression — are all on `main` and
-exercised by default `make ci`. M10 is intentionally open-ended (a
+exercised by default `just ci`. M10 is intentionally open-ended (a
 "polish + extra recipes + cloud" bucket rather than a single
 deliverable), so "complete" here means **the polish loop closed**:
 the linter catches recipe footguns before render time, the audit
@@ -69,7 +69,7 @@ That historical count was not rerun for the 2026-11-07 documentation review.
 ## M10 polish — done
 
 The five capability chunks below shipped in M10 and are locked in
-tests under default `make ci`. Each is sized as a "promotable
+tests under default `just ci`. Each is sized as a "promotable
 candidate" the QoL section originally listed; none of them grew big
 enough to warrant their own milestone. Future chunks under each
 heading are tracked in **Future work — beyond M10**.

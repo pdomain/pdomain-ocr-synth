@@ -76,7 +76,7 @@ dev = [
 all-dev = [
     {include-group = "dev"},
     # Tests for the publish SDK adapter import (and mock) ``huggingface_hub``;
-    # include the publish extras in the all-dev group so ``make ci`` /
+    # include the publish extras in the all-dev group so ``just ci`` /
     # ``uv sync --group all-dev`` brings the SDK in. End users who only
     # need ``pdomain-ocr-synth render`` still don't pay the cost — they install
     # without ``[publish]``.

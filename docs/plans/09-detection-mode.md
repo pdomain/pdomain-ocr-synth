@@ -184,7 +184,7 @@ contract test), `08a4809` (page_size_px), `ee54805` (indent),
       the exact `__init__` assertions doctr makes on `labels.json`
       (key → filename existence; recognition value `str`; detection
       value's `polygons` of shape `(N, 4, 2)` numerically castable to
-      `np.float32`) and runs under default `make ci` so schema drift
+      `np.float32`) and runs under default `just ci` so schema drift
       is caught on every commit. The opt-in
       `PD_OCR_SYNTH_TRAINER_E2E=1` layer drives the live
       `RecognitionDataset` / `DetectionDataset` constructors against
@@ -225,7 +225,7 @@ contract test), `08a4809` (page_size_px), `ee54805` (indent),
       live layer drives both constructors on real synth output and
       asserts `len(ds) == pages` plus class names; the always-on
       layer locks the schema doctr asserts at reader-construction
-      time, so drift is caught in default `make ci` (`4abadc0`).
+      time, so drift is caught in default `just ci` (`4abadc0`).
       A richer `train_from_config` driver assertion is **Future
       work** — the schema-level contract this lands is sufficient
       to keep M09 output consumable.
@@ -381,12 +381,12 @@ spine-only modes. All commits are on `main`.
       `DetectionDataset.__init__` make on `labels.json` (key →
       filename existence; recognition value is `str`; detection
       value has `polygons` of shape `(N, 4, 2)` numerically castable
-      to `np.float32`). These run under default `make ci` and lock
+      to `np.float32`). These run under default `just ci` and lock
       schema drift on every commit. (2) **Opt-in** live tests that
       import `doctr.datasets.RecognitionDataset` and `DetectionDataset`
       directly, instantiate them on synth-produced output, and
       assert sample count + class names; skipped under default
-      `make ci` because doctr isn't a synth runtime dep. Plus
+      `just ci` because doctr isn't a synth runtime dep. Plus
       gating-helper sanity tests that lock the truthy set in sync
       with `test_publish_live_hf.py::_TRUTHY`. Without this, only
       caught at trainer CLI runtime.

@@ -52,7 +52,7 @@ iterations know exactly what to pick up.
 
 The spec is good, but it is a **finished feature description**, not an
 implementation plan. This doc translates that spec into landable chunks —
-each chunk is small enough that `make ci` can stay green throughout.
+each chunk is small enough that `just ci` can stay green throughout.
 
 ## Headline findings from the M11 read
 
@@ -127,14 +127,14 @@ Following the project's pattern (no network, deterministic, fast):
 - **viewmodel unit tests** — pure-Python tests of state transitions; no
   NiceGUI imported. Fastest tier.
 - **integration tests** — `nicegui.testing.User` programmatic clicks;
-  guarded by an `@pytest.mark.ui` marker so the default `make test` can
+  guarded by an `@pytest.mark.ui` marker so the default `just test` can
   skip them when the `ui` extras aren't installed.
 - **CLI smoke** — `pdomain-ocr-synth-preview --help` exits 0 and prints flags.
   Doesn't need the NiceGUI server actually running.
 
-A new pytest marker `ui` lands with the first chunk; `make ci` stays green
+A new pytest marker `ui` lands with the first chunk; `just ci` stays green
 on a default install (without the `ui` extras) by `--deselect`-ing the
-marker, while a new `make preview-ui-smoke` target runs only `-m ui`.
+marker, while a new `just preview-ui-smoke` target runs only `-m ui`.
 
 ## Dep-add cost
 
@@ -144,7 +144,7 @@ marker, while a new `make preview-ui-smoke` target runs only `-m ui`.
 - **`ruamel.yaml`**: pure Python, ~1 MB. Lands only with the diff/save
   chunk (chunk M11.4 below), keeping the cheaper chunks dep-free.
 - All cost is paywalled behind `pip install pdomain-ocr-synth[ui]`. Default
-  installs and `make test` are unaffected.
+  installs and `just test` are unaffected.
 
 ## First chunk: M11.1 — picker page + CLI scaffold
 
@@ -164,7 +164,7 @@ introducing render plumbing or override mechanics. Definition of done:
      `--recipe` (no-op flag in this chunk; reserved for chunk M11.2).
 2. Console script `pdomain-ocr-synth-preview = "pdomain_ocr_synth.ui.app:main"`
    registered in `pyproject.toml`.
-3. New `Makefile` targets:
+3. New `justfile` recipes:
    - `setup-ui` — `uv sync --extra ui`.
    - `preview-ui-smoke` — runs the `-m ui` test selection.
 4. New pytest marker `ui` registered in `pyproject.toml`'s
@@ -187,7 +187,7 @@ What's **not** in M11.1:
 
 Why this chunk: it pays the dep + boilerplate cost once, gets routing
 wired, gets the test plumbing in place, and is something the maintainer
-can `make setup-ui && pdomain-ocr-synth-preview` and click around in to confirm
+can `just setup-ui && pdomain-ocr-synth-preview` and click around in to confirm
 the foundation is right before we invest in render integration.
 
 ## Chunk menu (in order, for future iterations)

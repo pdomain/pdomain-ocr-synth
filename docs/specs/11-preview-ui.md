@@ -224,7 +224,7 @@ the separate, explicit "New recipe" action described above.
 - Integration: spin up the NiceGUI app on a random port,
   programmatically click "Regenerate" via NiceGUI's testing
   utilities, assert grid populated.
-- Visual smoke: `make preview-ui-smoke` opens the app, screenshots
+- Visual smoke: `just preview-ui-smoke` opens the app, screenshots
   the recipe picker; CI artifact for human review.
 
 ## Performance

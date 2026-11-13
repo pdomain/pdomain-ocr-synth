@@ -56,7 +56,7 @@ The current implementation sequence and resolved backend constraints are in
       `[dependency-groups]`) entry `ui = ["nicegui>=2.0", "pillow"]`.
 - [ ] Console script `pdomain-ocr-synth-preview` registered in
       `pyproject.toml`.
-- [ ] `make setup-ui` target installs the `ui` group separately,
+- [ ] `just setup-ui` target installs the `ui` group separately,
       mirroring how peers separate optional deps.
 
 ### `pdomain_ocr_synth.preview` package
@@ -120,13 +120,13 @@ The current implementation sequence and resolved backend constraints are in
 - [ ] Integration: `nicegui.testing` client that renders the picker,
       navigates to a recipe, clicks regenerate, asserts the grid
       populates.
-- [ ] Smoke: `make preview-ui-smoke` runs the integration test
+- [ ] Smoke: `just preview-ui-smoke` runs the integration test
       headlessly in CI.
 
 ## Validation criteria
 
 ```bash
-make setup-ui
+just setup-ui
 pdomain-ocr-synth-preview --recipe gaelic
 # → opens on http://127.0.0.1:8080 (or wherever)
 ```

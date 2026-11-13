@@ -1140,7 +1140,7 @@ def test_corpus_model_types_documented_in_spec_04() -> None:
 #
 # When the meta-test surfaces drift, the fix is the iter-96 pattern:
 # add the field to the model, regenerate ``docs/specs/recipe.schema.json``
-# via ``make schema``, and add a load-path test in
+# via ``just schema``, and add a load-path test in
 # ``tests/test_recipe_loader.py`` that pins the round-trip. Update
 # the allow-list only when the missing key is genuinely runtime-only
 # (not a recipe-author-facing knob).
@@ -1334,7 +1334,7 @@ def test_spec_04_per_provider_options_accepted_by_pydantic_model() -> None:
         + "\n".join(failures)
         + "\n\nFix: add each missing field to the model "
         "(see iter-96 WebCorpus.field_path for the pattern), regenerate "
-        "docs/specs/recipe.schema.json via `make schema`, and add a load-path "
+        "docs/specs/recipe.schema.json via `just schema`, and add a load-path "
         "test in tests/test_recipe_loader.py.\nIf a key is intentionally "
         "runtime-only (never reaches the model), allow-list it in "
         "_ALLOWED_RUNTIME_ONLY_OPTION_KEYS with a one-line reason."

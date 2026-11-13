@@ -23,12 +23,12 @@ This milestone defines repository structure rather than runtime architecture: to
 
 ## Tech Stack
 
-The repository uses Python 3.13, uv, Make, pytest, Ruff, basedpyright, and pre-commit.
-GitHub Actions workflows were removed in `0068970`; `make ci` is the local gate.
+The repository uses Python 3.13, uv, just, pytest, Ruff, basedpyright, and pre-commit.
+GitHub Actions workflows were removed in `0068970`; `just ci` is the local gate.
 
 ## Global Constraints
 
-Use repository Make targets and uv-managed tools. Keep peer-project conventions evidence-based; do
+Use repository just recipes and uv-managed tools. Keep peer-project conventions evidence-based; do
 not treat the unchecked license and contributor-guide items as complete.
 
 **Goal:** the repo exists, has a remote, and matches the workspace

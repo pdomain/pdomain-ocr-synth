@@ -308,7 +308,7 @@ with the person.
 | backend `core/page_kind/proposal_log.py` | a latest-proposal-per-page read over one journal pass |
 | backend `api/pages.py` | `page_kind_proposal` on `PagePayload`; extract the confirm body into a shared function |
 | backend `api/page_kinds.py` (new) | `GET .../page-kinds` and `POST .../page-kinds/confirm` |
-| `frontend/src/api/types.ts` | regenerated with `make openapi-export` |
+| `frontend/src/api/types.ts` | regenerated with `just openapi-export` |
 | `frontend/src/hooks/usePageMutations.ts` | `useConfirmPageKind`; undo and redo invalidate the page-kinds list |
 | `frontend/src/hooks/usePageKinds.ts` (new) | the book list query and the bulk confirm mutation |
 | `frontend/src/components/PageActionsCompact.tsx` | the kind control, the menu entry, list invalidation on run completion |
