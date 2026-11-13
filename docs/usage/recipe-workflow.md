@@ -2,7 +2,8 @@
 
 ## Agent Index
 
-- **Kind:** usage
+- **Kind:** process
+- **Document role:** usage
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14

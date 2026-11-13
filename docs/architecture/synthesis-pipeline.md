@@ -11,7 +11,7 @@
   `degradation/`, and the output writers. Tests named below were not re-run.
 - **Disposition:** Current truth for how a recipe becomes images. Recipe loading and the
   output contract live in the sibling architecture notes.
-- **Promotes:** the shipped parts of specs 04, 05, 06, and 07 and plans 03, 05, and 06.
+- **Promotion history:** the shipped parts of specs 04, 05, 06, and 07 and plans 03, 05, and 06.
 
 A render walks one recipe from text to a degraded image.
 

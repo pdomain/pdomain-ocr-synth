@@ -11,8 +11,8 @@
   were read, not re-run. Region editing and layout-training status rechecked against current sibling code on 2026-11-07.
 - **Disposition:** Current truth for the 2026-09-07 measurement cutover and for the labeling work whose plans lived here
   and whose code landed elsewhere.
-- **Promotes:** the measurement extraction plan, the annotation vocabulary and preconditions plans, the region store,
-  route, page-kind, geometry, and region-review plans, and the furniture-gap issue.
+- **Promotion history:** the measurement extraction plan, the annotation vocabulary and preconditions plans,
+  the region store, route, page-kind, geometry, and region-review plans, and the furniture-gap issue.
 
 This repository renders synthetic OCR training pairs from recipes. It does not measure scans. It does not label pages.
 Those two jobs have their own packages.

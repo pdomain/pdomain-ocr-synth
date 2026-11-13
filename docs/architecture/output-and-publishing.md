@@ -10,7 +10,7 @@
 - **Provenance:** rechecked 2026-11-07 against output writers, snapshots, render dispatch,
   publish modules, and trainer-contract tests. The 2026-09-02 trainer measurement below is historical.
 - **Disposition:** Current truth promoted from implemented M07/M08 plans and specs 08/10.
-- **Promotes:** implemented M07/M08 plans and specs 08/10.
+- **Promotion history:** implemented M07/M08 plans and specs 08/10.
 
 Render output uses one versioned profile contract for recognition and
 detection. Publishing stages that local output and uses the Hugging Face Hub

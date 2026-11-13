@@ -2,7 +2,8 @@
 
 ## Agent Index
 
-- **Kind:** context
+- **Kind:** process
+- **Document role:** context
 - **Status:** active
 - **Owner:** CT
 - **Created:** 2026-07-14

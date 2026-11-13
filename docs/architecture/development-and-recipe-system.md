@@ -11,7 +11,7 @@
   migration; the GitHub Actions sentence was re-checked on 2026-11-06 against commit `0068970` and the absence of
   `.github/workflows/`. Recipe mutability, validation, and CLI behavior were rechecked against code on 2026-11-07.
 - **Disposition:** Current truth promoted from implemented M01 and M02 plans and CLI/spec documentation.
-- **Promotes:** implemented M01/M02 plans and specs 01/03.
+- **Promotion history:** implemented M01/M02 plans and specs 01/03.
 
 The repository ships a `just` and `uv` development workflow and a typed,
 recipe-driven CLI. The current recipe-author workflow is in
