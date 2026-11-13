@@ -31,6 +31,11 @@ GitHub Actions workflows were removed in `0068970`; `just ci` is the local gate.
 Use repository just recipes and uv-managed tools. Keep peer-project conventions evidence-based; do
 not treat the unchecked license and contributor-guide items as complete.
 
+The checklist, validation criteria, and scope notes below record the original Make-era bootstrap.
+Completed steps remain historical evidence; they are not instructions to restore Make.
+Use `just --list` for current recipes, `just setup` for setup, and `AI=1 just ci` for the gate.
+The unchecked license and contributor-guide work remains open.
+
 **Goal:** the repo exists, has a remote, and matches the workspace
 conventions established by `pd-ocr-trainer` / `pd-ocr-labeler` /
 `pdomain-book-tools`. No code yet; this milestone ends with `git clone`

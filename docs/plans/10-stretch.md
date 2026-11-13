@@ -204,6 +204,11 @@ shipping or M11 from starting.
 - **Per-recipe `Makefile.local`.** Expose recipe-specific dev targets
   (e.g., `make gaelic-publish`) without bloating the main Makefile.
 
+This is the original Make-era proposal, not an instruction to add a Makefile.
+Current task recipes live in `justfile`; use `just --list` to inspect them.
+Recipe-specific developer commands remain an unfinished feature intent.
+How to extend the current task runner remains future design work; no replacement mechanism is specified here.
+
 ## Future work — beyond M10
 
 These items remain genuinely open and are larger than the polish
