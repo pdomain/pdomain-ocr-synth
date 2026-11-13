@@ -121,7 +121,7 @@ The plan files stayed here as the design record.
 | Labeler routes for editorial corrections. They stay behind the style-span plan. | `pdomain-ocr-labeler-spa` | [Editorial corrections](2026-09-08-editorial-corrections.md) |
 | Layout-model backend. A region-export loader and an injected-model loop already exist. The loop requires a caller-supplied model. | `pdomain-ocr-training` | [Labeling track](2026-09-07-labeling-track-roadmap.md) |
 | Slice 6 is held, not scheduled. Poetry is a geometry detector beside furniture (`PoetryDetector`). The slice waits for a new measured case. | `pdomain-ocr-labeler-spa` | [Labeling track](2026-09-07-labeling-track-roadmap.md) |
-| Page-kind confirm returns 503 when no event store is wired. `save_page` still allows a store-less save. | `pdomain-ocr-labeler-spa` | [Page-kind follow-ups](../issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md) |
+| Page-kind confirm returns 503 when no event store is wired. `save_page` still allows a store-less save. | `pdomain-ocr-labeler-spa` | [Page-kind storage policy](../architecture/measurement-and-labeling.md#page-kind-persistence-and-the-remaining-storage-policy) |
 | Gate 3 still fails per book, at 0.9762 and 0.9429, after the small-caps rescore. The corrected pool is 0.9810 and clears 0.98. The gate is judged per book. The uncorrected pool was 0.9781. | `pdomain-pgdp-measure` | [Gate 3 recheck](../research/2026-09-07-gate3-recheck-on-the-713-page-alignment.md) |
 | The 30-page book admission floor is still an uncalibrated seed. | `pdomain-pgdp-measure` | [Yield gate design](../specs/2026-08-31-pgdp-whole-book-yield-gate-design.md) and that repo's `docs/roadmap.md` |
 

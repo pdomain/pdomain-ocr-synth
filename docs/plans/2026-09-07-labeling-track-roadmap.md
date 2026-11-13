@@ -203,7 +203,7 @@ Drivable over HTTP the day it lands, before any UI exists.
 **Its first increment shipped on 2026-09-17** in `pdomain-ocr-labeler-spa` `b8c2cd7`. A person can
 select a region or proposal on the canvas, decide it from a panel or from the keyboard, and start the
 page-kind and region proposal runs from the page actions. See
-[the design](../specs/2026-09-17-region-review-surface-design.md) and
+[the design](../architecture/labeler-review-contracts.md) and
 [its plan](../architecture/measurement-and-labeling.md#region-review). Not built in that increment: drawing a region,
 resizing a box,
 and editing word membership. Page-kind review shipped later.
@@ -218,7 +218,7 @@ the guard the split design names against treating model output as data.
 book-scoped run now proposes page furniture, the running head and the folio, from the ink bands the
 page classifier already marks as furniture. That is the highest-volume region class in a book: 1,089
 of the 1,385 pages across the five aligned corpus books carry one. See
-[the geometry region proposals design](../specs/2026-09-17-geometry-region-proposals-design.md) and
+[the geometry region proposals design](../architecture/labeler-review-contracts.md) and
 [its plan](../architecture/measurement-and-labeling.md#furniture-proposals). Poetry later shipped
 beside it as `PoetryDetector`. Still not covered by that increment: block boundary, blockquote,
 footnote, heading, and the bottom-of-page furniture the classifier does not locate.
@@ -267,7 +267,7 @@ across proposal runs. `GET .../regions/review-queue` answers what to look at nex
 reading or confidence order. The SPA moves between pages with work on `[` and `]`.
 
 **Second increment shipped 2026-09-17** in `pdomain-ocr-labeler-spa` merge `2adbd46`:
-[page-kind review](../specs/2026-09-17-page-kind-review-design.md), which shows each page's proposed
+[page-kind review](../architecture/labeler-review-contracts.md), which shows each page's proposed
 and confirmed kind and confirms kinds one page or many at a time.
 
 **Third increment shipped 2026-09-17** in `pdomain-ocr-labeler-spa` merge `0536318`: a Queue drawer
@@ -284,7 +284,7 @@ issue `2026-09-18-typography-numerator-needs-a-per-page-rollup.md` tracks the fi
 What remains in the track is slice 6, model-proposed semantics, and slice 7.
 
 **The last owed increment was designed** on 2026-09-18:
-[one answer to what to review next](../specs/2026-09-18-one-answer-to-what-to-review-next.md).
+[one answer to what to review next](../architecture/labeler-review-contracts.md).
 One route answers for every kind of work in the order the work has to happen, and one per-page
 count journal makes words and typography countable at all: today counting a 300-page book's word
 validation means parsing every page, about 14 seconds.

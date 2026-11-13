@@ -94,11 +94,12 @@ The retained [PGDP typography and page-structure design](2026-08-22-pgdp-typogra
 extends the original recognition-first scope. It defines a measurement-first program for learning
 book styles from PGDP scans and generating structured pages with mixed typography.
 
-The retained [PGDP source-line alignment design](2026-08-23-pgdp-source-line-alignment-design.md)
-defines M15b. It conservatively aligns byte-preserved F2 lines with source-frame image candidates
+The shipped [PGDP source-line alignment contract](../architecture/measurement-and-labeling.md)
+records M15b; its original design is retained in Git history.
+It conservatively aligns byte-preserved F2 lines with source-frame image candidates
 on eligible single-column pages. Rectification remains a separate M15c milestone.
 
-These are historical cross-repository designs. Measurement code and its current gates moved to
+The original designs are historical cross-repository records. Measurement code and its current gates moved to
 `pdomain-pgdp-measure`; they are not active synthesis implementation instructions here.
 See [Measurement and labeling](../architecture/measurement-and-labeling.md).
 

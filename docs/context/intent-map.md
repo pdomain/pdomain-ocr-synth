@@ -91,8 +91,8 @@ From the [split design](../specs/2026-09-06-measurement-labeling-synthesis-split
 
 Page-kind confirm returns 503 when no event store is wired, and `save_page` still allows a
 store-less save. Either every mutation should refuse, or the interface should hide confirm.
-The issue is
-[page-kind follow-ups](../issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md).
+The remaining choice is
+[page-kind storage policy](../architecture/measurement-and-labeling.md#page-kind-persistence-and-the-remaining-storage-policy).
 
 For M11, the four earlier product choices are withdrawn. The package name, NiceGUI version pin,
 default port, and UI test marker were all asked under a NiceGUI design that is no longer the

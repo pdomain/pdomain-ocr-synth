@@ -242,8 +242,8 @@ The recorded implementation merge is not evidence of a design review. Calibratio
 
 ## Related
 
-- [Region review surface](2026-09-17-region-review-surface-design.md) — slice 3, whose page-level
+- [Region review surface](../architecture/labeler-review-contracts.md) — slice 3, whose page-level
   review this extends to the book.
-- [Geometry region proposals](2026-09-17-geometry-region-proposals-design.md) — slice 4, which fills
+- [Geometry region proposals](../architecture/labeler-review-contracts.md) — slice 4, which fills
   the queue.
 - [Labeling track roadmap](../plans/2026-09-07-labeling-track-roadmap.md) — slice 5's goals.

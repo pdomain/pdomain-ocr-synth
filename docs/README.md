@@ -49,10 +49,14 @@ Cross-repository GitHub task routing is described in [CLAUDE.md](../CLAUDE.md#gh
 These records preserve earlier intent. Their placement and age do not prove that the work shipped.
 Use the current-state and remaining-work indexes before treating a design as an implementation contract.
 
-- [Fragmented-band correction design](specs/2026-08-31-pgdp-fragmented-band-correction-design.md).
+- [Extracted alignment contracts](architecture/measurement-and-labeling.md).
 - M04 text transforms is partial. Its deferred work is in [spec 05](specs/05-text-transforms.md) and the [intent map](context/intent-map.md).
 
 ## Retired session history
 
 Session handoffs are retired and live only in Git history. The September 2026 labeling-track
 handoffs are readable with `git show 2e02d92:docs/_archive/handoff/<file>`.
+
+The [retired geometry-design pointer](specs/2026-09-17-geometry-region-proposals-design.md)
+keeps external source citations usable. Its full design lives in Git history; current behavior is in
+[Labeler review contracts](architecture/labeler-review-contracts.md).

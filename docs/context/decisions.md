@@ -577,3 +577,102 @@ Long design files were not deleted. The labeler specs are still the only full de
 and the measurement research notes are still the citations in current state. An archive
 folder was not recreated. The 2026-11-09 tombstone above records that retired docs live in
 Git history.
+
+## 2026-11-13: Reviewed architecture promotion and source retirement
+
+Current contracts were promoted before retirement. Fresh analyzers covered all 65 indexed documents.
+Actual current review records are preserved in commit `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`; they do not
+  establish a historic review.
+The optional engine planner was inspected successfully, but apply was not used: its broad reference rewriting
+would alter dated receipts. The direct doc-retirer procedure preserved this log and handled current links.
+
+### 2026-11-13 Retired: Fragmented-band correction
+
+- Old path: `docs/specs/2026-08-31-pgdp-fragmented-band-correction-design.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/measurement-and-labeling.md#extracted-alignment-contracts)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: Calibration and the historical false-eligibility example remain explicit in architecture.
+
+### 2026-11-13 Retired: Whole-book page templates
+
+- Old path: `docs/specs/2026-08-31-pgdp-whole-book-page-templates-design.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/measurement-and-labeling.md#extracted-alignment-contracts)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: Class coverage, calibration and rectification remain deferred in the measure package.
+
+### 2026-11-13 Retired: Source-line alignment design
+
+- Old path: `docs/specs/2026-08-23-pgdp-source-line-alignment-design.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/measurement-and-labeling.md#extracted-alignment-contracts)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: The separate yield design remains live; no human precision gate or new corpus result is claimed.
+
+### 2026-11-13 Retired: Page-kind review increment
+
+- Old path: `docs/specs/2026-09-17-page-kind-review-design.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/labeler-review-contracts.md#page-kind-review-and-durable-confirmation)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: Kind-conditioned detectors and the store-less-save policy remain open.
+
+### 2026-11-13 Retired: Unified review queue increment
+
+- Old path: `docs/specs/2026-09-18-one-answer-to-what-to-review-next.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/labeler-review-contracts.md#unified-counts-have-explicit-availability-and-freshness-limits)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: Exact row freshness, untouched-page backfill, glyph prediction and broader item lists remain deferred.
+
+### 2026-11-13 Retired: Geometry region proposals increment
+
+- Old path: `docs/specs/2026-09-17-geometry-region-proposals-design.md`
+- Outcome: implemented; replaced with a short retired pointer for external source references
+- Superseded by: [current contract](../architecture/labeler-review-contracts.md#geometry-proposals-and-the-region-surface)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: Calibration, bottom furniture, braced groups and persisted measurement remain future scope.
+
+### 2026-11-13 Retired: Region-review surface increment
+
+- Old path: `docs/specs/2026-09-17-region-review-surface-design.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/labeler-review-contracts.md#geometry-proposals-and-the-region-surface)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: General matching, sibling membership, provenance, span review and editorial corrections remain
+  separate live plans.
+
+### 2026-11-13 Retired: Five fixed page-kind defects
+
+- Old path: `docs/issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md`
+- Outcome: implemented; source document removed after promotion
+- Superseded by: [current contract](../architecture/measurement-and-labeling.md#page-kind-persistence-and-the-remaining-storage-policy)
+- Removal commit: the commit containing this receipt, titled `docs: retire reviewed architecture sources`.
+- Rationale kept: current architecture, inspected code/tests, and the real review record in
+  `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`.
+- Remaining work: The owner still must choose between refusing store-less saves and hiding unsupported confirmation.
+
+### Candidates deliberately retained
+
+The book-review-queue design remains partial because rejection carry and hand-drawn-overlap behavior need owner choices.
+The yield-gate design remains live because the human-review criterion is not established and the admission seed is
+  uncalibrated.
+Both received actual current reviews. Neither review fabricated historical approval or claimed the product
+  decisions were settled.
+The intent map preserves these choices alongside the store-less-save policy. Other genuinely partial plans remain
+  untouched.

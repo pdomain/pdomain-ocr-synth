@@ -81,7 +81,7 @@ Whether every mutation should refuse, or the UI should hide confirm, is open.
 The page-kind confirm route returns 503 when no event store is wired. `save_page` still treats a missing store as a
 clean in-memory save.
 
-The issue is [page-kind follow-ups](../issues/2026-09-16-page-kind-follow-ups-parked-during-tasks-6-and-7.md).
+The remaining choice is [page-kind storage policy](../architecture/measurement-and-labeling.md#page-kind-persistence-and-the-remaining-storage-policy).
 
 The labeled-dataset contract this repository would consume is still unspecified.
 
