@@ -189,6 +189,8 @@ Leave the following in their current repositories until a second consumer shows 
 - What a synthesizer preview should show, now that region review lives in the labeler.
 - Whether third-party plugins remain a product goal.
 - Whether this tree needs a `LICENSE` file and a `DEVELOPMENT.md`.
+- Whether to ratify rejection carry and undecided hand-drawn overlaps in the labeler.
+- What auditable evidence is required for the yield design's human-reviewed precision criterion.
 
 ## Records that are not this schedule
 
@@ -203,6 +205,8 @@ That repo already has architecture notes for the commands that shipped.
 
 The synthesis design is the separate-repository candidate above.
 
-Implemented labeler designs from 17 and 18 September 2026 are summarized in
-[Measurement and labeling](../architecture/measurement-and-labeling.md). The long specs remain
-the design record until the labeler repo carries the same decisions.
+Reviewed labeler increments from 17 and 18 September 2026 are summarized in
+[Labeler review contracts](../architecture/labeler-review-contracts.md).
+Their original designs and actual current reviews are preserved in commit `9b7e52d`.
+The [retirement receipts](../context/decisions.md#2026-11-13-reviewed-architecture-promotion-and-source-retirement)
+record the removed sources. The book-queue design remains partial pending its open policy choices.

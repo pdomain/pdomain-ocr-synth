@@ -676,3 +676,10 @@ Both received actual current reviews. Neither review fabricated historical appro
   decisions were settled.
 The intent map preserves these choices alongside the store-less-save policy. Other genuinely partial plans remain
   untouched.
+
+### Removal commit recorded after integration
+
+The eight 2026-11-13 retirement receipts above were committed in
+`0185d795713db462f60864a1b895b31f96cae66e`. Their promotion and actual-review records preceded deletion
+in `9b7e52dd10fc9c64aac87dd15c7b00ac0774b31f`. This identifies the self-referenced changeset without
+rewriting any earlier receipt or decision.
